@@ -1,0 +1,42 @@
+node_modules/
+dist/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Сгенерированный Prisma Client (pnpm db:generate)
+packages/database/src/generated/
+
+# Настройки с паролями и ключами (образец — .env.example)
+.env
+.env.*
+!.env.example
+
+# Результаты браузерных тестов
+test-results/
+playwright-report/
+
+# Резервные копии базы и локальные дампы: содержат данные игроков
+backups/
+*.dump
+*.dump.sha256
+*.sql.gz
+
+# Письма, которые API пишет в файлы без SMTP (разработка)
+.mail-outbox/
+
+# Временные файлы
+.shots/
+tmp/
+*.tmp
+*.tmp.*
+
+# Сертификаты и ключи
+*.pem
+*.key
+*.crt
+
+.DS_Store
+*.log

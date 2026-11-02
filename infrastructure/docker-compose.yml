@@ -1,0 +1,38 @@
+# Локальная инфраструктура: PostgreSQL и Redis. Запуск из корня: pnpm infra:up
+# Пароли берутся из .env в корне проекта (образец — .env.example)
+name: endemion-life
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    # POSTGRES_USER, POSTGRES_PASSWORD и POSTGRES_DB передаются в контейнер из .env
+    env_file: ../.env
+    # Порт открыт только на этом компьютере
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres-data:
+  redis-data:

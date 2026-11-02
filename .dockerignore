@@ -1,0 +1,18 @@
+# В образ попадает только исходный код: зависимости и сборка делаются внутри Docker
+**/node_modules
+**/dist
+**/.next
+**/coverage
+**/test-results
+**/playwright-report
+**/*.tsbuildinfo
+packages/database/src/generated
+
+# Пароли и ключи в образ не попадают никогда
+.env
+.env.*
+!.env.example
+
+.git
+**/*.log
+.DS_Store

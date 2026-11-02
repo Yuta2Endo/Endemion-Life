@@ -1,0 +1,53 @@
+# Endemion Life
+
+Браузерный симулятор жизни с элементами RPG и интерактивной истории: life.endemion.online.
+Игрок рождается в одном из шести миров, проживает год за годом и принимает решения, которые меняют характеристики и судьбу персонажа.
+
+Стек: Next.js 16, React 19, TypeScript, Tailwind CSS 4, NestJS 12, PostgreSQL 18 + Prisma 7, Redis 8, pnpm workspaces, Vitest, Playwright, Docker Compose, Nginx.
+
+Устройство проекта: [docs/architecture.md](docs/architecture.md). Состояние этапа: [STAGE_01_REPORT.md](STAGE_01_REPORT.md).
+
+## Требования
+
+- Node.js 24 или новее
+- pnpm 12 (`corepack enable`)
+- Docker с Docker Compose
+
+## Локальный запуск
+
+```bash
+cp .env.example .env        # значения по умолчанию подходят для разработки
+pnpm install
+pnpm infra:up               # PostgreSQL и Redis в Docker
+pnpm db:migrate             # миграции базы
+pnpm dev                    # API на :4000, сайт на :3000
+```
+
+Сайт: http://localhost:3000. Проверка API: http://localhost:4000/api/health.
+
+## Команды
+
+| Команда | Что делает |
+| --- | --- |
+| `pnpm dev` | Сборка пакетов и запуск API и сайта в режиме разработки |
+| `pnpm build` | Сборка всех пакетов и приложений |
+| `pnpm start` | Запуск собранных API и сайта |
+| `pnpm test` | Модульные тесты всех пакетов |
+| `pnpm test:api` | Тесты API на отдельной тестовой базе (`DATABASE_URL_TEST`) |
+| `pnpm test:e2e` | Браузерные тесты Playwright (компьютер и телефон) |
+| `pnpm lint` / `pnpm typecheck` | ESLint и проверка типов |
+| `pnpm check` | lint + typecheck + test + build |
+| `pnpm infra:up` / `pnpm infra:down` | PostgreSQL и Redis для разработки |
+| `pnpm db:migrate` / `pnpm db:migrate:dev` | Применить миграции / создать новую |
+
+Перед первым запуском браузерных тестов установите браузер: `pnpm --filter @endemion/web exec playwright install chromium`.
+
+## Рабочая среда
+
+```bash
+docker compose -f infrastructure/docker-compose.prod.yml --env-file .env up -d --build
+```
+
+Поднимаются PostgreSQL, Redis, миграции, API, сайт и Nginx на порту 80 (`HTTP_PORT`). В `.env` обязательны `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` и `CORS_ORIGINS` — адрес сайта, например `http://life.endemion.online`.
+
+HTTPS появится на Stage 02. До этого `COOKIE_SECURE` по умолчанию `false`, иначе браузер не сохранит cookie сессии по HTTP.

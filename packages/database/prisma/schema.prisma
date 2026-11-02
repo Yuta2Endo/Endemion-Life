@@ -1,0 +1,112 @@
+// Схема базы Endemion Life. Адрес базы задаётся в prisma.config.ts (DATABASE_URL из .env)
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Игрок. На Stage 01 — гостевой: узнаётся по токену сессии в cookie. Хранится только хеш токена
+model Player {
+  id          String   @id @default(uuid()) @db.Uuid
+  sessionHash String   @unique @map("session_hash") @db.Char(64)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt  DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+
+  lives   Life[]
+  actions GameAction[]
+
+  @@map("players")
+}
+
+enum LifeStatus {
+  alive
+  dead
+}
+
+/// Жизнь персонажа. state — полное состояние игры (GameState из game-core), version растёт с каждым действием
+model Life {
+  id         String     @id @default(uuid()) @db.Uuid
+  playerId   String     @map("player_id") @db.Uuid
+  universeId String     @map("universe_id") @db.VarChar(32)
+  name       String     @db.VarChar(64)
+  seed       String     @db.VarChar(64)
+  status     LifeStatus @default(alive)
+  version    Int
+  age        Int
+  state      Json
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  player    Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  snapshots LifeSnapshot[]
+  history   HistoryEntry[]
+  actions   GameAction[]
+
+  @@index([playerId, updatedAt(sort: Desc)])
+  @@map("lives")
+}
+
+enum SnapshotReason {
+  create
+  action
+  restore
+}
+
+/// Версии сохранения: к любой из них жизнь можно откатить
+model LifeSnapshot {
+  id        String         @id @default(uuid()) @db.Uuid
+  lifeId    String         @map("life_id") @db.Uuid
+  version   Int
+  age       Int
+  reason    SnapshotReason
+  state     Json
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  life Life @relation(fields: [lifeId], references: [id], onDelete: Cascade)
+
+  @@unique([lifeId, version])
+  @@map("life_snapshots")
+}
+
+/// Запись хронологии жизни. Номер seq уникален в пределах жизни: одно событие не запишется дважды
+model HistoryEntry {
+  id        String   @id @default(uuid()) @db.Uuid
+  lifeId    String   @map("life_id") @db.Uuid
+  seq       Int
+  age       Int
+  kind      String   @db.VarChar(16)
+  data      Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  life Life @relation(fields: [lifeId], references: [id], onDelete: Cascade)
+
+  @@unique([lifeId, seq])
+  @@map("history_entries")
+}
+
+/// Принятые действия. (lifeId, actionId) уникальны: повторная отправка возвращает сохранённый ответ
+model GameAction {
+  id          String   @id @default(uuid()) @db.Uuid
+  lifeId      String   @map("life_id") @db.Uuid
+  playerId    String   @map("player_id") @db.Uuid
+  actionId    String   @map("action_id") @db.Uuid
+  type        String   @db.VarChar(16)
+  payload     Json
+  fromVersion Int      @map("from_version")
+  toVersion   Int      @map("to_version")
+  /// Записи истории, добавленные действием: для ответа на повтор
+  entries     Json
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  life   Life   @relation(fields: [lifeId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([lifeId, actionId])
+  @@index([playerId, createdAt])
+  @@map("game_actions")
+}

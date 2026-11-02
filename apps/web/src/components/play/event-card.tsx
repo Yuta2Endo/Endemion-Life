@@ -1,0 +1,76 @@
+"use client";
+
+import type { EventView, HistoryEntry, UniverseId } from "@endemion/game-core";
+import { Ornament, Panel } from "@endemion/ui";
+import { ageLabel } from "@/lib/format";
+import { ChangeChips } from "../change-chips";
+import { useI18n } from "../locale-provider";
+
+/** Событие, на которое нужно ответить: текст и варианты с шансом успеха или причиной блокировки */
+export function EventCard({ event, busy, onChoose }: { event: EventView; busy: boolean; onChoose: (choiceId: string) => void }) {
+  const { locale, l, t } = useI18n();
+  return (
+    <Panel accent className="animate-rise" data-testid="event-card">
+      <p className="text-[11px] uppercase tracking-[0.3em] text-gold-400">{ageLabel(event.age, locale)}</p>
+      <h2 className="mt-2 font-display text-3xl leading-tight text-gilded" data-testid="event-title">
+        {l(event.title)}
+      </h2>
+      <p className="mt-4 text-base leading-relaxed text-bone-100">{l(event.text)}</p>
+      <Ornament className="my-6" />
+      <h3 className="mb-3 text-[11px] uppercase tracking-[0.22em] text-bone-500">{t("play.choose")}</h3>
+      <ul className="space-y-2.5">
+        {event.choices.map((choice) => (
+          <li key={choice.id}>
+            <button
+              type="button"
+              disabled={!choice.available || busy}
+              onClick={() => onChoose(choice.id)}
+              className="group flex w-full items-start justify-between gap-4 rounded-lg border border-line bg-ink-950/60 px-4 py-3 text-left transition enabled:hover:border-gold-400/70 enabled:hover:bg-gold-500/5 focus-visible:outline-2 focus-visible:outline-gold-300 disabled:cursor-not-allowed disabled:opacity-50"
+              data-testid="choice"
+              data-choice={choice.id}
+              data-available={choice.available}
+            >
+              <span>
+                <span className="block text-sm text-bone-100 transition group-enabled:group-hover:text-gold-100">{l(choice.text)}</span>
+                {!choice.available && <span className="mt-1 block text-xs text-blood-300">{choice.locked.map(l).join(" · ")}</span>}
+              </span>
+              {choice.chance !== null && (
+                <span
+                  className={`shrink-0 rounded border px-2 py-0.5 text-[11px] tabular-nums ${
+                    choice.chance >= 0.65 ? "border-jade-500/40 text-jade-300" : choice.chance >= 0.35 ? "border-gold-500/40 text-gold-200" : "border-blood-500/40 text-blood-300"
+                  }`}
+                >
+                  {t("play.chance", { n: Math.round(choice.chance * 100) })}
+                </span>
+              )}
+              {!choice.available && choice.chance === null && <span className="shrink-0 text-[11px] text-bone-500">{t("play.locked")}</span>}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  );
+}
+
+/** Итог последнего решения: что выбрано, прошла ли проверка и что изменилось */
+export function OutcomeCard({ entry, universeId }: { entry: HistoryEntry; universeId: UniverseId }) {
+  const { l, t } = useI18n();
+  return (
+    <Panel className="animate-rise" data-testid="outcome">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("play.outcome")}</h3>
+        {entry.check && (
+          <span className={`text-xs ${entry.check.success ? "text-jade-300" : "text-blood-300"}`}>
+            {entry.check.success ? t("play.success") : t("play.failure")} · {Math.round(entry.check.chance * 100)}%
+          </span>
+        )}
+      </div>
+      <p className="mt-2 font-display text-xl text-bone-100">{l(entry.title)}</p>
+      {entry.choice && <p className="mt-1 text-sm text-bone-500">→ {l(entry.choice)}</p>}
+      {entry.outcome && <p className="mt-3 leading-relaxed text-bone-100">{l(entry.outcome)}</p>}
+      <div className="mt-3">
+        <ChangeChips changes={entry.changes} universeId={universeId} />
+      </div>
+    </Panel>
+  );
+}

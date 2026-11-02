@@ -1,0 +1,37 @@
+{
+  "name": "endemion-life",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Endemion Life — браузерный симулятор жизни, RPG и интерактивная история",
+  "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "infra:up": "docker compose -f infrastructure/docker-compose.yml up -d --wait",
+    "infra:down": "docker compose -f infrastructure/docker-compose.yml down",
+    "db:generate": "pnpm --filter @endemion/database db:generate",
+    "db:migrate": "pnpm --filter @endemion/database db:migrate",
+    "db:migrate:dev": "pnpm --filter @endemion/database db:migrate:dev",
+    "build:packages": "pnpm --filter \"./packages/**\" build",
+    "dev": "pnpm build:packages && concurrently -k -n packages,api,web -c gray,yellow,cyan \"pnpm --filter \\\"./packages/**\\\" --parallel dev\" \"pnpm --filter @endemion/api dev\" \"pnpm --filter @endemion/web dev\"",
+    "build": "pnpm -r build",
+    "start": "concurrently -k -n api,web -c yellow,cyan \"pnpm --filter @endemion/api start\" \"pnpm --filter @endemion/web start\"",
+    "test": "pnpm -r test",
+    "test:api": "pnpm --filter @endemion/api test:e2e",
+    "test:e2e": "pnpm --filter @endemion/web test:e2e",
+    "lint": "eslint . && pnpm --filter @endemion/web lint",
+    "typecheck": "pnpm build:packages && pnpm -r typecheck",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@types/node": "catalog:",
+    "concurrently": "10.0.6",
+    "eslint": "9.39.5",
+    "globals": "17.14.0",
+    "typescript": "catalog:",
+    "typescript-eslint": "8.72.1"
+  }
+}
