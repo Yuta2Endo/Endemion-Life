@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getServerI18n } from "@/lib/locale-server";
+import { AccountLink } from "./account-link";
 import { LanguageSwitch } from "./language-switch";
 import { StoreBadge } from "./store-badge";
 
@@ -16,6 +17,7 @@ export async function SiteHeader() {
           <Link href="/worlds" className="text-sm text-bone-300 transition hover:text-gold-200">
             {t("nav.worlds")}
           </Link>
+          <AccountLink />
           <StoreBadge />
           <LanguageSwitch />
         </nav>
