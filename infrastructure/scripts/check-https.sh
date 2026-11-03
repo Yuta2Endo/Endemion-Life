@@ -24,7 +24,7 @@ status=$($CURL -o /dev/null -w '%{http_code}' "$BASE/api/health") || status=000
 
 location=$($CURL -o /dev/null -w '%{http_code} %{redirect_url}' "$HTTP_BASE/worlds?x=1")
 case "$location" in
-  "301 https://$HOST"*"/worlds?x=1") ok "HTTP перенаправляет на HTTPS" ;;
+  "301 https://$HOST"*"/worlds?x=1"|"308 https://$HOST"*"/worlds?x=1") ok "HTTP перенаправляет на HTTPS" ;;
   *) bad "HTTP → HTTPS: получено «$location»" ;;
 esac
 

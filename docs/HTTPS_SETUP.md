@@ -1,6 +1,6 @@
 # HTTPS для life.endemion.online
 
-Состояние на 2026-11-03: **сертификат не выпущен**. Имя `life.endemion.online` в DNS не существует (NXDOMAIN, зона обслуживается `ns1.spaceweb.ru`). Конфигурация проверена локально с самоподписанным сертификатом (раздел «Что проверено»).
+Состояние на 2026-11-03: **HTTPS работает**. DNS: `life A 185.175.156.196` (spaceweb.ru). Режим behind-proxy: сертификат Let's Encrypt (выпущен 2026-11-03, до 2027-02-01) получает и продлевает Caddy основного сайта. Блок `life.{$SITE_DOMAIN}` лежит в Caddyfile репозитория Endemion. `check-https.sh https://life.endemion.online` — все проверки OK. HSTS пока выключен (`HSTS_MAX_AGE=0`).
 
 ## Два режима
 
@@ -111,4 +111,4 @@ docker compose -f infrastructure/docker-compose.prod.yml --env-file .env exec ng
 - HSTS появляется только после `HSTS_MAX_AGE>0`;
 - чужой `Host` по HTTP — 444, неизвестное имя по HTTPS — рукопожатие отклонено.
 
-Настоящий выпуск сертификата Let's Encrypt и режим behind-proxy за Caddy на сервере **не проверялись**: нет DNS-записи и доступа к серверу.
+На сервере (2026-11-03): режим behind-proxy за Caddy 2.11.7, сертификат Let's Encrypt (YE2), `check-https.sh https://life.endemion.online` — все OK. Caddy отвечает на HTTP редиректом `308`, а не `301`; скрипт принимает оба. Адрес клиента доходит до API (проверено по журналу). Режим tls (свой certbot) на сервере не применялся.
