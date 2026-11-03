@@ -16,7 +16,8 @@ export function AccountLink() {
     let active = true;
     authApi
       .me()
-      .then((me) => active && setState(me.account ? "account" : "guest"))
+      // Вход через Endemion ID не создаёт аккаунт по почте: вошедший — тот, у кого есть аккаунт или Endemion ID
+      .then((me) => active && setState(me.account || me.endemionId ? "account" : "guest"))
       .catch(() => active && setState("offline"));
     return () => {
       active = false;
