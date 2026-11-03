@@ -55,4 +55,21 @@ describe("настройки", () => {
   it("без DATABASE_URL запуск невозможен", () => {
     expect(() => readConfig({})).toThrow(/DATABASE_URL/);
   });
+
+  it("почта: без SMTP в разработке — файлы, в рабочей среде — не отправляется; file в рабочей среде запрещён", () => {
+    const base = { DATABASE_URL: "postgresql://x" };
+    expect(readConfig(base).mail.driver).toBe("file");
+    expect(readConfig({ ...base, NODE_ENV: "production" }).mail.driver).toBe("none");
+    expect(readConfig({ ...base, NODE_ENV: "production", SMTP_URL: "smtps://u:p@smtp.example:465" }).mail.driver).toBe("smtp");
+    expect(() => readConfig({ ...base, MAIL_DRIVER: "smtp" })).toThrow(/SMTP_URL/);
+    expect(() => readConfig({ ...base, NODE_ENV: "production", MAIL_DRIVER: "file" })).toThrow(/MAIL_DRIVER=file/);
+  });
+
+  it("логи: в рабочей среде JSON по умолчанию; адрес сайта берётся из PUBLIC_URL или первого CORS_ORIGINS", () => {
+    const prod = readConfig({ DATABASE_URL: "postgresql://x", NODE_ENV: "production", CORS_ORIGINS: "https://life.endemion.online" });
+    expect(prod.log.format).toBe("json");
+    expect(prod.publicUrl).toBe("https://life.endemion.online");
+    expect(readConfig({ DATABASE_URL: "postgresql://x", PUBLIC_URL: "https://x.example/" }).publicUrl).toBe("https://x.example");
+    expect(readConfig({ DATABASE_URL: "postgresql://x", SENTRY_DSN: "  " }).sentryDsn).toBeNull();
+  });
 });

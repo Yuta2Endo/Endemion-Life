@@ -16,6 +16,9 @@ export default defineConfig({
   migrations: { path: "prisma/migrations" },
   datasource: {
     // prisma generate адрес не нужен: заглушка позволяет собрать клиент без базы (например, в Docker)
-    url: process.env.DATABASE_URL ?? "postgresql://localhost:5432/endemion_life"
+    url: process.env.DATABASE_URL ?? "postgresql://localhost:5432/endemion_life",
+    // Пустая служебная база для `prisma migrate diff --from-migrations` (проверка, что миграции совпадают со схемой).
+    // Нужна только в CI и при разработке миграций; рабочей среде не нужна
+    ...(process.env.SHADOW_DATABASE_URL ? { shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL } : {})
   }
 });

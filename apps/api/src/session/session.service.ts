@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
-import { SESSION_COOKIE } from "@endemion/shared";
+import type { Prisma, PrismaClient } from "@endemion/database";
+import { SESSION_COOKIE, type SessionView } from "@endemion/shared";
 import { Inject, Injectable } from "@nestjs/common";
 import type { CookieOptions, Request, Response } from "express";
 import { ApiError } from "../common/api-error.js";
@@ -7,22 +8,32 @@ import { APP_CONFIG, type AppConfig } from "../config.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 const SESSION_DAYS = 365;
+const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 /** last_seen_at обновляется не чаще раза в час, чтобы не писать в базу на каждый запрос */
 const TOUCH_INTERVAL_MS = 60 * 60 * 1000;
+const USER_AGENT_MAX = 256;
 
 export interface Player {
   id: string;
   createdAt: Date;
 }
 
-function hashToken(token: string): string {
+export interface CurrentSession {
+  sessionId: string;
+  player: Player;
+}
+
+type Db = PrismaClient | Prisma.TransactionClient;
+
+export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
 /**
- * Гостевая сессия: случайный токен в HttpOnly-cookie, в базе — только его SHA-256.
- * Украденная база не даёт войти чужим аккаунтом. Вход по почте появится на Stage 02
+ * Сессии (устройства). Случайный токен 256 бит в HttpOnly-cookie, в базе — только его SHA-256:
+ * украденная база не даёт войти. Сессию можно отозвать; отозванная или просроченная не даёт доступа.
+ * Гость — игрок без аккаунта: его сессия работает так же, как сессия аккаунта
  */
 @Injectable()
 export class SessionService {
@@ -32,13 +43,7 @@ export class SessionService {
   ) {}
 
   private cookieOptions(): CookieOptions {
-    return {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: this.config.secureCookies,
-      path: "/",
-      maxAge: SESSION_DAYS * 24 * 60 * 60 * 1000
-    };
+    return { httpOnly: true, sameSite: "lax", secure: this.config.secureCookies, path: "/" };
   }
 
   private tokenFrom(request: Request): string | null {
@@ -47,31 +52,91 @@ export class SessionService {
     return typeof token === "string" && TOKEN_PATTERN.test(token) ? token : null;
   }
 
-  /** Игрок по cookie или null */
-  async find(request: Request): Promise<Player | null> {
+  /** Текущая действующая сессия этого браузера или null */
+  async current(request: Request): Promise<CurrentSession | null> {
     const token = this.tokenFrom(request);
     if (!token) return null;
-    const player = await this.prisma.client.player.findUnique({ where: { sessionHash: hashToken(token) } });
-    if (!player) return null;
-    if (Date.now() - player.lastSeenAt.getTime() > TOUCH_INTERVAL_MS) {
-      await this.prisma.client.player.update({ where: { id: player.id }, data: { lastSeenAt: new Date() } });
+    const session = await this.prisma.client.session.findUnique({ where: { tokenHash: hashToken(token) }, include: { player: true } });
+    const now = Date.now();
+    if (!session || session.revokedAt || session.expiresAt.getTime() <= now) return null;
+    if (now - session.lastSeenAt.getTime() > TOUCH_INTERVAL_MS) {
+      await this.prisma.client.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date(now) } });
     }
-    return { id: player.id, createdAt: player.createdAt };
+    return { sessionId: session.id, player: { id: session.player.id, createdAt: session.player.createdAt } };
+  }
+
+  /** Игрок по cookie или null */
+  async find(request: Request): Promise<Player | null> {
+    return (await this.current(request))?.player ?? null;
   }
 
   async require(request: Request): Promise<Player> {
-    const player = await this.find(request);
-    if (!player) throw new ApiError(401, "UNAUTHORIZED", "Нет сессии игрока");
-    return player;
+    return (await this.requireSession(request)).player;
+  }
+
+  async requireSession(request: Request): Promise<CurrentSession> {
+    const current = await this.current(request);
+    if (!current) throw new ApiError(401, "UNAUTHORIZED", "Нет сессии игрока");
+    return current;
+  }
+
+  /** Новая сессия для игрока. Возвращает токен для cookie; в базу пишется только его хеш */
+  async create(db: Db, playerId: string, request: Request): Promise<{ sessionId: string; token: string }> {
+    const token = randomBytes(32).toString("base64url");
+    const userAgent = request.get("user-agent")?.slice(0, USER_AGENT_MAX) ?? null;
+    const session = await db.session.create({
+      data: { tokenHash: hashToken(token), playerId, userAgent, expiresAt: new Date(Date.now() + SESSION_MS) }
+    });
+    return { sessionId: session.id, token };
+  }
+
+  setCookie(response: Response, token: string): void {
+    response.cookie(SESSION_COOKIE, token, { ...this.cookieOptions(), maxAge: SESSION_MS });
+  }
+
+  clearCookie(response: Response): void {
+    response.clearCookie(SESSION_COOKIE, this.cookieOptions());
   }
 
   /** Игрок по cookie, а если его нет — новый гость с новой cookie */
   async ensure(request: Request, response: Response): Promise<{ player: Player; created: boolean }> {
     const existing = await this.find(request);
     if (existing) return { player: existing, created: false };
-    const token = randomBytes(32).toString("base64url");
-    const player = await this.prisma.client.player.create({ data: { sessionHash: hashToken(token) } });
-    response.cookie(SESSION_COOKIE, token, this.cookieOptions());
+    const { player, token } = await this.prisma.client.$transaction(async (tx) => {
+      const created = await tx.player.create({ data: {} });
+      const session = await this.create(tx, created.id, request);
+      return { player: created, token: session.token };
+    });
+    this.setCookie(response, token);
     return { player: { id: player.id, createdAt: player.createdAt }, created: true };
+  }
+
+  async revoke(db: Db, sessionId: string): Promise<void> {
+    await db.session.updateMany({ where: { id: sessionId, revokedAt: null }, data: { revokedAt: new Date() } });
+  }
+
+  /** Отзывает все сессии игрока, кроме keep. Возвращает число отозванных */
+  async revokeAll(db: Db, playerId: string, keep?: string): Promise<number> {
+    const result = await db.session.updateMany({
+      where: { playerId, revokedAt: null, ...(keep ? { id: { not: keep } } : {}) },
+      data: { revokedAt: new Date() }
+    });
+    return result.count;
+  }
+
+  async list(playerId: string, currentSessionId: string): Promise<SessionView[]> {
+    const rows = await this.prisma.client.session.findMany({
+      where: { playerId, revokedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { lastSeenAt: "desc" },
+      take: 100
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      createdAt: row.createdAt.toISOString(),
+      lastSeenAt: row.lastSeenAt.toISOString(),
+      expiresAt: row.expiresAt.toISOString(),
+      userAgent: row.userAgent,
+      current: row.id === currentSessionId
+    }));
   }
 }

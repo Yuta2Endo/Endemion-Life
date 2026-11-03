@@ -44,7 +44,14 @@ async function untilEvent(client: Agent, start: LifeView): Promise<LifeView> {
 }
 
 beforeAll(async () => {
-  const config = readConfig({ ...process.env, DATABASE_URL: process.env.DATABASE_URL_TEST, RATE_LIMIT_PER_MINUTE: "0" });
+  const config = readConfig({
+    ...process.env,
+    DATABASE_URL: process.env.DATABASE_URL_TEST,
+    RATE_LIMIT_PER_MINUTE: "0",
+    AUTH_RATE_LIMIT_PER_MINUTE: "0",
+    MAIL_DRIVER: "memory",
+    LOG_LEVEL: "error"
+  });
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).overrideProvider(APP_CONFIG).useValue(config).compile();
   app = moduleRef.createNestApplication<NestExpressApplication>({ bodyParser: false, logger: ["error"] });
   configureApp(app);
@@ -53,7 +60,9 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await prisma.client.$executeRawUnsafe("TRUNCATE players, lives, life_snapshots, history_entries, game_actions CASCADE");
+  await prisma.client.$executeRawUnsafe(
+    "TRUNCATE players, sessions, accounts, auth_tokens, lives, life_snapshots, history_entries, game_actions CASCADE"
+  );
 });
 
 afterAll(async () => {

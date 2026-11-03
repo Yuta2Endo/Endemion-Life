@@ -96,6 +96,11 @@ export type ApiErrorCode =
   | "UNAUTHORIZED"
   | "FORBIDDEN"
   | "RATE_LIMITED"
+  | "EMAIL_TAKEN"
+  | "INVALID_CREDENTIALS"
+  | "INVALID_CODE"
+  | "INVALID_TOKEN"
+  | "ALREADY_SIGNED_IN"
   | "INTERNAL";
 
 /** Сколько живых персонажей может быть у одного игрока одновременно */

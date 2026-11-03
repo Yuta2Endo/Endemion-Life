@@ -10,17 +10,84 @@ datasource db {
   provider = "postgresql"
 }
 
-/// Игрок. На Stage 01 — гостевой: узнаётся по токену сессии в cookie. Хранится только хеш токена
+/// Владелец игровых жизней. Гость — игрок без аккаунта; после регистрации у игрока появляется Account.
+/// Все проверки доступа к жизням идут по player_id сессии
 model Player {
-  id          String   @id @default(uuid()) @db.Uuid
-  sessionHash String   @unique @map("session_hash") @db.Char(64)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  lastSeenAt  DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  id         String   @id @default(uuid()) @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(3)
 
-  lives   Life[]
-  actions GameAction[]
+  lives    Life[]
+  actions  GameAction[]
+  sessions Session[]
+  account  Account?
 
   @@map("players")
+}
+
+/// Сессия (устройство). В cookie лежит случайный токен, здесь — только его SHA-256.
+/// Отозванная или просроченная сессия не даёт доступа
+model Session {
+  id         String    @id @default(uuid()) @db.Uuid
+  tokenHash  String    @unique @map("token_hash") @db.Char(64)
+  playerId   String    @map("player_id") @db.Uuid
+  userAgent  String?   @map("user_agent") @db.VarChar(256)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@map("sessions")
+}
+
+/// Аккаунт по email. Один аккаунт — один игрок: жизни аккаунта принадлежат его игроку
+model Account {
+  id              String    @id @default(uuid()) @db.Uuid
+  playerId        String    @unique @map("player_id") @db.Uuid
+  /// Нормализованный адрес: без пробелов, в нижнем регистре
+  email           String    @unique @db.VarChar(254)
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(3)
+  /// scrypt: параметры, соль и хеш в одной строке. Пароль в открытом виде не хранится нигде
+  passwordHash    String    @map("password_hash") @db.VarChar(255)
+  /// Неудачные попытки входа подряд. После порога вход блокируется до locked_until
+  failedLogins    Int       @default(0) @map("failed_logins")
+  lockedUntil     DateTime? @map("locked_until") @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  player Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  tokens AuthToken[]
+
+  @@map("accounts")
+}
+
+enum AuthTokenPurpose {
+  verify_email
+  reset_password
+}
+
+/// Одноразовые коды подтверждения почты и ссылки восстановления доступа. Хранится только хеш
+/// (для кода — SHA-256 от "id аккаунта:код", поэтому одинаковые коды разных аккаунтов не совпадают).
+/// used_at заполняется один раз: повторное использование невозможно
+model AuthToken {
+  id        String           @id @default(uuid()) @db.Uuid
+  accountId String           @map("account_id") @db.Uuid
+  purpose   AuthTokenPurpose
+  tokenHash String           @map("token_hash") @db.Char(64)
+  /// Сколько раз вводили код. После порога код аннулируется
+  attempts  Int              @default(0)
+  expiresAt DateTime         @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime?        @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, purpose, createdAt])
+  @@index([tokenHash])
+  @@map("auth_tokens")
 }
 
 enum LifeStatus {
