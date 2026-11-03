@@ -14,7 +14,8 @@ export function configureApp(app: NestExpressApplication): INestApplication {
   app.disable("x-powered-by");
   // Первым: request id нужен всем остальным обработчикам и строкам лога
   app.use(requestLogging);
-  app.use(helmet());
+  // HSTS ставит краевой прокси по HSTS_MAX_AGE: иначе API включал бы его до проверки HTTPS и дублировал заголовок
+  app.use(helmet({ strictTransportSecurity: false }));
   app.use(cookieParser());
   app.useBodyParser("json", { limit: "16kb" });
   app.enableCors({ origin: config.corsOrigins, credentials: true });
