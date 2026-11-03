@@ -60,6 +60,7 @@ docker compose -f infrastructure/docker-compose.prod.yml --env-file .env up -d -
 | [docs/HTTPS_SETUP.md](docs/HTTPS_SETUP.md) | Сертификат, режимы tls и behind-proxy, HSTS |
 | [docs/DATABASE_BACKUPS.md](docs/DATABASE_BACKUPS.md) | Резервные копии и восстановление |
 | [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) | Аккаунты, сессии, перенос гостевых жизней |
+| [docs/ENDEMION_ID.md](docs/ENDEMION_ID.md) | Вход через Endemion ID (единый аккаунт с endemion.online) |
 | [docs/MONITORING.md](docs/MONITORING.md) | Журналы, Sentry, healthcheck-и, оповещения |
 | [docs/LOAD_TEST_REPORT.md](docs/LOAD_TEST_REPORT.md) | Нагрузочный тест и тесты надёжности |
 | [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md) | Git, ветки, CI |
