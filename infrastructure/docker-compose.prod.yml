@@ -89,6 +89,12 @@ services:
       MAIL_FROM: ${MAIL_FROM:-Endemion Life <no-reply@endemion.online>}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       SENTRY_DSN: ${SENTRY_DSN:-}
+      # Вход через Endemion ID (auth.endemion.online). false — старый вход по почте, см. docs/ENDEMION_ID.md
+      ENDEMION_ID: ${ENDEMION_ID:-false}
+      ENDEMION_ID_ISSUER: ${ENDEMION_ID_ISSUER:-}
+      ENDEMION_ID_CLIENT_ID: ${ENDEMION_ID_CLIENT_ID:-}
+      ENDEMION_ID_CLIENT_SECRET: ${ENDEMION_ID_CLIENT_SECRET:-}
+      ENDEMION_ID_TOKEN_KEY: ${ENDEMION_ID_TOKEN_KEY:-}
     depends_on:
       migrate:
         condition: service_completed_successfully
