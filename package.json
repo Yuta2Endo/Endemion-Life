@@ -23,7 +23,7 @@
     "test:e2e": "pnpm --filter @endemion/web test:e2e",
     "lint": "eslint . && pnpm --filter @endemion/web lint",
     "typecheck": "pnpm build:packages && pnpm -r typecheck",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm build:packages && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

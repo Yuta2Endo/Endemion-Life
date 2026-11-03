@@ -35,6 +35,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Типизированный ESLint читает Prisma Client и типы пакетов: в чистом клоне их ещё нет
+      - name: Build packages
+        run: pnpm build:packages
       - name: Lint
         run: pnpm lint
       - name: Typecheck
@@ -171,5 +174,6 @@ jobs:
         run: docker compose -f infrastructure/docker-compose.prod.yml --env-file infrastructure/env.production.example config -q
       - name: docker-compose.prod.yml + behind-proxy
         run: PROXY_NETWORK=ci_proxy docker compose -f infrastructure/docker-compose.prod.yml -f infrastructure/docker-compose.behind-proxy.yml --env-file infrastructure/env.production.example config -q
+      # Файл разработки читает ../.env; в CI его роль играет образец
       - name: docker-compose.yml (development)
-        run: docker compose -f infrastructure/docker-compose.yml config -q
+        run: cp .env.example .env && docker compose -f infrastructure/docker-compose.yml config -q
