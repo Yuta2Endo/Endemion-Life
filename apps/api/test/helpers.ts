@@ -38,7 +38,7 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
 
 export async function resetDatabase(prisma: PrismaService): Promise<void> {
   await prisma.client.$executeRawUnsafe(
-    "TRUNCATE players, sessions, accounts, auth_tokens, lives, life_snapshots, history_entries, game_actions CASCADE"
+    "TRUNCATE players, sessions, accounts, auth_tokens, lives, life_snapshots, history_entries, game_actions, oidc_logins CASCADE"
   );
 }
 

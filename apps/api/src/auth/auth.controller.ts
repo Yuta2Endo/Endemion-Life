@@ -15,7 +15,8 @@ import {
 } from "@endemion/shared";
 import { Body, Controller, Get, Header, HttpCode, Inject, Post, Req, Res } from "@nestjs/common";
 import type { Request, Response } from "express";
-import { parseOrThrow } from "../common/api-error.js";
+import { ApiError, parseOrThrow } from "../common/api-error.js";
+import { APP_CONFIG, type AppConfig } from "../config.js";
 import { AuthThrottle, emailKey } from "./auth-throttle.js";
 import { AuthService } from "./auth.service.js";
 
@@ -29,8 +30,14 @@ const ipKey = (request: Request): string => `ip:${request.ip ?? "unknown"}`;
 export class AuthController {
   constructor(
     @Inject(AuthService) private readonly auth: AuthService,
-    @Inject(AuthThrottle) private readonly throttle: AuthThrottle
+    @Inject(AuthThrottle) private readonly throttle: AuthThrottle,
+    @Inject(APP_CONFIG) private readonly config: AppConfig
   ) {}
+
+  /** При ENDEMION_ID=true пароль проверяется только в Endemion ID: старые вход, регистрация и восстановление закрыты */
+  private legacyClosed(): void {
+    if (this.config.endemionId) throw new ApiError(410, "USE_ENDEMION_ID", "Вход теперь через Endemion ID");
+  }
 
   @Get("me")
   @Header("Cache-Control", "no-store")
@@ -42,6 +49,7 @@ export class AuthController {
   @Post("register")
   @HttpCode(201)
   async register(@Req() request: Request, @Res({ passthrough: true }) response: Response, @Body() body: unknown): Promise<RegisterResponse> {
+    this.legacyClosed();
     const input = parseOrThrow(registerSchema, body);
     await this.throttle.hit([ipKey(request), emailKey(input.email)]);
     return this.auth.register(request, response, input);
@@ -51,6 +59,7 @@ export class AuthController {
   @Post("login")
   @HttpCode(200)
   async login(@Req() request: Request, @Res({ passthrough: true }) response: Response, @Body() body: unknown): Promise<LoginResponse> {
+    this.legacyClosed();
     const input = parseOrThrow(loginSchema, body);
     await this.throttle.hit([ipKey(request), emailKey(input.email)]);
     return this.auth.login(request, response, input);
@@ -58,15 +67,17 @@ export class AuthController {
 
   @Post("logout")
   @HttpCode(200)
-  async logout(@Req() request: Request, @Res({ passthrough: true }) response: Response, @Body() body: unknown): Promise<OkResponse> {
+  /** Выход на этом устройстве. redirect — страница выхода Endemion ID, если вход был через него */
+  async logout(@Req() request: Request, @Res({ passthrough: true }) response: Response, @Body() body: unknown): Promise<OkResponse & { redirect: string | null }> {
     parseOrThrow(emptyBodySchema, body ?? {});
-    await this.auth.logout(request, response);
-    return { ok: true };
+    const { redirect } = await this.auth.logout(request, response);
+    return { ok: true, redirect };
   }
 
   @Post("verify-email")
   @HttpCode(200)
   async verifyEmail(@Req() request: Request, @Body() body: unknown): Promise<{ account: AccountView }> {
+    this.legacyClosed();
     const input = parseOrThrow(verifyEmailSchema, body);
     await this.throttle.hit([ipKey(request)]);
     return { account: await this.auth.verifyEmail(request, input.code) };
@@ -75,6 +86,7 @@ export class AuthController {
   @Post("resend-verification")
   @HttpCode(200)
   async resend(@Req() request: Request, @Body() body: unknown): Promise<{ verificationSent: boolean }> {
+    this.legacyClosed();
     parseOrThrow(emptyBodySchema, body ?? {});
     await this.throttle.hit([ipKey(request)]);
     return this.auth.resendVerification(request);
@@ -84,6 +96,7 @@ export class AuthController {
   @Post("forgot-password")
   @HttpCode(200)
   async forgot(@Req() request: Request, @Body() body: unknown): Promise<OkResponse> {
+    this.legacyClosed();
     const input = parseOrThrow(forgotPasswordSchema, body);
     await this.throttle.hit([ipKey(request), emailKey(input.email)]);
     await this.auth.forgotPassword(input.email);
@@ -93,6 +106,7 @@ export class AuthController {
   @Post("reset-password")
   @HttpCode(200)
   async reset(@Req() request: Request, @Body() body: unknown): Promise<OkResponse> {
+    this.legacyClosed();
     const input = parseOrThrow(resetPasswordSchema, body);
     await this.throttle.hit([ipKey(request)]);
     await this.auth.resetPassword(input);

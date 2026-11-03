@@ -4,6 +4,7 @@ import { SESSION_COOKIE, type SessionView } from "@endemion/shared";
 import { Inject, Injectable } from "@nestjs/common";
 import type { CookieOptions, Request, Response } from "express";
 import { ApiError } from "../common/api-error.js";
+import { EndemionIdService } from "../auth/endemion-id.service.js";
 import { APP_CONFIG, type AppConfig } from "../config.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
@@ -39,7 +40,8 @@ export function hashToken(token: string): string {
 export class SessionService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(APP_CONFIG) private readonly config: AppConfig
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
+    @Inject(EndemionIdService) private readonly endemionId: EndemionIdService
   ) {}
 
   private cookieOptions(): CookieOptions {
@@ -59,6 +61,11 @@ export class SessionService {
     const session = await this.prisma.client.session.findUnique({ where: { tokenHash: hashToken(token) }, include: { player: true } });
     const now = Date.now();
     if (!session || session.revokedAt || session.expiresAt.getTime() <= now) return null;
+    // Сессия после входа через Endemion ID сверяется с провайдером: выход, отзыв или блокировка там завершают её здесь
+    if (session.refreshToken && this.endemionId.enabled) {
+      const state = await this.endemionId.refresh(session as typeof session & { refreshToken: string }, session.player.endemionSub);
+      if (state === "ended") return null;
+    }
     if (now - session.lastSeenAt.getTime() > TOUCH_INTERVAL_MS) {
       await this.prisma.client.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date(now) } });
     }
@@ -80,12 +87,22 @@ export class SessionService {
     return current;
   }
 
-  /** Новая сессия для игрока. Возвращает токен для cookie; в базу пишется только его хеш */
-  async create(db: Db, playerId: string, request: Request): Promise<{ sessionId: string; token: string }> {
+  /**
+   * Новая сессия для игрока. Возвращает токен для cookie; в базу пишется только его хеш.
+   * refreshToken — уже зашифрованный refresh token Endemion ID, если вход был через него
+   */
+  async create(db: Db, playerId: string, request: Request, refreshToken: string | null = null): Promise<{ sessionId: string; token: string }> {
     const token = randomBytes(32).toString("base64url");
     const userAgent = request.get("user-agent")?.slice(0, USER_AGENT_MAX) ?? null;
+    const now = new Date();
     const session = await db.session.create({
-      data: { tokenHash: hashToken(token), playerId, userAgent, expiresAt: new Date(Date.now() + SESSION_MS) }
+      data: {
+        tokenHash: hashToken(token),
+        playerId,
+        userAgent,
+        expiresAt: new Date(now.getTime() + SESSION_MS),
+        ...(refreshToken ? { refreshToken, refreshedAt: now, lastOkAt: now } : {})
+      }
     });
     return { sessionId: session.id, token };
   }

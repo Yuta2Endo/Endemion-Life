@@ -36,6 +36,22 @@ export interface AppConfig {
     format: "json" | "pretty";
   };
   sentryDsn: string | null;
+  /** Вход через Endemion ID (auth.endemion.online). null — выключен, работает старый вход по почте */
+  endemionId: EndemionIdConfig | null;
+}
+
+export interface EndemionIdConfig {
+  issuer: string;
+  clientId: string;
+  clientSecret: string;
+  /** 32 байта: ключ AES-GCM для refresh token в базе */
+  tokenKey: Buffer;
+  /** Адрес, на который Endemion ID возвращает код: <PUBLIC_URL>/api/auth/oidc/callback */
+  redirectUri: string;
+  /** Куда вернуть браузер после выхода в Endemion ID */
+  postLogoutRedirectUri: string;
+  /** Страница аккаунта Endemion ID: там меняют имя, аватар, почту и пароль */
+  accountUrl: string;
 }
 
 const envSchema = z.object({
@@ -57,8 +73,41 @@ const envSchema = z.object({
   MAIL_OUTBOX_DIR: z.string().min(1).default(".mail-outbox"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   LOG_FORMAT: z.enum(["json", "pretty"]).optional(),
-  SENTRY_DSN: z.string().optional()
+  SENTRY_DSN: z.string().optional(),
+  ENDEMION_ID: z.enum(["true", "false"]).default("false"),
+  ENDEMION_ID_ISSUER: z.string().optional(),
+  ENDEMION_ID_CLIENT_ID: z.string().optional(),
+  ENDEMION_ID_CLIENT_SECRET: z.string().optional(),
+  ENDEMION_ID_TOKEN_KEY: z.string().optional()
 });
+
+function readEndemionId(e: z.infer<typeof envSchema>, production: boolean, publicUrl: string): EndemionIdConfig | null {
+  if (e.ENDEMION_ID !== "true") return null;
+  const fail = (message: string): never => {
+    throw new Error(`Некорректные настройки API: ${message}`);
+  };
+  const issuerText = blankToNull(e.ENDEMION_ID_ISSUER);
+  const clientId = blankToNull(e.ENDEMION_ID_CLIENT_ID);
+  const clientSecret = blankToNull(e.ENDEMION_ID_CLIENT_SECRET);
+  const keyText = blankToNull(e.ENDEMION_ID_TOKEN_KEY);
+  if (!issuerText || !clientId || !clientSecret || !keyText) {
+    fail("ENDEMION_ID=true требует ENDEMION_ID_ISSUER, ENDEMION_ID_CLIENT_ID, ENDEMION_ID_CLIENT_SECRET и ENDEMION_ID_TOKEN_KEY");
+  }
+  const issuer = new URL(issuerText!);
+  if (production && issuer.protocol !== "https:") fail("ENDEMION_ID_ISSUER в рабочей среде должен начинаться с https://");
+  if (production && clientSecret!.length < 32) fail("ENDEMION_ID_CLIENT_SECRET короче 32 символов");
+  const tokenKey = Buffer.from(keyText!, "base64");
+  if (tokenKey.length !== 32) fail("ENDEMION_ID_TOKEN_KEY — 32 случайных байта в base64 (openssl rand -base64 32)");
+  return {
+    issuer: issuer.origin,
+    clientId: clientId!,
+    clientSecret: clientSecret!,
+    tokenKey,
+    redirectUri: `${publicUrl}/api/auth/oidc/callback`,
+    postLogoutRedirectUri: `${publicUrl}/`,
+    accountUrl: `${issuer.origin}/account`
+  };
+}
 
 /** .env в корне монорепозитория. Переменные окружения процесса важнее файла */
 export function loadRootEnv(): void {
@@ -87,6 +136,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const driver: MailDriver = e.MAIL_DRIVER ?? (smtpUrl ? "smtp" : production ? "none" : "file");
   if (driver === "smtp" && !smtpUrl) throw new Error("Некорректные настройки API: MAIL_DRIVER=smtp требует SMTP_URL");
   if (driver === "file" && production) throw new Error("Некорректные настройки API: MAIL_DRIVER=file нельзя использовать в рабочей среде");
+  const publicUrl = (e.PUBLIC_URL ?? corsOrigins[0] ?? "http://localhost:3000").replace(/\/+$/, "");
 
   return {
     nodeEnv: e.NODE_ENV,
@@ -99,9 +149,10 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     authRateLimitPerMinute: e.AUTH_RATE_LIMIT_PER_MINUTE,
     secureCookies: e.COOKIE_SECURE === undefined ? production : e.COOKIE_SECURE === "true",
     trustProxy: e.TRUST_PROXY,
-    publicUrl: (e.PUBLIC_URL ?? corsOrigins[0] ?? "http://localhost:3000").replace(/\/+$/, ""),
+    publicUrl,
     mail: { driver, from: e.MAIL_FROM, smtpUrl, outboxDir: e.MAIL_OUTBOX_DIR },
     log: { level: e.LOG_LEVEL, format: e.LOG_FORMAT ?? (production ? "json" : "pretty") },
-    sentryDsn: blankToNull(e.SENTRY_DSN)
+    sentryDsn: blankToNull(e.SENTRY_DSN),
+    endemionId: readEndemionId(e, production, publicUrl)
   };
 }

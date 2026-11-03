@@ -8,6 +8,7 @@ import { APP_CONFIG, type AppConfig } from "../config.js";
 import { MailService } from "../mail/mail.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { SessionService } from "../session/session.service.js";
+import { EndemionIdService, type IdClaims } from "./endemion-id.service.js";
 import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from "./password.js";
 
 type Tx = Prisma.TransactionClient;
@@ -50,7 +51,8 @@ export class AuthService {
     @Inject(PrismaService) prisma: PrismaService,
     @Inject(SessionService) private readonly sessions: SessionService,
     @Inject(MailService) private readonly mail: MailService,
-    @Inject(APP_CONFIG) private readonly config: AppConfig
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
+    @Inject(EndemionIdService) private readonly endemionId: EndemionIdService
   ) {
     this.db = prisma.client;
   }
@@ -58,11 +60,69 @@ export class AuthService {
   async me(request: Request): Promise<MeResponse> {
     const current = await this.sessions.current(request);
     if (!current) return { player: null, account: null };
-    const account = await this.db.account.findUnique({ where: { playerId: current.player.id } });
+    const [account, player] = await Promise.all([
+      this.db.account.findUnique({ where: { playerId: current.player.id } }),
+      this.db.player.findUniqueOrThrow({ where: { id: current.player.id } })
+    ]);
     return {
       player: { id: current.player.id, createdAt: current.player.createdAt.toISOString() },
-      account: account ? accountView(account) : null
+      account: account ? accountView(account) : null,
+      endemionId: player.endemionSub
+        ? { id: player.endemionSub, username: player.idUsername, displayName: player.idDisplayName, avatarUrl: player.idAvatarUrl, email: player.idEmail }
+        : null
     };
+  }
+
+  /**
+   * Вход через Endemion ID: игрок для sub. Порядок поиска:
+   * 1. игрок уже связан с этим sub;
+   * 2. аккаунт Life с той же почтой — только если Endemion ID подтвердил почту (как восстановление доступа по письму);
+   * 3. гость этого браузера (игрок без аккаунта и без Endemion ID) — его жизни остаются у него;
+   * 4. новый игрок.
+   * Если игрок нашёлся в пунктах 1–2, гостевые жизни этого браузера переходят к нему — как при обычном входе.
+   * По username ничего не связывается. Неподтверждённая почта, совпавшая с аккаунтом Life, не связывается
+   */
+  async signInWithEndemionId(request: Request, response: Response, claims: IdClaims, refreshToken: string): Promise<{ transferredLives: number }> {
+    const current = await this.sessions.current(request);
+    const sameEmail = claims.email ? await this.db.account.findUnique({ where: { email: claims.email } }) : null;
+
+    const result = await this.db.$transaction(async (tx) => {
+      let playerId: string | null = (await tx.player.findUnique({ where: { endemionSub: claims.sub }, select: { id: true } }))?.id ?? null;
+      let linkedExisting = playerId !== null;
+
+      if (!playerId && sameEmail) {
+        const owner = await tx.player.findUniqueOrThrow({ where: { id: sameEmail.playerId } });
+        if (owner.endemionSub) throw new ApiError(409, "EMAIL_TAKEN", "Аккаунт Life с этой почтой уже связан с другим Endemion ID");
+        if (!claims.emailVerified) {
+          throw new ApiError(409, "INVALID_TOKEN", "Подтвердите почту в Endemion ID: после этого аккаунт Life свяжется с ним и прогресс сохранится");
+        }
+        playerId = owner.id;
+        linkedExisting = true;
+      }
+
+      const guest = current ? await tx.player.findUnique({ where: { id: current.player.id }, include: { account: { select: { id: true } } } }) : null;
+      const isGuest = Boolean(guest && !guest.account && !guest.endemionSub);
+
+      if (!playerId) {
+        // Гость становится игроком Endemion ID: его жизни остаются на месте
+        playerId = isGuest ? guest!.id : (await tx.player.create({ data: {} })).id;
+      }
+      // updateMany с условием: если тот же sub одновременно связался в другом запросе, уникальный индекс не даст второй связи
+      await tx.player.updateMany({ where: { id: playerId, endemionSub: null }, data: { endemionSub: claims.sub } });
+
+      let moved = 0;
+      if (current) await this.sessions.revoke(tx, current.sessionId);
+      if (linkedExisting && isGuest && guest!.id !== playerId) moved = await this.transferGuestLives(tx, guest!.id, playerId);
+
+      await this.endemionId.applyClaims(tx, playerId, claims);
+      // Новый токен сессии: заранее подсунутая cookie после входа не работает (session fixation)
+      const session = await this.sessions.create(tx, playerId, request, refreshToken);
+      return { token: session.token, moved, playerId };
+    });
+
+    this.sessions.setCookie(response, result.token);
+    this.logger.log({ msg: "Вход через Endemion ID", playerId: result.playerId, transferredLives: result.moved });
+    return { transferredLives: result.moved };
   }
 
   async register(request: Request, response: Response, input: RegisterRequest) {
@@ -168,10 +228,17 @@ export class AuthService {
     return moved.count;
   }
 
-  async logout(request: Request, response: Response): Promise<void> {
+  /** Выход на этом устройстве. Для входа через Endemion ID — адрес выхода там (можно выйти и с endemion.online) */
+  async logout(request: Request, response: Response): Promise<{ redirect: string | null }> {
     const current = await this.sessions.current(request);
-    if (current) await this.sessions.revoke(this.db, current.sessionId);
+    let viaEndemionId = false;
+    if (current) {
+      const session = await this.db.session.findUnique({ where: { id: current.sessionId }, select: { refreshToken: true } });
+      viaEndemionId = Boolean(session?.refreshToken);
+      await this.sessions.revoke(this.db, current.sessionId);
+    }
     this.sessions.clearCookie(response);
+    return { redirect: viaEndemionId && this.endemionId.enabled ? await this.endemionId.endSessionUrl() : null };
   }
 
   private async requireAccount(request: Request) {

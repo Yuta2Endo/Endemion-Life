@@ -16,6 +16,13 @@ model Player {
   id         String   @id @default(uuid()) @db.Uuid
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   lastSeenAt DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  /// Endemion ID (claim sub). Прогресс привязан к игроку, игрок — к sub: смена username или почты его не меняет
+  endemionSub   String? @unique @map("endemion_sub") @db.Uuid
+  /// Профиль из Endemion ID для показа в игре, обновляется при сверке сессии
+  idUsername    String? @map("id_username") @db.VarChar(24)
+  idDisplayName String? @map("id_display_name") @db.VarChar(40)
+  idAvatarUrl   String? @map("id_avatar_url") @db.VarChar(512)
+  idEmail       String? @map("id_email") @db.VarChar(254)
 
   lives    Life[]
   actions  GameAction[]
@@ -36,11 +43,27 @@ model Session {
   lastSeenAt DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
   expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
   revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
+  /// Вход через Endemion ID: зашифрованный refresh token (AES-GCM) и время сверок с провайдером
+  refreshToken String?   @map("refresh_token") @db.Text
+  refreshedAt  DateTime? @map("refreshed_at") @db.Timestamptz(3)
+  lastOkAt     DateTime? @map("last_ok_at") @db.Timestamptz(3)
 
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@index([playerId])
   @@map("sessions")
+}
+
+/// Начатый вход через Endemion ID. Ключ — SHA-256 от state из cookie, запись удаляется при ответе провайдера
+model OidcLogin {
+  stateHash    String   @id @map("state_hash") @db.Char(64)
+  codeVerifier String   @map("code_verifier") @db.VarChar(128)
+  nonce        String   @db.VarChar(128)
+  returnTo     String   @map("return_to") @db.VarChar(512)
+  expiresAt    DateTime @map("expires_at") @db.Timestamptz(3)
+
+  @@index([expiresAt])
+  @@map("oidc_logins")
 }
 
 /// Аккаунт по email. Один аккаунт — один игрок: жизни аккаунта принадлежат его игроку

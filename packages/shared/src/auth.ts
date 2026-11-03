@@ -63,10 +63,27 @@ export interface AccountView {
   createdAt: string;
 }
 
+/** Профиль Endemion ID игрока: общий с endemion.online, меняется на auth.endemion.online */
+export interface EndemionIdView {
+  /** Постоянный идентификатор Endemion ID (sub). Прогресс привязан к нему, а не к имени или почте */
+  id: string;
+  username: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+  email: string | null;
+}
+
+/** Как входить: через Endemion ID или старой формой с почтой и паролем */
+export interface AuthConfigView {
+  endemionId: { enabled: true; accountUrl: string } | { enabled: false };
+}
+
 /** Кто сейчас за браузером: гость, игрок с аккаунтом или никто */
 export interface MeResponse {
   player: PlayerView | null;
   account: AccountView | null;
+  /** Есть, если игрок вошёл через Endemion ID */
+  endemionId?: EndemionIdView | null;
 }
 
 export interface AuthResponse extends MeResponse {

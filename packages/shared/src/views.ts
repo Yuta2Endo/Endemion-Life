@@ -101,6 +101,7 @@ export type ApiErrorCode =
   | "INVALID_CODE"
   | "INVALID_TOKEN"
   | "ALREADY_SIGNED_IN"
+  | "USE_ENDEMION_ID"
   | "UNAVAILABLE"
   | "INTERNAL";
 
