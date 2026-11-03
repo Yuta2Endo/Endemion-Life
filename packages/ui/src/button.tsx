@@ -15,19 +15,18 @@ const VARIANTS = {
 
 const SIZES = { md: "px-4 py-2 text-sm", lg: "px-6 py-3 text-base" } as const;
 
-export function Button({ variant = "ghost", size = "md", className, type = "button", ...props }: ButtonProps) {
-  return (
-    <button
-      type={type}
-      className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-md border font-medium tracking-wide transition duration-200",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300",
-        "disabled:cursor-not-allowed disabled:opacity-45",
-        VARIANTS[variant],
-        SIZES[size],
-        className
-      )}
-      {...props}
-    />
+/** Классы кнопки. Нужны и ссылкам, которые выглядят как кнопка: кнопку нельзя класть внутрь ссылки */
+export function buttonClass({ variant = "ghost", size = "md", className }: Pick<ButtonProps, "variant" | "size" | "className"> = {}): string {
+  return cn(
+    "inline-flex items-center justify-center gap-2 rounded-md border font-medium tracking-wide transition duration-200",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300",
+    "disabled:cursor-not-allowed disabled:opacity-45",
+    VARIANTS[variant],
+    SIZES[size],
+    className
   );
+}
+
+export function Button({ variant = "ghost", size = "md", className, type = "button", ...props }: ButtonProps) {
+  return <button type={type} className={buttonClass({ variant, size, className })} {...props} />;
 }

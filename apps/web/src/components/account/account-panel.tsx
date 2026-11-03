@@ -1,11 +1,11 @@
 "use client";
 
-import type { AccountView, MeResponse, SessionView } from "@endemion/shared";
+import type { AccountView, AuthConfigView, MeResponse, SessionView } from "@endemion/shared";
 import { PASSWORD_MIN_LENGTH, VERIFY_CODE_LENGTH } from "@endemion/shared";
-import { Button, Ornament, Panel } from "@endemion/ui";
+import { Button, buttonClass, Ornament, Panel } from "@endemion/ui";
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ClientError } from "@/lib/api";
-import { authApi } from "@/lib/auth";
+import { authApi, endemionIdLoginUrl } from "@/lib/auth";
 import { useI18n } from "../locale-provider";
 
 const INPUT =
@@ -300,10 +300,114 @@ function Devices({ onSignedOut }: { onSignedOut: () => void }) {
   );
 }
 
+const ID_ERRORS = ["expired", "denied", "failed", "unverified", "linked"] as const;
+type IdError = (typeof ID_ERRORS)[number];
+
+/** Ошибка входа через Endemion ID из адреса /account?idError=... (её ставит API после ответа провайдера) */
+function readIdError(): IdError | null {
+  const value = new URLSearchParams(window.location.search).get("idError");
+  return ID_ERRORS.find((item) => item === value) ?? null;
+}
+
+/**
+ * Вход через Endemion ID. Гость видит кнопки входа и регистрации, вошедший — профиль из Endemion ID:
+ * имя, аватар, username и постоянный номер. Менять их можно только на странице аккаунта Endemion ID
+ */
+function EndemionIdAccount({ me, accountUrl, onSignedOut }: { me: MeResponse; accountUrl: string; onSignedOut: () => void }) {
+  const { t } = useI18n();
+  // Компонент появляется только после загрузки данных в браузере (на сервере — заглушка), поэтому window уже есть
+  const [error] = useState<IdError | null>(() => (typeof window === "undefined" ? null : readIdError()));
+  const [busy, setBusy] = useState(false);
+
+  async function logout() {
+    setBusy(true);
+    try {
+      const res = await authApi.logout();
+      // На страницу выхода уходим только к своему провайдеру: адрес приходит из API, но проверяется и здесь
+      if (res.redirect && new URL(res.redirect).origin === new URL(accountUrl).origin) {
+        window.location.assign(res.redirect);
+        return;
+      }
+    } finally {
+      setBusy(false);
+    }
+    onSignedOut();
+  }
+
+  const profile = me.endemionId;
+  if (!profile) {
+    const returnTo = "/worlds";
+    return (
+      <div className="space-y-6">
+        {error && (
+          <Notice tone="error" testId="id-error">
+            {t(`auth.idError.${error}`)}
+          </Notice>
+        )}
+        <Panel accent>
+          <div className="text-center">
+            <h2 className="font-display text-2xl text-bone-100">{t("auth.idTitle")}</h2>
+            <p className="mx-auto mt-3 max-w-md text-sm text-bone-300">{t("auth.idLead")}</p>
+            {me.player && <p className="mx-auto mt-2 max-w-md text-sm text-bone-500" data-testid="guest-note">{t("auth.idGuestNote")}</p>}
+            <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <a href={endemionIdLoginUrl(returnTo)} className={buttonClass({ variant: "primary" })} data-testid="id-sign-in">
+                {t("auth.idSignIn")}
+              </a>
+              <a href={endemionIdLoginUrl(returnTo, true)} className={buttonClass()} data-testid="id-register">
+                {t("auth.idRegister")}
+              </a>
+            </div>
+          </div>
+        </Panel>
+      </div>
+    );
+  }
+
+  const name = profile.displayName ?? profile.username ?? profile.email ?? "Endemion";
+  return (
+    <div className="space-y-6" data-testid="account-view">
+      <Panel accent>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            {profile.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- аватар с auth.endemion.online, оптимизатор Next.js не нужен
+              <img src={profile.avatarUrl} alt="" width={56} height={56} className="h-14 w-14 shrink-0 rounded-full border border-gold-400/50 object-cover" />
+            ) : (
+              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-gold-400/50 font-display text-2xl text-gilded" aria-hidden="true">
+                {name.charAt(0).toUpperCase()}
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="truncate font-display text-2xl text-bone-100" data-testid="id-name">
+                {name}
+              </p>
+              {profile.username && <p className="truncate text-sm text-bone-300" data-testid="id-username">@{profile.username}</p>}
+              <p className="mt-1 truncate text-xs text-bone-500" data-testid="id-number">
+                {t("auth.idNumber", { id: profile.id })}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <a href={accountUrl} rel="noopener" className={buttonClass()} data-testid="id-manage">
+              {t("auth.idManage")}
+            </a>
+            <Button variant="ghost" onClick={logout} disabled={busy} data-testid="logout">
+              {t("auth.logout")}
+            </Button>
+          </div>
+        </div>
+      </Panel>
+      <Ornament />
+      <Devices onSignedOut={onSignedOut} />
+    </div>
+  );
+}
+
 /** Страница аккаунта: вход/регистрация для гостя, состояние и устройства для владельца аккаунта */
 export function AccountPanel() {
   const { locale, t } = useI18n();
   const [me, setMe] = useState<MeResponse | null>(null);
+  const [idConfig, setIdConfig] = useState<AuthConfigView | null>(null);
   const [failed, setFailed] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
   const [verificationSent, setVerificationSent] = useState<boolean | undefined>(undefined);
@@ -319,9 +423,12 @@ export function AccountPanel() {
 
   useEffect(() => {
     let active = true;
-    authApi
-      .me()
-      .then((value) => active && setMe(value))
+    Promise.all([authApi.me(), authApi.config()])
+      .then(([value, config]) => {
+        if (!active) return;
+        setMe(value);
+        setIdConfig(config);
+      })
       .catch(() => active && setFailed(true));
     return () => {
       active = false;
@@ -338,7 +445,13 @@ export function AccountPanel() {
   }
 
   if (failed) return <Notice tone="error">{t("error.offline")}</Notice>;
-  if (me === null) return <div className="mx-auto h-40 max-w-md animate-pulse rounded-xl border border-line bg-ink-900/60" aria-busy="true" />;
+  if (me === null || idConfig === null) {
+    return <div className="mx-auto h-40 max-w-md animate-pulse rounded-xl border border-line bg-ink-900/60" aria-busy="true" />;
+  }
+  // Вход через Endemion ID включён на сервере: старая форма с почтой и паролем не показывается
+  if (idConfig.endemionId.enabled) {
+    return <EndemionIdAccount me={me} accountUrl={idConfig.endemionId.accountUrl} onSignedOut={() => void load()} />;
+  }
 
   if (!me.account) {
     return (

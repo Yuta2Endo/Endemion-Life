@@ -180,6 +180,30 @@ export const M = {
   "auth.resetDone": t("Пароль изменён. Все сессии завершены — войдите с новым паролем.", "Password changed. All sessions have ended — sign in with the new password."),
   "auth.resetMissing": t("В ссылке нет токена. Запросите восстановление ещё раз.", "The link has no token. Request recovery again."),
   "auth.toSignIn": t("Ко входу", "Go to sign in"),
+  "auth.idTitle": t("Endemion ID", "Endemion ID"),
+  "auth.idLead": t(
+    "Один аккаунт для Endemion и Endemion Life. Прогресс привязан к Endemion ID и сохраняется на любом устройстве.",
+    "One account for Endemion and Endemion Life. Your progress is tied to your Endemion ID and follows you to any device."
+  ),
+  "auth.idGuestNote": t(
+    "Жизни, начатые в этом браузере, останутся с вами после входа.",
+    "Lives started in this browser stay with you after you sign in."
+  ),
+  "auth.idSignIn": t("Войти через Endemion ID", "Sign in with Endemion ID"),
+  "auth.idRegister": t("Создать Endemion ID", "Create an Endemion ID"),
+  "auth.idManage": t("Имя, аватар, почта и пароль", "Name, avatar, email and password"),
+  "auth.idNumber": t("Endemion ID: {id}", "Endemion ID: {id}"),
+  "auth.idError.expired": t("Страница входа устарела. Попробуйте ещё раз.", "The sign-in page expired. Please try again."),
+  "auth.idError.denied": t("Вход в Endemion ID не завершён.", "Signing in to Endemion ID was not completed."),
+  "auth.idError.failed": t("Не получилось проверить ответ Endemion ID. Попробуйте ещё раз.", "Could not verify the Endemion ID response. Please try again."),
+  "auth.idError.unverified": t(
+    "В Life уже есть аккаунт с этой почтой. Подтвердите почту в Endemion ID по ссылке из письма и войдите снова: аккаунты свяжутся, прогресс сохранится.",
+    "A Life account with this email already exists. Confirm the email in Endemion ID using the link we sent, then sign in again: the accounts will be linked and your progress kept."
+  ),
+  "auth.idError.linked": t(
+    "Аккаунт Life с этой почтой уже связан с другим Endemion ID.",
+    "The Life account with this email is already linked to another Endemion ID."
+  ),
 
   "error.generic": t("Что-то пошло не так. Попробуйте ещё раз.", "Something went wrong. Please try again."),
   "error.offline": t("Нет связи с сервером.", "No connection to the server."),
