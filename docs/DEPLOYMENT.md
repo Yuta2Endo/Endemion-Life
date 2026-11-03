@@ -94,7 +94,12 @@ API не стартует, пока `migrate` не завершится с ко�
 ## 5. HTTPS
 
 - **tls:** `sh infrastructure/scripts/issue-certificate.sh --staging`, затем настоящий сертификат (docs/HTTPS_SETUP.md).
-- **behind-proxy:** блок `life.endemion.online { reverse_proxy endemion-life-nginx:80 }` в Caddyfile основного сайта и `caddy reload` (владелец: затрагивает endemion.online).
+- **behind-proxy:** блок `life.{$SITE_DOMAIN}` в Caddyfile **репозитория Endemion** (владелец: затрагивает endemion.online). Порядок, которым это сделано 2026-11-03:
+  1. правка и `caddy validate` локально, коммит и push в `main` Endemion;
+  2. на сервере: копия `cp -p /opt/endemion/Caddyfile /root/Caddyfile.before-life.<время>`, `git pull --ff-only` в `/opt/endemion`;
+  3. `docker cp Caddyfile endemion-caddy-1:/tmp/Caddyfile.new`, `caddy validate`, `caddy reload --config /tmp/Caddyfile.new`.
+
+  **Ловушка:** Caddyfile подключён в контейнер Caddy как отдельный файл (`./Caddyfile:/etc/caddy/Caddyfile:ro`). `git pull` заменяет файл новым (новый inode), а контейнер до перезапуска видит прежний. Поэтому `caddy reload` без `--config /tmp/…` загрузит старый файл без блока `life`, и life.endemion.online перестанет открываться. После перезапуска контейнера (`docker restart endemion-caddy-1` или пересоздание через `docker compose up`) он видит актуальный файл, и ловушка исчезает.
 
 ```bash
 sh infrastructure/scripts/check-https.sh https://life.endemion.online
