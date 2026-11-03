@@ -1,0 +1,69 @@
+# Проверки безопасности: уязвимые зависимости, секреты в истории Git, ошибки в shell-скриптах и workflow.
+# Запускается при push, pull request и раз в неделю (новые уязвимости находят в старых версиях)
+name: Security
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Dependency audit (production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: pnpm
+      # Блокируют только серьёзные уязвимости зависимостей, попадающих в рабочую среду.
+      # Полный список (включая инструменты разработки) — в журнале шага ниже
+      - name: pnpm audit --prod (high and critical fail the job)
+        run: pnpm audit --prod --audit-level high
+      - name: pnpm audit (all, report only)
+        run: pnpm audit || true
+
+  dependency-review:
+    name: New dependencies in pull request
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
+  secrets:
+    name: Secrets in Git history (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  scripts:
+    name: Shell scripts and workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: shellcheck
+        run: shellcheck --shell=sh --severity=warning infrastructure/backup/*.sh infrastructure/monitor/*.sh infrastructure/nginx/*.sh infrastructure/scripts/*.sh
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color

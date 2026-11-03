@@ -48,7 +48,7 @@ pnpm check                             # lint, typecheck, тесты, сборк
 - Переписывание опубликованной истории (`rebase`, `commit --amend` после push).
 - Коммит `.env`, дампов базы, сертификатов.
 
-Если секрет всё же попал в коммит: считать его скомпрометированным и сменить (пароль базы, `AUTH_SECRET`, SMTP-пароль), а уже затем чистить историю.
+Если секрет всё же попал в коммит: считать его скомпрометированным и сменить (пароль базы, SMTP-пароль, ключи S3, токен бота оповещений, DSN Sentry), а уже затем чистить историю.
 
 ## Подключение GitHub (после решения владельца)
 
@@ -61,6 +61,6 @@ git push -u origin main
 
 После первой отправки в настройках репозитория:
 
-1. **Branch protection** для `main`: запрет прямого push, обязательный pull request, обязательные проверки `CI / checks`, `CI / api`, `CI / e2e`, `CI / docker`, запрет force push и удаления ветки.
+1. **Branch protection** для `main`: запрет прямого push, обязательный pull request, запрет force push и удаления ветки. Обязательные проверки (имена задач из `.github/workflows/ci.yml` и `security.yml`): `Lint, typecheck, unit tests, build`, `API tests and migrations (PostgreSQL, Redis)`, `Browser tests (Playwright)`, `Docker build (migrate)`, `Docker build (api)`, `Docker build (web)`, `Docker build (nginx)`, `Docker build (backup)`, `Docker build (monitor)`, `Compose files are valid`, `Dependency audit (production)`, `Secrets in Git history (gitleaks)`, `Shell scripts and workflows`.
 2. **Secrets**: в CI секреты не нужны — тесты используют одноразовые PostgreSQL и Redis внутри GitHub Actions.
 3. **Dependabot alerts** и **secret scanning** — включить.

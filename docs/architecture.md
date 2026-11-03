@@ -1,4 +1,4 @@
-# Архитектура Endemion Life (Stage 01)
+# Архитектура Endemion Life (Stage 01, Stage 01.5)
 
 ## Состав монорепозитория
 
@@ -8,9 +8,10 @@
 | `packages/shared` | Схемы запросов (zod), представление жизни для клиента (`toLifeView`), общие константы |
 | `packages/database` | Схема Prisma, миграции, клиент PostgreSQL через `@prisma/adapter-pg` |
 | `packages/ui` | Общие компоненты интерфейса: Button, Panel, Meter, Tag, Ornament |
-| `apps/api` | REST API на NestJS: сессии, каталог вселенных, жизни, действия, история, сохранения |
+| `apps/api` | REST API на NestJS: сессии, аккаунты, каталог вселенных, жизни, действия, история, сохранения |
 | `apps/web` | Сайт на Next.js: главная, выбор мира, создание персонажа, игровой экран |
-| `infrastructure` | Docker Compose для разработки и для рабочей среды, конфигурация Nginx |
+| `infrastructure` | Docker Compose для разработки и рабочей среды, Nginx, резервное копирование, монитор, скрипты HTTPS и нагрузочного теста |
+| `.github/workflows` | CI (lint, типы, тесты, миграции, E2E, сборка, Docker) и проверки безопасности |
 
 Зависимости идут в одну сторону: `web` и `api` → `shared` → `game-core`. `game-core` не знает ни о базе, ни о сети.
 
@@ -39,9 +40,11 @@
 
 ## Сессии и безопасность
 
-- Гостевая сессия: случайный токен в cookie `el_session` (HttpOnly, SameSite=Lax). В базе хранится только SHA-256 токена.
+- Сессия — устройство: случайный токен в cookie `el_session` (HttpOnly, SameSite=Lax, Secure в рабочей среде). В таблице `sessions` хранится только SHA-256 токена, срок и отметка отзыва. Гость — игрок без аккаунта; аккаунт (почта и пароль scrypt) привязывается к игроку, гостевые жизни переносятся при входе. Подробно: [AUTHENTICATION.md](AUTHENTICATION.md).
 - Защита от подделки запросов: изменяющие запросы принимаются только как `application/json` и только с разрешённого `Origin` (`CORS_ORIGINS`).
-- Ограничение частоты запросов через Redis (`RATE_LIMIT_PER_MINUTE`). Если Redis недоступен, API продолжает работать без лимита и сообщает об этом в `/api/health`.
+- Ограничение частоты запросов через Redis (`RATE_LIMIT_PER_MINUTE`). Если Redis недоступен, API продолжает работать без общего лимита и сообщает об этом в `/api/health`; лимит входа и регистрации (`AUTH_RATE_LIMIT_PER_MINUTE`) переходит на счётчик в памяти.
+- Недоступность PostgreSQL — `503 UNAVAILABLE`, после возвращения базы API восстанавливается сам.
+- Журналы — JSON с request id и временем ответа, секреты вырезаются ([MONITORING.md](MONITORING.md)).
 - Все входные данные проверяются zod-схемами из `packages/shared`. Тело запроса ограничено 16 КБ.
 - Helmet, отключён `X-Powered-By`, ошибки отдаются в едином формате `{ error: { code, message, details? } }`.
 
@@ -56,9 +59,14 @@
 `infrastructure/docker-compose.prod.yml` поднимает:
 
 ```
-nginx :80 ──/api/*──► api :4000 ──► postgres, redis
-         └──/*─────► web :3000
+nginx :80/:443 ──/api/*──► api :4000 ──► postgres, redis
+               └──/*─────► web :3000
 migrate — применяет миграции и завершается; api стартует только после него
+certbot — продление сертификата Let's Encrypt
+backup  — pg_dump по расписанию с проверкой восстановлением
+monitor — проверка /api/health и оповещения
 ```
+
+Nginx работает в режиме `tls` (свой сертификат) или `behind-proxy` (HTTPS завершает внешний Caddy). Подробно: [DEPLOYMENT.md](DEPLOYMENT.md), [HTTPS_SETUP.md](HTTPS_SETUP.md), [DATABASE_BACKUPS.md](DATABASE_BACKUPS.md).
 
 Образы собираются из корневого `Dockerfile` (цели `api`, `web`, `migrate`). API запускается от пользователя `node`, с одними рабочими зависимостями (`pnpm deploy --prod`). Сайт — автономная сборка Next.js (`output: "standalone"`).

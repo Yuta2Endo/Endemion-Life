@@ -39,15 +39,29 @@ pnpm dev                    # API на :4000, сайт на :3000
 | `pnpm check` | lint + typecheck + test + build |
 | `pnpm infra:up` / `pnpm infra:down` | PostgreSQL и Redis для разработки |
 | `pnpm db:migrate` / `pnpm db:migrate:dev` | Применить миграции / создать новую |
+| `node infrastructure/scripts/load-test.mjs` | Нагрузочный тест API (`BASE_URL`, `USERS`, `DURATION`) |
 
 Перед первым запуском браузерных тестов установите браузер: `pnpm --filter @endemion/web exec playwright install chromium`.
 
 ## Рабочая среда
 
 ```bash
+cp infrastructure/env.production.example .env   # на сервере; заполнить
 docker compose -f infrastructure/docker-compose.prod.yml --env-file .env up -d --build
 ```
 
-Поднимаются PostgreSQL, Redis, миграции, API, сайт и Nginx на порту 80 (`HTTP_PORT`). В `.env` обязательны `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` и `CORS_ORIGINS` — адрес сайта, например `http://life.endemion.online`.
+Поднимаются PostgreSQL, Redis, миграции, API, сайт, Nginx с HTTPS (Let's Encrypt) или за внешним прокси, резервное копирование и монитор. Cookie сессии — только по HTTPS (`COOKIE_SECURE=true`).
 
-HTTPS появится на Stage 02. До этого `COOKIE_SECURE` по умолчанию `false`, иначе браузер не сохранит cookie сессии по HTTP.
+| Документ | О чём |
+| --- | --- |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Развёртывание и обновление |
+| [docs/PRODUCTION_CHECKLIST.md](docs/PRODUCTION_CHECKLIST.md) | Проверочный список перед запуском |
+| [docs/ROLLBACK.md](docs/ROLLBACK.md) | Откат кода, миграций, восстановления |
+| [docs/HTTPS_SETUP.md](docs/HTTPS_SETUP.md) | Сертификат, режимы tls и behind-proxy, HSTS |
+| [docs/DATABASE_BACKUPS.md](docs/DATABASE_BACKUPS.md) | Резервные копии и восстановление |
+| [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) | Аккаунты, сессии, перенос гостевых жизней |
+| [docs/MONITORING.md](docs/MONITORING.md) | Журналы, Sentry, healthcheck-и, оповещения |
+| [docs/LOAD_TEST_REPORT.md](docs/LOAD_TEST_REPORT.md) | Нагрузочный тест и тесты надёжности |
+| [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md) | Git, ветки, CI |
+
+Состояние подготовки к запуску: [STAGE_01_5_REPORT.md](STAGE_01_5_REPORT.md).

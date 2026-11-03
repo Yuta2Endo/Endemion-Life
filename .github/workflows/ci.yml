@@ -1,0 +1,175 @@
+# Проверка проекта при каждом push и pull request. Любая ошибка — красный статус.
+# Тесты работают на базах сервисных контейнеров GitHub Actions; рабочая база здесь недоступна и не используется
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: "24"
+  # Адреса баз только для CI: сервисные контейнеры ниже
+  DATABASE_URL: postgresql://endemion:ci_password@127.0.0.1:5432/endemion_life
+  DATABASE_URL_TEST: postgresql://endemion:ci_password@127.0.0.1:5432/endemion_life_test
+  SHADOW_DATABASE_URL: postgresql://endemion:ci_password@127.0.0.1:5432/endemion_life_shadow
+  REDIS_URL: redis://127.0.0.1:6379
+  CORS_ORIGINS: http://localhost:3000
+
+jobs:
+  checks:
+    name: Lint, typecheck, unit tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test
+      - name: Production build
+        run: pnpm build
+
+  api:
+    name: API tests and migrations (PostgreSQL, Redis)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: endemion
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: endemion_life
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U endemion -d endemion_life"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Create test and shadow databases
+        run: |
+          psql "postgresql://endemion:ci_password@127.0.0.1:5432/postgres" -v ON_ERROR_STOP=1 \
+            -c "CREATE DATABASE endemion_life_test" -c "CREATE DATABASE endemion_life_shadow"
+      - run: pnpm build:packages
+      - name: Migrations apply to an empty database
+        working-directory: packages/database
+        run: pnpm exec prisma migrate deploy
+      - name: Migrations match schema.prisma (no drift)
+        working-directory: packages/database
+        run: pnpm exec prisma migrate diff --from-migrations prisma/migrations --to-schema prisma/schema.prisma --exit-code
+      - name: Migration status
+        working-directory: packages/database
+        run: pnpm exec prisma migrate status
+      - name: API tests
+        run: pnpm test:api
+
+  e2e:
+    name: Browser tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: endemion
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: endemion_life
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U endemion -d endemion_life"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Apply migrations
+        run: pnpm db:migrate
+      - name: Install Chromium
+        run: pnpm --filter @endemion/web exec playwright install --with-deps chromium
+      - name: Playwright
+        run: pnpm test:e2e
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-traces
+          path: apps/web/test-results/
+          retention-days: 7
+
+  docker:
+    name: Docker build (${{ matrix.image.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - { name: migrate, file: Dockerfile, target: migrate }
+          - { name: api, file: Dockerfile, target: api }
+          - { name: web, file: Dockerfile, target: web }
+          - { name: nginx, file: infrastructure/nginx/Dockerfile, target: "" }
+          - { name: backup, file: infrastructure/backup/Dockerfile, target: "" }
+          - { name: monitor, file: infrastructure/monitor/Dockerfile, target: "" }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.image.file }}
+          target: ${{ matrix.image.target }}
+          push: false
+          tags: endemion-life-${{ matrix.image.name }}:ci
+          cache-from: type=gha,scope=${{ matrix.image.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}
+
+  compose:
+    name: Compose files are valid
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: docker-compose.prod.yml
+        run: docker compose -f infrastructure/docker-compose.prod.yml --env-file infrastructure/env.production.example config -q
+      - name: docker-compose.prod.yml + behind-proxy
+        run: PROXY_NETWORK=ci_proxy docker compose -f infrastructure/docker-compose.prod.yml -f infrastructure/docker-compose.behind-proxy.yml --env-file infrastructure/env.production.example config -q
+      - name: docker-compose.yml (development)
+        run: docker compose -f infrastructure/docker-compose.yml config -q
