@@ -17,6 +17,9 @@ export async function SiteHeader() {
           <Link href="/worlds" className="text-sm text-bone-300 transition hover:text-gold-200">
             {t("nav.worlds")}
           </Link>
+          <a href="https://endemion.online" className="hidden text-sm text-bone-300 transition hover:text-gold-200 sm:inline">
+            Endemion
+          </a>
           <AccountLink />
           <StoreBadge />
           <LanguageSwitch />
