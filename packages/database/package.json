@@ -12,7 +12,8 @@
   },
   "files": [
     "dist",
-    "prisma"
+    "prisma",
+    "prisma.config.ts"
   ],
   "scripts": {
     "db:generate": "prisma generate",

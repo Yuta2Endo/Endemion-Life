@@ -28,10 +28,16 @@ RUN pnpm build:packages \
  && pnpm --filter @endemion/web build
 # API с одними рабочими зависимостями: пакеты монорепозитория копируются внутрь
 RUN pnpm --filter @endemion/api deploy --prod --legacy /prod/api
+# Миграции: пакет базы с Prisma CLI (dev-зависимость), без остального монорепозитория
+RUN pnpm --filter @endemion/database deploy --legacy /prod/migrate
 
 # ---------- Миграции базы ----------
-FROM build AS migrate
-CMD ["pnpm", "--filter", "@endemion/database", "db:migrate"]
+FROM ${NODE_IMAGE} AS migrate
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=build --chown=node:node /prod/migrate ./
+USER node
+CMD ["node_modules/.bin/prisma", "migrate", "deploy"]
 
 # ---------- API ----------
 FROM ${NODE_IMAGE} AS api
@@ -42,6 +48,8 @@ WORKDIR /app
 COPY --from=build --chown=node:node /prod/api ./
 USER node
 EXPOSE 4000
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=4 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:4000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
 CMD ["node", "dist/main.js"]
 
 # ---------- Сайт ----------
@@ -56,4 +64,6 @@ COPY --from=build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/
 COPY --from=build --chown=node:node /app/apps/web/public ./apps/web/public
 USER node
 EXPOSE 3000
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=4 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"]
 CMD ["node", "apps/web/server.js"]

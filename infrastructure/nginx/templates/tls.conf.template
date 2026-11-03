@@ -1,0 +1,63 @@
+# Режим tls: свой сертификат Let's Encrypt для ${DOMAIN}. Файл создаёт nginx-entrypoint.sh
+include /opt/endemion/snippets/http-common.conf;
+
+limit_req_zone $binary_remote_addr zone=endemion_api:10m rate=${NGINX_API_RATE};
+limit_req_zone $binary_remote_addr zone=endemion_auth:10m rate=${NGINX_AUTH_RATE};
+
+# HTTP: проверка ACME для продления сертификата и перенаправление на HTTPS
+server {
+  listen 80;
+  listen [::]:80;
+  server_name ${DOMAIN};
+
+  location /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+  }
+
+  location = /nginx-health {
+    access_log off;
+    default_type text/plain;
+    return 200 "ok\n";
+  }
+
+  location / {
+    # Адрес назначения собирается из DOMAIN, а не из присланного Host
+    return 301 https://${DOMAIN}${HTTPS_PORT_SUFFIX}$request_uri;
+  }
+}
+
+server {
+  listen 443 ssl;
+  listen [::]:443 ssl;
+  http2 on;
+  server_name ${DOMAIN};
+
+  ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+  include /opt/endemion/snippets/tls-params.conf;
+
+  set $endemion_proto https;
+  include /opt/endemion/snippets/app.conf;
+}
+
+# Запросы к другим именам (сканеры по IP) отклоняются. Проверка здоровья контейнера идёт сюда
+server {
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name _;
+  location = /nginx-health {
+    access_log off;
+    default_type text/plain;
+    return 200 "ok\n";
+  }
+  location / {
+    return 444;
+  }
+}
+
+server {
+  listen 443 ssl default_server;
+  listen [::]:443 ssl default_server;
+  server_name _;
+  ssl_reject_handshake on;
+}

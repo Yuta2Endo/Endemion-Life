@@ -27,6 +27,6 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
 
 await app.listen(config.port, config.host);
 logger.log(
-  { msg: "API запущен", url: `http://${config.host}:${config.port}/api`, version: APP_VERSION, env: config.nodeEnv, mail: config.mail.driver, sentry, secureCookies: config.secureCookies },
+  { msg: "API запущен", url: `http://${config.host}:${config.port}/api`, version: APP_VERSION, env: config.nodeEnv, mail: config.mail.driver, sentry, httpsOnlySession: config.secureCookies },
   "Endemion Life"
 );

@@ -1,9 +1,9 @@
 import { createPrismaClient, type PrismaClient } from "@endemion/database";
-import { Inject, Injectable, type OnModuleDestroy } from "@nestjs/common";
+import { Inject, Injectable, type OnApplicationShutdown } from "@nestjs/common";
 import { APP_CONFIG, type AppConfig } from "../config.js";
 
 @Injectable()
-export class PrismaService implements OnModuleDestroy {
+export class PrismaService implements OnApplicationShutdown {
   readonly client: PrismaClient;
 
   constructor(@Inject(APP_CONFIG) config: AppConfig) {
@@ -19,7 +19,8 @@ export class PrismaService implements OnModuleDestroy {
     }
   }
 
-  async onModuleDestroy(): Promise<void> {
+  /** После закрытия HTTP-сервера (onModuleDestroy вызывается раньше): запросы, пришедшие во время остановки, не получат закрытый пул */
+  async onApplicationShutdown(): Promise<void> {
     await this.client.$disconnect();
   }
 }

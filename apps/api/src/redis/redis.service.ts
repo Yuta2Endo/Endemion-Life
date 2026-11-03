@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnApplicationShutdown, type OnModuleInit } from "@nestjs/common";
 import { Redis } from "ioredis";
 import { APP_CONFIG, type AppConfig } from "../config.js";
 
@@ -9,7 +9,7 @@ const PING_TIMEOUT_MS = 1000;
  * а клиент сам переподключается, когда Redis вернётся
  */
 @Injectable()
-export class RedisService implements OnModuleInit, OnModuleDestroy {
+export class RedisService implements OnModuleInit, OnApplicationShutdown {
   readonly client: Redis;
   private readonly logger = new Logger("Redis");
   private reportedDown = false;
@@ -60,7 +60,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  onModuleDestroy(): void {
+  onApplicationShutdown(): void {
     this.client.disconnect();
   }
 }

@@ -1,3 +1,4 @@
+import { Prisma } from "@endemion/database";
 import { GameRuleError } from "@endemion/game-core";
 import { NotFoundException } from "@nestjs/common";
 import { describe, expect, it } from "vitest";
@@ -21,6 +22,16 @@ describe("ответы с ошибкой", () => {
   it("повреждённое сохранение и неизвестные сбои не раскрывают подробностей", () => {
     expect(toErrorResponse(new GameRuleError("INVALID_SAVE", "stats"))).toEqual({ status: 500, body: { error: { code: "INTERNAL", message: "Ошибка сервера" } } });
     expect(toErrorResponse(new Error("connection string with password")).body.error.message).toBe("Ошибка сервера");
+  });
+
+  it("нет связи с базой — 503 UNAVAILABLE без подробностей; прочие ошибки Prisma — 500", () => {
+    const unreachable = new Prisma.PrismaClientKnownRequestError("Can't reach database server at postgres", { code: "P1001", clientVersion: "7" });
+    expect(toErrorResponse(unreachable)).toEqual({
+      status: 503,
+      body: { error: { code: "UNAVAILABLE", message: "Сервис временно недоступен, попробуйте через минуту" } }
+    });
+    expect(toErrorResponse(new Prisma.PrismaClientKnownRequestError("pool", { code: "P2024", clientVersion: "7" })).status).toBe(503);
+    expect(toErrorResponse(new Prisma.PrismaClientKnownRequestError("unique", { code: "P2002", clientVersion: "7" })).status).toBe(500);
   });
 
   it("404 Nest и ошибки разбора JSON", () => {

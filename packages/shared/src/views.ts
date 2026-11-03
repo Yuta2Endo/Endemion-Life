@@ -101,6 +101,7 @@ export type ApiErrorCode =
   | "INVALID_CODE"
   | "INVALID_TOKEN"
   | "ALREADY_SIGNED_IN"
+  | "UNAVAILABLE"
   | "INTERNAL";
 
 /** Сколько живых персонажей может быть у одного игрока одновременно */

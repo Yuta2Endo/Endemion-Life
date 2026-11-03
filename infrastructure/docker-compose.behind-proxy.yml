@@ -1,0 +1,23 @@
+# Дополнение для сервера, где порты 80 и 443 уже заняты внешним прокси (например, Caddy проекта Endemion).
+# HTTPS и сертификат обслуживает внешний прокси, Nginx Endemion Life не публикует порты наружу,
+# а подключается к сети Docker внешнего прокси. Запуск:
+#   docker compose -f infrastructure/docker-compose.prod.yml -f infrastructure/docker-compose.behind-proxy.yml --env-file .env up -d --build
+# В .env: NGINX_MODE=behind-proxy, PROXY_NETWORK=<сеть Docker внешнего прокси>, REAL_IP_FROM=<подсеть этой сети>.
+# Настройка Caddy: docs/HTTPS_SETUP.md
+services:
+  nginx:
+    ports: !reset []
+    networks:
+      default: {}
+      proxy:
+        aliases:
+          - endemion-life-nginx
+
+  # Сертификаты выпускает внешний прокси
+  certbot:
+    profiles: ["disabled"]
+
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:?Задайте PROXY_NETWORK — сеть Docker внешнего прокси}

@@ -1,0 +1,25 @@
+# Режим bootstrap: сертификата для ${DOMAIN} ещё нет. Порт 80 отвечает только на проверку ACME.
+# Сайт по HTTP не открывается: cookie сессии выставляются с флагом Secure и без HTTPS всё равно не работали бы
+include /opt/endemion/snippets/http-common.conf;
+
+server {
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name ${DOMAIN} _;
+
+  location /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+  }
+
+  location = /nginx-health {
+    access_log off;
+    default_type text/plain;
+    return 200 "ok\n";
+  }
+
+  location / {
+    access_log /dev/stdout endemion_json;
+    default_type text/plain;
+    return 503 "Endemion Life: HTTPS certificate is being issued. Try again in a few minutes.\n";
+  }
+}

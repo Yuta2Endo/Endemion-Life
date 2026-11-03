@@ -1,0 +1,25 @@
+# Режим behind-proxy: HTTPS и сертификат обслуживает внешний прокси (например, Caddy на том же сервере).
+# Nginx слушает только порт 80 во внутренней сети Docker и не публикует порты наружу
+include /opt/endemion/snippets/http-common.conf;
+
+limit_req_zone $binary_remote_addr zone=endemion_api:10m rate=${NGINX_API_RATE};
+limit_req_zone $binary_remote_addr zone=endemion_auth:10m rate=${NGINX_AUTH_RATE};
+
+server {
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name ${DOMAIN} _;
+
+  # Адрес клиента из X-Forwarded-For — только от прокси из REAL_IP_FROM
+  include /etc/nginx/snippets/real-ip.conf;
+
+  location = /nginx-health {
+    access_log off;
+    default_type text/plain;
+    return 200 "ok\n";
+  }
+
+  # Внешний прокси принимает только HTTPS, поэтому для приложения схема — https
+  set $endemion_proto https;
+  include /opt/endemion/snippets/app.conf;
+}
