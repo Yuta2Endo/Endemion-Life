@@ -10,9 +10,80 @@ export type Gender = (typeof GENDERS)[number];
 export const LIFE_STAGES = ["infant", "child", "teen", "adult", "middle", "elder"] as const;
 export type LifeStage = (typeof LIFE_STAGES)[number];
 
-/** Роли NPC в жизни персонажа */
-export const NPC_ROLES = ["father", "mother", "sibling", "grandparent", "friend", "rival", "mentor", "teacher", "partner", "spouse", "ex-partner", "child"] as const;
+/**
+ * Роли NPC в жизни персонажа. Роли родни (родители, дети, братья, внуки…) вычисляются из связей родства
+ * (family/kin.ts), остальные (друг, соперник, наставник…) — отношение к персонажу, его хранит сама роль
+ */
+export const NPC_ROLES = [
+  "father",
+  "mother",
+  "sibling",
+  "grandparent",
+  "friend",
+  "rival",
+  "mentor",
+  "teacher",
+  "partner",
+  "spouse",
+  "ex-partner",
+  "child",
+  // Stage 03: родня, которую приносят семьи NPC и смена поколений, и люди без связи с персонажем
+  "grandchild",
+  "nibling",
+  "pibling",
+  "cousin",
+  "in-law",
+  "relative",
+  "acquaintance"
+] as const;
 export type NpcRole = (typeof NPC_ROLES)[number];
+
+/** Статус жизни NPC. retired — жив, но больше не работает; missing — пропал, может вернуться */
+export const NPC_STATUSES = ["alive", "deceased", "missing", "retired"] as const;
+export type NpcStatus = (typeof NPC_STATUSES)[number];
+
+/** Причина смерти NPC. life — сыгранный персонаж рода: подробности в LineageState.lives */
+export const NPC_DEATH_CAUSES = ["old-age", "illness", "accident", "battle", "world", "event", "unknown", "life"] as const;
+export type DeathCauseId = (typeof NPC_DEATH_CAUSES)[number];
+
+/** Цель жизни NPC: от неё зависит, что он делает чаще */
+export const NPC_GOALS = ["family", "mastery", "rise", "knowledge", "wealth"] as const;
+export type NpcGoal = (typeof NPC_GOALS)[number];
+
+/** Что случилось в жизни NPC: короткий журнал для карточки человека */
+export const NPC_LOG_KINDS = [
+  "education",
+  "job",
+  "promotion",
+  "job-change",
+  "job-loss",
+  "mentor",
+  "class-up",
+  "class-down",
+  "married",
+  "divorced",
+  "widowed",
+  "child",
+  "adopted",
+  "ill",
+  "missing",
+  "returned",
+  "retired",
+  "goal",
+  "estate"
+] as const;
+export type NpcLogKind = (typeof NPC_LOG_KINDS)[number];
+
+export interface NpcLogEntry {
+  /** Возраст персонажа, когда это случилось */
+  at: number;
+  kind: NpcLogKind;
+  /** id профессии, сословия, NPC, цели или сумма — по виду записи */
+  value?: string;
+}
+
+/** Текущий персонаж в связях родства: в parents и spouseId NPC */
+export const SELF_ID = "self";
 
 /** Скрытые характеристики, которые игрок может узнать по ходу жизни */
 export const HIDDEN_KEYS = ["potential", "destiny", "familySecret"] as const;
@@ -82,6 +153,38 @@ export interface NpcState {
   skillId: string | null;
   /** Возраст персонажа при последнем личном общении: не чаще раза в год */
   interactedAt: number | null;
+
+  // Stage 03: собственная жизнь NPC и родство по id
+  /** Фамилия отдельно от имени: её получают дети. Пустая — у мира нет фамилий */
+  familyName: string;
+  status: NpcStatus;
+  /** Причина смерти. null — жив или пропал */
+  cause: DeathCauseId | null;
+  raceId: string;
+  /** Родители: id NPC или SELF_ID. Не больше двух */
+  parents: string[];
+  /** Супруг: id NPC или SELF_ID */
+  spouseId: string | null;
+  formerSpouses: string[];
+  /** Усыновлён: родители в parents приёмные */
+  adopted: boolean;
+  socialClassId: string;
+  /** Профессия из системы профессий мира (rpg/skills.ts). Занятие occupation — то, как NPC видят люди */
+  professionId: string | null;
+  /** Ступень в профессии: 0 — новичок, 3 — признанный мастер */
+  careerRank: number;
+  /** Ступень образования 0–3 (universe.education) */
+  educationTier: number;
+  factionId: string | null;
+  goal: NpcGoal | null;
+  /** Здоровье 0–100: болезни и раны его отнимают */
+  health: number;
+  wealth: number;
+  talentId: string | null;
+  weaknessId: string | null;
+  log: NpcLogEntry[];
+  /** Поколение рода, если этим человеком играли. null — обычный NPC */
+  lifeGen: number | null;
 }
 
 export interface BackgroundState {
@@ -119,6 +222,170 @@ export interface QuestState {
   id: string;
   /** Возраст, в котором задание выдано */
   since: number;
+}
+
+/** Записи хроники рода. Текст строится из вида записи и значений v (legacy/chronicle.ts): в сохранении нет готовых текстов */
+export const CHRONICLE_KINDS = [
+  "origin",
+  "birth",
+  "adoption",
+  "marriage",
+  "divorce",
+  "death",
+  "tragedy",
+  "missing",
+  "return",
+  "career",
+  "class",
+  "succession",
+  "inheritance",
+  "achievement",
+  "talent",
+  "secret",
+  "story"
+] as const;
+export type ChronicleKind = (typeof CHRONICLE_KINDS)[number];
+
+export interface ChronicleEntry {
+  id: number;
+  /** Год рода: 0 — год рождения основателя */
+  year: number;
+  /** Поколение, при котором это случилось */
+  gen: number;
+  kind: ChronicleKind;
+  /** Участники: id NPC. Текущий персонаж — SELF_ID; при передаче рода заменяется на id его записи NPC */
+  who: string[];
+  /** Имена (n0, n1…) и значения для текста на момент записи: имя не теряется, даже если человека уже нет в списке */
+  v: Record<string, string | number>;
+  /** Источник: id события, последствия или закона; "npc" — собственная жизнь NPC; "world" — законы мира */
+  src: string;
+  /** Связь с более ранней записью хроники (id) */
+  link: number | null;
+}
+
+/** Сыгранная жизнь рода: для хроники, итогов и древа */
+export interface LifeRecord {
+  gen: number;
+  name: string;
+  gender: Gender;
+  raceId: string;
+  originId: string;
+  /** Год рода, когда персонаж родился */
+  born: number;
+  age: number;
+  cause: LocalizedText | null;
+  professionId: string | null;
+  socialClassId: string;
+  /** Итоговая оценка жизни 0–100 */
+  score: number;
+  /** Звание по итогам жизни (legacy/summary.ts) */
+  titleId: string;
+  /** id записи NPC этого персонажа после передачи рода. null — род ещё не передан */
+  npcId: string | null;
+  /** Кому передан род (имя на момент передачи) */
+  heirName: string | null;
+}
+
+/** Нить рода: долг, враг, тайна, позор или знание, которые переходят к потомкам */
+export interface LineageThread {
+  id: string;
+  /** Год рода, когда нить появилась */
+  year: number;
+  gen: number;
+  src: string;
+}
+
+/** Последствие для рода: наступит в год year, даже если персонаж, который его вызвал, уже умер */
+export interface LineagePending {
+  id: string;
+  year: number;
+  src: string;
+  /** Запись хроники, из-за которой последствие появилось */
+  entry: number | null;
+}
+
+export interface AchievementRecord {
+  id: string;
+  gen: number;
+  age: number;
+}
+
+/** Что получил текущий персонаж от предшественника. null у основателя рода */
+export interface InheritanceRecord {
+  fromGen: number;
+  fromName: string;
+  /** id записи NPC предшественника */
+  fromNpcId: string;
+  /** Кем наследник приходился предшественнику (family/kin.ts KinRelation) */
+  relation: string;
+  /** Закон наследования мира (legacy/laws.ts) */
+  law: string;
+  /** Золото из наследства и собственное золото наследника */
+  wealth: number;
+  ownWealth: number;
+  /** Что ушло другим наследникам */
+  shares: { npcId: string; name: string; amount: number }[];
+  socialClassId: string;
+  /** Сословие перешло от предшественника (а не своё) */
+  classInherited: boolean;
+  reputation: number;
+  /** Проявившиеся фамильные таланты и слабости. Спящие — только числом */
+  talents: string[];
+  weaknesses: string[];
+  dormant: number;
+  /** Унаследованные флаги пути силы: корень духа, кровь клана… */
+  flags: string[];
+  /** Нити рода, перешедшие к наследнику (только открытые игроку) */
+  threads: string[];
+  /** Опека: наследник младше возраста, с которого закон мира отдаёт имущество в его руки */
+  controlAge: number;
+  guardianName: string | null;
+  /** Золото у опекуна: перейдёт к наследнику в controlAge */
+  held: number;
+}
+
+/** Род. Каждое поколение — отдельная жизнь (своё сохранение и откат), род переходит в неё целиком при наследовании */
+export interface LineageState {
+  name: string;
+  /** Поколение текущего персонажа: 1 — основатель */
+  generation: number;
+  /** Год рода, в который родился текущий персонаж. Возрасты NPC считаются от его рождения */
+  epoch: number;
+  /** Родители текущего персонажа (id NPC) */
+  selfParents: string[];
+  selfAdopted: boolean;
+  /** Слава рода: от -100 (позор) до 100 */
+  renown: number;
+  /** Слава рода в начале жизни текущего персонажа: по разнице видно, что он сделал для рода */
+  startRenown: number;
+  lives: LifeRecord[];
+  chronicle: ChronicleEntry[];
+  nextEntry: number;
+  /** Достижения сохраняются между поколениями: каждое — один раз на род */
+  achievements: AchievementRecord[];
+  /** В скольких поколениях проявился талант или слабость: с двух поколений это фамильная черта */
+  traits: { talents: Record<string, number>; weaknesses: Record<string, number> };
+  threads: LineageThread[];
+  pending: LineagePending[];
+  /** Сколько раз в роду произошёл сюжет поколений: сюжеты не повторяются без причины */
+  stories: Record<string, number>;
+  /** Род продолжен: id NPC наследника. Такую жизнь нельзя откатить и продолжить второй раз */
+  continuedBy: string | null;
+  /** Сколько записей хроники ушло в архив по лимиту размера сохранения */
+  archived: number;
+  inheritance: InheritanceRecord | null;
+  /** Имена людей, чьи карточки ушли в архив: записи истории и хроники по-прежнему показывают имя */
+  names: Record<string, string>;
+}
+
+/** Ключевое решение жизни: для итогов. Хранятся самые значимые */
+export interface MemoryEntry {
+  age: number;
+  eventId: string;
+  choiceId: string;
+  success: boolean | null;
+  /** Значимость: сколько изменений принесло решение */
+  weight: number;
 }
 
 export interface LifeState {
@@ -162,7 +429,10 @@ export type ChangeKind =
   | "profession"
   | "education"
   | "specialization"
-  | "hidden";
+  | "hidden"
+  | "renown"
+  | "achievement"
+  | "thread";
 
 /** Одно изменение персонажа в записи истории: «Сила +2», «Новый ранг: Закалка Ци» */
 export interface HistoryChange {
@@ -172,7 +442,7 @@ export interface HistoryChange {
   value?: number | string;
 }
 
-export type HistoryKind = "birth" | "event" | "year" | "death" | "restore" | "consequence" | "quest" | "people";
+export type HistoryKind = "birth" | "event" | "year" | "death" | "restore" | "consequence" | "quest" | "people" | "legacy";
 
 export interface HistoryEntry {
   /** Порядковый номер записи в этой жизни */
@@ -221,12 +491,19 @@ export interface GameState {
   questsDone: string[];
   /** Последние события: не повторяются подряд */
   recentEvents: string[];
+  /** Stage 03: род, хроника рода, достижения, наследование */
+  lineage: LineageState;
+  /** Ключевые решения этой жизни */
+  memory: MemoryEntry[];
 }
 
 export const INTERACTIONS = ["talk", "gift", "learn", "spar", "confront", "ask-help"] as const;
 export type InteractionId = (typeof INTERACTIONS)[number];
 
-/** advance: прожить до years лет подряд, остановка на первом событии. choose: ответ на событие. interact: личное общение с NPC */
+/**
+ * advance: прожить до years лет подряд, остановка на первом событии. choose: ответ на событие. interact: личное общение с NPC.
+ * Продолжение рода за наследника — отдельная операция (legacy/succession.ts): она создаёт новую жизнь, а не меняет эту
+ */
 export type GameAction =
   | { type: "advance"; years?: number }
   | { type: "choose"; choiceId: string }

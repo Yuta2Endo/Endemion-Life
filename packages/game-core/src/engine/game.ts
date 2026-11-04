@@ -10,6 +10,8 @@ import { lifespanOf } from "../character/derived.js";
 import { ageOneYear } from "../life/aging.js";
 import { DEATH_CAUSES } from "../life/death.js";
 import { STAGE_INFO, stageForAge } from "../life/stages.js";
+import { newLineage } from "../legacy/chronicle.js";
+import { checkAchievements, finishLife, foundLineage, lineageYearly, recordStory } from "../legacy/lineage.js";
 import { consequencesYearly } from "../narrative/consequences.js";
 import { findEvent, rememberEvent, selectEvent } from "../narrative/selection.js";
 import type { OutcomeDefinition } from "../narrative/types.js";
@@ -24,15 +26,19 @@ import {
   type GameAction,
   type GameState,
   type HistoryEntry,
-  type HistoryKind
+  type HistoryKind,
+  type MemoryEntry
 } from "../types.js";
 import { checkAll } from "./conditions.js";
 import { checkChance } from "./checks.js";
 import type { EngineContext } from "./context.js";
 import { applyEffects, isFatal, kill } from "./effects.js";
 
-/** 1 — Stage 01; 2 — Stage 02: семья, NPC, таланты, навыки, шкалы мира, последствия (перевод в save.ts) */
-export const SAVE_SCHEMA_VERSION = 2;
+/**
+ * 1 — Stage 01; 2 — Stage 02: семья, NPC, таланты, навыки, шкалы мира, последствия;
+ * 3 — Stage 03: родство по id, жизнь NPC, род, хроника рода, достижения, наследование (перевод в save.ts)
+ */
+export const SAVE_SCHEMA_VERSION = 3;
 export const SEED_MAX_LENGTH = 64;
 
 const YEAR_TEXTS: readonly LocalizedText[] = [
@@ -77,6 +83,21 @@ function deathEntry(ctx: EngineContext, entries: HistoryEntry[]): void {
   });
 }
 
+/** Ключевых решений в итогах жизни не больше стольких: остаются самые значимые */
+export const MAX_MEMORY = 12;
+
+function remember(state: GameState, entry: MemoryEntry): void {
+  state.memory.push(entry);
+  if (state.memory.length <= MAX_MEMORY) return;
+  // Убираем наименее значимое решение, при равной значимости — самое раннее
+  let weakest = 0;
+  state.memory.forEach((item, i) => {
+    const current = state.memory[weakest]!;
+    if (item.weight < current.weight) weakest = i;
+  });
+  state.memory.splice(weakest, 1);
+}
+
 /** Новая жизнь: персонаж, рождение и первая запись истории */
 export function newGame(input: NewGameInput): ActionResult {
   const seed = validateSeed(input.seed);
@@ -104,11 +125,15 @@ export function newGame(input: NewGameInput): ActionResult {
     consequences: [],
     quest: null,
     questsDone: [],
-    recentEvents: []
+    recentEvents: [],
+    lineage: newLineage(""),
+    memory: []
   };
   // Семья, таланты и тайны — из отдельного потока: броски Stage 01 и дальнейшая жизнь от них не сдвигаются
-  bornInto({ state, rng: Rng.fromSeed(seed, "birth"), universe }, generatedName);
+  state.lineage.selfParents = bornInto({ state, rng: Rng.fromSeed(seed, "birth"), universe }, generatedName);
+  state.lineage.name = state.background.familyName || character.name;
   const ctx: EngineContext = { state, rng, universe, changes: [] };
+  foundLineage(ctx);
   const race = universe.races.find((r) => r.id === character.raceId);
   const origin = universe.origins.find((o) => o.id === character.originId);
   const entries: HistoryEntry[] = [];
@@ -132,11 +157,21 @@ function emitter(ctx: EngineContext, entries: HistoryEntry[]): Emit {
   return (kind, title, text) => pushEntry(ctx, entries, kind, { title: named(ctx, title), text: named(ctx, text) });
 }
 
+/**
+ * Конец жизни: посмертные достижения, итог жизни в роду, фамильные черты. Запись смерти — последняя в хронике жизни,
+ * поэтому достижения пишутся до неё
+ */
+function ending(ctx: EngineContext, entries: HistoryEntry[]): void {
+  checkAchievements(ctx, (kind, title, text) => pushEntry(ctx, entries, kind, { title: named(ctx, title), text: named(ctx, text) }));
+  finishLife(ctx);
+  deathEntry(ctx, entries);
+}
+
 /** Раны после правил года (искажение ци, последствия) могут оказаться смертельными */
 function settle(ctx: EngineContext, entries: HistoryEntry[]): boolean {
   if (isFatal(ctx)) kill(ctx, DEATH_CAUSES.wounds);
   if (ctx.state.life.alive) return true;
-  deathEntry(ctx, entries);
+  ending(ctx, entries);
   return false;
 }
 
@@ -161,6 +196,7 @@ function advance(ctx: EngineContext, entries: HistoryEntry[], years: number): vo
     const emit = emitter(ctx, entries);
     questYearly(ctx, emit);
     consequencesYearly(ctx, emit);
+    lineageYearly(ctx, emit);
     if (!settle(ctx, entries)) return;
 
     const event = selectEvent(ctx);
@@ -196,8 +232,12 @@ function choose(ctx: EngineContext, entries: HistoryEntry[], choiceId: string): 
   state.pending = null;
   ctx.source = event.id;
   applyEffects(ctx, outcome.effects);
-  ctx.source = undefined;
   if (isFatal(ctx)) kill(ctx, DEATH_CAUSES.wounds);
+  recordStory(ctx, event, choice.id, check ? check.success : null);
+  ctx.source = undefined;
+  // Ключевое решение: чем больше оно изменило, тем значимее. Сюжеты рода и выборы с проверкой весят больше
+  const weight = ctx.changes.length + (check ? 2 : 0) + (event.kind === "legacy" ? 4 : 0) + (event.kind === "chain" || event.scheduledOnly ? 2 : 0);
+  remember(state, { age: state.life.age, eventId: event.id, choiceId: choice.id, success: check ? check.success : null, weight });
 
   const fields: Omit<HistoryEntry, "seq" | "age" | "kind" | "changes"> = {
     title: named(ctx, event.title),
@@ -209,7 +249,7 @@ function choose(ctx: EngineContext, entries: HistoryEntry[], choiceId: string): 
   };
   if (check) fields.check = check;
   pushEntry(ctx, entries, "event", fields);
-  if (!state.life.alive) deathEntry(ctx, entries);
+  if (!state.life.alive) ending(ctx, entries);
 }
 
 /** Личное общение с NPC: тратит год общения с этим человеком, но не время жизни */
@@ -278,6 +318,8 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
       throw new GameRuleError("INVALID_INPUT", "Неизвестное действие");
   }
 
+  // Достижения проверяются после каждого действия. Если жизнь закончилась, их уже проверил ending()
+  if (state.life.alive) checkAchievements(ctx, (kind, title, text) => pushEntry(ctx, entries, kind, { title: named(ctx, title), text: named(ctx, text) }));
   state.rngState = rng.state;
   state.version = current.version + 1;
   return { state, entries };

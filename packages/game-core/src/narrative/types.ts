@@ -1,6 +1,6 @@
 import type { LocalizedText } from "../i18n.js";
 import type { ResourceKey, StatKey } from "../stats.js";
-import type { HiddenKey, LifeStage, NpcRole } from "../types.js";
+import type { HiddenKey, LifeStage, NpcRole, UniverseId } from "../types.js";
 
 /** Роль NPC, любой из родителей или вся семья (родители, бабушки и дедушки, братья и сёстры, супруг, дети) */
 export type NpcRef = NpcRole | "parent" | "family";
@@ -25,8 +25,8 @@ export type Condition =
   | { type: "talent"; ids: string[]; has: boolean }
   /** Есть (или нет) одна из слабостей. Пустой список — любая слабость */
   | { type: "weakness"; ids: string[]; has: boolean }
-  /** Есть живой NPC этой роли */
-  | { type: "npc"; role: NpcRef; has: boolean }
+  /** Есть живой NPC этой роли (рядом, не пропавший). minAge и maxAge — возраст NPC */
+  | { type: "npc"; role: NpcRef; has: boolean; minAge?: number; maxAge?: number }
   /** Отношение самого близкого живого NPC этой роли */
   | { type: "affinity"; role: NpcRef; min?: number; max?: number }
   | { type: "meter"; id: string; min?: number; max?: number }
@@ -48,7 +48,21 @@ export type Condition =
   /** Идёт задание Системы */
   | { type: "quest"; active: boolean }
   /** До конца отпущенного срока осталось не больше max лет */
-  | { type: "yearsLeft"; max: number };
+  | { type: "yearsLeft"; max: number }
+  // Stage 03: род и поколения
+  /** Поколение персонажа: 1 — основатель рода */
+  | { type: "generation"; min?: number; max?: number }
+  /** Слава рода от -100 до 100 */
+  | { type: "renown"; min?: number; max?: number }
+  /** Нить рода: долг, враг, тайна, позор, знание… */
+  | { type: "thread"; id: string; has: boolean }
+  /** Сюжет поколений случался в роду меньше max раз */
+  | { type: "story"; id: string; max: number }
+  | { type: "world"; ids: UniverseId[] }
+  /** Кто-то из родни пропал без вести */
+  | { type: "missingKin"; has: boolean }
+  /** Персонаж сейчас в браке (супруг жив) */
+  | { type: "married"; has: boolean };
 
 /** Последствие выбора */
 export type Effect =
@@ -93,7 +107,21 @@ export type Effect =
   /** Отложенное последствие: наступит само через inYears лет */
   | { type: "later"; id: string; inYears: number }
   /** Игрок узнаёт скрытую характеристику */
-  | { type: "reveal"; key: HiddenKey };
+  | { type: "reveal"; key: HiddenKey }
+  // Stage 03: род и поколения
+  | { type: "renown"; delta: number }
+  /** Нить рода появляется или обрывается. Нити переходят к наследнику */
+  | { type: "thread"; id: string; add: boolean }
+  /** Последствие для рода: наступит через inYears лет, даже если персонаж умрёт раньше — тогда при потомке */
+  | { type: "lineageLater"; id: string; inYears: number }
+  /** Пропавший родственник возвращается */
+  | { type: "kinReturns" }
+  /** Родственник этой роли пропадает без вести */
+  | { type: "kinMissing"; role: NpcRef }
+  /** Сословие на ступень выше или ниже */
+  | { type: "classStep"; delta: 1 | -1 }
+  /** Персонаж берёт на воспитание ребёнка: приёмный сын или дочь, наследник наравне с родными */
+  | { type: "adopt" };
 
 export interface StatCheck {
   /** Берётся среднее по этим характеристикам (с бонусом ранга) */
@@ -126,7 +154,7 @@ export interface ChoiceDefinition {
 }
 
 /** Вид события: по нему видно, откуда оно взялось, и проверяется разнообразие контента */
-export type EventKind = "life" | "personal" | "family" | "age" | "stat" | "world" | "npc" | "chain" | "path";
+export type EventKind = "life" | "personal" | "family" | "age" | "stat" | "world" | "npc" | "chain" | "path" | "legacy";
 
 export interface EventDefinition {
   id: string;
@@ -142,6 +170,8 @@ export interface EventDefinition {
   /** Не чаще, чем раз в cooldown лет. Без cooldown и maxOccurrences — не чаще раза в DEFAULT_COOLDOWN лет */
   cooldown?: number;
   maxOccurrences?: number;
+  /** Сколько раз событие может случиться за всю историю рода (lineage.stories). Stage 03: сюжеты поколений не повторяются без причины */
+  lineageMax?: number;
   /** Событие приходит только как продолжение цепочки (Effect schedule) */
   scheduledOnly?: boolean;
   choices: ChoiceDefinition[];

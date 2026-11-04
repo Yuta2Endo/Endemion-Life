@@ -1,6 +1,7 @@
 // События, которые случаются в любой вселенной: детство, учёба, любовь, болезни, ремесло
 import { t } from "../i18n.js";
 import { check, fx, when } from "./dsl.js";
+import { LEGACY_EVENTS } from "../legacy/stories.js";
 import { PEOPLE_EVENTS } from "./people.js";
 import type { EventDefinition } from "./types.js";
 
@@ -360,5 +361,7 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
     ]
   },
   // Stage 02: семья, люди вокруг, возраст, таланты и тайны рода
-  ...PEOPLE_EVENTS
+  ...PEOPLE_EVENTS,
+  // Stage 03: сюжеты рода и поколений
+  ...LEGACY_EVENTS
 ];

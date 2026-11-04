@@ -1,0 +1,231 @@
+{
+ "schemaVersion": 2,
+ "seed": "v2-murim-young",
+ "rngState": 4152987645,
+ "version": 13,
+ "character": {
+  "name": "Юэ Цин клана Лун",
+  "gender": "female",
+  "universeId": "murim",
+  "raceId": "human",
+  "originId": "physician-child",
+  "temperamentId": "ambitious",
+  "stats": {
+   "strength": 11,
+   "intelligence": 10,
+   "agility": 8,
+   "vitality": 7,
+   "wisdom": 12,
+   "charisma": 9,
+   "luck": 9,
+   "willpower": 18
+  },
+  "resources": {
+   "health": 68,
+   "energy": 96,
+   "mana": 54,
+   "stamina": 76
+  },
+  "level": 1,
+  "xp": 20,
+  "reputation": 0,
+  "karma": 5,
+  "wealth": 18,
+  "abilities": [],
+  "track": {
+   "points": 0,
+   "rank": 0
+  },
+  "socialClassId": "commoner",
+  "talents": [],
+  "weaknesses": [],
+  "skills": {
+   "medicine": 10
+  },
+  "professionId": null,
+  "educationId": null,
+  "specializationId": null,
+  "factions": {}
+ },
+ "life": {
+  "age": 7,
+  "stage": "child",
+  "alive": true,
+  "deathAge": null,
+  "deathCause": null
+ },
+ "flags": [
+  "childhood-friend"
+ ],
+ "occurrences": {
+  "common.first-steps": 1,
+  "common.night-fear": 1,
+  "common.first-friend": 1,
+  "common.fever": 1,
+  "common.study-or-play": 1
+ },
+ "lastSeen": {
+  "common.first-steps": 2,
+  "common.night-fear": 3,
+  "common.first-friend": 4,
+  "common.fever": 5,
+  "common.study-or-play": 6
+ },
+ "pending": null,
+ "scheduled": [],
+ "nextSeq": 14,
+ "background": {
+  "familyName": "клана Лун",
+  "birthplace": {
+   "ru": "пристань у Третьей реки",
+   "en": "a pier on the Third River"
+  },
+  "omen": {
+   "ru": "Странствующий монах оставил у дверей чашу риса и ушёл.",
+   "en": "A wandering monk left a bowl of rice at the door and walked away."
+  },
+  "familyHistory": {
+   "ru": "Род лекарей лечит всех: праведных, тёмных и бандитов. Поэтому их не трогает никто.",
+   "en": "A line of physicians treats everyone: righteous, demonic and bandits alike. That is why no one touches them."
+  },
+  "biography": [
+   {
+    "ru": "Юэ Цин клана Лун родилась: пристань у Третьей реки. Странствующий монах оставил у дверей чашу риса и ушёл.",
+    "en": "Юэ Цин клана Лун was born: a pier on the Third River. A wandering monk left a bowl of rice at the door and walked away."
+   },
+   {
+    "ru": "Род лекарей лечит всех: праведных, тёмных и бандитов. Поэтому их не трогает никто.",
+    "en": "A line of physicians treats everyone: righteous, demonic and bandits alike. That is why no one touches them."
+   },
+   {
+    "ru": "Отец — Ло Тянь клана Лун, торговка лепёшками. Мать — Шэнь Юй клана Лун, торговка лепёшками.",
+    "en": "Father: Ло Тянь клана Лун, flatbread seller. Mother: Шэнь Юй клана Лун, flatbread seller."
+   },
+   {
+    "ru": "Старая повитуха долго смотрит на ребёнка и говорит, что в нём спит что-то большее.",
+    "en": "The old midwife studies the child for a long time and says something greater sleeps within."
+   }
+  ]
+ },
+ "hidden": {
+  "potential": 7,
+  "destiny": 4,
+  "dormantTalents": [
+   "sword-heart",
+   "meridian-prodigy"
+  ],
+  "familySecret": null,
+  "revealed": []
+ },
+ "npcs": [
+  {
+   "id": "n1",
+   "role": "father",
+   "name": "Ло Тянь клана Лун",
+   "gender": "male",
+   "bornAt": -28,
+   "temperamentId": "brave",
+   "traitId": "cheerful",
+   "occupation": {
+    "ru": "Торговка лепёшками",
+    "en": "Flatbread seller"
+   },
+   "bio": {
+    "ru": "Торговка лепёшками. Смех слышно издалека. Характер: отважный.",
+    "en": "Flatbread seller. Their laughter carries far. Temperament: brave."
+   },
+   "affinity": 47,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 0,
+   "power": 31,
+   "skillId": null,
+   "interactedAt": null
+  },
+  {
+   "id": "n2",
+   "role": "mother",
+   "name": "Шэнь Юй клана Лун",
+   "gender": "female",
+   "bornAt": -21,
+   "temperamentId": "curious",
+   "traitId": "wise",
+   "occupation": {
+    "ru": "Торговка лепёшками",
+    "en": "Flatbread seller"
+   },
+   "bio": {
+    "ru": "Торговка лепёшками. Говорит мало, но к словам прислушиваются. Характер: любопытный.",
+    "en": "Flatbread seller. Says little, but people listen. Temperament: curious."
+   },
+   "affinity": 66,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 0,
+   "power": 19,
+   "skillId": "craft",
+   "interactedAt": null
+  },
+  {
+   "id": "n3",
+   "role": "grandparent",
+   "name": "Вэй Ян клана Лун",
+   "gender": "male",
+   "bornAt": -52,
+   "temperamentId": "curious",
+   "traitId": "caring",
+   "occupation": {
+    "ru": "Торговка лепёшками",
+    "en": "Flatbread seller"
+   },
+   "bio": {
+    "ru": "Торговка лепёшками. Всегда замечает, когда другим плохо. Характер: любопытный.",
+    "en": "Flatbread seller. Always notices when others are hurting. Temperament: curious."
+   },
+   "affinity": 62,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 0,
+   "power": 15,
+   "skillId": "persuasion",
+   "interactedAt": null
+  },
+  {
+   "id": "n4",
+   "role": "friend",
+   "name": "Бай Лин клана Лун",
+   "gender": "female",
+   "bornAt": 2,
+   "temperamentId": "calm",
+   "traitId": "cheerful",
+   "occupation": {
+    "ru": "Мальчишка из Секты нищих",
+    "en": "Boy from the Beggars' Sect"
+   },
+   "bio": {
+    "ru": "Мальчишка из Секты нищих. Смех слышно издалека. Характер: спокойный.",
+    "en": "Boy from the Beggars' Sect. Their laughter carries far. Temperament: calm."
+   },
+   "affinity": 43,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 4,
+   "power": 11,
+   "skillId": "craft",
+   "interactedAt": null
+  }
+ ],
+ "nextNpcId": 5,
+ "meters": {
+  "qi-deviation": 0
+ },
+ "consequences": [],
+ "quest": null,
+ "questsDone": [],
+ "recentEvents": [
+  "common.study-or-play",
+  "common.fever",
+  "common.first-friend",
+  "common.night-fear"
+ ]
+}

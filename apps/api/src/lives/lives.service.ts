@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@endemion/database";
-import { applyAction, newGame, parseSave, restoreState, type GameState, type HistoryEntry } from "@endemion/game-core";
+import { applyAction, newGame, parseSave, presentLineage, restoreState, succeed, type GameState, type HistoryEntry, type LineageView } from "@endemion/game-core";
 import {
   MAX_ALIVE_LIVES,
   lifeStatus,
@@ -16,7 +16,9 @@ import {
   type LifeView,
   type RestoreRequest,
   type SaveReason,
-  type SaveView
+  type SaveView,
+  type SuccessionRequest,
+  type SuccessionResponse
 } from "@endemion/shared";
 import { Inject, Injectable } from "@nestjs/common";
 import { ApiError } from "../common/api-error.js";
@@ -32,8 +34,11 @@ interface LifeRow {
   id: string;
   version: number;
   state: unknown;
+  lineageId: string | null;
   createdAt: Date;
   updatedAt: Date;
+  /** id жизни наследника, если род продолжен (обратная связь predecessor_id) */
+  predecessorOf: string | null;
 }
 
 function meta(row: Pick<LifeRow, "id" | "createdAt" | "updatedAt">): LifeMeta {
@@ -90,8 +95,8 @@ export class LivesService {
     const locked = await tx.$queryRaw<{ id: string }[]>`
       SELECT id FROM lives WHERE id = ${lifeId}::uuid AND player_id = ${playerId}::uuid FOR UPDATE`;
     if (locked.length === 0) throw new ApiError(404, "NOT_FOUND", "Жизнь не найдена");
-    const row = await tx.life.findUniqueOrThrow({ where: { id: lifeId } });
-    return row;
+    const row = await tx.life.findUniqueOrThrow({ where: { id: lifeId }, include: { successor: { select: { id: true } } } });
+    return { ...row, predecessorOf: row.successor?.id ?? null };
   }
 
   private checkVersion(row: LifeRow, expectedVersion: number): void {
@@ -161,6 +166,76 @@ export class LivesService {
     });
   }
 
+  /**
+   * Продолжить род за наследника. Клиент называет только наследника; кто может наследовать, наследство и новая жизнь
+   * считаются здесь. В одной транзакции: жизнь умершего отмечается продолженной (новая версия и снимок),
+   * создаётся жизнь наследника, записывается действие. Повтор с тем же actionId возвращает ту же новую жизнь;
+   * второго наследника не будет: род отмечен в состоянии, а predecessor_id уникален
+   */
+  async succeed(playerId: string, lifeId: string, request: SuccessionRequest): Promise<SuccessionResponse> {
+    return this.db.$transaction(async (tx) => {
+      const row = await this.lockLife(tx, playerId, lifeId);
+
+      const previous = await tx.gameAction.findUnique({ where: { lifeId_actionId: { lifeId, actionId: request.actionId } } });
+      if (previous) {
+        const payload = previous.payload as { type?: string; heirId?: string };
+        if (previous.type !== "succeed" || previous.fromVersion !== request.expectedVersion || payload.heirId !== request.heirId) {
+          throw new ApiError(409, "ACTION_ID_REUSED", "Этот actionId уже использован для другого действия");
+        }
+        const successor = await tx.life.findUnique({ where: { predecessorId: lifeId } });
+        if (!successor) throw new ApiError(409, "LINEAGE_CONTINUED", "Род уже продолжен");
+        return {
+          previous: toLifeView(meta(row), stateOf(row)),
+          life: toLifeView(meta(successor), stateOf(successor)),
+          entries: previous.entries as unknown as HistoryEntry[],
+          replayed: true
+        };
+      }
+
+      this.checkVersion(row, request.expectedVersion);
+      const alive = await tx.life.count({ where: { playerId, status: "alive" } });
+      if (alive >= MAX_ALIVE_LIVES) throw new ApiError(409, "LIMIT_REACHED", `Одновременно можно вести не больше ${MAX_ALIVE_LIVES} жизней`);
+      // Случайная соль сервера: seed наследника нельзя вычислить из сохранения предка
+      const result = succeed(stateOf(row), request.heirId, randomUUID());
+
+      const updated = await tx.life.update({ where: { id: lifeId }, data: lifeColumns(result.previous) });
+      await this.writeSnapshot(tx, lifeId, result.previous, "action");
+      const created = await tx.life.create({
+        data: {
+          playerId,
+          universeId: result.state.character.universeId,
+          seed: result.state.seed,
+          lineageId: row.lineageId ?? row.id,
+          generation: result.state.lineage.generation,
+          predecessorId: lifeId,
+          ...lifeColumns(result.state)
+        }
+      });
+      await this.writeEntries(tx, created.id, result.entries);
+      await this.writeSnapshot(tx, created.id, result.state, "create");
+      await tx.gameAction.create({
+        data: {
+          lifeId,
+          playerId,
+          actionId: request.actionId,
+          type: "succeed",
+          payload: json({ type: "succeed", heirId: request.heirId }),
+          fromVersion: row.version,
+          toVersion: result.previous.version,
+          entries: json(result.entries)
+        }
+      });
+      return { previous: toLifeView(meta(updated), result.previous), life: toLifeView(meta(created), result.state), entries: result.entries, replayed: false };
+    });
+  }
+
+  /** Род целиком: хроника, древо, достижения. Отдельный запрос: в ответы на действия хроника рода не входит */
+  async lineage(playerId: string, lifeId: string): Promise<LineageView> {
+    const row = await this.db.life.findFirst({ where: { id: lifeId, playerId } });
+    if (!row) throw new ApiError(404, "NOT_FOUND", "Жизнь не найдена");
+    return presentLineage(stateOf(row));
+  }
+
   async history(playerId: string, lifeId: string, query: HistoryQuery): Promise<HistoryPage> {
     const owned = await this.db.life.count({ where: { id: lifeId, playerId } });
     if (!owned) throw new ApiError(404, "NOT_FOUND", "Жизнь не найдена");
@@ -198,6 +273,10 @@ export class LivesService {
       const row = await this.lockLife(tx, playerId, lifeId);
       this.checkVersion(row, request.expectedVersion);
       if (request.version >= row.version) throw new ApiError(400, "VALIDATION", "Вернуться можно только к прошлой версии");
+      // Род уже продолжен наследником: откат этой жизни дал бы второй вариант истории и второго наследника
+      if (row.predecessorOf !== null || stateOf(row).lineage.continuedBy !== null) {
+        throw new ApiError(409, "LINEAGE_CONTINUED", "Род уже продолжен наследником: эту жизнь нельзя вернуть назад");
+      }
       const snapshot = await tx.lifeSnapshot.findUnique({ where: { lifeId_version: { lifeId, version: request.version } } });
       if (!snapshot) throw new ApiError(404, "NOT_FOUND", "Такой версии сохранения нет");
 

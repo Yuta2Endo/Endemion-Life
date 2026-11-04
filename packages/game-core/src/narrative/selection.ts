@@ -51,6 +51,7 @@ export function isEligible(state: GameState, event: EventDefinition): boolean {
   if (event.stages && !event.stages.includes(stage)) return false;
   const seen = state.occurrences[event.id] ?? 0;
   if (event.maxOccurrences !== undefined && seen >= event.maxOccurrences) return false;
+  if (event.lineageMax !== undefined && (state.lineage.stories[event.id] ?? 0) >= event.lineageMax) return false;
   const last = state.lastSeen[event.id];
   const cooldown = event.cooldown ?? (event.maxOccurrences === undefined ? DEFAULT_COOLDOWN : undefined);
   if (cooldown !== undefined && last !== undefined && age - last < cooldown) return false;

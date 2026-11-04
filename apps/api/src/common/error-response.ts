@@ -11,7 +11,10 @@ const GAME_STATUS: Readonly<Record<GameErrorCode, number>> = {
   LIFE_ENDED: 409,
   EVENT_PENDING: 409,
   NO_PENDING_EVENT: 409,
-  INVALID_SAVE: 500
+  INVALID_SAVE: 500,
+  LIFE_NOT_ENDED: 409,
+  HEIR_LOCKED: 409,
+  LINEAGE_CONTINUED: 409
 };
 
 function codeForStatus(status: number): ApiErrorCode {

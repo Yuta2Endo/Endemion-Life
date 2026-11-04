@@ -1,5 +1,6 @@
 // Подписи для изменений персонажа в истории и итогах выбора
 import {
+  findAchievement,
   findEducation,
   findProfession,
   findSkill,
@@ -9,6 +10,7 @@ import {
   RESOURCE_INFO,
   roleName,
   STAT_INFO,
+  THREADS,
   type HistoryChange,
   type Locale,
   type NpcRole,
@@ -83,6 +85,8 @@ export function formatChange(change: HistoryChange, universeId: UniverseId, loca
       const name = people[change.key ?? ""] ?? "?";
       if (change.value === "met") return { text: msg(locale, "change.met", { name }), tone: "gold" };
       if (change.value === "died") return { text: msg(locale, "change.died", { name }), tone: "bad" };
+      if (change.value === "missing") return { text: msg(locale, "change.missing", { name }), tone: "bad" };
+      if (change.value === "returned") return { text: msg(locale, "change.returned", { name }), tone: "good" };
       return { text: msg(locale, "change.role", { name, role: roleName(change.value as NpcRole, "male")[locale].toLowerCase() }), tone: "gold" };
     }
     case "meter": {
@@ -114,6 +118,17 @@ export function formatChange(change: HistoryChange, universeId: UniverseId, loca
     case "hidden": {
       const key = change.value === "potential" || change.value === "destiny" || change.value === "familySecret" ? change.value : null;
       return key ? { text: msg(locale, `change.hidden.${key}`), tone: "gold" } : null;
+    }
+    case "renown":
+      return { text: msg(locale, "change.renown", { delta: signed(delta) }), tone };
+    case "achievement": {
+      const achievement = findAchievement(String(change.value));
+      return achievement ? { text: msg(locale, "change.achievement", { name: achievement.name[locale] }), tone: "gold" } : null;
+    }
+    case "thread": {
+      const thread = THREADS[change.key ?? ""];
+      if (!thread) return null;
+      return change.value === "closed" ? { text: msg(locale, "change.threadClosed", { name: thread.name[locale] }), tone: "good" } : { text: msg(locale, "change.threadAdded", { name: thread.name[locale] }), tone: "neutral" };
     }
   }
 }

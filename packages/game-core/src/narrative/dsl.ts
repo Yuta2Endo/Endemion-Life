@@ -1,7 +1,7 @@
 // Короткие конструкторы для описания контента: события вселенных читаются как сценарий, а не как JSON
 import type { LocalizedText } from "../i18n.js";
 import type { ResourceKey, StatKey } from "../stats.js";
-import type { HiddenKey, NpcRole } from "../types.js";
+import type { HiddenKey, NpcRole, UniverseId } from "../types.js";
 import type { Condition, Effect, NpcRef, StatCheck } from "./types.js";
 
 export const fx = {
@@ -36,7 +36,14 @@ export const fx = {
   educationTier: (tier: number): Effect => ({ type: "educationTier", tier }),
   specialization: (id: string): Effect => ({ type: "specialization", id }),
   later: (id: string, inYears: number): Effect => ({ type: "later", id, inYears }),
-  reveal: (key: HiddenKey): Effect => ({ type: "reveal", key })
+  reveal: (key: HiddenKey): Effect => ({ type: "reveal", key }),
+  renown: (delta: number): Effect => ({ type: "renown", delta }),
+  thread: (id: string, add = true): Effect => ({ type: "thread", id, add }),
+  lineageLater: (id: string, inYears: number): Effect => ({ type: "lineageLater", id, inYears }),
+  kinReturns: (): Effect => ({ type: "kinReturns" }),
+  kinMissing: (role: NpcRef): Effect => ({ type: "kinMissing", role }),
+  classStep: (delta: 1 | -1): Effect => ({ type: "classStep", delta }),
+  adopt: (): Effect => ({ type: "adopt" })
 };
 
 export const when = {
@@ -59,6 +66,17 @@ export const when = {
   weakness: (...ids: string[]): Condition => ({ type: "weakness", ids, has: true }),
   npc: (role: NpcRef): Condition => ({ type: "npc", role, has: true }),
   noNpc: (role: NpcRef): Condition => ({ type: "npc", role, has: false }),
+  /** Есть живой NPC роли в этом возрасте */
+  npcAged: (role: NpcRef, minAge?: number, maxAge?: number): Condition => ({ type: "npc", role, has: true, ...(minAge === undefined ? {} : { minAge }), ...(maxAge === undefined ? {} : { maxAge }) }),
+  generation: (min: number, max?: number): Condition => ({ type: "generation", min, ...(max === undefined ? {} : { max }) }),
+  renown: (min: number): Condition => ({ type: "renown", min }),
+  renownAtMost: (max: number): Condition => ({ type: "renown", max }),
+  thread: (id: string): Condition => ({ type: "thread", id, has: true }),
+  noThread: (id: string): Condition => ({ type: "thread", id, has: false }),
+  story: (id: string, max = 1): Condition => ({ type: "story", id, max }),
+  world: (...ids: UniverseId[]): Condition => ({ type: "world", ids }),
+  missingKin: (has = true): Condition => ({ type: "missingKin", has }),
+  married: (has = true): Condition => ({ type: "married", has }),
   affinity: (role: NpcRef, min: number): Condition => ({ type: "affinity", role, min }),
   affinityAtMost: (role: NpcRef, max: number): Condition => ({ type: "affinity", role, max }),
   meter: (id: string, min: number): Condition => ({ type: "meter", id, min }),

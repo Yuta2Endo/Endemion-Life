@@ -1,5 +1,6 @@
 import { effectiveStats, isTrackReady, lifespanOf } from "../character/derived.js";
 import { livingWith, roleName } from "../character/npcs.js";
+import { isKin, selfSpouse } from "../family/kin.js";
 import { TEMPERAMENTS } from "../character/temperaments.js";
 import { t, type LocalizedText } from "../i18n.js";
 import type { Condition, NpcRef } from "../narrative/types.js";
@@ -51,8 +52,11 @@ export function checkCondition(state: GameState, condition: Condition): boolean 
       return anyOf(c.talents, condition.ids) === condition.has;
     case "weakness":
       return anyOf(c.weaknesses, condition.ids) === condition.has;
-    case "npc":
-      return livingWith(state, condition.role).length > 0 === condition.has;
+    case "npc": {
+      const age = state.life.age;
+      const found = livingWith(state, condition.role).some((npc) => inRange(age - npc.bornAt, condition.minAge, condition.maxAge));
+      return found === condition.has;
+    }
     case "affinity": {
       const npc = livingWith(state, condition.role)[0];
       return npc !== undefined && inRange(npc.affinity, condition.min, condition.max);
@@ -85,6 +89,20 @@ export function checkCondition(state: GameState, condition: Condition): boolean 
       return state.quest !== null === condition.active;
     case "yearsLeft":
       return lifespanOf(c) - state.life.age <= condition.max;
+    case "generation":
+      return inRange(state.lineage.generation, condition.min, condition.max);
+    case "renown":
+      return inRange(state.lineage.renown, condition.min, condition.max);
+    case "thread":
+      return state.lineage.threads.some((thread) => thread.id === condition.id) === condition.has;
+    case "story":
+      return (state.lineage.stories[condition.id] ?? 0) < condition.max;
+    case "world":
+      return condition.ids.includes(c.universeId);
+    case "missingKin":
+      return state.npcs.some((npc) => npc.alive && npc.status === "missing" && isKin(npc)) === condition.has;
+    case "married":
+      return (selfSpouse(state) !== undefined) === condition.has;
   }
 }
 
@@ -205,5 +223,19 @@ export function describeCondition(condition: Condition, universe: UniverseDefini
       return condition.active ? t("Нужно задание Системы", "Requires a System quest") : t("Задание уже идёт", "A quest is already active");
     case "yearsLeft":
       return t("Ещё не время", "Not yet time");
+    case "generation":
+      return t("Не то поколение рода", "Not this generation of the family");
+    case "renown":
+      return condition.min !== undefined ? join(t("Слава рода", "Family renown"), rangeText(condition.min)) : t("Род слишком знаменит", "The family is too renowned");
+    case "thread":
+      return t("Прошлое рода распорядилось иначе", "The family's past decided otherwise");
+    case "story":
+      return t("Эта история уже случилась в роду", "This story has already happened in the family");
+    case "world":
+      return t("Не в этом мире", "Not in this world");
+    case "missingKin":
+      return condition.has ? t("Нужен пропавший родственник", "Requires a missing relative") : t("Кто-то из родни пропал", "A relative is missing");
+    case "married":
+      return condition.has ? t("Нужно быть в браке", "Requires being married") : t("Уже в браке", "Already married");
   }
 }

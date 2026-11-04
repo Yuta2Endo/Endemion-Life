@@ -1,6 +1,7 @@
 // Ответы API. Представление жизни строится одной функцией и на сервере, и в офлайн-режиме сайта
 import {
   presentEvent,
+  presentLegacy,
   presentProfile,
   summarizeCharacter,
   type CharacterState,
@@ -9,8 +10,10 @@ import {
   type GameErrorCode,
   type GameState,
   type HistoryEntry,
+  type LegacyBrief,
   type LifeProfile,
   type LifeState,
+  type LineageView,
   type OptionView,
   type UniverseId,
   type UniverseSummary
@@ -37,6 +40,8 @@ export interface LifeView extends LifeMeta {
   pendingEvent: EventView | null;
   /** Stage 02: биография, семья и люди вокруг, шкалы мира, задание Системы. Скрытое — только после раскрытия */
   profile: LifeProfile;
+  /** Stage 03: род, наследство, итоги жизни и наследники (когда жизнь закончилась) */
+  legacy: LegacyBrief;
 }
 
 export interface LifeListItem extends LifeMeta {
@@ -46,6 +51,23 @@ export interface LifeListItem extends LifeMeta {
   level: number;
   status: LifeStatus;
   version: number;
+  /** Stage 03: поколение рода и его имя */
+  generation: number;
+  lineageName: string;
+  /** Род продолжен наследником: жизнь закрыта для продолжения и отката */
+  continued: boolean;
+}
+
+/** Ответ на продолжение рода: закрытая жизнь умершего и новая жизнь наследника */
+export interface SuccessionResponse {
+  previous: LifeView;
+  life: LifeView;
+  entries: HistoryEntry[];
+  replayed: boolean;
+}
+
+export interface LineageResponse {
+  lineage: LineageView;
 }
 
 export interface ActionResponse {
@@ -130,7 +152,8 @@ export function toLifeView(meta: LifeMeta, state: GameState): LifeView {
     summary: summarizeCharacter(state),
     life: state.life,
     pendingEvent: presentEvent(state),
-    profile: presentProfile(state)
+    profile: presentProfile(state),
+    legacy: presentLegacy(state)
   };
 }
 
@@ -142,6 +165,9 @@ export function toLifeListItem(meta: LifeMeta, state: GameState): LifeListItem {
     age: state.life.age,
     level: state.character.level,
     status: lifeStatus(state),
-    version: state.version
+    version: state.version,
+    generation: state.lineage.generation,
+    lineageName: state.lineage.name,
+    continued: state.lineage.continuedBy !== null
   };
 }

@@ -1,6 +1,6 @@
 // Локальное сохранение прототипа: вся жизнь в localStorage, правила — тот же game-core, что и на сервере.
 // Это запасной режим без сервера: браузеру можно не доверять, поэтому рейтинги и награды на нём строить нельзя
-import { applyAction, GameRuleError, newGame, parseSave, restoreState, type GameAction, type GameState, type HistoryEntry } from "@endemion/game-core";
+import { applyAction, GameRuleError, newGame, parseSave, presentLineage, restoreState, succeed, type GameAction, type GameState, type HistoryEntry } from "@endemion/game-core";
 import { createLifeSchema, toLifeListItem, toLifeView, type LifeMeta, type SaveReason, type SaveView } from "@endemion/shared";
 import { ClientError } from "../api";
 import { LOCAL_ID_PREFIX, type GameStore } from "./types";
@@ -162,6 +162,7 @@ export const localStore: GameStore = {
     if (record.state.version !== expectedVersion) throw new ClientError(409, "VERSION_CONFLICT", "Состояние жизни изменилось");
     const target = record.snapshots.find((s) => s.version === version);
     if (!target || version >= record.state.version) throw new ClientError(404, "NOT_FOUND", "Такой версии сохранения нет");
+    if (record.state.lineage.continuedBy !== null) throw new ClientError(409, "LINEAGE_CONTINUED", "Род уже продолжен наследником: эту жизнь нельзя вернуть назад");
     const { state, entries } = restoreState(parseSave(target.state), record.state.version);
     const updated: LocalRecord = {
       ...record,
@@ -172,5 +173,35 @@ export const localStore: GameStore = {
     };
     write(updated);
     return { life: toLifeView(meta(updated), state), entries, replayed: false };
+  },
+
+  async succeed(id, expectedVersion, heirId) {
+    const record = read(id);
+    if (record.state.version !== expectedVersion) throw new ClientError(409, "VERSION_CONFLICT", "Состояние жизни изменилось");
+    const result = rules(() => succeed(record.state, heirId, crypto.randomUUID()));
+    const now = new Date().toISOString();
+    const previous: LocalRecord = {
+      ...record,
+      updatedAt: now,
+      state: result.previous,
+      snapshots: keepSnapshots([...record.snapshots, snapshot(result.previous, "action")])
+    };
+    const created: LocalRecord = {
+      id: `${LOCAL_ID_PREFIX}${crypto.randomUUID()}`,
+      createdAt: now,
+      updatedAt: now,
+      state: result.state,
+      history: result.entries,
+      snapshots: [snapshot(result.state, "create")]
+    };
+    // Сначала новая жизнь, потом отметка о продолжении: если место кончится посередине, второго наследника не будет,
+    // а лишняя запись новой жизни видна в списке и не теряет прошлую
+    write(created);
+    write(previous);
+    return { previous: toLifeView(meta(previous), result.previous), life: toLifeView(meta(created), result.state), entries: result.entries, replayed: false };
+  },
+
+  async lineage(id) {
+    return presentLineage(read(id).state);
   }
 };

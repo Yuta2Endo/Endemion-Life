@@ -6,6 +6,7 @@ import { allTalents, allWeaknesses } from "../rpg/talents.js";
 import type { BackgroundState, GameState, HiddenState, NpcState } from "../types.js";
 import type { FamilyKind, TalentDefinition, UniverseDefinition } from "../universes/types.js";
 import { NAME_POOLS } from "./names.js";
+import { MIN_PARENT_AGE } from "../family/kin.js";
 import { createNpc, roleName, type NpcContext } from "./npcs.js";
 
 export interface BirthContext {
@@ -65,6 +66,30 @@ function rollSecret(ctx: BirthContext): string | null {
   return ctx.rng.pick(pool).id;
 }
 
+/**
+ * Связи родства семьи при рождении: родители — родители персонажа, братья и сёстры — их дети,
+ * бабушка или дед — родитель одного из родителей. Связь ставится, только если по возрасту она возможна.
+ * Возвращает родителей персонажа (id)
+ */
+export function linkFamily(family: readonly NpcState[], married: boolean): string[] {
+  const parents = family.filter((npc) => npc.role === "father" || npc.role === "mother").sort((a, b) => (a.role === "mother" ? -1 : 1) - (b.role === "mother" ? -1 : 1));
+  const fits = (parent: NpcState, child: NpcState) => child.bornAt - parent.bornAt >= MIN_PARENT_AGE;
+  const [mother, father] = parents;
+  // Родители полной семьи и сироты — супруги. Незаконный отец в браке с матерью не состоит
+  if (married && mother && father) {
+    mother.spouseId = father.id;
+    father.spouseId = mother.id;
+  }
+  for (const npc of family) {
+    if (npc.role === "sibling") npc.parents = parents.filter((parent) => fits(parent, npc)).map((parent) => parent.id);
+    if (npc.role === "grandparent") {
+      const child = parents.find((parent) => parent.parents.length === 0 && fits(npc, parent));
+      if (child) child.parents = [npc.id];
+    }
+  }
+  return parents.filter((parent) => parent.bornAt <= -MIN_PARENT_AGE).map((parent) => parent.id);
+}
+
 /** Родители, братья и сёстры, бабушка или дедушка — по виду семьи */
 function createFamily(ctx: NpcContext, kind: FamilyKind): NpcState[] {
   const rng = ctx.rng;
@@ -83,6 +108,8 @@ function createFamily(ctx: NpcContext, kind: FamilyKind): NpcState[] {
     for (const parent of family) {
       parent.alive = false;
       parent.diedAt = 0;
+      parent.status = "deceased";
+      parent.cause = "unknown";
     }
   }
   if (kind !== "foundling" && kind !== "orphan") {
@@ -116,9 +143,9 @@ function familyParagraph(state: GameState, family: readonly NpcState[], kind: Fa
 
 /**
  * Рождение: заполняет background, hidden, семью, шкалы мира и таланты. Вызывается один раз из newGame,
- * когда персонаж уже создан generateCharacter
+ * когда персонаж уже создан generateCharacter. Возвращает родителей персонажа (id) для рода
  */
-export function bornInto(ctx: BirthContext, generatedName: boolean): void {
+export function bornInto(ctx: BirthContext, generatedName: boolean): string[] {
   const { state, rng, universe } = ctx;
   const c = state.character;
   const profile = universe.originProfiles[c.originId];
@@ -156,4 +183,5 @@ export function bornInto(ctx: BirthContext, generatedName: boolean): void {
   }
   if (talents.dormant.length > 0 && potential >= 7) paragraphs.push(t("Старая повитуха долго смотрит на ребёнка и говорит, что в нём спит что-то большее.", "The old midwife studies the child for a long time and says something greater sleeps within."));
   background.biography = paragraphs;
+  return linkFamily(family, kind === "full" || kind === "orphan");
 }

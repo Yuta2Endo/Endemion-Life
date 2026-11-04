@@ -130,6 +130,12 @@ model Life {
   age        Int
   /// Версия формата сохранения в state (SAVE_SCHEMA_VERSION). Жизни Stage 01 (1) переводятся в новый формат при следующем действии
   schemaVersion Int      @default(1) @map("schema_version")
+  /// Stage 03: род. Все поколения одного рода имеют один lineage_id (id жизни основателя). NULL — жизнь до Stage 03, род — она сама
+  lineageId     String?  @map("lineage_id") @db.Uuid
+  /// Поколение рода: 1 — основатель
+  generation    Int      @default(1)
+  /// Жизнь, после которой эта продолжила род. Уникально: у одной жизни не бывает двух наследников
+  predecessorId String?  @unique @map("predecessor_id") @db.Uuid
   state      Json
   createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -139,8 +145,12 @@ model Life {
   history   HistoryEntry[]
   actions   GameAction[]
 
+  predecessor Life?  @relation("Succession", fields: [predecessorId], references: [id], onDelete: SetNull)
+  successor   Life?  @relation("Succession")
+
   @@index([playerId, updatedAt(sort: Desc)])
   @@index([schemaVersion])
+  @@index([lineageId, generation])
   @@map("lives")
 }
 

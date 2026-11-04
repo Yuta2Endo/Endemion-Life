@@ -1,0 +1,317 @@
+{
+ "schemaVersion": 2,
+ "seed": "v2-dead-8",
+ "rngState": 2082879096,
+ "version": 65,
+ "character": {
+  "name": "Катрис Грейвольд",
+  "gender": "female",
+  "universeId": "dark-fantasy",
+  "raceId": "human",
+  "originId": "chapel-orphan",
+  "temperamentId": "brave",
+  "stats": {
+   "strength": 17,
+   "intelligence": 11,
+   "agility": 9,
+   "vitality": 20,
+   "wisdom": 12,
+   "charisma": 13,
+   "luck": 8,
+   "willpower": 28
+  },
+  "resources": {
+   "health": 0,
+   "energy": 120,
+   "mana": 76,
+   "stamina": 116
+  },
+  "level": 3,
+  "xp": 83,
+  "reputation": 28,
+  "karma": 16,
+  "wealth": 28,
+  "abilities": [
+   "mist-sight"
+  ],
+  "track": {
+   "points": 60,
+   "rank": 1
+  },
+  "socialClassId": "outcast",
+  "talents": [
+   "grave-strength"
+  ],
+  "weaknesses": [
+   "reckless",
+   "haunted"
+  ],
+  "skills": {
+   "medicine": 5,
+   "lore": 3,
+   "survival": 3,
+   "oathcraft": 24,
+   "melee": 10,
+   "hollow-hunting": 10,
+   "relic-lore": 10
+  },
+  "professionId": null,
+  "educationId": "df-squire",
+  "specializationId": null,
+  "factions": {
+   "order-of-ash": 35,
+   "mist-cult": 30
+  }
+ },
+ "life": {
+  "age": 38,
+  "stage": "adult",
+  "alive": false,
+  "deathAge": 38,
+  "deathCause": {
+   "ru": "Мгла забрала то, что ещё оставалось человеком",
+   "en": "The Mist took what was still human"
+  }
+ },
+ "flags": [
+  "mentor",
+  "in-love",
+  "oath-sworn",
+  "mist-oath",
+  "married",
+  "has-child"
+ ],
+ "occurrences": {
+  "common.first-steps": 1,
+  "common.fever": 2,
+  "common.night-fear": 1,
+  "df.chapel-school": 1,
+  "common.first-friend": 1,
+  "df.plague": 2,
+  "common.rival-appears": 1,
+  "common.mentor": 1,
+  "df.hollow": 3,
+  "df.squire": 1,
+  "common.lost-purse": 1,
+  "common.first-love": 1,
+  "df.relic": 1,
+  "df.oath": 1,
+  "common.love-test": 1,
+  "common.talent-awakens": 1,
+  "common.secret-surfaces": 1,
+  "df.trial": 2,
+  "common.heir": 1,
+  "df.whisper": 1,
+  "common.trade-offer": 1
+ },
+ "lastSeen": {
+  "common.first-steps": 1,
+  "common.fever": 33,
+  "common.night-fear": 5,
+  "df.chapel-school": 6,
+  "common.first-friend": 7,
+  "df.plague": 23,
+  "common.rival-appears": 11,
+  "common.mentor": 13,
+  "df.hollow": 36,
+  "df.squire": 17,
+  "common.lost-purse": 18,
+  "common.first-love": 19,
+  "df.relic": 20,
+  "df.oath": 21,
+  "common.love-test": 22,
+  "common.talent-awakens": 24,
+  "common.secret-surfaces": 27,
+  "df.trial": 34,
+  "common.heir": 31,
+  "df.whisper": 32,
+  "common.trade-offer": 35
+ },
+ "pending": null,
+ "scheduled": [],
+ "nextSeq": 70,
+ "background": {
+  "familyName": "Грейвольд",
+  "birthplace": {
+   "ru": "башня павшего дома на краю болот",
+   "en": "a fallen house's tower at the edge of the marsh"
+  },
+  "omen": {
+   "ru": "Вороны кружили над крышей до рассвета.",
+   "en": "Ravens circled the roof until dawn."
+  },
+  "familyHistory": {
+   "ru": "Младенца оставили на ступенях часовни в ночь Пепельной службы. Сёстры назвали его по святому того дня.",
+   "en": "The infant was left on the chapel steps on the night of the Ash Mass. The sisters named the child after that day's saint."
+  },
+  "biography": [
+   {
+    "ru": "Катрис Грейвольд родилась: башня павшего дома на краю болот. Вороны кружили над крышей до рассвета.",
+    "en": "Катрис Грейвольд was born: a fallen house's tower at the edge of the marsh. Ravens circled the roof until dawn."
+   },
+   {
+    "ru": "Младенца оставили на ступенях часовни в ночь Пепельной службы. Сёстры назвали его по святому того дня.",
+    "en": "The infant was left on the chapel steps on the night of the Ash Mass. The sisters named the child after that day's saint."
+   },
+   {
+    "ru": "Родителей никто не знает: ребёнка нашли у чужого порога.",
+    "en": "No one knows the parents: the child was found on a stranger's doorstep."
+   },
+   {
+    "ru": "Под очагом семья хранит что-то, что нельзя продавать даже в голод.",
+    "en": "Under the hearth the family keeps something that must not be sold even in famine."
+   },
+   {
+    "ru": "Старая повитуха долго смотрит на ребёнка и говорит, что в нём спит что-то большее.",
+    "en": "The old midwife studies the child for a long time and says something greater sleeps within."
+   }
+  ]
+ },
+ "hidden": {
+  "potential": 7,
+  "destiny": 2,
+  "dormantTalents": [
+   "silver-tongue"
+  ],
+  "familySecret": "df-buried-relic",
+  "revealed": [
+   "familySecret"
+  ]
+ },
+ "npcs": [
+  {
+   "id": "n1",
+   "role": "friend",
+   "name": "Тисса Вранов",
+   "gender": "female",
+   "bornAt": -2,
+   "temperamentId": "brave",
+   "traitId": "drinker",
+   "occupation": {
+    "ru": "Подкидыш из приюта",
+    "en": "Foundling from the shelter"
+   },
+   "bio": {
+    "ru": "Подкидыш из приюта. Кружка за кружкой топит какую-то старую беду. Характер: отважный.",
+    "en": "Foundling from the shelter. Drowns some old sorrow mug after mug. Temperament: brave."
+   },
+   "affinity": 20,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 11,
+   "power": 33,
+   "skillId": null,
+   "interactedAt": null
+  },
+  {
+   "id": "n2",
+   "role": "mentor",
+   "name": "Брандт Пепельный",
+   "gender": "male",
+   "bornAt": -22,
+   "temperamentId": "ambitious",
+   "traitId": "drinker",
+   "occupation": {
+    "ru": "Седой рыцарь Ордена",
+    "en": "Grey knight of the Order"
+   },
+   "bio": {
+    "ru": "Седой рыцарь Ордена. Кружка за кружкой топит какую-то старую беду. Характер: честолюбивый.",
+    "en": "Grey knight of the Order. Drowns some old sorrow mug after mug. Temperament: ambitious."
+   },
+   "affinity": 10,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 17,
+   "power": 73,
+   "skillId": "oathcraft",
+   "interactedAt": null
+  },
+  {
+   "id": "n3",
+   "role": "spouse",
+   "name": "Ульрен Морнхейм",
+   "gender": "male",
+   "bornAt": 0,
+   "temperamentId": "ambitious",
+   "traitId": "hot-tempered",
+   "occupation": {
+    "ru": "Знакомый по работе",
+    "en": "A colleague"
+   },
+   "bio": {
+    "ru": "Знакомый по работе. Гнев вспыхивает быстро и быстро гаснет. Характер: честолюбивый.",
+    "en": "A colleague. Anger flares fast and fades fast. Temperament: ambitious."
+   },
+   "affinity": 47,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 19,
+   "power": 41,
+   "skillId": null,
+   "interactedAt": null
+  },
+  {
+   "id": "n4",
+   "role": "friend",
+   "name": "Морра Морнхейм",
+   "gender": "female",
+   "bornAt": 0,
+   "temperamentId": "curious",
+   "traitId": "secretive",
+   "occupation": {
+    "ru": "Дочь фонарщика",
+    "en": "Lamplighter's daughter"
+   },
+   "bio": {
+    "ru": "Дочь фонарщика. О прошлом молчит, даже когда спрашивают. Характер: любопытный.",
+    "en": "Lamplighter's daughter. Stays silent about the past even when asked. Temperament: curious."
+   },
+   "affinity": 37,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 26,
+   "power": 24,
+   "skillId": null,
+   "interactedAt": null
+  },
+  {
+   "id": "n5",
+   "role": "child",
+   "name": "Мейрон Грейвольд",
+   "gender": "male",
+   "bornAt": 31,
+   "temperamentId": "kind",
+   "traitId": "stern",
+   "occupation": {
+    "ru": "Сын",
+    "en": "Son"
+   },
+   "bio": {
+    "ru": "Сын. Хвалит редко, требует много. Характер: добрый.",
+    "en": "Son. Praises rarely and demands much. Temperament: kind."
+   },
+   "affinity": 45,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 31,
+   "power": 4,
+   "skillId": null,
+   "interactedAt": null
+  }
+ ],
+ "nextNpcId": 6,
+ "meters": {
+  "corruption": 94,
+  "ember": 15
+ },
+ "consequences": [],
+ "quest": null,
+ "questsDone": [],
+ "recentEvents": [
+  "df.hollow",
+  "common.trade-offer",
+  "df.trial",
+  "common.fever"
+ ]
+}

@@ -1,11 +1,14 @@
 import { isTrackReady, maxResources, MAX_LEVEL, nextRankThreshold, xpForLevel } from "../character/derived.js";
 import { AFFINITY_LIMIT, canAddRole, createNpc, livingWith, shiftAffinity } from "../character/npcs.js";
+import { canParent, chronicle, markDeath, returnHome, setMissing } from "../family/events.js";
+import { isKin, KinGraph, selfSpouse } from "../family/kin.js";
 import type { LocalizedText } from "../i18n.js";
+import { lineageYear } from "../legacy/chronicle.js";
 import type { Effect, NpcRef } from "../narrative/types.js";
 import { findEducation, findProfession, findSkill, SKILL_MAX } from "../rpg/skills.js";
 import { findTalent, findWeakness } from "../rpg/talents.js";
 import { clamp, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_MAX, STAT_MIN, type ResourceKey, type StatKey } from "../stats.js";
-import type { HiddenKey, NpcRole } from "../types.js";
+import { SELF_ID, type DeathCauseId, type HiddenKey, type NpcRole } from "../types.js";
 import type { EngineContext } from "./context.js";
 import { record, recordDelta } from "./record.js";
 
@@ -16,6 +19,8 @@ const MAX_SCHEDULED = 20;
 /** Сколько отложенных последствий может ждать одновременно */
 const MAX_CONSEQUENCES = 12;
 const FACTION_LIMIT = 100;
+export const RENOWN_LIMIT = 100;
+const MAX_THREADS = 10;
 
 export function changeStat(ctx: EngineContext, stat: StatKey, delta: number): void {
   const stats = ctx.state.character.stats;
@@ -152,26 +157,88 @@ export function changeNpcAffinity(ctx: EngineContext, npcId: string, delta: numb
   if (applied !== 0) record(ctx, { kind: "relation", key: npc.id, delta: applied });
 }
 
+/**
+ * Новый человек. Супруг сразу связан браком с персонажем, ребёнок — родством с персонажем и его супругом.
+ * Связи ставятся, только если они возможны: персонаж жив и свободен, родитель достаточно старше ребёнка
+ */
 export function meetNpc(ctx: EngineContext, role: NpcRole): void {
   if (!canAddRole(ctx.state, role)) return;
+  if (role === "spouse" && selfSpouse(ctx.state)) return;
   const npc = createNpc(ctx, role);
   record(ctx, { kind: "npc", key: npc.id, value: "met" });
+  if (role === "spouse") {
+    npc.spouseId = SELF_ID;
+    chronicle(ctx, "marriage", [SELF_ID, npc.id], {}, ctx.source ?? "event");
+  }
+  if (role === "child") {
+    const spouse = selfSpouse(ctx.state);
+    const parents = spouse ? [SELF_ID, spouse.id] : [SELF_ID];
+    const graph = new KinGraph(ctx.state);
+    if (canParent(ctx, parents, npc.bornAt, graph)) npc.parents = parents;
+    else if (canParent(ctx, [SELF_ID], npc.bornAt, graph)) npc.parents = [SELF_ID];
+    chronicle(ctx, "birth", [npc.id, ...npc.parents], {}, ctx.source ?? "event");
+  }
 }
 
-/** Самый близкий живой NPC роли from становится to: возлюбленный — супругом, супруг — бывшим */
+/** Самый близкий живой NPC роли from становится to: возлюбленный — супругом, супруг — бывшим. Брак и развод меняют и связи */
 function changeRole(ctx: EngineContext, from: NpcRole, to: NpcRole): void {
   const npc = livingWith(ctx.state, from)[0];
   if (!npc || !canAddRole(ctx.state, to)) return;
+  if (to === "spouse" && (selfSpouse(ctx.state) || npc.spouseId !== null)) return;
   npc.role = to;
   record(ctx, { kind: "npc", key: npc.id, value: to });
+  if (to === "spouse") {
+    npc.spouseId = SELF_ID;
+    chronicle(ctx, "marriage", [SELF_ID, npc.id], {}, ctx.source ?? "event");
+  }
+  if (from === "spouse" && npc.spouseId === SELF_ID) {
+    npc.spouseId = null;
+    if (!npc.formerSpouses.includes(SELF_ID)) npc.formerSpouses.push(SELF_ID);
+    chronicle(ctx, "divorce", [SELF_ID, npc.id], {}, ctx.source ?? "event");
+  }
 }
 
-export function npcDies(ctx: EngineContext, npcId: string): void {
+export function npcDies(ctx: EngineContext, npcId: string, cause: DeathCauseId = "event"): void {
   const npc = ctx.state.npcs.find((n) => n.id === npcId);
   if (!npc?.alive) return;
-  npc.alive = false;
-  npc.diedAt = ctx.state.life.age;
-  record(ctx, { kind: "npc", key: npc.id, value: "died" });
+  markDeath(ctx, npc, cause);
+}
+
+/** Слава рода: от -100 (позор) до 100 */
+export function changeRenown(ctx: EngineContext, delta: number): void {
+  const lineage = ctx.state.lineage;
+  const before = lineage.renown;
+  lineage.renown = clamp(before + delta, -RENOWN_LIMIT, RENOWN_LIMIT);
+  recordDelta(ctx, "renown", before, lineage.renown);
+}
+
+/** Нить рода: долг, враг, тайна. Каждая — одна; нитей не больше MAX_THREADS */
+export function setThread(ctx: EngineContext, id: string, add: boolean): void {
+  const lineage = ctx.state.lineage;
+  const index = lineage.threads.findIndex((thread) => thread.id === id);
+  if (add && index === -1 && lineage.threads.length < MAX_THREADS) {
+    lineage.threads.push({ id, year: lineageYear(ctx.state), gen: lineage.generation, src: ctx.source ?? "" });
+    record(ctx, { kind: "thread", key: id, value: "added" });
+  }
+  if (!add && index !== -1) {
+    lineage.threads.splice(index, 1);
+    record(ctx, { kind: "thread", key: id, value: "closed" });
+  }
+}
+
+/** Последствие для рода: живёт в роду, а не в жизни персонажа, и не пропадает с его смертью */
+export function scheduleLineage(ctx: EngineContext, id: string, inYears: number): void {
+  const pending = ctx.state.lineage.pending;
+  if (pending.length >= MAX_CONSEQUENCES || pending.some((p) => p.id === id)) return;
+  pending.push({ id, year: lineageYear(ctx.state) + Math.max(1, inYears), src: ctx.source ?? "", entry: null });
+}
+
+/** Сословие на ступень выше или ниже, если такая ступень есть в мире */
+function stepClass(ctx: EngineContext, delta: 1 | -1): void {
+  const classes = ctx.universe.socialClasses;
+  const standing = classes.find((c) => c.id === ctx.state.character.socialClassId)?.standing ?? 0;
+  const next = classes.filter((c) => c.standing === standing + delta)[0];
+  if (next) setSocialClass(ctx, next.id);
 }
 
 export function changeMeter(ctx: EngineContext, id: string, delta: number): void {
@@ -260,6 +327,13 @@ export function kill(ctx: EngineContext, cause: LocalizedText): void {
   ctx.state.scheduled = [];
   ctx.state.consequences = [];
   ctx.state.quest = null;
+  // Брака с умершим не бывает: супруг становится вдовцом. Последствия для рода (lineage.pending) остаются
+  const spouse = selfSpouse(ctx.state);
+  if (spouse) {
+    spouse.spouseId = null;
+    if (!spouse.formerSpouses.includes(SELF_ID)) spouse.formerSpouses.push(SELF_ID);
+    spouse.log.push({ at: life.age, kind: "widowed", value: SELF_ID });
+  }
 }
 
 export function applyEffect(ctx: EngineContext, effect: Effect): void {
@@ -324,7 +398,7 @@ export function applyEffect(ctx: EngineContext, effect: Effect): void {
       return changeRole(ctx, effect.from, effect.to);
     case "npcDies": {
       const npc = livingWith(ctx.state, effect.role)[0];
-      if (npc) npcDies(ctx, npc.id);
+      if (npc) npcDies(ctx, npc.id, "event");
       return;
     }
     case "npcSkill": {
@@ -353,7 +427,40 @@ export function applyEffect(ctx: EngineContext, effect: Effect): void {
       return scheduleConsequence(ctx, effect.id, effect.inYears);
     case "reveal":
       return reveal(ctx, effect.key);
+    case "renown":
+      return changeRenown(ctx, effect.delta);
+    case "thread":
+      return setThread(ctx, effect.id, effect.add);
+    case "lineageLater":
+      return scheduleLineage(ctx, effect.id, effect.inYears);
+    case "kinReturns": {
+      const npc = ctx.state.npcs.find((n) => n.alive && n.status === "missing" && isKin(n));
+      if (npc) returnHome(ctx, npc);
+      return;
+    }
+    case "kinMissing": {
+      const npc = livingWith(ctx.state, effect.role)[0];
+      if (npc) setMissing(ctx, npc);
+      return;
+    }
+    case "classStep":
+      return stepClass(ctx, effect.delta);
+    case "adopt":
+      return adoptChild(ctx);
   }
+}
+
+/** Приёмный ребёнок 3–10 лет. Родители — персонаж и его супруг, если по возрасту это возможно */
+function adoptChild(ctx: EngineContext): void {
+  if (!canAddRole(ctx.state, "child") || ctx.state.life.age < 20) return;
+  const npc = createNpc(ctx, "child", { age: ctx.rng.int(3, 10), affinity: ctx.rng.int(35, 55) });
+  npc.adopted = true;
+  record(ctx, { kind: "npc", key: npc.id, value: "met" });
+  const spouse = selfSpouse(ctx.state);
+  const graph = new KinGraph(ctx.state);
+  const parents = spouse && canParent(ctx, [SELF_ID, spouse.id], npc.bornAt, graph) ? [SELF_ID, spouse.id] : [SELF_ID];
+  if (canParent(ctx, parents, npc.bornAt, graph)) npc.parents = parents;
+  chronicle(ctx, "adoption", [npc.id, ...npc.parents], {}, ctx.source ?? "event");
 }
 
 export function applyEffects(ctx: EngineContext, effects: readonly Effect[]): void {

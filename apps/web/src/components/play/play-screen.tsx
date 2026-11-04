@@ -4,6 +4,7 @@ import { getUniverse, type GameAction, type HistoryEntry, type InteractionId } f
 import type { LifeView, SaveView } from "@endemion/shared";
 import { Button, Panel } from "@endemion/ui";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ClientError } from "@/lib/api";
 import { ageLabel } from "@/lib/format";
@@ -14,6 +15,7 @@ import { useI18n } from "../locale-provider";
 import { CharacterSheet } from "./character-sheet";
 import { Dossier } from "./dossier";
 import { EventCard, OutcomeCard } from "./event-card";
+import { LifeSummary } from "./life-summary";
 import { SavesDialog } from "./saves-dialog";
 import { Timeline } from "./timeline";
 
@@ -31,6 +33,7 @@ function mergeEntries(added: HistoryEntry[], existing: HistoryEntry[]): HistoryE
 
 export function PlayScreen({ lifeId }: { lifeId: string }) {
   const { locale, l, t } = useI18n();
+  const router = useRouter();
   const store = useMemo(() => storeForLife(lifeId), [lifeId]);
   const [life, setLife] = useState<LifeView | null>(null);
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
@@ -112,6 +115,30 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
         setNotice(errorText(error));
       }
     } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Продолжить род: сервер создаёт жизнь наследника, страница переходит к ней. Повтор после обрыва связи — с тем же actionId */
+  async function continueAs(heirId: string) {
+    if (!life || busy) return;
+    const key = JSON.stringify([life.version, "succeed", heirId]);
+    if (pendingAction.current?.key !== key) pendingAction.current = { key, actionId: newUuid() };
+    const { actionId } = pendingAction.current;
+    setBusy(true);
+    setNotice(null);
+    try {
+      const result = await store.succeed(life.id, life.version, heirId, actionId);
+      pendingAction.current = null;
+      router.push(`/play/${result.life.id}`);
+    } catch (error) {
+      if (error instanceof ClientError && (error.code === "VERSION_CONFLICT" || error.code === "LINEAGE_CONTINUED")) {
+        pendingAction.current = null;
+        setNotice(error.code === "VERSION_CONFLICT" ? t("play.conflict") : errorText(error));
+        await load();
+      } else {
+        setNotice(errorText(error));
+      }
       setBusy(false);
     }
   }
@@ -204,29 +231,15 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
         </p>
       )}
 
-      <div className="relative grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)_340px]">
+      {/* minmax(0,1fr) на телефоне: широкое древо прокручивается в своей рамке и не растягивает страницу */}
+      <div className="relative grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[300px_minmax(0,1fr)_340px]">
         <aside className={shown("character")}>
           <CharacterSheet life={life} />
         </aside>
 
         <section className={`${shown("event")} space-y-5`}>
           {dead ? (
-            <Panel accent className="animate-rise text-center" data-testid="death-card">
-              <p className="text-4xl text-blood-400" aria-hidden="true">
-                ✝
-              </p>
-              <h2 className="mt-3 font-display text-4xl text-gilded">{t("play.deathTitle")}</h2>
-              {life.life.deathCause && <p className="mt-3 text-bone-300">{l(life.life.deathCause)}</p>}
-              <p className="mt-1 text-bone-300">{t("play.deathLived", { name: life.character.name, age: ageLabel(life.life.age, locale) })}</p>
-              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-                <Link href={`/create/${life.universeId}`} className="rounded-md border border-gold-400/70 bg-gold-500/15 px-5 py-2.5 text-gold-100 transition hover:border-gold-300">
-                  {t("play.newLifeSame")}
-                </Link>
-                <Link href="/worlds" className="rounded-md border border-line px-5 py-2.5 text-bone-100 transition hover:border-gold-500/60">
-                  {t("play.otherWorld")}
-                </Link>
-              </div>
-            </Panel>
+            <LifeSummary life={life} busy={busy} onSucceed={(heirId) => void continueAs(heirId)} />
           ) : event ? (
             <EventCard key={`${event.eventId}-${life.version}`} event={event} busy={busy} onChoose={(choiceId) => void perform({ type: "choose", choiceId })} />
           ) : outcome ? (
@@ -264,13 +277,13 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
           )}
 
           <div className="hidden lg:block">
-            <Dossier life={life} busy={busy} onInteract={interact} />
+            <Dossier life={life} busy={busy} store={store} onInteract={interact} />
           </div>
         </section>
 
         {/* На телефоне досье — отдельная вкладка */}
         <section className={tab === "people" ? "block lg:hidden" : "hidden"}>
-          <Dossier life={life} busy={busy} onInteract={interact} />
+          <Dossier life={life} busy={busy} store={store} onInteract={interact} />
         </section>
 
         <aside className={shown("timeline")}>

@@ -1,5 +1,5 @@
 import type { GameAction, HistoryEntry } from "@endemion/game-core";
-import type { ActionResponse, CreateLifeRequest, HistoryPage, LifeListItem, LifeView, SaveView } from "@endemion/shared";
+import type { ActionResponse, CreateLifeRequest, HistoryPage, LifeListItem, LifeView, LineageResponse, SaveView, SuccessionResponse } from "@endemion/shared";
 import { apiFetch, ClientError, postJson } from "../api";
 import type { GameStore } from "./types";
 
@@ -42,5 +42,20 @@ export const cloudStore: GameStore = {
 
   async restore(id, version, expectedVersion) {
     return postJson<ActionResponse>(`/api/lives/${encodeURIComponent(id)}/restore`, { version, expectedVersion });
+  },
+
+  async succeed(id, expectedVersion, heirId, actionId) {
+    const send = () => postJson<SuccessionResponse>(`/api/lives/${encodeURIComponent(id)}/succession`, { actionId, expectedVersion, heirId });
+    try {
+      return await send();
+    } catch (error) {
+      // Как и для действий: повтор с тем же actionId вернёт ту же новую жизнь, второй не появится
+      if (error instanceof ClientError && error.code === "NETWORK") return send();
+      throw error;
+    }
+  },
+
+  async lineage(id) {
+    return (await apiFetch<LineageResponse>(`/api/lives/${encodeURIComponent(id)}/lineage`)).lineage;
   }
 };

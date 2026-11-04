@@ -16,9 +16,11 @@ import { Meter, Ornament, Panel } from "@endemion/ui";
 import { useState } from "react";
 import { ageLabel } from "@/lib/format";
 import type { MessageKey } from "@/lib/messages";
+import type { GameStore } from "@/lib/store";
 import { useI18n } from "../locale-provider";
+import { LineagePanel } from "./lineage";
 
-type Section = "bio" | "family" | "skills" | "people";
+type Section = "bio" | "family" | "lineage" | "skills" | "people";
 
 function Signed({ value }: { value: number }) {
   const tone = value > 0 ? "text-jade-300" : value < 0 ? "text-blood-300" : "text-bone-300";
@@ -364,14 +366,15 @@ function People({ life, busy, onInteract }: { life: LifeView; busy: boolean; onI
   );
 }
 
-/** Досье персонажа: биография и происхождение, семейное древо, навыки и таланты, люди вокруг */
-export function Dossier({ life, busy, onInteract }: { life: LifeView; busy: boolean; onInteract: (npcId: string, interaction: InteractionId) => void }) {
+/** Досье персонажа: биография и происхождение, семья, род (древо, хроника рода, достижения, наследство), навыки и таланты, люди вокруг */
+export function Dossier({ life, busy, store, onInteract }: { life: LifeView; busy: boolean; store: GameStore; onInteract: (npcId: string, interaction: InteractionId) => void }) {
   const { locale, l, t } = useI18n();
   const [section, setSection] = useState<Section>("bio");
   const universe = getUniverse(life.universeId);
   const sections: { id: Section; label: string }[] = [
     { id: "bio", label: t("dossier.bio") },
     { id: "family", label: t("dossier.family") },
+    { id: "lineage", label: t("dossier.lineage") },
     { id: "skills", label: t("dossier.skills") },
     { id: "people", label: t("dossier.people") }
   ];
@@ -380,7 +383,7 @@ export function Dossier({ life, busy, onInteract }: { life: LifeView; busy: bool
     <Panel className="space-y-4" data-testid="dossier">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-2xl text-bone-100">{t("dossier.title")}</h2>
-        <div className="flex rounded-md border border-line bg-ink-950/70 p-0.5" role="tablist" aria-label={t("dossier.title")}>
+        <div className="flex flex-wrap rounded-md border border-line bg-ink-950/70 p-0.5" role="tablist" aria-label={t("dossier.title")}>
           {sections.map((item) => (
             <button
               key={item.id}
@@ -424,6 +427,7 @@ export function Dossier({ life, busy, onInteract }: { life: LifeView; busy: bool
       <Ornament />
       {section === "bio" && <Biography life={life} />}
       {section === "family" && <FamilyTree life={life} />}
+      {section === "lineage" && <LineagePanel life={life} store={store} />}
       {section === "skills" && <SkillsAndTalents life={life} />}
       {section === "people" && <People life={life} busy={busy} onInteract={onInteract} />}
     </Panel>

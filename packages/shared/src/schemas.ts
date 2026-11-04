@@ -32,6 +32,18 @@ export const actionRequestSchema = z.strictObject({
 });
 export type ActionRequest = z.infer<typeof actionRequestSchema>;
 
+/**
+ * Продолжить род за наследника. Клиент называет только наследника: кто может наследовать, что он получит
+ * и какой будет новая жизнь, решает сервер
+ */
+export const successionSchema = z.strictObject({
+  /** Повторная отправка с тем же actionId возвращает ту же новую жизнь */
+  actionId: z.uuid(),
+  expectedVersion: z.int().min(1),
+  heirId: z.string().regex(/^n[0-9]{1,6}$/, "Некорректный идентификатор")
+});
+export type SuccessionRequest = z.infer<typeof successionSchema>;
+
 export const restoreSchema = z.strictObject({
   /** Версия сохранения, к которой вернуться */
   version: z.int().min(1),

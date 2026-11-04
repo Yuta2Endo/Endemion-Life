@@ -5,7 +5,11 @@ export const GAME_ERROR_CODES = [
   "NO_PENDING_EVENT",
   "UNKNOWN_CHOICE",
   "CHOICE_LOCKED",
-  "INVALID_SAVE"
+  "INVALID_SAVE",
+  // Stage 03: продолжение рода
+  "LIFE_NOT_ENDED",
+  "HEIR_LOCKED",
+  "LINEAGE_CONTINUED"
 ] as const;
 export type GameErrorCode = (typeof GAME_ERROR_CODES)[number];
 

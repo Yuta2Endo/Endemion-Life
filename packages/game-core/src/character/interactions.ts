@@ -134,7 +134,7 @@ export interface InteractionResult {
 }
 
 export function interactionAvailable(ctx: EngineContext, npc: NpcState, interaction: InteractionId): boolean {
-  return npc.alive && npc.interactedAt !== ctx.state.life.age && INTERACTION_RULES[interaction].allowed(ctx, npc);
+  return npc.alive && npc.status !== "missing" && npc.interactedAt !== ctx.state.life.age && INTERACTION_RULES[interaction].allowed(ctx, npc);
 }
 
 /** Шанс взаимодействия: как у проверки события, плюс тёплое отношение помогает */
@@ -148,6 +148,7 @@ export function interact(ctx: EngineContext, npcId: string, interaction: Interac
   const npc = ctx.state.npcs.find((n) => n.id === npcId);
   if (!npc) throw new GameRuleError("INVALID_INPUT", "Такого человека нет");
   if (!npc.alive) throw new GameRuleError("CHOICE_LOCKED", "Этого человека уже нет в живых");
+  if (npc.status === "missing") throw new GameRuleError("CHOICE_LOCKED", "Этот человек пропал без вести");
   const rule = INTERACTION_RULES[interaction] as InteractionRule | undefined;
   if (!rule) throw new GameRuleError("INVALID_INPUT", "Неизвестное действие");
   if (npc.interactedAt === ctx.state.life.age) throw new GameRuleError("CHOICE_LOCKED", "В этом году вы уже общались с этим человеком");

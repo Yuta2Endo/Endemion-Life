@@ -1,5 +1,5 @@
-import type { GameAction } from "@endemion/game-core";
-import type { ActionResponse, CreateLifeRequest, HistoryPage, LifeListItem, LifeView, SaveView } from "@endemion/shared";
+import type { GameAction, LineageView } from "@endemion/game-core";
+import type { ActionResponse, CreateLifeRequest, HistoryPage, LifeListItem, LifeView, SaveView, SuccessionResponse } from "@endemion/shared";
 
 export type StoreKind = "cloud" | "local";
 
@@ -17,6 +17,10 @@ export interface GameStore {
   history(id: string, before?: number, limit?: number): Promise<HistoryPage>;
   saves(id: string): Promise<SaveView[]>;
   restore(id: string, version: number, expectedVersion: number): Promise<ActionResponse>;
+  /** Stage 03: продолжить род за наследника. Ответ — закрытая жизнь и новая жизнь наследника */
+  succeed(id: string, expectedVersion: number, heirId: string, actionId: string): Promise<SuccessionResponse>;
+  /** Stage 03: род — хроника, древо, достижения */
+  lineage(id: string): Promise<LineageView>;
 }
 
 /** Жизни из браузера отличаются по id: так страница игры знает, какое хранилище открыть */

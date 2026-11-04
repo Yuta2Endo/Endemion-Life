@@ -43,6 +43,8 @@ export function LivesList() {
                 <span className="block truncate font-display text-lg text-bone-100">{life.name}</span>
                 <span className="block truncate text-xs text-bone-500">
                   {universe.name[locale]} · {ageLabel(life.age, locale)}
+                  {life.generation > 1 && ` · ${t("home.generation", { n: life.generation })}`}
+                  {life.continued && ` · ${t("home.continued")}`}
                 </span>
               </span>
               <span className={`shrink-0 text-xs ${life.status === "alive" ? "text-jade-300" : "text-bone-500"}`}>{life.status === "alive" ? "●" : "✝"}</span>

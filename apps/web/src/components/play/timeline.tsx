@@ -14,7 +14,8 @@ const KIND_MARK: Readonly<Record<HistoryEntry["kind"], string>> = {
   restore: "↺",
   consequence: "⧗",
   quest: "✧",
-  people: "♦"
+  people: "♦",
+  legacy: "❖"
 };
 
 /** Хроника жизни: от новых записей к старым, с решениями и их последствиями */
@@ -45,7 +46,7 @@ export function Timeline({
             <li key={entry.seq} className="relative border-l border-line pl-4" data-testid="timeline-entry" data-kind={entry.kind}>
               <span
                 className={`absolute -left-[5px] top-1 flex h-2.5 w-2.5 items-center justify-center text-[10px] leading-none ${
-                  entry.kind === "event" || entry.kind === "quest" ? "text-gold-400" : entry.kind === "consequence" ? "text-azure-400" : entry.kind === "death" ? "text-blood-400" : "text-bone-500"
+                  entry.kind === "event" || entry.kind === "quest" || entry.kind === "legacy" ? "text-gold-400" : entry.kind === "consequence" ? "text-azure-400" : entry.kind === "death" ? "text-blood-400" : "text-bone-500"
                 }`}
                 aria-hidden="true"
               >
@@ -53,7 +54,7 @@ export function Timeline({
               </span>
               <p className="text-[10px] uppercase tracking-[0.2em] text-bone-500">{ageLabel(entry.age, locale)}</p>
               {!quiet && <p className="font-display text-lg leading-snug text-bone-100">{l(entry.title)}</p>}
-              <p className={`text-sm leading-relaxed ${quiet ? "text-bone-500" : "text-bone-300"}`}>{l((entry.kind === "event" || entry.kind === "people") && entry.outcome ? entry.outcome : entry.text)}</p>
+              <p className={`text-sm leading-relaxed ${quiet ? "text-bone-500" : "text-bone-300"}`}>{l((entry.kind === "event" || entry.kind === "people" || entry.kind === "legacy") && entry.outcome ? entry.outcome : entry.text)}</p>
               {entry.choice && (
                 <p className="mt-1 text-xs text-gold-300" data-testid="decision">
                   {t("play.decision")}: {l(entry.choice)}

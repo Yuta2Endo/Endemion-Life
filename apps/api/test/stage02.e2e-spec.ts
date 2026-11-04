@@ -1,6 +1,7 @@
 // Stage 02 через API: профиль жизни, общение с NPC, совместимость жизней Stage 01 в базе
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { SAVE_SCHEMA_VERSION } from "@endemion/game-core";
 import type { ActionResponse, LifeView } from "@endemion/shared";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -112,9 +113,10 @@ describe("Stage 02: жизни Stage 01 в базе", () => {
       life = (res.body as ActionResponse).life;
       if (life.status === "dead") break;
     }
+    // Записывается в текущем формате: 2 в Stage 02, 3 с Stage 03
     const row = await t.prisma.client.life.findUniqueOrThrow({ where: { id: created.id } });
-    expect((row.state as { schemaVersion: number }).schemaVersion).toBe(2);
-    expect(row.schemaVersion).toBe(2);
+    expect((row.state as { schemaVersion: number }).schemaVersion).toBe(SAVE_SCHEMA_VERSION);
+    expect(row.schemaVersion).toBe(SAVE_SCHEMA_VERSION);
 
     // Откат к снимку, записанному ещё в формате 1
     const restored = await client.post(`/api/lives/${created.id}/restore`).set("Origin", ORIGIN).send({ version: v1.version, expectedVersion: life.version }).expect(200);

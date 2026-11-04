@@ -42,3 +42,32 @@ export { checkCondition, describeCondition } from "./engine/conditions.js";
 export { applyAction, newGame, restoreState, SAVE_SCHEMA_VERSION, SEED_MAX_LENGTH, type NewGameInput } from "./engine/game.js";
 export { migrateSave, parseSave } from "./engine/save.js";
 export { presentEvent, summarizeCharacter, type ChoiceView, type CharacterSummary, type EventView } from "./engine/view.js";
+
+// Stage 03: родство, род, наследование, сюжеты поколений, достижения, итоги жизни
+export { KinGraph, kinProblem, isKin, isPresent, BLOOD_RELATIONS, MIN_PARENT_AGE, MIN_MARRIAGE_AGE, type KinRelation } from "./family/kin.js";
+export { MAX_LIVING_NPCS, MAX_NPCS } from "./character/npc-life.js";
+export { INHERITANCE_LAWS, lawOf, type InheritanceLaw, type HeirOrder } from "./legacy/laws.js";
+export { heirCandidates, succeed, MAX_GENERATIONS, type HeirCandidate, type SuccessionResult } from "./legacy/succession.js";
+export { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, findAchievement, unlockAchievements, type AchievementCategory, type AchievementDefinition } from "./legacy/achievements.js";
+export { scoreLife, LIFE_TITLES, SCORE_PARTS, SCORE_PART_NAMES, type LifeScore, type ScorePart } from "./legacy/summary.js";
+export { LEGACY_EVENTS, LINEAGE_CONSEQUENCES, THREADS } from "./legacy/stories.js";
+export { MAX_CHRONICLE, lineageYear } from "./legacy/chronicle.js";
+export {
+  presentHeirs,
+  presentLegacy,
+  presentLineage,
+  renderChronicle,
+  DEATH_CAUSE_NAMES,
+  NPC_STATUS_NAMES,
+  RELATION_NAMES,
+  type AchievementView,
+  type ChronicleView,
+  type DecisionView,
+  type HeirView,
+  type InheritanceView,
+  type LawView,
+  type LegacyBrief,
+  type LifeSummaryView,
+  type LineageView,
+  type TreeNodeView
+} from "./legacy/present.js";

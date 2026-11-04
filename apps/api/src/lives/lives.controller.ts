@@ -3,12 +3,15 @@ import {
   createLifeSchema,
   historyQuerySchema,
   restoreSchema,
+  successionSchema,
   uuidSchema,
   type ActionResponse,
   type HistoryPage,
   type LifeListItem,
   type LifeView,
-  type SaveView
+  type LineageResponse,
+  type SaveView,
+  type SuccessionResponse
 } from "@endemion/shared";
 import type { HistoryEntry } from "@endemion/game-core";
 import { Body, Controller, Get, HttpCode, Inject, Param, Post, Query, Req, Res } from "@nestjs/common";
@@ -82,5 +85,21 @@ export class LivesController {
     const input = parseOrThrow(restoreSchema, body);
     const player = await this.sessions.require(request);
     return this.lives.restore(player.id, lifeIdOf(id), input);
+  }
+
+  /** Stage 03: продолжить род за наследника. { actionId, expectedVersion, heirId }. Ответ — закрытая жизнь и новая */
+  @Post(":id/succession")
+  @HttpCode(200)
+  async succeed(@Req() request: Request, @Param("id") id: string, @Body() body: unknown): Promise<SuccessionResponse> {
+    const input = parseOrThrow(successionSchema, body);
+    const player = await this.sessions.require(request);
+    return this.lives.succeed(player.id, lifeIdOf(id), input);
+  }
+
+  /** Stage 03: род — хроника, семейное древо, достижения, фамильные черты */
+  @Get(":id/lineage")
+  async lineage(@Req() request: Request, @Param("id") id: string): Promise<LineageResponse> {
+    const player = await this.sessions.require(request);
+    return { lineage: await this.lives.lineage(player.id, lifeIdOf(id)) };
   }
 }
