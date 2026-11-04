@@ -1,8 +1,8 @@
 import { t } from "../i18n.js";
 import { check, fx, when } from "../narrative/dsl.js";
-import type { UniverseDefinition } from "./types.js";
+import type { UniverseBase } from "./types.js";
 
-export const DARK_FANTASY: UniverseDefinition = {
+export const DARK_FANTASY: UniverseBase = {
   id: "dark-fantasy",
   name: t("Пепельные Королевства", "The Ashen Kingdoms"),
   tagline: t("Мир, где солнце погасло, а клятвы стоят дороже жизни", "A world where the sun went dark and oaths cost more than life"),
@@ -67,13 +67,13 @@ export const DARK_FANTASY: UniverseDefinition = {
           id: "order",
           text: t("Принести клятву Ордену", "Swear to the Order"),
           requires: [when.karmaAtLeast(-20)],
-          success: { text: t("Пепел оседает на коже. Клятва принята.", "Ash settles on the skin. The oath is accepted."), effects: [fx.flag("oath-sworn"), fx.flag("order-oath"), fx.track(10), fx.karma(5), fx.rep(5)] }
+          success: { text: t("Пепел оседает на коже. Клятва принята.", "Ash settles on the skin. The oath is accepted."), effects: [fx.flag("oath-sworn"), fx.flag("order-oath"), fx.track(10), fx.karma(5), fx.rep(5), fx.meter("ember", 10), fx.faction("order-of-ash", 20)] }
         },
         {
           id: "mist",
           text: t("Последовать за фигурой в сером", "Follow the grey figure"),
           check: check(["willpower", "wisdom"], 12),
-          success: { text: t("Мгла говорит шёпотом и обещает силу без молитв.", "The Mist speaks in whispers and promises power without prayer."), effects: [fx.flag("oath-sworn"), fx.flag("mist-oath"), fx.track(15), fx.karma(-15), fx.ability("mist-sight")] },
+          success: { text: t("Мгла говорит шёпотом и обещает силу без молитв.", "The Mist speaks in whispers and promises power without prayer."), effects: [fx.flag("oath-sworn"), fx.flag("mist-oath"), fx.track(15), fx.karma(-15), fx.ability("mist-sight"), fx.meter("corruption", 15), fx.faction("mist-cult", 20), fx.later("df.c-oath-price", 6)] },
           failure: { text: t("Фигура растворяется. На руке остаётся ледяной ожог.", "The figure dissolves. An icy burn remains on the hand."), effects: [fx.health(-15), fx.flag("mist-mark")] }
         },
         {
@@ -102,7 +102,7 @@ export const DARK_FANTASY: UniverseDefinition = {
           id: "mercy",
           text: t("Прочитать погребальную молитву", "Recite the funeral prayer"),
           check: check(["wisdom", "willpower"], 13),
-          success: { text: t("Пустой опускается на колени и рассыпается тихим пеплом.", "The Hollow kneels and crumbles to quiet ash."), effects: [fx.karma(10), fx.stat("wisdom", 1), fx.track(4), fx.xp(25)] },
+          success: { text: t("Пустой опускается на колени и рассыпается тихим пеплом.", "The Hollow kneels and crumbles to quiet ash."), effects: [fx.karma(10), fx.stat("wisdom", 1), fx.track(4), fx.xp(25), fx.later("df.c-hollow-mercy", 4)] },
           failure: { text: t("Слова не помогают. Пустой бросается вперёд.", "The words fail. The Hollow lunges."), effects: [fx.health(-20)] }
         },
         {
@@ -151,7 +151,7 @@ export const DARK_FANTASY: UniverseDefinition = {
           id: "help",
           text: t("Ухаживать за больными", "Tend the sick"),
           check: check(["vitality", "wisdom"], 13),
-          success: { text: t("Хворь отступает. Спасённые запомнят {name}.", "The sickness recedes. Those saved will remember {name}."), effects: [fx.karma(15), fx.rep(10), fx.xp(30)] },
+          success: { text: t("Хворь отступает. Спасённые запомнят {name}.", "The sickness recedes. Those saved will remember {name}."), effects: [fx.karma(15), fx.rep(10), fx.xp(30), fx.later("df.c-village-gratitude", 3)] },
           failure: { text: t("Хворь цепляется к самому {name}.", "The sickness clings to {name}."), effects: [fx.karma(10), fx.health(-35), fx.stat("vitality", -1)] }
         },
         {
@@ -172,7 +172,7 @@ export const DARK_FANTASY: UniverseDefinition = {
           id: "take",
           text: t("Забрать реликварий", "Take the reliquary"),
           check: check(["agility", "luck"], 13),
-          success: { text: t("Святые кости тёплые на ощупь. Скупщики дадут за них целое состояние.", "The holy bones are warm to the touch. Fences will pay a fortune."), effects: [fx.wealth(80), fx.karma(-10)] },
+          success: { text: t("Святые кости тёплые на ощупь. Скупщики дадут за них целое состояние.", "The holy bones are warm to the touch. Fences will pay a fortune."), effects: [fx.wealth(80), fx.karma(-10), fx.later("df.c-relic-curse", 5)] },
           failure: { text: t("Своды рушатся. {name} выбирается из-под камней.", "The vaults collapse. {name} crawls out from under the stones."), effects: [fx.health(-25)] }
         },
         {

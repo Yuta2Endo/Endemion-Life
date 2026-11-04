@@ -128,6 +128,8 @@ model Life {
   status     LifeStatus @default(alive)
   version    Int
   age        Int
+  /// Версия формата сохранения в state (SAVE_SCHEMA_VERSION). Жизни Stage 01 (1) переводятся в новый формат при следующем действии
+  schemaVersion Int      @default(1) @map("schema_version")
   state      Json
   createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -138,6 +140,7 @@ model Life {
   actions   GameAction[]
 
   @@index([playerId, updatedAt(sort: Desc)])
+  @@index([schemaVersion])
   @@map("lives")
 }
 

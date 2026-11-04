@@ -2,7 +2,7 @@
 
 import type { EventView, HistoryEntry, UniverseId } from "@endemion/game-core";
 import { Ornament, Panel } from "@endemion/ui";
-import { ageLabel } from "@/lib/format";
+import { ageLabel, type PeopleNames } from "@/lib/format";
 import { ChangeChips } from "../change-chips";
 import { useI18n } from "../locale-provider";
 
@@ -53,7 +53,7 @@ export function EventCard({ event, busy, onChoose }: { event: EventView; busy: b
 }
 
 /** Итог последнего решения: что выбрано, прошла ли проверка и что изменилось */
-export function OutcomeCard({ entry, universeId }: { entry: HistoryEntry; universeId: UniverseId }) {
+export function OutcomeCard({ entry, universeId, people }: { entry: HistoryEntry; universeId: UniverseId; people?: PeopleNames }) {
   const { l, t } = useI18n();
   return (
     <Panel className="animate-rise" data-testid="outcome">
@@ -69,7 +69,7 @@ export function OutcomeCard({ entry, universeId }: { entry: HistoryEntry; univer
       {entry.choice && <p className="mt-1 text-sm text-bone-500">→ {l(entry.choice)}</p>}
       {entry.outcome && <p className="mt-3 leading-relaxed text-bone-100">{l(entry.outcome)}</p>}
       <div className="mt-3">
-        <ChangeChips changes={entry.changes} universeId={universeId} />
+        <ChangeChips changes={entry.changes} universeId={universeId} people={people} />
       </div>
     </Panel>
   );

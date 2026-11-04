@@ -9,4 +9,6 @@ export interface EngineContext {
   universe: UniverseDefinition;
   /** Изменения, накопленные за действие: попадают в запись истории */
   changes: HistoryChange[];
+  /** Событие, чьи эффекты сейчас применяются: от него отложенные последствия запоминают источник */
+  source?: string;
 }

@@ -2,7 +2,7 @@
 
 import type { HistoryEntry, UniverseId } from "@endemion/game-core";
 import { Button, Panel } from "@endemion/ui";
-import { ageLabel, visibleChanges } from "@/lib/format";
+import { ageLabel, visibleChanges, type PeopleNames } from "@/lib/format";
 import { ChangeChips } from "../change-chips";
 import { useI18n } from "../locale-provider";
 
@@ -11,19 +11,24 @@ const KIND_MARK: Readonly<Record<HistoryEntry["kind"], string>> = {
   year: "·",
   event: "◆",
   death: "✝",
-  restore: "↺"
+  restore: "↺",
+  consequence: "⧗",
+  quest: "✧",
+  people: "♦"
 };
 
 /** Хроника жизни: от новых записей к старым, с решениями и их последствиями */
 export function Timeline({
   entries,
   universeId,
+  people,
   canLoadMore,
   loadingMore,
   onLoadMore
 }: {
   entries: HistoryEntry[];
   universeId: UniverseId;
+  people?: PeopleNames;
   canLoadMore: boolean;
   loadingMore: boolean;
   onLoadMore: () => void;
@@ -40,7 +45,7 @@ export function Timeline({
             <li key={entry.seq} className="relative border-l border-line pl-4" data-testid="timeline-entry" data-kind={entry.kind}>
               <span
                 className={`absolute -left-[5px] top-1 flex h-2.5 w-2.5 items-center justify-center text-[10px] leading-none ${
-                  entry.kind === "event" ? "text-gold-400" : entry.kind === "death" ? "text-blood-400" : "text-bone-500"
+                  entry.kind === "event" || entry.kind === "quest" ? "text-gold-400" : entry.kind === "consequence" ? "text-azure-400" : entry.kind === "death" ? "text-blood-400" : "text-bone-500"
                 }`}
                 aria-hidden="true"
               >
@@ -48,7 +53,7 @@ export function Timeline({
               </span>
               <p className="text-[10px] uppercase tracking-[0.2em] text-bone-500">{ageLabel(entry.age, locale)}</p>
               {!quiet && <p className="font-display text-lg leading-snug text-bone-100">{l(entry.title)}</p>}
-              <p className={`text-sm leading-relaxed ${quiet ? "text-bone-500" : "text-bone-300"}`}>{l(entry.kind === "event" && entry.outcome ? entry.outcome : entry.text)}</p>
+              <p className={`text-sm leading-relaxed ${quiet ? "text-bone-500" : "text-bone-300"}`}>{l((entry.kind === "event" || entry.kind === "people") && entry.outcome ? entry.outcome : entry.text)}</p>
               {entry.choice && (
                 <p className="mt-1 text-xs text-gold-300" data-testid="decision">
                   {t("play.decision")}: {l(entry.choice)}
@@ -57,7 +62,7 @@ export function Timeline({
               )}
               {changes.length > 0 && (
                 <div className="mt-2">
-                  <ChangeChips changes={changes} universeId={universeId} />
+                  <ChangeChips changes={changes} universeId={universeId} people={people} />
                 </div>
               )}
             </li>

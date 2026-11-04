@@ -1,8 +1,8 @@
 import { t } from "../i18n.js";
 import { check, fx, when } from "../narrative/dsl.js";
-import type { UniverseDefinition } from "./types.js";
+import type { UniverseBase } from "./types.js";
 
-export const MURIM: UniverseDefinition = {
+export const MURIM: UniverseBase = {
   id: "murim",
   name: t("Девять Рек", "The Nine Rivers"),
   tagline: t("Цзянху, где долг чести решается клинком", "A jianghu where debts of honour are settled with a blade"),
@@ -73,7 +73,7 @@ export const MURIM: UniverseDefinition = {
         {
           id: "dark",
           text: t("Принять приглашение незнакомца в чёрном", "Accept the invitation of a stranger in black"),
-          success: { text: t("Тёмная школа берёт всех. Но платят здесь не золотом.", "The dark school takes anyone. But the price here is not gold."), effects: [fx.flag("martial-school"), fx.flag("demonic-path"), fx.track(8), fx.karma(-15)] }
+          success: { text: t("Тёмная школа берёт всех. Но платят здесь не золотом.", "The dark school takes anyone. But the price here is not gold."), effects: [fx.flag("martial-school"), fx.flag("demonic-path"), fx.track(8), fx.karma(-15), fx.faction("demonic-cult", 20), fx.later("mu.c-cult-summons", 5)] }
         }
       ]
     },
@@ -89,7 +89,7 @@ export const MURIM: UniverseDefinition = {
           id: "accept",
           text: t("Принять вызов", "Accept"),
           check: check(["strength", "agility"], 13, 3),
-          success: { text: t("Один приём — и наследник лежит в пыли. Лицо клана потеряно, лицо {name} обретено.", "One move and the heir lies in the dust. The clan loses face; {name} gains it."), effects: [fx.rep(10), fx.xp(45), fx.track(5)] },
+          success: { text: t("Один приём — и наследник лежит в пыли. Лицо клана потеряно, лицо {name} обретено.", "One move and the heir lies in the dust. The clan loses face; {name} gains it."), effects: [fx.rep(10), fx.xp(45), fx.track(5), fx.later("mu.c-duel-fame", 2)] },
           failure: { text: t("Удар ладонью ломает рёбра. Позор жжёт сильнее боли.", "A palm strike breaks ribs. The shame burns more than the pain."), effects: [fx.health(-30), fx.rep(-5), fx.xp(15)] }
         },
         {
@@ -136,7 +136,7 @@ export const MURIM: UniverseDefinition = {
           id: "save",
           text: t("Вступиться за беженцев", "Defend the refugees"),
           check: check(["strength", "agility", "willpower"], 14, 3),
-          success: { text: t("Разбойники бегут. О праведном герое заговорят в чайных.", "The bandits flee. Teahouses will speak of a righteous hero."), effects: [fx.karma(15), fx.rep(15), fx.xp(60)] },
+          success: { text: t("Разбойники бегут. О праведном герое заговорят в чайных.", "The bandits flee. Teahouses will speak of a righteous hero."), effects: [fx.karma(15), fx.rep(15), fx.xp(60), fx.later("mu.c-saved-merchant", 4), fx.later("mu.c-bandit-revenge", 6)] },
           failure: { text: t("Разбойников слишком много. {name} уносят на носилках.", "There are too many bandits. {name} is carried away on a stretcher."), effects: [fx.health(-40), fx.karma(10)] }
         },
         {

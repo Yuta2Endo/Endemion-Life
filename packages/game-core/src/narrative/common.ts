@@ -1,6 +1,7 @@
 // События, которые случаются в любой вселенной: детство, учёба, любовь, болезни, ремесло
 import { t } from "../i18n.js";
 import { check, fx, when } from "./dsl.js";
+import { PEOPLE_EVENTS } from "./people.js";
 import type { EventDefinition } from "./types.js";
 
 export const COMMON_EVENTS: readonly EventDefinition[] = [
@@ -65,14 +66,14 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
       {
         id: "befriend",
         text: t("Подсесть рядом и спросить, что он рисует", "Sit down and ask what they are drawing"),
-        success: { text: t("Это карта выдуманного королевства. С этого дня у {name} есть друг.", "It is a map of an imaginary kingdom. From this day {name} has a friend."), effects: [fx.stat("charisma", 2), fx.karma(5), fx.flag("childhood-friend")] }
+        success: { text: t("Это карта выдуманного королевства. С этого дня у {name} есть друг.", "It is a map of an imaginary kingdom. From this day {name} has a friend."), effects: [fx.stat("charisma", 2), fx.karma(5), fx.flag("childhood-friend"), fx.npc("friend")] }
       },
       {
         id: "defend",
         text: t("Встать между ним и обидчиками", "Stand between them and the bullies"),
         check: check(["strength", "charisma"], 8),
-        success: { text: t("Обидчики отступают. О смелости {name} говорит весь двор.", "The bullies back off. The whole yard talks of {name}'s courage."), effects: [fx.stat("strength", 1), fx.rep(3), fx.karma(5), fx.flag("childhood-friend")] },
-        failure: { text: t("Разбитый нос, но новый друг помогает подняться.", "A bloody nose, but the new friend helps you up."), effects: [fx.health(-5), fx.stat("willpower", 1), fx.karma(5), fx.flag("childhood-friend")] }
+        success: { text: t("Обидчики отступают. О смелости {name} говорит весь двор.", "The bullies back off. The whole yard talks of {name}'s courage."), effects: [fx.stat("strength", 1), fx.rep(3), fx.karma(5), fx.flag("childhood-friend"), fx.npc("friend")] },
+        failure: { text: t("Разбитый нос, но новый друг помогает подняться.", "A bloody nose, but the new friend helps you up."), effects: [fx.health(-5), fx.stat("willpower", 1), fx.karma(5), fx.flag("childhood-friend"), fx.npc("friend")] }
       },
       {
         id: "join",
@@ -94,7 +95,7 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
         id: "read",
         text: t("Читать до последней страницы", "Read to the last page"),
         check: check(["intelligence", "willpower"], 8),
-        success: { text: t("Книга прочитана, и в ней нашлось кое-что интересное.", "The book is finished, and it held something interesting."), effects: [fx.stat("intelligence", 2), fx.xp(10)] },
+        success: { text: t("Книга прочитана, и в ней нашлось кое-что интересное.", "The book is finished, and it held something interesting."), effects: [fx.stat("intelligence", 2), fx.xp(10), fx.skill("lore", 3)] },
         failure: { text: t("Буквы пляшут перед глазами. Сон побеждает.", "Letters dance before the eyes. Sleep wins."), effects: [fx.stat("intelligence", 1)] }
       },
       {
@@ -149,13 +150,13 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
       {
         id: "accept",
         text: t("Стать учеником", "Become an apprentice"),
-        success: { text: t("Каждый день — изнурительный труд. Но руки и разум учатся быстрее.", "Every day is gruelling labour. But hands and mind learn faster."), effects: [fx.stat("willpower", 2), fx.stat("wisdom", 1), fx.xp(30), fx.flag("mentor")] }
+        success: { text: t("Каждый день — изнурительный труд. Но руки и разум учатся быстрее.", "Every day is gruelling labour. But hands and mind learn faster."), effects: [fx.stat("willpower", 2), fx.stat("wisdom", 1), fx.xp(30), fx.flag("mentor"), fx.npc("mentor")] }
       },
       {
         id: "test",
         text: t("Сначала проверить мастера вопросом", "First test the master with a question"),
         check: check(["intelligence", "wisdom"], 11),
-        success: { text: t("Мастер смеётся: ответ на вопрос оказался вторым уроком.", "The master laughs: the answer was the second lesson."), effects: [fx.stat("intelligence", 2), fx.stat("wisdom", 1), fx.xp(30), fx.flag("mentor")] },
+        success: { text: t("Мастер смеётся: ответ на вопрос оказался вторым уроком.", "The master laughs: the answer was the second lesson."), effects: [fx.stat("intelligence", 2), fx.stat("wisdom", 1), fx.xp(30), fx.flag("mentor"), fx.npc("mentor")] },
         failure: { text: t("Мастер пожимает плечами и уходит. Шанс упущен.", "The master shrugs and walks away. The chance is gone."), effects: [fx.stat("wisdom", 1)] }
       },
       {
@@ -180,7 +181,7 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
         check: check(["charisma"], 11),
         success: {
           text: t("Танец длится до рассвета. С этого вечера {name} не одиноко.", "The dance lasts until dawn. From that night {name} is not alone."),
-          effects: [fx.stat("charisma", 1), fx.res("energy", 10), fx.flag("in-love"), fx.schedule("common.love-test", 3)]
+          effects: [fx.stat("charisma", 1), fx.res("energy", 10), fx.flag("in-love"), fx.npc("partner"), fx.schedule("common.love-test", 3)]
         },
         failure: { text: t("Слова застревают в горле. Незнакомец уходит с другим.", "Words stick in the throat. The stranger leaves with someone else."), effects: [fx.stat("willpower", 1)] }
       },
@@ -190,7 +191,7 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
         check: check(["intelligence", "luck"], 10),
         success: {
           text: t("Через неделю приходит ответ. Переписка становится встречами.", "A week later a reply arrives. Letters turn into meetings."),
-          effects: [fx.stat("wisdom", 1), fx.flag("in-love"), fx.schedule("common.love-test", 3)]
+          effects: [fx.stat("wisdom", 1), fx.flag("in-love"), fx.npc("partner"), fx.schedule("common.love-test", 3)]
         },
         failure: { text: t("Записку уносит ветер. Возможно, так было нужно.", "The wind carries the note away. Perhaps it was meant to be."), effects: [] }
       },
@@ -214,19 +215,19 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
       {
         id: "go",
         text: t("Бросить всё и уехать вместе", "Leave everything and go together"),
-        success: { text: t("Новый город, новая жизнь — вдвоём.", "A new city, a new life — together."), effects: [fx.stat("charisma", 1), fx.karma(5), fx.flag("married"), fx.wealth(-10)] }
+        success: { text: t("Новый город, новая жизнь — вдвоём.", "A new city, a new life — together."), effects: [fx.stat("charisma", 1), fx.karma(5), fx.flag("married"), fx.wealth(-10), fx.npcRole("partner", "spouse"), fx.affinity("spouse", 10)] }
       },
       {
         id: "stay",
         text: t("Уговорить остаться", "Persuade them to stay"),
         check: check(["charisma", "wisdom"], 14),
-        success: { text: t("Любовь оказывается сильнее карьеры. Свадьба — весной.", "Love proves stronger than ambition. The wedding is in spring."), effects: [fx.rep(3), fx.flag("married")] },
-        failure: { text: t("Ссора, обида — и пустой дом.", "A quarrel, resentment and an empty house."), effects: [fx.flag("in-love", false), fx.res("energy", -20), fx.stat("willpower", 1)] }
+        success: { text: t("Любовь оказывается сильнее карьеры. Свадьба — весной.", "Love proves stronger than ambition. The wedding is in spring."), effects: [fx.rep(3), fx.flag("married"), fx.npcRole("partner", "spouse")] },
+        failure: { text: t("Ссора, обида — и пустой дом.", "A quarrel, resentment and an empty house."), effects: [fx.flag("in-love", false), fx.res("energy", -20), fx.stat("willpower", 1), fx.npcRole("partner", "ex-partner"), fx.affinity("ex-partner", -20)] }
       },
       {
         id: "release",
         text: t("Отпустить", "Let them go"),
-        success: { text: t("Прощание без слёз. Самое трудное решение в жизни {name}.", "A farewell without tears. The hardest decision of {name}'s life."), effects: [fx.flag("in-love", false), fx.stat("wisdom", 2), fx.karma(5)] }
+        success: { text: t("Прощание без слёз. Самое трудное решение в жизни {name}.", "A farewell without tears. The hardest decision of {name}'s life."), effects: [fx.flag("in-love", false), fx.stat("wisdom", 2), fx.karma(5), fx.npcRole("partner", "ex-partner")] }
       }
     ]
   },
@@ -284,29 +285,29 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
     minAge: 17,
     maxAge: 24,
     maxOccurrences: 1,
-    conditions: [when.noFlag("profession")],
+    conditions: [when.noFlag("profession"), when.noProfession()],
     choices: [
       {
         id: "guard",
         text: t("Стража и наёмная служба", "Guard and mercenary service"),
-        success: { text: t("Тяжёлая служба закаляет тело.", "Hard service steels the body."), effects: [fx.stat("strength", 2), fx.stat("vitality", 1), fx.wealth(10), fx.flag("profession"), fx.flag("job-guard")] }
+        success: { text: t("Тяжёлая служба закаляет тело.", "Hard service steels the body."), effects: [fx.stat("strength", 2), fx.stat("vitality", 1), fx.wealth(10), fx.flag("profession"), fx.flag("job-guard"), fx.profession("guard")] }
       },
       {
         id: "scholar",
         text: t("Писарь и учёный", "Scribe and scholar"),
         check: check(["intelligence"], 12),
-        success: { text: t("Архивы открывают свои тайны.", "The archives reveal their secrets."), effects: [fx.stat("intelligence", 2), fx.stat("wisdom", 1), fx.wealth(8), fx.flag("profession"), fx.flag("job-scholar")] },
-        failure: { text: t("Экзамен провален. Остаётся работа переписчика.", "The exam is failed. Only copyist work remains."), effects: [fx.stat("intelligence", 1), fx.wealth(4), fx.flag("profession")] }
+        success: { text: t("Архивы открывают свои тайны.", "The archives reveal their secrets."), effects: [fx.stat("intelligence", 2), fx.stat("wisdom", 1), fx.wealth(8), fx.flag("profession"), fx.flag("job-scholar"), fx.profession("scholar")] },
+        failure: { text: t("Экзамен провален. Остаётся работа переписчика.", "The exam is failed. Only copyist work remains."), effects: [fx.stat("intelligence", 1), fx.wealth(4), fx.flag("profession"), fx.profession("laborer")] }
       },
       {
         id: "merchant",
         text: t("Торговля", "Trade"),
-        success: { text: t("Первая лавка — маленькая, но своя.", "The first shop is small, but your own."), effects: [fx.stat("charisma", 2), fx.wealth(20), fx.flag("profession"), fx.flag("job-merchant")] }
+        success: { text: t("Первая лавка — маленькая, но своя.", "The first shop is small, but your own."), effects: [fx.stat("charisma", 2), fx.wealth(20), fx.flag("profession"), fx.flag("job-merchant"), fx.profession("merchant")] }
       },
       {
         id: "wanderer",
         text: t("Странствия", "Wandering"),
-        success: { text: t("Дорога зовёт. Каждый город — новая история.", "The road calls. Every town is a new story."), effects: [fx.stat("agility", 1), fx.stat("luck", 2), fx.xp(25), fx.flag("profession"), fx.flag("job-wanderer")] }
+        success: { text: t("Дорога зовёт. Каждый город — новая история.", "The road calls. Every town is a new story."), effects: [fx.stat("agility", 1), fx.stat("luck", 2), fx.xp(25), fx.flag("profession"), fx.flag("job-wanderer"), fx.profession("wanderer")] }
       }
     ]
   },
@@ -323,12 +324,12 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
       {
         id: "home",
         text: t("Больше времени проводить дома", "Spend more time at home"),
-        success: { text: t("Ребёнок растёт в любви. Род продолжится.", "The child grows up loved. The line will continue."), effects: [fx.stat("wisdom", 1), fx.karma(5), fx.flag("has-child"), fx.wealth(-10)] }
+        success: { text: t("Ребёнок растёт в любви. Род продолжится.", "The child grows up loved. The line will continue."), effects: [fx.stat("wisdom", 1), fx.karma(5), fx.flag("has-child"), fx.wealth(-10), fx.npc("child"), fx.affinity("child", 10)] }
       },
       {
         id: "work",
         text: t("Работать вдвое больше ради будущего", "Work twice as hard for the future"),
-        success: { text: t("Достаток растёт, но первые шаги ребёнка {name} пропускает.", "Wealth grows, but {name} misses the child's first steps."), effects: [fx.wealth(25), fx.res("energy", -20), fx.flag("has-child")] }
+        success: { text: t("Достаток растёт, но первые шаги ребёнка {name} пропускает.", "Wealth grows, but {name} misses the child's first steps."), effects: [fx.wealth(25), fx.res("energy", -20), fx.flag("has-child"), fx.npc("child"), fx.affinity("child", -10)] }
       }
     ]
   },
@@ -357,5 +358,7 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
         success: { text: t("Ученики ловят каждое слово. Имя {name} будут помнить.", "Students hang on every word. {name}'s name will be remembered."), effects: [fx.rep(5), fx.stat("charisma", 1), fx.xp(20)] }
       }
     ]
-  }
+  },
+  // Stage 02: семья, люди вокруг, возраст, таланты и тайны рода
+  ...PEOPLE_EVENTS
 ];

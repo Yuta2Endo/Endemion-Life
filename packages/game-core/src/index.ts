@@ -29,6 +29,15 @@ export { STAGE_INFO, stageForAge } from "./life/stages.js";
 export { naturalDeathChance } from "./life/death.js";
 
 export { checkChance, MAX_CHANCE, MIN_CHANCE } from "./engine/checks.js";
+export { presentProfile, type InteractionView, type LifeProfile, type MeterView, type NpcView, type QuestView, type SecretView } from "./engine/profile.js";
+export { AFFINITY_LIMIT, affinityLabel, FAMILY_ROLES, roleName } from "./character/npcs.js";
+export { GIFT_COST, INTERACTION_RULES } from "./character/interactions.js";
+export { COMMON_PROFESSIONS, COMMON_SKILLS, COMMON_TALENTS, COMMON_WEAKNESSES, NPC_TRAITS } from "./rpg/common.js";
+export { allProfessions, allSkills, educationTier, findEducation, findProfession, findSkill, pathSkill, SKILL_MAX } from "./rpg/skills.js";
+export { allTalents, allWeaknesses, findTalent, findWeakness } from "./rpg/talents.js";
+export { DEFAULT_COOLDOWN, RECENT_LIMIT } from "./narrative/selection.js";
+export { PEOPLE_EVENTS, COMMON_CONSEQUENCES } from "./narrative/people.js";
+export { meterValue, worldTrackFactor } from "./world/rules.js";
 export { checkCondition, describeCondition } from "./engine/conditions.js";
 export { applyAction, newGame, restoreState, SAVE_SCHEMA_VERSION, SEED_MAX_LENGTH, type NewGameInput } from "./engine/game.js";
 export { migrateSave, parseSave } from "./engine/save.js";

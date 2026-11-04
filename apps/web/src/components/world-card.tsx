@@ -47,6 +47,19 @@ export function WorldCard({ universe, locale, detailed = false }: { universe: Un
             </h4>
             <p className="text-bone-300">{universe.track.ranks.map((rank) => rank.name[locale]).join(" → ")}</p>
           </div>
+          <div>
+            <h4 className="mb-2 text-[11px] uppercase tracking-[0.2em]" style={{ color: accent }}>
+              {msg(locale, "worlds.mechanics")}
+            </h4>
+            <ul className="space-y-2 text-bone-300" data-testid="world-mechanics">
+              {universe.mechanics.map((mechanic) => (
+                <li key={mechanic.name.en}>
+                  <span className="text-bone-100">{mechanic.name[locale]}.</span> {mechanic.description[locale]}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <p className="text-xs text-bone-500">{msg(locale, "worlds.society")}: {universe.socialClasses.map((c) => c.name[locale]).join(" · ")}</p>
           <p className="text-xs text-bone-500">{msg(locale, "worlds.lifespan", { years: universe.lifespan })}</p>
         </div>
       )}

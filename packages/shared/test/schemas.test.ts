@@ -24,6 +24,25 @@ describe("контракты API", () => {
     expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "choose", choiceId: "fight", reward: 9000 } }).success).toBe(false);
   });
 
+  it("общение с NPC: только известные действия и id вида n1", () => {
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "interact", npcId: "n3", interaction: "talk" } }).success).toBe(true);
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "interact", npcId: "n3", interaction: "marry" } }).success).toBe(false);
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "interact", npcId: "<script>", interaction: "talk" } }).success).toBe(false);
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "interact", npcId: "n3", interaction: "talk", affinity: 100 } }).success).toBe(false);
+  });
+
+  it("представление жизни Stage 02: профиль есть, скрытые характеристики — нет", () => {
+    const { state } = newGame({ seed: "hidden-seed", universeId: "academy" });
+    const view = toLifeView({ id: "id", createdAt: "", updatedAt: "" }, state);
+    expect(view.profile.biography.length).toBeGreaterThan(0);
+    expect(view.profile.npcs.length).toBeGreaterThan(0);
+    expect(view.profile.potential).toBeNull();
+    expect(view).not.toHaveProperty("hidden");
+    const json = JSON.stringify(view);
+    expect(json).not.toContain("dormantTalents\":[\"");
+    for (const talent of state.hidden.dormantTalents) expect(json).not.toContain(`"${talent}"`);
+  });
+
   it("история: limit по умолчанию и ограничение сверху", () => {
     expect(historyQuerySchema.parse({})).toEqual({ limit: 50 });
     expect(historyQuerySchema.safeParse({ limit: "1000" }).success).toBe(false);

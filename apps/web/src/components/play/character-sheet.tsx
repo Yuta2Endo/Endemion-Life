@@ -21,6 +21,7 @@ export function CharacterSheet({ life }: { life: LifeView }) {
   const race = universe.races.find((r) => r.id === c.raceId);
   const origin = universe.origins.find((o) => o.id === c.originId);
   const temperament = TEMPERAMENTS.find((x) => x.id === c.temperamentId);
+  const socialClass = universe.socialClasses.find((x) => x.id === c.socialClassId);
   const ranks = universe.track.ranks;
   const currentThreshold = ranks[c.track.rank]?.threshold ?? 0;
 
@@ -40,6 +41,11 @@ export function CharacterSheet({ life }: { life: LifeView }) {
       <p className="text-xs leading-relaxed text-bone-300">
         {[race && l(race.name), origin && l(origin.name), temperament && l(temperament.name)].filter(Boolean).join(" · ")}
       </p>
+      {socialClass && (
+        <p className="-mt-3 text-xs text-gold-300" data-testid="sheet-class">
+          {t("sheet.class")}: {l(socialClass.name)}
+        </p>
+      )}
 
       <div className="space-y-3">
         <Meter label={l({ ru: "Здоровье", en: "Health" })} value={c.resources.health} max={s.maxResources.health} tone="blood" />

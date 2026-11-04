@@ -55,6 +55,7 @@ function lifeColumns(state: GameState) {
     status: lifeStatus(state),
     version: state.version,
     age: state.life.age,
+    schemaVersion: state.schemaVersion,
     state: json(state)
   };
 }

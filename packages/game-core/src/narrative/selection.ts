@@ -17,6 +17,10 @@ const EVENT_CHANCE: Readonly<Record<LifeStage, number>> = {
 };
 /** Сколько лет продолжение цепочки ждёт, если его условия пока не выполнены */
 const SCHEDULE_GRACE_YEARS = 5;
+/** Событие без cooldown и maxOccurrences приходит не чаще раза в столько лет */
+export const DEFAULT_COOLDOWN = 3;
+/** Столько последних событий не повторяются, даже если их cooldown уже прошёл */
+export const RECENT_LIMIT = 4;
 
 const byUniverse = new Map<string, Map<string, EventDefinition>>();
 
@@ -48,8 +52,14 @@ export function isEligible(state: GameState, event: EventDefinition): boolean {
   const seen = state.occurrences[event.id] ?? 0;
   if (event.maxOccurrences !== undefined && seen >= event.maxOccurrences) return false;
   const last = state.lastSeen[event.id];
-  if (event.cooldown !== undefined && last !== undefined && age - last < event.cooldown) return false;
+  const cooldown = event.cooldown ?? (event.maxOccurrences === undefined ? DEFAULT_COOLDOWN : undefined);
+  if (cooldown !== undefined && last !== undefined && age - last < cooldown) return false;
   return checkAll(state, event.conditions) && hasAvailableChoice(state, event);
+}
+
+/** Запоминает событие в списке недавних: следующие RECENT_LIMIT событий будут другими */
+export function rememberEvent(state: GameState, eventId: string): void {
+  state.recentEvents = [eventId, ...(state.recentEvents ?? []).filter((id) => id !== eventId)].slice(0, RECENT_LIMIT);
 }
 
 /** Продолжение сюжетной цепочки, чей срок настал. Просроченные продолжения отбрасываются */
@@ -75,6 +85,10 @@ export function selectEvent(ctx: EngineContext): EventDefinition | undefined {
   if (scheduled) return scheduled;
   if (!ctx.rng.chance(EVENT_CHANCE[ctx.state.life.stage])) return undefined;
   const universeEvents = new Set(ctx.universe.events.map((event) => event.id));
-  const candidates = [...eventIndex(ctx.universe).values()].filter((event) => !event.scheduledOnly && isEligible(ctx.state, event));
-  return ctx.rng.weighted(candidates, (event) => event.weight ?? (universeEvents.has(event.id) ? 2 : 1));
+  const recent = new Set(ctx.state.recentEvents ?? []);
+  const eligible = [...eventIndex(ctx.universe).values()].filter((event) => !event.scheduledOnly && isEligible(ctx.state, event));
+  // Недавние события не повторяются подряд. Если подходят только они — год проходит без события
+  const candidates = eligible.filter((event) => !recent.has(event.id));
+  // Чем чаще событие уже было, тем реже оно приходит снова: вес делится на 1 + число повторов
+  return ctx.rng.weighted(candidates, (event) => (event.weight ?? (universeEvents.has(event.id) ? 2 : 1)) / (1 + (ctx.state.occurrences[event.id] ?? 0)));
 }

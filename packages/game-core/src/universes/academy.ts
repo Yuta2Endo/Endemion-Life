@@ -1,8 +1,8 @@
 import { t } from "../i18n.js";
 import { check, fx, when } from "../narrative/dsl.js";
-import type { UniverseDefinition } from "./types.js";
+import type { UniverseBase } from "./types.js";
 
-export const ACADEMY: UniverseDefinition = {
+export const ACADEMY: UniverseBase = {
   id: "academy",
   name: t("Империя Лиреваль", "The Lireval Empire"),
   tagline: t("Балы, дуэли и интриги Королевской академии магии", "Balls, duels and intrigue at the Royal Academy of Magic"),
@@ -65,20 +65,20 @@ export const ACADEMY: UniverseDefinition = {
           id: "magic",
           text: t("Показать заклинание", "Demonstrate a spell"),
           check: check(["intelligence", "wisdom"], 11),
-          success: { text: t("Зал замолкает. {name} зачислен.", "The hall falls silent. {name} is admitted."), effects: [fx.flag("academy-student"), fx.track(5), fx.rep(5)] },
+          success: { text: t("Зал замолкает. {name} зачислен.", "The hall falls silent. {name} is admitted."), effects: [fx.flag("academy-student"), fx.track(5), fx.rep(5), fx.education("ac-astrein"), fx.faction("magic-tower", 5)] },
           failure: { text: t("Искры гаснут. Попробовать можно в следующем году.", "The sparks fade. One may try again next year."), effects: [fx.stat("intelligence", 1)] }
         },
         {
           id: "name",
           text: t("Положиться на фамилию", "Rely on the family name"),
           requires: [when.flag("noble")],
-          success: { text: t("Экзаменатор кланяется. Формальности улажены.", "The examiner bows. Formalities are settled."), effects: [fx.flag("academy-student"), fx.rep(2)] }
+          success: { text: t("Экзаменатор кланяется. Формальности улажены.", "The examiner bows. Formalities are settled."), effects: [fx.flag("academy-student"), fx.rep(2), fx.education("ac-astrein")] }
         },
         {
           id: "bribe",
           text: t("Дать взятку (50 золота)", "Pay a bribe (50 gold)"),
           requires: [when.wealth(50)],
-          success: { text: t("Документы находятся. Совесть — нет.", "The documents turn up. The conscience doesn't."), effects: [fx.flag("academy-student"), fx.wealth(-50), fx.karma(-10)] }
+          success: { text: t("Документы находятся. Совесть — нет.", "The documents turn up. The conscience doesn't."), effects: [fx.flag("academy-student"), fx.wealth(-50), fx.karma(-10), fx.education("ac-astrein"), fx.later("ac.c-bribe-exposed", 4)] }
         }
       ]
     },
@@ -95,7 +95,7 @@ export const ACADEMY: UniverseDefinition = {
           id: "duel",
           text: t("Принять дуэль на заклинаниях", "Accept a spell duel"),
           check: check(["intelligence", "agility"], 13, 3),
-          success: { text: t("Противник в фонтане. Курс аплодирует.", "The opponent lands in the fountain. The class applauds."), effects: [fx.rep(12), fx.xp(40), fx.track(5)] },
+          success: { text: t("Противник в фонтане. Курс аплодирует.", "The opponent lands in the fountain. The class applauds."), effects: [fx.rep(12), fx.xp(40), fx.track(5), fx.skill("duelling", 3), fx.later("ac.c-duel-grudge", 3)] },
           failure: { text: t("Унижение на глазах у всех.", "Humiliation in front of everyone."), effects: [fx.rep(-10), fx.health(-15)] }
         },
         {
@@ -147,7 +147,7 @@ export const ACADEMY: UniverseDefinition = {
           id: "dance",
           text: t("Блистать в танце", "Shine on the dance floor"),
           check: check(["charisma", "agility"], 13),
-          success: { text: t("Принцесса запоминает имя {name}.", "The princess remembers {name}'s name."), effects: [fx.rep(15), fx.ability("etiquette")] },
+          success: { text: t("Принцесса запоминает имя {name}.", "The princess remembers {name}'s name."), effects: [fx.rep(15), fx.ability("etiquette"), fx.meter("court-favor", 10), fx.later("ac.c-ball-acquaintance", 1)] },
           failure: { text: t("Наступить на ногу графине — плохая примета.", "Stepping on a countess's foot is a bad omen."), effects: [fx.rep(-8)] }
         },
         {
@@ -171,13 +171,13 @@ export const ACADEMY: UniverseDefinition = {
           id: "emperor",
           text: t("Рассказать императору", "Tell the Emperor"),
           check: check(["charisma", "willpower"], 14),
-          success: { text: t("Заговор раскрыт. Император дарует {name} титул.", "The plot is exposed. The Emperor grants {name} a title."), effects: [fx.rep(25), fx.karma(10), fx.wealth(100), fx.flag("noble")] },
+          success: { text: t("Заговор раскрыт. Император дарует {name} титул.", "The plot is exposed. The Emperor grants {name} a title."), effects: [fx.rep(25), fx.karma(10), fx.wealth(100), fx.flag("noble"), fx.meter("court-favor", 25), fx.socialClass("lesser-noble")] },
           failure: { text: t("Император не верит. Канцлер мстит.", "The Emperor does not believe it. The chancellor takes revenge."), effects: [fx.rep(-20), fx.health(-25)] }
         },
         {
           id: "silence",
           text: t("Взять деньги", "Take the money"),
-          success: { text: t("Тяжёлый кошель и тяжёлая совесть.", "A heavy purse and a heavy conscience."), effects: [fx.wealth(150), fx.karma(-15)] }
+          success: { text: t("Тяжёлый кошель и тяжёлая совесть.", "A heavy purse and a heavy conscience."), effects: [fx.wealth(150), fx.karma(-15), fx.later("ac.c-silence-price", 4)] }
         }
       ]
     }

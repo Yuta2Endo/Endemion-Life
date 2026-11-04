@@ -2,12 +2,12 @@
 
 import type { HistoryChange, UniverseId } from "@endemion/game-core";
 import { Tag } from "@endemion/ui";
-import { formatChange } from "@/lib/format";
+import { formatChange, type PeopleNames } from "@/lib/format";
 import { useI18n } from "./locale-provider";
 
-export function ChangeChips({ changes, universeId }: { changes: HistoryChange[]; universeId: UniverseId }) {
+export function ChangeChips({ changes, universeId, people }: { changes: HistoryChange[]; universeId: UniverseId; people?: PeopleNames }) {
   const { locale } = useI18n();
-  const labels = changes.map((change) => formatChange(change, universeId, locale)).filter((label) => label !== null);
+  const labels = changes.map((change) => formatChange(change, universeId, locale, people)).filter((label) => label !== null);
   if (labels.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-1.5" data-testid="changes">

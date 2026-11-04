@@ -1,6 +1,7 @@
 // Ответы API. Представление жизни строится одной функцией и на сервере, и в офлайн-режиме сайта
 import {
   presentEvent,
+  presentProfile,
   summarizeCharacter,
   type CharacterState,
   type CharacterSummary,
@@ -8,6 +9,7 @@ import {
   type GameErrorCode,
   type GameState,
   type HistoryEntry,
+  type LifeProfile,
   type LifeState,
   type OptionView,
   type UniverseId,
@@ -33,6 +35,8 @@ export interface LifeView extends LifeMeta {
   summary: CharacterSummary;
   life: LifeState;
   pendingEvent: EventView | null;
+  /** Stage 02: биография, семья и люди вокруг, шкалы мира, задание Системы. Скрытое — только после раскрытия */
+  profile: LifeProfile;
 }
 
 export interface LifeListItem extends LifeMeta {
@@ -125,7 +129,8 @@ export function toLifeView(meta: LifeMeta, state: GameState): LifeView {
     character: state.character,
     summary: summarizeCharacter(state),
     life: state.life,
-    pendingEvent: presentEvent(state)
+    pendingEvent: presentEvent(state),
+    profile: presentProfile(state)
   };
 }
 

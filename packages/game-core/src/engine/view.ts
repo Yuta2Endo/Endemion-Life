@@ -57,7 +57,7 @@ export function presentEvent(state: GameState): EventView | null {
         text: fillText(choice.text, vars),
         available: failed.length === 0,
         locked: failed.map((condition) => describeCondition(condition, universe)),
-        chance: choice.check ? checkChance(state.character, choice.check) : null
+        chance: choice.check ? checkChance(state.character, choice.check, state) : null
       };
     })
   };

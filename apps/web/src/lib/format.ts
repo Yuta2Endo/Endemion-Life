@@ -1,5 +1,21 @@
 // Подписи для изменений персонажа в истории и итогах выбора
-import { getUniverse, RESOURCE_INFO, STAT_INFO, type HistoryChange, type Locale, type ResourceKey, type StatKey, type UniverseId } from "@endemion/game-core";
+import {
+  findEducation,
+  findProfession,
+  findSkill,
+  findTalent,
+  findWeakness,
+  getUniverse,
+  RESOURCE_INFO,
+  roleName,
+  STAT_INFO,
+  type HistoryChange,
+  type Locale,
+  type NpcRole,
+  type ResourceKey,
+  type StatKey,
+  type UniverseId
+} from "@endemion/game-core";
 import { msg } from "./messages";
 
 export interface ChangeLabel {
@@ -11,7 +27,10 @@ function signed(n: number): string {
   return n > 0 ? `+${n}` : String(n);
 }
 
-export function formatChange(change: HistoryChange, universeId: UniverseId, locale: Locale): ChangeLabel | null {
+/** Имена людей по id: изменения отношений хранят только id NPC */
+export type PeopleNames = Readonly<Record<string, string>>;
+
+export function formatChange(change: HistoryChange, universeId: UniverseId, locale: Locale, people: PeopleNames = {}): ChangeLabel | null {
   const universe = getUniverse(universeId);
   const delta = change.delta ?? 0;
   const tone = delta > 0 ? "good" : delta < 0 ? "bad" : "neutral";
@@ -42,6 +61,59 @@ export function formatChange(change: HistoryChange, universeId: UniverseId, loca
     case "ability": {
       const ability = universe.abilities.find((a) => a.id === change.value);
       return ability ? { text: msg(locale, "change.ability", { name: ability.name[locale] }), tone: "gold" } : null;
+    }
+    case "skill": {
+      const skill = findSkill(universe, change.key ?? "");
+      return skill ? { text: `${skill.name[locale]} ${signed(delta)}`, tone } : null;
+    }
+    case "talent": {
+      const talent = findTalent(universe, String(change.value));
+      return talent ? { text: msg(locale, "change.talent", { name: talent.name[locale] }), tone: "gold" } : null;
+    }
+    case "weakness": {
+      const weakness = findWeakness(universe, change.key ?? "");
+      if (!weakness) return null;
+      return change.value === "overcome"
+        ? { text: msg(locale, "change.weaknessOvercome", { name: weakness.name[locale] }), tone: "good" }
+        : { text: msg(locale, "change.weaknessGained", { name: weakness.name[locale] }), tone: "bad" };
+    }
+    case "relation":
+      return { text: msg(locale, "change.relation", { name: people[change.key ?? ""] ?? "?", delta: signed(delta) }), tone };
+    case "npc": {
+      const name = people[change.key ?? ""] ?? "?";
+      if (change.value === "met") return { text: msg(locale, "change.met", { name }), tone: "gold" };
+      if (change.value === "died") return { text: msg(locale, "change.died", { name }), tone: "bad" };
+      return { text: msg(locale, "change.role", { name, role: roleName(change.value as NpcRole, "male")[locale].toLowerCase() }), tone: "gold" };
+    }
+    case "meter": {
+      const meter = universe.meters.find((m) => m.id === change.key);
+      if (!meter) return null;
+      const good = meter.danger ? delta < 0 : delta > 0;
+      return { text: `${meter.name[locale]} ${signed(delta)}`, tone: good ? "good" : "bad" };
+    }
+    case "faction": {
+      const faction = universe.factions.find((f) => f.id === change.key);
+      return faction ? { text: `${faction.name[locale]} ${signed(delta)}`, tone } : null;
+    }
+    case "class": {
+      const socialClass = universe.socialClasses.find((c) => c.id === change.value);
+      return socialClass ? { text: msg(locale, "change.class", { name: socialClass.name[locale] }), tone: "gold" } : null;
+    }
+    case "profession": {
+      const profession = findProfession(universe, String(change.value));
+      return profession ? { text: msg(locale, "change.profession", { name: profession.name[locale] }), tone: "gold" } : null;
+    }
+    case "education": {
+      const education = findEducation(universe, String(change.value));
+      return education ? { text: msg(locale, "change.education", { name: education.name[locale] }), tone: "gold" } : null;
+    }
+    case "specialization": {
+      const specialization = universe.specializations.find((x) => x.id === change.value);
+      return specialization ? { text: msg(locale, "change.specialization", { name: specialization.name[locale] }), tone: "gold" } : null;
+    }
+    case "hidden": {
+      const key = change.value === "potential" || change.value === "destiny" || change.value === "familySecret" ? change.value : null;
+      return key ? { text: msg(locale, `change.hidden.${key}`), tone: "gold" } : null;
     }
   }
 }

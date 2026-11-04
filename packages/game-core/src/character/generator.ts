@@ -1,4 +1,5 @@
-// Character Engine: персонаж при рождении. Всё случайное идёт из Rng, поэтому один seed даёт одного и того же персонажа
+// Character Engine: персонаж при рождении. Всё случайное идёт из Rng, поэтому один seed даёт одного и того же персонажа.
+// Здесь броски Stage 01 (пол, раса, происхождение, характер, имя, характеристики). Семья, таланты и тайны — в birth.ts
 import { GameRuleError } from "../errors.js";
 import type { Rng } from "../rng.js";
 import { BIRTH_STAT_MAX, clamp, entriesOf, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_MIN, type Stats, type StatMods } from "../stats.js";
@@ -28,6 +29,8 @@ export interface GeneratedCharacter {
   character: CharacterState;
   /** Флаги происхождения: с них начинается жизнь (клятва, корень духа, школа) */
   flags: string[];
+  /** Имя выбрал случай: фамилию семьи можно взять из него */
+  generatedName: boolean;
 }
 
 export function normalizeName(name: string): string {
@@ -107,8 +110,16 @@ export function generateCharacter(input: CharacterInput, rng: Rng): GeneratedCha
     karma: clamp((origin.karma ?? 0) + (temperament.karma ?? 0), -KARMA_LIMIT, KARMA_LIMIT),
     wealth: origin.wealth,
     abilities: [...(origin.abilities ?? [])],
-    track: { points: 0, rank: 0 }
+    track: { points: 0, rank: 0 },
+    socialClassId: universe.originProfiles[origin.id]?.socialClassId ?? universe.socialClasses[0]?.id ?? "",
+    talents: [],
+    weaknesses: [],
+    skills: { ...(universe.originProfiles[origin.id]?.skills ?? {}) },
+    professionId: null,
+    educationId: null,
+    specializationId: null,
+    factions: { ...(universe.originProfiles[origin.id]?.factions ?? {}) }
   };
   character.resources = maxResources(character);
-  return { character, flags: [...(origin.flags ?? [])] };
+  return { character, flags: [...(origin.flags ?? [])], generatedName: !input.name };
 }

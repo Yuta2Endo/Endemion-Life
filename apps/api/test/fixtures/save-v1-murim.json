@@ -1,0 +1,90 @@
+{
+ "schemaVersion": 1,
+ "seed": "v1-murim-adult",
+ "rngState": 1731284935,
+ "version": 61,
+ "character": {
+  "name": "Мэй Инь клана Лун",
+  "gender": "female",
+  "universeId": "murim",
+  "raceId": "human",
+  "originId": "clan-heir",
+  "temperamentId": "ambitious",
+  "stats": {
+   "strength": 18,
+   "intelligence": 21,
+   "agility": 11,
+   "vitality": 6,
+   "wisdom": 15,
+   "charisma": 13,
+   "luck": 10,
+   "willpower": 19
+  },
+  "resources": {
+   "health": 89,
+   "energy": 98,
+   "mana": 102,
+   "stamina": 90
+  },
+  "level": 3,
+  "xp": 152,
+  "reputation": 35,
+  "karma": 30,
+  "wealth": 0,
+  "abilities": [],
+  "track": {
+   "points": 55,
+   "rank": 1
+  }
+ },
+ "life": {
+  "age": 37,
+  "stage": "adult",
+  "alive": true,
+  "deathAge": null,
+  "deathCause": null
+ },
+ "flags": [
+  "martial-school",
+  "childhood-friend",
+  "in-love",
+  "married",
+  "has-child"
+ ],
+ "occurrences": {
+  "common.first-steps": 1,
+  "common.night-fear": 1,
+  "common.first-friend": 1,
+  "common.fever": 2,
+  "common.study-or-play": 2,
+  "common.lost-purse": 1,
+  "mu.bottleneck": 5,
+  "mu.duel": 5,
+  "common.first-love": 1,
+  "common.love-test": 1,
+  "common.trade-offer": 1,
+  "common.heir": 2,
+  "mu.manual": 1
+ },
+ "lastSeen": {
+  "common.first-steps": 1,
+  "common.night-fear": 3,
+  "common.first-friend": 4,
+  "common.fever": 29,
+  "common.study-or-play": 9,
+  "common.lost-purse": 10,
+  "mu.bottleneck": 37,
+  "mu.duel": 36,
+  "common.first-love": 16,
+  "common.love-test": 19,
+  "common.trade-offer": 20,
+  "common.heir": 33,
+  "mu.manual": 24
+ },
+ "pending": {
+  "eventId": "mu.bottleneck",
+  "age": 37
+ },
+ "scheduled": [],
+ "nextSeq": 62
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { getUniverse, type GameAction, type HistoryEntry } from "@endemion/game-core";
+import { getUniverse, type GameAction, type HistoryEntry, type InteractionId } from "@endemion/game-core";
 import type { LifeView, SaveView } from "@endemion/shared";
 import { Button, Panel } from "@endemion/ui";
 import Link from "next/link";
@@ -12,11 +12,12 @@ import { newUuid } from "@/lib/uuid";
 import { ChangeChips } from "../change-chips";
 import { useI18n } from "../locale-provider";
 import { CharacterSheet } from "./character-sheet";
+import { Dossier } from "./dossier";
 import { EventCard, OutcomeCard } from "./event-card";
 import { SavesDialog } from "./saves-dialog";
 import { Timeline } from "./timeline";
 
-type Tab = "event" | "character" | "timeline";
+type Tab = "event" | "character" | "people" | "timeline";
 
 /** Новые записи сверху, без повторов: ответ на повтор действия может вернуть уже показанные записи */
 function mergeEntries(added: HistoryEntry[], existing: HistoryEntry[]): HistoryEntry[] {
@@ -94,7 +95,13 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
       pendingAction.current = null;
       setLife(result.life);
       setEntries((previous) => mergeEntries(result.entries, previous));
-      setOutcome(action.type === "choose" ? (result.entries.find((entry) => entry.kind === "event") ?? null) : null);
+      setOutcome(
+        action.type === "choose"
+          ? (result.entries.find((entry) => entry.kind === "event") ?? null)
+          : action.type === "interact"
+            ? (result.entries.find((entry) => entry.kind === "people") ?? null)
+            : null
+      );
       if (result.life.pendingEvent || result.life.status === "dead") setTab("event");
     } catch (error) {
       if (error instanceof ClientError && error.code === "VERSION_CONFLICT") {
@@ -174,8 +181,11 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
   const tabs: { id: Tab; label: string }[] = [
     { id: "event", label: t("play.tabEvent") },
     { id: "character", label: t("play.tabCharacter") },
+    { id: "people", label: t("play.tabPeople") },
     { id: "timeline", label: t("play.tabTimeline") }
   ];
+  const people = Object.fromEntries(life.profile.npcs.map((npc) => [npc.id, npc.name]));
+  const interact = (npcId: string, interaction: InteractionId) => void perform({ type: "interact", npcId, interaction });
   const shown = (id: Tab) => (tab === id ? "block" : "hidden lg:block");
 
   return (
@@ -220,14 +230,14 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
           ) : event ? (
             <EventCard key={`${event.eventId}-${life.version}`} event={event} busy={busy} onChoose={(choiceId) => void perform({ type: "choose", choiceId })} />
           ) : outcome ? (
-            <OutcomeCard entry={outcome} universeId={life.universeId} />
+            <OutcomeCard entry={outcome} universeId={life.universeId} people={people} />
           ) : (
             <Panel data-testid="quiet-card">
               <p className="text-[11px] uppercase tracking-[0.3em] text-gold-400">{ageLabel(life.life.age, locale)}</p>
               <p className="mt-2 font-display text-2xl text-bone-100">{lastYear ? l(lastYear.text) : t("play.quiet")}</p>
               {lastYear && (
                 <div className="mt-3">
-                  <ChangeChips changes={lastYear.changes.filter((c) => c.kind !== "xp")} universeId={life.universeId} />
+                  <ChangeChips changes={lastYear.changes.filter((c) => c.kind !== "xp")} universeId={life.universeId} people={people} />
                 </div>
               )}
             </Panel>
@@ -252,22 +262,31 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
               <p className="w-full text-xs text-bone-500">{t("play.advanceHint")}</p>
             </Panel>
           )}
+
+          <div className="hidden lg:block">
+            <Dossier life={life} busy={busy} onInteract={interact} />
+          </div>
+        </section>
+
+        {/* На телефоне досье — отдельная вкладка */}
+        <section className={tab === "people" ? "block lg:hidden" : "hidden"}>
+          <Dossier life={life} busy={busy} onInteract={interact} />
         </section>
 
         <aside className={shown("timeline")}>
-          <Timeline entries={entries} universeId={life.universeId} canLoadMore={nextBefore !== null} loadingMore={loadingMore} onLoadMore={() => void loadMore()} />
+          <Timeline entries={entries} universeId={life.universeId} people={people} canLoadMore={nextBefore !== null} loadingMore={loadingMore} onLoadMore={() => void loadMore()} />
         </aside>
       </div>
 
       {/* Вкладки для телефона: на большом экране все три колонки видны сразу */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-line bg-ink-950/95 backdrop-blur-md lg:hidden" aria-label="Sections">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-ink-950/95 backdrop-blur-md lg:hidden" aria-label="Sections">
         {tabs.map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => setTab(item.id)}
             aria-pressed={tab === item.id}
-            className={`relative py-3.5 text-xs uppercase tracking-[0.18em] transition ${tab === item.id ? "text-gold-200" : "text-bone-500"}`}
+            className={`relative py-3.5 text-[11px] uppercase tracking-[0.14em] transition ${tab === item.id ? "text-gold-200" : "text-bone-500"}`}
             data-testid={`tab-${item.id}`}
           >
             {item.label}

@@ -1,8 +1,8 @@
 import { t } from "../i18n.js";
 import { check, fx, when } from "../narrative/dsl.js";
-import type { UniverseDefinition } from "./types.js";
+import type { UniverseBase } from "./types.js";
 
-export const ISEKAI: UniverseDefinition = {
+export const ISEKAI: UniverseBase = {
   id: "isekai",
   name: t("Арденвейл", "Ardenvale"),
   tagline: t("Вторая жизнь в мире, где у судьбы есть интерфейс", "A second life in a world where fate has an interface"),
@@ -66,7 +66,7 @@ export const ISEKAI: UniverseDefinition = {
         {
           id: "embrace",
           text: t("Записать всё, что помнится", "Write down everything you remember"),
-          success: { text: t("Записи складываются в бесценный дневник.", "The notes form a priceless journal."), effects: [fx.stat("intelligence", 3), fx.ability("modern-knowledge"), fx.flag("remembers")] }
+          success: { text: t("Записи складываются в бесценный дневник.", "The notes form a priceless journal."), effects: [fx.stat("intelligence", 3), fx.ability("modern-knowledge"), fx.flag("remembers"), fx.later("is.c-rival-reincarnator", 10)] }
         },
         {
           id: "hide",
@@ -88,13 +88,13 @@ export const ISEKAI: UniverseDefinition = {
           id: "sell",
           text: t("Продать идею торговой гильдии", "Sell the idea to the trade guild"),
           check: check(["intelligence", "charisma"], 12),
-          success: { text: t("Контракт подписан. Монеты текут рекой.", "The contract is signed. Coins flow like a river."), effects: [fx.wealth(70), fx.rep(5)] },
+          success: { text: t("Контракт подписан. Монеты текут рекой.", "The contract is signed. Coins flow like a river."), effects: [fx.wealth(70), fx.rep(5), fx.later("is.c-patent", 4)] },
           failure: { text: t("Гильдия присваивает идею, оставив {name} ни с чем.", "The guild steals the idea, leaving {name} with nothing."), effects: [fx.stat("wisdom", 2)] }
         },
         {
           id: "share",
           text: t("Научить деревню бесплатно", "Teach the village for free"),
-          success: { text: t("Деревня процветает. Имя {name} звучит с благодарностью.", "The village prospers. {name}'s name is spoken with gratitude."), effects: [fx.karma(10), fx.rep(10)] }
+          success: { text: t("Деревня процветает. Имя {name} звучит с благодарностью.", "The village prospers. {name}'s name is spoken with gratitude."), effects: [fx.karma(10), fx.rep(10), fx.later("is.c-shared-knowledge", 3)] }
         }
       ]
     },
@@ -166,7 +166,7 @@ export const ISEKAI: UniverseDefinition = {
           id: "enlist",
           text: t("Записаться в отряд", "Enlist"),
           check: check(["strength", "vitality", "willpower"], 16),
-          success: { text: t("Бой у Чёрного перевала войдёт в хроники. И имя {name} — тоже.", "The battle at Black Pass will enter the chronicles. So will {name}'s name."), effects: [fx.xp(150), fx.track(25), fx.rep(20), fx.wealth(60)] },
+          success: { text: t("Бой у Чёрного перевала войдёт в хроники. И имя {name} — тоже.", "The battle at Black Pass will enter the chronicles. So will {name}'s name."), effects: [fx.xp(150), fx.track(25), fx.rep(20), fx.wealth(60), fx.socialClass("hero"), fx.later("is.c-demon-scar", 8)] },
           failure: { text: t("Отряд разбит. {name} возвращается со шрамами и без иллюзий.", "The squad is routed. {name} returns scarred and disillusioned."), effects: [fx.health(-45), fx.xp(60), fx.stat("willpower", 2)] }
         },
         {

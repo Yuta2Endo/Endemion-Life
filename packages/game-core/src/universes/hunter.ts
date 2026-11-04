@@ -1,8 +1,8 @@
 import { t } from "../i18n.js";
 import { check, fx, when } from "../narrative/dsl.js";
-import type { UniverseDefinition } from "./types.js";
+import type { UniverseBase } from "./types.js";
 
-export const HUNTER: UniverseDefinition = {
+export const HUNTER: UniverseBase = {
   id: "hunter",
   name: t("Нео-Сеул: Эпоха Врат", "Neo-Seoul: Age of Gates"),
   tagline: t("Врата открылись над городом. Пробудившиеся идут внутрь", "Gates opened over the city. The Awakened go inside"),
@@ -90,7 +90,7 @@ export const HUNTER: UniverseDefinition = {
           id: "front",
           text: t("Идти в первой линии", "Go in the front line"),
           check: check(["strength", "vitality"], 13, 3),
-          success: { text: t("Босс падает от удара {name}. Гильдия впечатлена.", "The boss falls to {name}'s blow. The guild is impressed."), effects: [fx.xp(70), fx.track(12), fx.wealth(40), fx.rep(5)] },
+          success: { text: t("Босс падает от удара {name}. Гильдия впечатлена.", "The boss falls to {name}'s blow. The guild is impressed."), effects: [fx.xp(70), fx.track(12), fx.wealth(40), fx.rep(5), fx.meter("fame", 5), fx.meter("gate-threat", -10)] },
           failure: { text: t("Когти босса пробивают броню. Целители едва успевают.", "The boss's claws pierce the armour. Healers barely make it in time."), effects: [fx.health(-45), fx.xp(25), fx.wealth(10)] }
         },
         {
@@ -126,7 +126,7 @@ export const HUNTER: UniverseDefinition = {
         {
           id: "hide",
           text: t("Скрыть настоящую силу", "Hide your true strength"),
-          success: { text: t("Низкий ранг привлекает меньше внимания.", "A low rank draws less attention."), effects: [fx.stat("wisdom", 1), fx.flag("hidden-power")] }
+          success: { text: t("Низкий ранг привлекает меньше внимания.", "A low rank draws less attention."), effects: [fx.stat("wisdom", 1), fx.flag("hidden-power"), fx.later("hu.c-hidden-power", 4)] }
         }
       ]
     },
@@ -141,7 +141,7 @@ export const HUNTER: UniverseDefinition = {
         {
           id: "sign",
           text: t("Подписать", "Sign"),
-          success: { text: t("Зарплата, снаряжение и строгий график.", "A salary, equipment and a strict schedule."), effects: [fx.wealth(120), fx.rep(10), fx.flag("guild-member")] }
+          success: { text: t("Зарплата, снаряжение и строгий график.", "A salary, equipment and a strict schedule."), effects: [fx.wealth(120), fx.rep(10), fx.flag("guild-member"), fx.faction("white-tiger", 25), fx.later("hu.c-guild-contract", 3)] }
         },
         {
           id: "solo",
@@ -162,7 +162,7 @@ export const HUNTER: UniverseDefinition = {
           text: t("Сражаться за квартал", "Fight for the block"),
           requires: [when.flag("awakened")],
           check: check(["strength", "agility", "willpower"], 15, 3),
-          success: { text: t("Квартал спасён. Имя {name} в новостях.", "The block is saved. {name}'s name is in the news."), effects: [fx.xp(90), fx.track(15), fx.rep(20), fx.karma(10)] },
+          success: { text: t("Квартал спасён. Имя {name} в новостях.", "The block is saved. {name}'s name is in the news."), effects: [fx.xp(90), fx.track(15), fx.rep(20), fx.karma(10), fx.meter("fame", 15), fx.meter("gate-threat", -30), fx.later("hu.c-saved-civilians", 2)] },
           failure: { text: t("Слишком много монстров. Подмога приходит в последний миг.", "Too many monsters. Help arrives at the last moment."), effects: [fx.health(-50), fx.karma(10)] }
         },
         {

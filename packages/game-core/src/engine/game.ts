@@ -1,5 +1,8 @@
 // Игровой цикл: новая жизнь и применение действий. Функции чистые: принимают состояние и возвращают новое
+import { bornInto } from "../character/birth.js";
 import { generateCharacter, type CharacterInput } from "../character/generator.js";
+import { interact } from "../character/interactions.js";
+import { npcYearly } from "../character/npc-life.js";
 import { deepClone } from "../clone.js";
 import { GameRuleError } from "../errors.js";
 import { ageText, fillText, t, type LocalizedText } from "../i18n.js";
@@ -7,11 +10,15 @@ import { lifespanOf } from "../character/derived.js";
 import { ageOneYear } from "../life/aging.js";
 import { DEATH_CAUSES } from "../life/death.js";
 import { STAGE_INFO, stageForAge } from "../life/stages.js";
-import { findEvent, selectEvent } from "../narrative/selection.js";
+import { consequencesYearly } from "../narrative/consequences.js";
+import { findEvent, rememberEvent, selectEvent } from "../narrative/selection.js";
 import type { OutcomeDefinition } from "../narrative/types.js";
 import { hashSeed, Rng } from "../rng.js";
 import { getUniverse } from "../universes/registry.js";
+import { questYearly } from "../world/quests.js";
+import { worldYearly, type Emit } from "../world/rules.js";
 import {
+  INTERACTIONS,
   MAX_ADVANCE_YEARS,
   type ActionResult,
   type GameAction,
@@ -24,7 +31,8 @@ import { checkChance } from "./checks.js";
 import type { EngineContext } from "./context.js";
 import { applyEffects, isFatal, kill } from "./effects.js";
 
-export const SAVE_SCHEMA_VERSION = 1;
+/** 1 — Stage 01; 2 — Stage 02: семья, NPC, таланты, навыки, шкалы мира, последствия (перевод в save.ts) */
+export const SAVE_SCHEMA_VERSION = 2;
 export const SEED_MAX_LENGTH = 64;
 
 const YEAR_TEXTS: readonly LocalizedText[] = [
@@ -73,7 +81,7 @@ function deathEntry(ctx: EngineContext, entries: HistoryEntry[]): void {
 export function newGame(input: NewGameInput): ActionResult {
   const seed = validateSeed(input.seed);
   const rng = Rng.fromSeed(seed, "life");
-  const { character, flags } = generateCharacter(input, rng);
+  const { character, flags, generatedName } = generateCharacter(input, rng);
   const universe = getUniverse(character.universeId);
   const state: GameState = {
     schemaVersion: SAVE_SCHEMA_VERSION,
@@ -87,8 +95,19 @@ export function newGame(input: NewGameInput): ActionResult {
     lastSeen: {},
     pending: null,
     scheduled: [],
-    nextSeq: 1
+    nextSeq: 1,
+    background: { familyName: "", birthplace: t("", ""), omen: t("", ""), familyHistory: t("", ""), biography: [] },
+    hidden: { potential: 5, destiny: 5, dormantTalents: [], familySecret: null, revealed: [] },
+    npcs: [],
+    nextNpcId: 1,
+    meters: {},
+    consequences: [],
+    quest: null,
+    questsDone: [],
+    recentEvents: []
   };
+  // Семья, таланты и тайны — из отдельного потока: броски Stage 01 и дальнейшая жизнь от них не сдвигаются
+  bornInto({ state, rng: Rng.fromSeed(seed, "birth"), universe }, generatedName);
   const ctx: EngineContext = { state, rng, universe, changes: [] };
   const race = universe.races.find((r) => r.id === character.raceId);
   const origin = universe.origins.find((o) => o.id === character.originId);
@@ -101,10 +120,24 @@ export function newGame(input: NewGameInput): ActionResult {
         `В мире «${universe.name.ru}» рождается {name}. Раса: ${race?.name.ru ?? "—"}. Происхождение: ${origin?.name.ru ?? "—"}.`,
         `In ${universe.name.en}, {name} is born. Race: ${race?.name.en ?? "—"}. Origin: ${origin?.name.en ?? "—"}.`
       )
-    )
+    ),
+    // Биография рождения целиком: место, знамение, история семьи, родители
+    outcome: t(state.background.biography.map((p) => p.ru).join(" "), state.background.biography.map((p) => p.en).join(" "))
   });
   state.rngState = rng.state;
   return { state, entries };
+}
+
+function emitter(ctx: EngineContext, entries: HistoryEntry[]): Emit {
+  return (kind, title, text) => pushEntry(ctx, entries, kind, { title: named(ctx, title), text: named(ctx, text) });
+}
+
+/** Раны после правил года (искажение ци, последствия) могут оказаться смертельными */
+function settle(ctx: EngineContext, entries: HistoryEntry[]): boolean {
+  if (isFatal(ctx)) kill(ctx, DEATH_CAUSES.wounds);
+  if (ctx.state.life.alive) return true;
+  deathEntry(ctx, entries);
+  return false;
 }
 
 function advance(ctx: EngineContext, entries: HistoryEntry[], years: number): void {
@@ -112,18 +145,30 @@ function advance(ctx: EngineContext, entries: HistoryEntry[], years: number): vo
     const summary = ageOneYear(ctx);
     const state = ctx.state;
     const age = state.life.age;
+    // Мир и люди вокруг живут вместе с персонажем. Их тихие изменения входят в итоги года,
+    // а заметные (смерть близких, указ двора) — отдельными записями после года
+    const deferred: { kind: HistoryKind; title: LocalizedText; text: LocalizedText }[] = [];
+    if (state.life.alive) {
+      const defer: Emit = (kind, title, text) => deferred.push({ kind, title, text });
+      worldYearly(ctx, defer);
+      npcYearly(ctx, defer);
+    }
     const text = summary.stageChanged ? STAGE_INFO[state.life.stage].begins : (YEAR_TEXTS[age % YEAR_TEXTS.length] ?? YEAR_TEXTS[0]!);
     pushEntry(ctx, entries, "year", { title: ageText(age), text: named(ctx, text) });
+    for (const item of deferred) pushEntry(ctx, entries, item.kind, { title: named(ctx, item.title), text: named(ctx, item.text) });
+    if (!settle(ctx, entries)) return;
 
-    if (!state.life.alive) {
-      deathEntry(ctx, entries);
-      return;
-    }
+    const emit = emitter(ctx, entries);
+    questYearly(ctx, emit);
+    consequencesYearly(ctx, emit);
+    if (!settle(ctx, entries)) return;
+
     const event = selectEvent(ctx);
     if (event) {
       state.pending = { eventId: event.id, age };
       state.occurrences[event.id] = (state.occurrences[event.id] ?? 0) + 1;
       state.lastSeen[event.id] = age;
+      rememberEvent(state, event.id);
       return;
     }
   }
@@ -142,14 +187,16 @@ function choose(ctx: EngineContext, entries: HistoryEntry[], choiceId: string): 
   let check: HistoryEntry["check"];
   let outcome = choice.success;
   if (choice.check) {
-    const chance = checkChance(state.character, choice.check);
+    const chance = checkChance(state.character, choice.check, state);
     const success = ctx.rng.next() < chance;
     check = { chance, success };
     if (!success) outcome = choice.failure ?? DEFAULT_FAILURE;
   }
 
   state.pending = null;
+  ctx.source = event.id;
   applyEffects(ctx, outcome.effects);
+  ctx.source = undefined;
   if (isFatal(ctx)) kill(ctx, DEATH_CAUSES.wounds);
 
   const fields: Omit<HistoryEntry, "seq" | "age" | "kind" | "changes"> = {
@@ -163,6 +210,20 @@ function choose(ctx: EngineContext, entries: HistoryEntry[], choiceId: string): 
   if (check) fields.check = check;
   pushEntry(ctx, entries, "event", fields);
   if (!state.life.alive) deathEntry(ctx, entries);
+}
+
+/** Личное общение с NPC: тратит год общения с этим человеком, но не время жизни */
+function interactWith(ctx: EngineContext, entries: HistoryEntry[], npcId: string, interaction: (typeof INTERACTIONS)[number]): void {
+  if (ctx.state.pending) throw new GameRuleError("EVENT_PENDING", "Сначала ответьте на событие");
+  const result = interact(ctx, npcId, interaction);
+  pushEntry(ctx, entries, "people", {
+    title: result.title,
+    text: result.outcome,
+    choice: result.choice,
+    outcome: result.outcome,
+    check: result.check
+  });
+  settle(ctx, entries);
 }
 
 /**
@@ -208,6 +269,10 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
     }
     case "choose":
       choose(ctx, entries, action.choiceId);
+      break;
+    case "interact":
+      if (!INTERACTIONS.includes(action.interaction)) throw new GameRuleError("INVALID_INPUT", "Неизвестное действие");
+      interactWith(ctx, entries, action.npcId, action.interaction);
       break;
     default:
       throw new GameRuleError("INVALID_INPUT", "Неизвестное действие");

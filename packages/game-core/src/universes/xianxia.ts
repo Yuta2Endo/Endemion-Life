@@ -1,8 +1,8 @@
 import { t } from "../i18n.js";
 import { check, fx, when } from "../narrative/dsl.js";
-import type { UniverseDefinition } from "./types.js";
+import type { UniverseBase } from "./types.js";
 
-export const XIANXIA: UniverseDefinition = {
+export const XIANXIA: UniverseBase = {
   id: "xianxia",
   name: t("Небесный Предел", "The Heavenly Verge"),
   tagline: t("Бросить вызов Небесам и прожить тысячу лет", "Defy the Heavens and live a thousand years"),
@@ -106,7 +106,7 @@ export const XIANXIA: UniverseDefinition = {
           id: "take",
           text: t("Сорвать траву", "Pick the herb"),
           check: check(["agility", "luck"], 12, 2),
-          success: { text: t("Трава тает на языке и наполняет тело ци.", "The herb melts on the tongue and fills the body with qi."), effects: [fx.track(18), fx.health(20)] },
+          success: { text: t("Трава тает на языке и наполняет тело ци.", "The herb melts on the tongue and fills the body with qi."), effects: [fx.track(18), fx.health(20), fx.later("xx.c-herb-serpent", 5)] },
           failure: { text: t("Змея просыпается. Яд жжёт кровь.", "The serpent wakes. Venom burns the blood."), effects: [fx.health(-35)] }
         },
         {
@@ -129,7 +129,7 @@ export const XIANXIA: UniverseDefinition = {
           id: "face",
           text: t("Принять молнии на себя", "Face the lightning"),
           check: check(["willpower", "vitality", "wisdom"], 11, 5),
-          success: { text: t("Девятая молния гаснет. Тело перерождается в новом царстве.", "The ninth bolt fades. The body is reborn in a new realm."), effects: [fx.breakthrough(), fx.xp(80), fx.rep(10)] },
+          success: { text: t("Девятая молния гаснет. Тело перерождается в новом царстве.", "The ninth bolt fades. The body is reborn in a new realm."), effects: [fx.breakthrough(), fx.xp(80), fx.rep(10), fx.later("xx.c-tribulation-scar", 2), fx.later("xx.c-mortal-kin", 10)] },
           failure: { text: t("Молния прожигает до костей. Ци рассеивается.", "Lightning scorches to the bone. Qi disperses."), effects: [fx.health(-60), fx.track(-15)] }
         },
         {
@@ -151,7 +151,7 @@ export const XIANXIA: UniverseDefinition = {
           id: "apprentice",
           text: t("Стать помощником", "Become the assistant"),
           check: check(["intelligence", "wisdom"], 13),
-          success: { text: t("Первая пилюля — кривая, но работает.", "The first pill is lopsided, but it works."), effects: [fx.ability("alchemy"), fx.stat("intelligence", 2), fx.wealth(20)] },
+          success: { text: t("Первая пилюля — кривая, но работает.", "The first pill is lopsided, but it works."), effects: [fx.ability("alchemy"), fx.stat("intelligence", 2), fx.wealth(20), fx.skill("alchemy", 5), fx.later("xx.c-alchemy-fame", 3)] },
           failure: { text: t("Печь взрывается. Брови отрастут.", "The furnace explodes. The eyebrows will grow back."), effects: [fx.health(-15), fx.stat("intelligence", 1)] }
         },
         {

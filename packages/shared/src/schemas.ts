@@ -1,5 +1,5 @@
 // Схемы запросов к API. Сервер проверяет ими всё, что приходит от клиента; сайт — то, что отправляет
-import { GENDERS, LOCALES, MAX_ADVANCE_YEARS, NAME_MAX_LENGTH, SEED_MAX_LENGTH, UNIVERSE_IDS } from "@endemion/game-core";
+import { GENDERS, INTERACTIONS, LOCALES, MAX_ADVANCE_YEARS, NAME_MAX_LENGTH, SEED_MAX_LENGTH, UNIVERSE_IDS } from "@endemion/game-core";
 import { z } from "zod";
 
 const optionId = z.string().regex(/^[a-z0-9-]{1,40}$/, "Некорректный идентификатор");
@@ -18,7 +18,9 @@ export type CreateLifeRequest = z.infer<typeof createLifeSchema>;
 
 export const gameActionSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("advance"), years: z.int().min(1).max(MAX_ADVANCE_YEARS).optional() }),
-  z.strictObject({ type: z.literal("choose"), choiceId: optionId })
+  z.strictObject({ type: z.literal("choose"), choiceId: optionId }),
+  /** Личное общение с NPC: id из профиля жизни (n1, n2…) */
+  z.strictObject({ type: z.literal("interact"), npcId: z.string().regex(/^n[0-9]{1,6}$/, "Некорректный идентификатор"), interaction: z.enum(INTERACTIONS) })
 ]);
 
 export const actionRequestSchema = z.strictObject({

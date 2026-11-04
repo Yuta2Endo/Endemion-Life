@@ -1,13 +1,21 @@
-import { effectiveStats, isTrackReady } from "../character/derived.js";
+import { effectiveStats, isTrackReady, lifespanOf } from "../character/derived.js";
+import { livingWith, roleName } from "../character/npcs.js";
 import { TEMPERAMENTS } from "../character/temperaments.js";
 import { t, type LocalizedText } from "../i18n.js";
-import type { Condition } from "../narrative/types.js";
+import type { Condition, NpcRef } from "../narrative/types.js";
+import { educationTier, findProfession, findSkill } from "../rpg/skills.js";
+import { findTalent, findWeakness } from "../rpg/talents.js";
 import { STAT_INFO } from "../stats.js";
+import { getUniverse } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import type { GameState } from "../types.js";
 
 function inRange(value: number, min?: number, max?: number): boolean {
   return (min === undefined || value >= min) && (max === undefined || value <= max);
+}
+
+function anyOf(list: readonly string[], ids: readonly string[]): boolean {
+  return ids.length === 0 ? list.length > 0 : ids.some((id) => list.includes(id));
 }
 
 export function checkCondition(state: GameState, condition: Condition): boolean {
@@ -37,6 +45,46 @@ export function checkCondition(state: GameState, condition: Condition): boolean 
       return condition.ids.includes(c.temperamentId);
     case "ability":
       return c.abilities.includes(condition.id) === condition.has;
+    case "skill":
+      return (c.skills[condition.id] ?? 0) >= condition.min;
+    case "talent":
+      return anyOf(c.talents, condition.ids) === condition.has;
+    case "weakness":
+      return anyOf(c.weaknesses, condition.ids) === condition.has;
+    case "npc":
+      return livingWith(state, condition.role).length > 0 === condition.has;
+    case "affinity": {
+      const npc = livingWith(state, condition.role)[0];
+      return npc !== undefined && inRange(npc.affinity, condition.min, condition.max);
+    }
+    case "meter": {
+      const meter = getUniverse(c.universeId).meters.find((m) => m.id === condition.id);
+      return inRange(state.meters[condition.id] ?? meter?.initial ?? 0, condition.min, condition.max);
+    }
+    case "faction":
+      return inRange(c.factions[condition.id] ?? 0, condition.min, condition.max);
+    case "socialClass":
+      return condition.ids.includes(c.socialClassId);
+    case "standing": {
+      const standing = getUniverse(c.universeId).socialClasses.find((s) => s.id === c.socialClassId)?.standing ?? 0;
+      return inRange(standing, condition.min, condition.max);
+    }
+    case "profession":
+      return (c.professionId !== null && (condition.ids.length === 0 || condition.ids.includes(c.professionId))) === condition.has;
+    case "education":
+      return inRange(educationTier(getUniverse(c.universeId), c), condition.min, condition.max);
+    case "specialization":
+      return c.specializationId !== null === condition.has;
+    case "dormantTalent":
+      return state.hidden.dormantTalents.length > 0 === condition.has;
+    case "hidden":
+      return inRange(state.hidden[condition.key], condition.min, condition.max);
+    case "secret":
+      return state.hidden.familySecret !== null && state.hidden.revealed.includes("familySecret") === condition.revealed;
+    case "quest":
+      return state.quest !== null === condition.active;
+    case "yearsLeft":
+      return lifespanOf(c) - state.life.age <= condition.max;
   }
 }
 
@@ -52,6 +100,17 @@ function rangeText(min?: number, max?: number): LocalizedText {
 
 function join(label: LocalizedText, range: LocalizedText): LocalizedText {
   return t(`${label.ru}: ${range.ru}`, `${label.en}: ${range.en}`);
+}
+
+function names(items: readonly (LocalizedText | undefined)[]): LocalizedText {
+  const list = items.filter((n) => n !== undefined);
+  return t(list.map((n) => n.ru).join(", "), list.map((n) => n.en).join(", "));
+}
+
+function refName(role: NpcRef): LocalizedText {
+  if (role === "family") return t("Семья", "Family");
+  if (role === "parent") return t("Родители", "Parents");
+  return roleName(role, "male");
 }
 
 /** Понятное игроку описание условия: почему вариант выбора недоступен */
@@ -76,21 +135,75 @@ export function describeCondition(condition: Condition, universe: UniverseDefini
     case "flag":
       return condition.has ? t("Нужно особое обстоятельство", "Requires a special circumstance") : t("Путь уже пройден", "Already done");
     case "origin": {
-      const names = condition.ids.map((id) => universe.origins.find((o) => o.id === id)?.name).filter((n) => n !== undefined);
-      return t(`Происхождение: ${names.map((n) => n.ru).join(", ")}`, `Origin: ${names.map((n) => n.en).join(", ")}`);
+      const n = names(condition.ids.map((id) => universe.origins.find((o) => o.id === id)?.name));
+      return t(`Происхождение: ${n.ru}`, `Origin: ${n.en}`);
     }
     case "race": {
-      const names = condition.ids.map((id) => universe.races.find((r) => r.id === id)?.name).filter((n) => n !== undefined);
-      return t(`Раса: ${names.map((n) => n.ru).join(", ")}`, `Race: ${names.map((n) => n.en).join(", ")}`);
+      const n = names(condition.ids.map((id) => universe.races.find((r) => r.id === id)?.name));
+      return t(`Раса: ${n.ru}`, `Race: ${n.en}`);
     }
     case "temperament": {
-      const names = condition.ids.map((id) => TEMPERAMENTS.find((x) => x.id === id)?.name).filter((n) => n !== undefined);
-      return t(`Характер: ${names.map((n) => n.ru).join(", ")}`, `Temperament: ${names.map((n) => n.en).join(", ")}`);
+      const n = names(condition.ids.map((id) => TEMPERAMENTS.find((x) => x.id === id)?.name));
+      return t(`Характер: ${n.ru}`, `Temperament: ${n.en}`);
     }
     case "ability": {
       const ability = universe.abilities.find((a) => a.id === condition.id)?.name;
       if (!ability) return t("Нужна особая способность", "Requires a special ability");
       return condition.has ? t(`Способность: ${ability.ru}`, `Ability: ${ability.en}`) : t(`Без способности ${ability.ru}`, `Without ${ability.en}`);
     }
+    case "skill": {
+      const skill = findSkill(universe, condition.id)?.name ?? t("Навык", "Skill");
+      return join(skill, rangeText(condition.min));
+    }
+    case "talent": {
+      if (condition.ids.length === 0) return condition.has ? t("Нужен талант", "Requires a talent") : t("Без талантов", "Without talents");
+      const n = names(condition.ids.map((id) => findTalent(universe, id)?.name));
+      return condition.has ? t(`Талант: ${n.ru}`, `Talent: ${n.en}`) : t(`Без таланта: ${n.ru}`, `Without talent: ${n.en}`);
+    }
+    case "weakness": {
+      const n = names(condition.ids.map((id) => findWeakness(universe, id)?.name));
+      return condition.has ? t(`Слабость: ${n.ru}`, `Weakness: ${n.en}`) : t(`Мешает слабость: ${n.ru}`, `Blocked by weakness: ${n.en}`);
+    }
+    case "npc": {
+      const n = refName(condition.role);
+      return condition.has ? t(`Нужен человек рядом: ${n.ru}`, `Requires someone: ${n.en}`) : t(`Уже есть: ${n.ru}`, `Already have: ${n.en}`);
+    }
+    case "affinity": {
+      const n = refName(condition.role);
+      return t(`Отношения (${n.ru}): ${rangeText(condition.min, condition.max).ru}`, `Relationship (${n.en}): ${rangeText(condition.min, condition.max).en}`);
+    }
+    case "meter": {
+      const meter = universe.meters.find((m) => m.id === condition.id)?.name ?? t("Шкала мира", "World meter");
+      return join(meter, rangeText(condition.min, condition.max));
+    }
+    case "faction": {
+      const faction = universe.factions.find((f) => f.id === condition.id)?.name ?? t("Фракция", "Faction");
+      return join(faction, rangeText(condition.min, condition.max));
+    }
+    case "socialClass": {
+      const n = names(condition.ids.map((id) => universe.socialClasses.find((s) => s.id === id)?.name));
+      return t(`Сословие: ${n.ru}`, `Station: ${n.en}`);
+    }
+    case "standing":
+      return condition.min !== undefined ? t("Нужно положение повыше", "Requires a higher station") : t("Слишком высокое положение", "Station is too high");
+    case "profession": {
+      if (condition.ids.length === 0) return condition.has ? t("Нужно ремесло", "Requires a profession") : t("Ремесло уже выбрано", "A profession is already chosen");
+      const n = names(condition.ids.map((id) => findProfession(universe, id)?.name));
+      return t(`Ремесло: ${n.ru}`, `Profession: ${n.en}`);
+    }
+    case "education":
+      return condition.min !== undefined ? t("Нужно образование", "Requires education") : t("Образование уже получено", "Already educated");
+    case "specialization":
+      return condition.has ? t("Нужна специализация", "Requires a specialization") : t("Специализация уже выбрана", "Specialization already chosen");
+    case "dormantTalent":
+      return t("Нужен скрытый дар", "Requires a hidden gift");
+    case "hidden":
+      return t("Судьба распорядилась иначе", "Fate decided otherwise");
+    case "secret":
+      return t("Тайна семьи", "A family secret");
+    case "quest":
+      return condition.active ? t("Нужно задание Системы", "Requires a System quest") : t("Задание уже идёт", "A quest is already active");
+    case "yearsLeft":
+      return t("Ещё не время", "Not yet time");
   }
 }

@@ -89,3 +89,79 @@ test("переключение языка", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("One life. A thousand choices.");
 });
+
+/** Досье: на компьютере — под кнопками времени, на телефоне — отдельная вкладка «Жизнь» */
+async function openDossier(page: Page) {
+  const tab = page.getByTestId("tab-people");
+  if (await tab.isVisible()) await tab.click();
+  const dossier = page.getByTestId("dossier").locator("visible=true");
+  await expect(dossier).toBeVisible();
+  return dossier;
+}
+
+test("досье: биография, происхождение, семейное древо, навыки и шкалы мира", async ({ page }) => {
+  await createLife(page, "dark-fantasy", "Гаррет");
+  const dossier = await openDossier(page);
+  await expect(dossier.getByTestId("dossier-bio")).toBeVisible();
+  await expect(dossier.getByTestId("social-class")).not.toHaveText("—");
+  await expect(dossier.getByTestId("world-meters").locator("[data-meter=corruption]")).toBeVisible();
+
+  await dossier.getByTestId("dossier-tab-family").click();
+  await expect(dossier.getByTestId("family-tree")).toBeVisible();
+  await expect(dossier.getByTestId("tree-you")).toContainText("Гаррет");
+
+  await dossier.getByTestId("dossier-tab-skills").click();
+  await expect(dossier.getByTestId("dossier-skills")).toBeVisible();
+
+  await dossier.getByTestId("dossier-tab-people").click();
+  await expect(dossier.getByTestId("dossier-people")).toBeVisible();
+});
+
+/** Одно действие: ответить на событие или прожить год. Ждёт, пока сервер примет действие */
+async function step(page: Page) {
+  await openTab(page, "event");
+  const screen = page.getByTestId("play-screen");
+  const version = (await screen.getAttribute("data-version")) ?? "";
+  const card = page.getByTestId("event-card");
+  if (await card.isVisible()) await card.locator('[data-testid="choice"][data-available="true"]').first().click();
+  else await page.getByTestId("advance-1").click();
+  await expect(screen).not.toHaveAttribute("data-version", version);
+}
+
+test("общение с близким человеком меняет отношение и попадает в хронику", async ({ page }) => {
+  await createLife(page, "academy", "Селестина");
+  // Подрасти: разговор доступен с четырёх лет; событие должно быть закрыто, иначе общение недоступно
+  for (let i = 0; i < 60; i++) {
+    const age = Number.parseInt(await ageText(page), 10);
+    await openTab(page, "event");
+    if (age >= 5 && !(await page.getByTestId("event-card").isVisible())) break;
+    await step(page);
+  }
+
+  const dossier = await openDossier(page);
+  await dossier.getByTestId("dossier-tab-people").click();
+  const npc = dossier.locator('[data-testid="npc"]').filter({ has: page.locator('[data-interaction="talk"]') }).first();
+  await expect(npc).toBeVisible();
+  const npcId = await npc.getAttribute("data-npc");
+  const version = (await page.getByTestId("play-screen").getAttribute("data-version")) ?? "";
+  await npc.locator('[data-interaction="talk"]').click();
+  await expect(page.getByTestId("play-screen")).not.toHaveAttribute("data-version", version);
+
+  // Разговор с этим человеком в этом году уже был
+  const again = await openDossier(page);
+  await again.getByTestId("dossier-tab-people").click();
+  await expect(again.locator(`[data-npc="${npcId}"] [data-interaction="talk"]`)).toHaveCount(0);
+
+  await openTab(page, "timeline");
+  await expect(page.locator('[data-testid="timeline-entry"][data-kind="people"]').first()).toBeVisible();
+});
+
+test("досье переведено на английский", async ({ page }) => {
+  await createLife(page, "hunter", "Kai Ren");
+  await page.getByRole("button", { name: "en", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  const dossier = await openDossier(page);
+  await expect(dossier.getByRole("heading", { name: "Dossier" })).toBeVisible();
+  await expect(dossier.getByTestId("dossier-tab-family")).toHaveText("Family");
+  await expect(dossier.getByTestId("world-meters")).toContainText("Gate threat");
+});
