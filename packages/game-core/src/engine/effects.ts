@@ -1,7 +1,7 @@
 import { isTrackReady, maxResources, MAX_LEVEL, nextRankThreshold, xpForLevel } from "../character/derived.js";
 import { AFFINITY_LIMIT, canAddRole, createNpc, livingWith, shiftAffinity } from "../character/npcs.js";
 import { canParent, chronicle, markDeath, returnHome, setMissing } from "../family/events.js";
-import { isKin, KinGraph, selfSpouse } from "../family/kin.js";
+import { isKin, KinGraph, MIN_PARENT_AGE, selfSpouse } from "../family/kin.js";
 import type { LocalizedText } from "../i18n.js";
 import { lineageYear } from "../legacy/chronicle.js";
 import type { Effect, NpcRef } from "../narrative/types.js";
@@ -450,10 +450,14 @@ export function applyEffect(ctx: EngineContext, effect: Effect): void {
   }
 }
 
-/** Приёмный ребёнок 3–10 лет. Родители — персонаж и его супруг, если по возрасту это возможно */
+/**
+ * Приёмный ребёнок 3–10 лет. Родители — персонаж и его супруг, если по возрасту это возможно.
+ * Ребёнок младше персонажа хотя бы на MIN_PARENT_AGE: иначе он остался бы без родителей, то есть вне рода и без права наследовать
+ */
 function adoptChild(ctx: EngineContext): void {
   if (!canAddRole(ctx.state, "child") || ctx.state.life.age < 20) return;
-  const npc = createNpc(ctx, "child", { age: ctx.rng.int(3, 10), affinity: ctx.rng.int(35, 55) });
+  const oldest = Math.min(10, ctx.state.life.age - MIN_PARENT_AGE);
+  const npc = createNpc(ctx, "child", { age: ctx.rng.int(3, oldest), affinity: ctx.rng.int(35, 55) });
   npc.adopted = true;
   record(ctx, { kind: "npc", key: npc.id, value: "met" });
   const spouse = selfSpouse(ctx.state);

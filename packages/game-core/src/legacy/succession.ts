@@ -44,6 +44,8 @@ export interface HeirCandidate {
   regency: boolean;
   /** Перейдёт ли сословие умершего */
   classInherited: boolean;
+  /** Родня по крови, без усыновления на пути. Приёмный наследует имущество и место в роду, но не кровь */
+  natural: boolean;
 }
 
 /** Супруг, который остался вдовцом после смерти персонажа */
@@ -117,7 +119,8 @@ export function heirCandidates(state: GameState): HeirCandidate[] {
     else if (years < law.controlAge && !law.regency) locked = t(`Слишком молод: закон мира отдаёт наследство с ${law.controlAge} лет`, `Too young: the law of this world grants an inheritance from age ${law.controlAge}`);
     const hereditary = law.hereditary.includes(state.character.socialClassId) && (!npc.adopted || law.adoptedClass);
     const classInherited = hereditary && standing(universe, state.character.socialClassId) > standing(universe, npc.socialClassId);
-    list.push({ npc, relation, age: years, available: locked === null, locked, primary: false, wealth: 0, regency: locked === null && years < law.controlAge, classInherited });
+    const natural = graph.isNatural(SELF_ID, npc.id);
+    list.push({ npc, relation, age: years, available: locked === null, locked, primary: false, wealth: 0, regency: locked === null && years < law.controlAge, classInherited, natural });
   }
   const ordered = orderHeirs(law, list);
   const primary = ordered.find((c) => c.available);
@@ -179,7 +182,9 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
 
   // Рост по годам, воспитание и образование: родительские сильные стороны чуть чаще
   const temperament = TEMPERAMENTS.find((x) => x.id === temperamentId);
-  const strongest = [...STAT_KEYS].sort((a, b) => prev.stats[b] - prev.stats[a]).slice(0, 2);
+  // Кровь передаётся только по природному родству: приёмный наследник не перенимает сильные стороны, таланты, слабости и флаги крови
+  const natural = candidate.natural;
+  const strongest = natural ? [...STAT_KEYS].sort((a, b) => prev.stats[b] - prev.stats[a]).slice(0, 2) : [];
   const profession = heir.professionId ? findProfession(universe, heir.professionId) : undefined;
   const lean: StatKey[] = [...(temperament?.growth ?? []), ...strongest, ...(profession?.stats ?? [])];
   if (heir.educationTier >= 1) lean.push("intelligence", "wisdom");
@@ -221,7 +226,7 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
   const lineageTraits = dead.lineage.traits;
   const known = heir.talentId && findTalent(universe, heir.talentId) ? [heir.talentId] : [];
   const dormant: string[] = [];
-  const talentPool = new Set([...prev.talents, ...Object.keys(lineageTraits.talents)]);
+  const talentPool = new Set(natural ? [...prev.talents, ...Object.keys(lineageTraits.talents)] : []);
   for (const id of [...talentPool].sort()) {
     if (known.includes(id) || !allTalents(universe).some((x) => x.id === id)) continue;
     const gens = lineageTraits.talents[id] ?? 0;
@@ -230,7 +235,7 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
   }
   c.talents = known;
   const weaknesses = heir.weaknessId && findWeakness(universe, heir.weaknessId) ? [heir.weaknessId] : [];
-  for (const id of [...new Set([...prev.weaknesses, ...Object.keys(lineageTraits.weaknesses)])].sort()) {
+  for (const id of [...new Set(natural ? [...prev.weaknesses, ...Object.keys(lineageTraits.weaknesses)] : [])].sort()) {
     if (weaknesses.includes(id) || !allWeaknesses(universe).some((x) => x.id === id) || weaknesses.length >= 2) continue;
     const gens = lineageTraits.weaknesses[id] ?? 0;
     if (legacyRng.chance(gens >= 2 ? 0.3 : 0.12)) weaknesses.push(id);
@@ -241,7 +246,7 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
   const flags = new Set(generated.flags);
   const bloodFlags: string[] = [];
   for (const { flag, chance } of law.bloodFlags) {
-    if (dead.flags.includes(flag) && legacyRng.chance(chance)) {
+    if (natural && dead.flags.includes(flag) && legacyRng.chance(chance)) {
       flags.add(flag);
       bloodFlags.push(flag);
     }
@@ -268,7 +273,8 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
   c.resources = maxResources(c);
 
   // Скрытое: потенциал наполовину от родителя, судьба своя, тайна рода остаётся с родом
-  const potential = clamp(Math.round((legacyRng.int(1, 5) + legacyRng.int(0, 5) + dead.hidden.potential) / 2), 1, 10);
+  const ownPotential = legacyRng.int(1, 5) + legacyRng.int(0, 5);
+  const potential = clamp(natural ? Math.round((ownPotential + dead.hidden.potential) / 2) : ownPotential, 1, 10);
   const destiny = clamp(legacyRng.int(1, 5) + legacyRng.int(0, 5), 1, 10);
   const secretKnown = dead.hidden.revealed.includes("familySecret") && (candidate.relation === "child" || heir.affinity >= 40);
   const omens = universe.omens.filter((o) => (o.minDestiny ?? 0) <= destiny);

@@ -33,6 +33,8 @@ interface KinNode {
   parents: readonly string[];
   spouseId: string | null;
   formerSpouses: readonly string[];
+  /** Приёмный: родители записаны по закону, а не по крови */
+  adopted?: boolean;
 }
 
 /** Не родня: эти роли — отношение к персонажу, а не родство */
@@ -60,7 +62,7 @@ export class KinGraph {
 
   constructor(private readonly state: GameState) {
     const spouse = selfSpouse(state);
-    this.add({ id: SELF_ID, bornAt: 0, parents: state.lineage.selfParents, spouseId: spouse?.id ?? null, formerSpouses: [] });
+    this.add({ id: SELF_ID, bornAt: 0, parents: state.lineage.selfParents, spouseId: spouse?.id ?? null, formerSpouses: [], adopted: state.lineage.selfAdopted });
     for (const npc of state.npcs) this.add(npc);
   }
 
@@ -102,13 +104,19 @@ export class KinGraph {
     return this.nodes.get(id)?.spouseId ?? null;
   }
 
-  /** Предки с глубиной: сам человек — 0, родители — 1, бабушки и дедушки — 2 */
-  ancestorDepths(id: string): Map<string, number> {
+  /** Приёмный ли человек: его родители записаны по закону */
+  isAdopted(id: string): boolean {
+    return this.nodes.get(id)?.adopted === true;
+  }
+
+  /** Предки с глубиной: сам человек — 0, родители — 1, бабушки и дедушки — 2. natural — только по крови: связь «родитель» у приёмного не считается */
+  ancestorDepths(id: string, natural = false): Map<string, number> {
     const depths = new Map<string, number>([[id, 0]]);
     let frontier = [id];
     for (let depth = 1; depth <= MAX_DEPTH && frontier.length > 0; depth++) {
       const next: string[] = [];
       for (const current of frontier) {
+        if (natural && this.isAdopted(current)) continue;
         for (const parent of this.parentsOf(current)) {
           if (depths.has(parent)) continue;
           depths.set(parent, depth);
@@ -138,13 +146,16 @@ export class KinGraph {
     return result;
   }
 
-  /** Кровное родство: кем to приходится from */
-  bloodRelation(from: string, to: string): KinRelation | null {
+  /**
+   * Родство по линии рода: кем to приходится from. Усыновление входит в род по закону — приёмный ребёнок наследует
+   * и не может вступить в брак с роднёй. natural — только по крови (без усыновлений): от него зависит, что передаётся с кровью
+   */
+  bloodRelation(from: string, to: string, natural = false): KinRelation | null {
     if (from === to) return null;
-    const up = this.ancestorDepths(from);
+    const up = this.ancestorDepths(from, natural);
     const asAncestor = up.get(to);
     if (asAncestor !== undefined) return asAncestor === 1 ? "parent" : asAncestor === 2 ? "grandparent" : "ancestor";
-    const down = this.ancestorDepths(to);
+    const down = this.ancestorDepths(to, natural);
     const asDescendant = down.get(from);
     if (asDescendant !== undefined) return asDescendant === 1 ? "child" : asDescendant === 2 ? "grandchild" : "descendant";
     let best: [number, number] | null = null;
@@ -185,6 +196,11 @@ export class KinGraph {
 
   isBlood(from: string, to: string): boolean {
     return this.bloodRelation(from, to) !== null;
+  }
+
+  /** Родня по крови, без усыновлений на пути: только ей передаются кровь пути силы, фамильные таланты и слабости */
+  isNatural(from: string, to: string): boolean {
+    return this.bloodRelation(from, to, true) !== null;
   }
 
   /** Брак между ними запрещён: кровные родственники до двоюродных включительно */
