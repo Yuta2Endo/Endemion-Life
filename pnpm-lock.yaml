@@ -247,6 +247,9 @@ importers:
       '@sentry/node':
         specifier: 11.10.0
         version: 11.10.0
+      body-parser:
+        specifier: 2.4.0
+        version: 2.4.0(supports-color@10.2.2)
       cookie-parser:
         specifier: 1.4.7
         version: 1.4.7
@@ -281,6 +284,9 @@ importers:
       '@nestjs/testing':
         specifier: 12.3.2
         version: 12.3.2(@nestjs/common@12.3.2(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.3.2)(@nestjs/platform-express@12.3.2)
+      '@types/body-parser':
+        specifier: 1.19.6
+        version: 1.19.6
       '@types/cookie-parser':
         specifier: 1.4.10
         version: 1.4.10(@types/express@5.0.6)

@@ -1,5 +1,5 @@
 // Схемы запросов к API. Сервер проверяет ими всё, что приходит от клиента; сайт — то, что отправляет
-import { GENDERS, INTERACTIONS, LOCALES, MAX_ADVANCE_YEARS, NAME_MAX_LENGTH, SEED_MAX_LENGTH, UNIVERSE_IDS } from "@endemion/game-core";
+import { CHANGE_KINDS, GENDERS, HISTORY_KINDS, INTERACTIONS, LOCALES, MAX_ADVANCE_YEARS, NAME_MAX_LENGTH, SEED_MAX_LENGTH, UNIVERSE_IDS } from "@endemion/game-core";
 import { z } from "zod";
 
 const optionId = z.string().regex(/^[a-z0-9-]{1,40}$/, "Некорректный идентификатор");
@@ -58,6 +58,46 @@ export const historyQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50)
 });
 export type HistoryQuery = z.infer<typeof historyQuerySchema>;
+
+/** Stage 04: столько записей истории хранит браузер (lib/store/local.ts) — больше при переносе не принимается */
+export const IMPORT_MAX_HISTORY = 2000;
+
+const textSchema = z.strictObject({ ru: z.string().max(4000), en: z.string().max(4000) });
+
+/** Запись истории из браузера. Это только текст для хронологии: на состояние игры она не влияет, но проверяется строго */
+const importEntrySchema = z.strictObject({
+  seq: z.int().min(1),
+  age: z.int().min(0),
+  kind: z.enum(HISTORY_KINDS),
+  title: textSchema,
+  text: textSchema,
+  eventId: z.string().max(80).optional(),
+  choiceId: z.string().max(80).optional(),
+  choice: textSchema.optional(),
+  outcome: textSchema.optional(),
+  check: z.strictObject({ chance: z.number().min(0).max(1), success: z.boolean() }).optional(),
+  changes: z
+    .array(
+      z.strictObject({
+        kind: z.enum(CHANGE_KINDS),
+        key: z.string().max(80).optional(),
+        delta: z.number().finite().optional(),
+        value: z.union([z.number().finite(), z.string().max(200)]).optional()
+      })
+    )
+    .max(100)
+});
+
+/**
+ * Stage 04: перенос жизни из браузера на сервер. state проверяет game-core (parseSave и prepareImport):
+ * схема здесь только ограничивает форму. Повтор с тем же importId возвращает ту же жизнь
+ */
+export const importLifeSchema = z.strictObject({
+  importId: z.uuid(),
+  state: z.record(z.string(), z.unknown()),
+  history: z.array(importEntrySchema).max(IMPORT_MAX_HISTORY)
+});
+export type ImportLifeRequest = z.infer<typeof importLifeSchema>;
 
 export const localeSchema = z.enum(LOCALES);
 export const uuidSchema = z.uuid();

@@ -6,7 +6,7 @@ import { Button, Ornament, Panel } from "@endemion/ui";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ClientError } from "@/lib/api";
-import { detectStoreKind, storeOf } from "@/lib/store";
+import { storeForNewLife } from "@/lib/store";
 import { useI18n } from "./locale-provider";
 import { WorldEmblem } from "./world-emblem";
 
@@ -93,7 +93,7 @@ export function CreateForm({ universe, temperaments }: { universe: UniverseSumma
     if (temperamentId) input.temperamentId = temperamentId;
     if (seed.trim()) input.seed = seed.trim();
     try {
-      const life = await storeOf(await detectStoreKind()).create(input);
+      const life = await (await storeForNewLife()).create(input);
       router.push(`/play/${life.id}`);
     } catch (e) {
       setError(e instanceof ClientError && e.code !== "INTERNAL" ? e.message : t("error.generic"));

@@ -136,6 +136,10 @@ model Life {
   generation    Int      @default(1)
   /// Жизнь, после которой эта продолжила род. Уникально: у одной жизни не бывает двух наследников
   predecessorId String?  @unique @map("predecessor_id") @db.Uuid
+  /// Stage 04: откуда жизнь. server — создана и прожита на сервере; local-import — перенесена из браузера (прошлые исходы не проверены)
+  origin        String   @default("server") @db.VarChar(16)
+  /// Stage 04: ключ переноса от клиента. Повтор с тем же ключом возвращает ту же жизнь
+  importId      String?  @map("import_id") @db.Uuid
   state      Json
   createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -151,6 +155,7 @@ model Life {
   @@index([playerId, updatedAt(sort: Desc)])
   @@index([schemaVersion])
   @@index([lineageId, generation])
+  @@unique([playerId, importId])
   @@map("lives")
 }
 

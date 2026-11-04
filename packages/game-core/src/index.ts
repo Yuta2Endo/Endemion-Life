@@ -41,6 +41,7 @@ export { meterValue, worldTrackFactor } from "./world/rules.js";
 export { checkCondition, describeCondition } from "./engine/conditions.js";
 export { applyAction, newGame, restoreState, SAVE_SCHEMA_VERSION, SEED_MAX_LENGTH, type NewGameInput } from "./engine/game.js";
 export { migrateSave, parseSave } from "./engine/save.js";
+export { importLevelCap, importWealthCap, prepareImport, type ImportAdjustment, type ImportResult } from "./engine/import.js";
 export { presentEvent, summarizeCharacter, type ChoiceView, type CharacterSummary, type EventView } from "./engine/view.js";
 
 // Stage 03: родство, род, наследование, сюжеты поколений, достижения, итоги жизни

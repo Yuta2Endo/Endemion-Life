@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ClientError } from "@/lib/api";
 import { ageLabel } from "@/lib/format";
-import { storeForLife } from "@/lib/store";
+import { movedTarget, storeForLife } from "@/lib/store";
 import { newUuid } from "@/lib/uuid";
 import { ChangeChips } from "../change-chips";
 import { useI18n } from "../locale-provider";
@@ -16,6 +16,7 @@ import { CharacterSheet } from "./character-sheet";
 import { Dossier } from "./dossier";
 import { EventCard, OutcomeCard } from "./event-card";
 import { LifeSummary } from "./life-summary";
+import { LocalLifeBanner } from "./local-life-banner";
 import { SavesDialog } from "./saves-dialog";
 import { Timeline } from "./timeline";
 
@@ -66,6 +67,12 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
   const load = useCallback(() => fetchLife().then(apply, fail), [fetchLife, apply, fail]);
 
   useEffect(() => {
+    // Stage 04: жизнь уже перенесена на сервер (в этой или другой вкладке) — открыть её там
+    const moved = store.kind === "local" ? movedTarget(lifeId) : null;
+    if (moved) {
+      router.replace(`/play/${moved}`);
+      return;
+    }
     let active = true;
     fetchLife().then(
       (data) => {
@@ -78,7 +85,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
     return () => {
       active = false;
     };
-  }, [fetchLife, apply, fail]);
+  }, [fetchLife, apply, fail, store, lifeId, router]);
 
   function errorText(error: unknown): string {
     if (error instanceof ClientError && error.code === "NETWORK") return t("error.offline");
@@ -111,6 +118,11 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
         pendingAction.current = null;
         setNotice(t("play.conflict"));
         await load();
+      } else if (error instanceof ClientError && error.code === "MOVED") {
+        // Перенесена в другой вкладке: ход в копии браузера дал бы вторую ветку жизни
+        const moved = movedTarget(lifeId);
+        if (moved) router.replace(`/play/${moved}`);
+        else setNotice(errorText(error));
       } else {
         setNotice(errorText(error));
       }
@@ -224,7 +236,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
     >
       <div className="pointer-events-none fixed inset-x-0 top-0 h-80 opacity-70 blur-3xl" style={{ background: `radial-gradient(600px 200px at 50% 0%, ${universe.theme.glow}, transparent)` }} aria-hidden="true" />
 
-      {store.kind === "local" && <p className="relative mb-4 rounded-md border border-gold-500/30 bg-gold-500/5 px-3 py-2 text-xs text-gold-200">{t("store.localHint")}</p>}
+      {store.kind === "local" && <LocalLifeBanner lifeId={lifeId} disabled={busy} />}
       {notice && (
         <p className="relative mb-4 rounded-md border border-blood-500/40 bg-blood-600/10 px-3 py-2 text-sm text-blood-300" role="alert" data-testid="notice">
           {notice}

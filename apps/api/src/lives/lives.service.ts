@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@endemion/database";
-import { applyAction, newGame, parseSave, presentLineage, restoreState, succeed, type GameState, type HistoryEntry, type LineageView } from "@endemion/game-core";
+import { applyAction, GameRuleError, newGame, parseSave, prepareImport, presentLineage, restoreState, succeed, type GameState, type HistoryEntry, type LineageView } from "@endemion/game-core";
 import {
   MAX_ALIVE_LIVES,
   lifeStatus,
@@ -11,6 +11,8 @@ import {
   type CreateLifeRequest,
   type HistoryPage,
   type HistoryQuery,
+  type ImportLifeRequest,
+  type ImportResponse,
   type LifeListItem,
   type LifeMeta,
   type LifeView,
@@ -227,6 +229,69 @@ export class LivesService {
       });
       return { previous: toLifeView(meta(updated), result.previous), life: toLifeView(meta(created), result.state), entries: result.entries, replayed: false };
     });
+  }
+
+  /**
+   * Stage 04: перенос жизни из браузера. Сохранению из браузера сервер не доверяет: prepareImport проверяет его,
+   * выдаёт новый seed и генератор, бросает заново нераскрытое скрытое и срезает невозможные значения.
+   * История из браузера — только текст хронологии; номера записей должны идти по порядку и до записи о переносе.
+   * Повтор с тем же importId (обрыв связи, вторая вкладка) возвращает ту же жизнь: уникальный (player_id, import_id)
+   */
+  async importLife(playerId: string, request: ImportLifeRequest): Promise<ImportResponse> {
+    const existing = await this.findImported(playerId, request.importId);
+    if (existing) return existing;
+
+    // Соль сервера: будущие броски нельзя вычислить ни из присланного seed, ни из состояния генератора.
+    // Повреждённое сохранение здесь — ошибка запроса (400), а не сбой сервера, как для строки из базы
+    let prepared: ReturnType<typeof prepareImport>;
+    try {
+      prepared = prepareImport(request.state, randomUUID());
+    } catch (error) {
+      if (error instanceof GameRuleError && error.code === "INVALID_SAVE") throw new ApiError(400, "INVALID_SAVE", error.message);
+      throw error;
+    }
+    const { state, entry, adjustments } = prepared;
+    let last = 0;
+    for (const item of request.history) {
+      if (item.seq <= last || item.seq >= entry.seq) throw new ApiError(400, "VALIDATION", "История жизни повреждена: номера записей не по порядку");
+      last = item.seq;
+    }
+
+    try {
+      const row = await this.db.$transaction(async (tx) => {
+        if (state.life.alive) {
+          const alive = await tx.life.count({ where: { playerId, status: "alive" } });
+          if (alive >= MAX_ALIVE_LIVES) throw new ApiError(409, "LIMIT_REACHED", `Одновременно можно вести не больше ${MAX_ALIVE_LIVES} жизней`);
+        }
+        const life = await tx.life.create({
+          data: {
+            playerId,
+            universeId: state.character.universeId,
+            seed: state.seed,
+            generation: state.lineage.generation,
+            origin: "local-import",
+            importId: request.importId,
+            ...lifeColumns(state)
+          }
+        });
+        await this.writeEntries(tx, life.id, [...(request.history as HistoryEntry[]), entry]);
+        await this.writeSnapshot(tx, life.id, state, "create");
+        return life;
+      });
+      return { life: toLifeView(meta(row), state), adjustments, replayed: false };
+    } catch (error) {
+      // Одновременный повтор того же переноса: вторая транзакция упёрлась в уникальный ключ — жизнь уже создана первой
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        const replay = await this.findImported(playerId, request.importId);
+        if (replay) return replay;
+      }
+      throw error;
+    }
+  }
+
+  private async findImported(playerId: string, importId: string): Promise<ImportResponse | null> {
+    const row = await this.db.life.findUnique({ where: { playerId_importId: { playerId, importId } } });
+    return row ? { life: toLifeView(meta(row), stateOf(row)), adjustments: null, replayed: true } : null;
   }
 
   /** Род целиком: хроника, древо, достижения. Отдельный запрос: в ответы на действия хроника рода не входит */

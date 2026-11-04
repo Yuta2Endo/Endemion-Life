@@ -2,11 +2,13 @@ import {
   actionRequestSchema,
   createLifeSchema,
   historyQuerySchema,
+  importLifeSchema,
   restoreSchema,
   successionSchema,
   uuidSchema,
   type ActionResponse,
   type HistoryPage,
+  type ImportResponse,
   type LifeListItem,
   type LifeView,
   type LineageResponse,
@@ -43,6 +45,18 @@ export class LivesController {
     const input = parseOrThrow(createLifeSchema, body);
     const { player } = await this.sessions.ensure(request, response);
     return this.lives.create(player.id, input);
+  }
+
+  /**
+   * Stage 04: перенос жизни из браузера. { importId, state, history }. Сервер проверяет сохранение, выдаёт новый seed
+   * и исправляет невозможные значения; жизнь помечается как перенесённая. Сессия гостя создаётся сама, как при создании
+   */
+  @Post("import")
+  @HttpCode(201)
+  async import(@Req() request: Request, @Res({ passthrough: true }) response: Response, @Body() body: unknown): Promise<ImportResponse> {
+    const input = parseOrThrow(importLifeSchema, body);
+    const { player } = await this.sessions.ensure(request, response);
+    return this.lives.importLife(player.id, input);
   }
 
   @Get()

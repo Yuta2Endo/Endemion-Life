@@ -10,6 +10,7 @@ import {
   type GameErrorCode,
   type GameState,
   type HistoryEntry,
+  type ImportAdjustment,
   type LegacyBrief,
   type LifeProfile,
   type LifeState,
@@ -68,6 +69,16 @@ export interface SuccessionResponse {
 
 export interface LineageResponse {
   lineage: LineageView;
+}
+
+/**
+ * Stage 04: ответ на перенос жизни из браузера. adjustments — что сервер исправил (невозможные значения);
+ * при повторе с тем же importId — null: жизнь уже перенесена, исправления записаны в её истории
+ */
+export interface ImportResponse {
+  life: LifeView;
+  adjustments: ImportAdjustment[] | null;
+  replayed: boolean;
 }
 
 export interface ActionResponse {

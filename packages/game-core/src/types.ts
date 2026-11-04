@@ -407,32 +407,35 @@ export interface ScheduledEvent {
   age: number;
 }
 
-export type ChangeKind =
-  | "stat"
-  | "resource"
-  | "reputation"
-  | "karma"
-  | "wealth"
-  | "xp"
-  | "level"
-  | "track"
-  | "rank"
-  | "ability"
-  | "skill"
-  | "talent"
-  | "weakness"
-  | "relation"
-  | "npc"
-  | "meter"
-  | "faction"
-  | "class"
-  | "profession"
-  | "education"
-  | "specialization"
-  | "hidden"
-  | "renown"
-  | "achievement"
-  | "thread";
+/** Виды изменений в записи истории. Список нужен и для проверки истории, присланной браузером (Stage 04) */
+export const CHANGE_KINDS = [
+  "stat",
+  "resource",
+  "reputation",
+  "karma",
+  "wealth",
+  "xp",
+  "level",
+  "track",
+  "rank",
+  "ability",
+  "skill",
+  "talent",
+  "weakness",
+  "relation",
+  "npc",
+  "meter",
+  "faction",
+  "class",
+  "profession",
+  "education",
+  "specialization",
+  "hidden",
+  "renown",
+  "achievement",
+  "thread"
+] as const;
+export type ChangeKind = (typeof CHANGE_KINDS)[number];
 
 /** Одно изменение персонажа в записи истории: «Сила +2», «Новый ранг: Закалка Ци» */
 export interface HistoryChange {
@@ -442,7 +445,9 @@ export interface HistoryChange {
   value?: number | string;
 }
 
-export type HistoryKind = "birth" | "event" | "year" | "death" | "restore" | "consequence" | "quest" | "people" | "legacy";
+/** import — Stage 04: жизнь перенесена из браузера на сервер */
+export const HISTORY_KINDS = ["birth", "event", "year", "death", "restore", "consequence", "quest", "people", "legacy", "import"] as const;
+export type HistoryKind = (typeof HISTORY_KINDS)[number];
 
 export interface HistoryEntry {
   /** Порядковый номер записи в этой жизни */

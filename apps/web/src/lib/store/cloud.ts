@@ -1,6 +1,7 @@
 import type { GameAction, HistoryEntry } from "@endemion/game-core";
-import type { ActionResponse, CreateLifeRequest, HistoryPage, LifeListItem, LifeView, LineageResponse, SaveView, SuccessionResponse } from "@endemion/shared";
+import type { ActionResponse, CreateLifeRequest, HistoryPage, ImportResponse, LifeListItem, LifeView, LineageResponse, SaveView, SuccessionResponse } from "@endemion/shared";
 import { apiFetch, ClientError, postJson } from "../api";
+import type { ImportPayload } from "./local";
 import type { GameStore } from "./types";
 
 /** Облачные сохранения: сервер хранит жизнь, проверяет действия и сам бросает кости */
@@ -59,3 +60,17 @@ export const cloudStore: GameStore = {
     return (await apiFetch<LineageResponse>(`/api/lives/${encodeURIComponent(id)}/lineage`)).lineage;
   }
 };
+
+/**
+ * Stage 04: перенос жизни из браузера на сервер. Повтор с тем же importId безопасен: сервер вернёт ту же жизнь.
+ * При обрыве связи — один повтор, как у действий; дальше ошибка уходит игроку, а запись в браузере не трогается
+ */
+export async function importToCloud(payload: ImportPayload): Promise<ImportResponse> {
+  const send = () => postJson<ImportResponse>("/api/lives/import", payload);
+  try {
+    return await send();
+  } catch (error) {
+    if (error instanceof ClientError && error.code === "NETWORK") return send();
+    throw error;
+  }
+}

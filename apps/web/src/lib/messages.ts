@@ -25,6 +25,21 @@ export const M = {
     "Сервер недоступен: жизнь хранится в этом браузере. Исходы считает браузер, это режим прототипа.",
     "The server is unavailable: this life is stored in this browser. Outcomes are computed in the browser — prototype mode."
   ),
+  "store.localLife": t(
+    "Эта жизнь хранится только в этом браузере. Её можно потерять при очистке данных сайта, а исходы считает браузер.",
+    "This life is stored only in this browser. Clearing site data can erase it, and outcomes are computed in the browser."
+  ),
+  "store.move": t("Перенести на сервер", "Move to the server"),
+  "store.moving": t("Переносим…", "Moving…"),
+  "store.moveOffline": t("Сервер сейчас недоступен. Жизнь осталась в браузере — попробуйте позже.", "The server is unavailable right now. The life is still in this browser — try again later."),
+  "store.moveFailed": t("Не удалось перенести: {reason}. Жизнь осталась в браузере.", "Could not move: {reason}. The life is still in this browser."),
+  "store.moveDone": t("Жизнь перенесена на сервер. Дальше исходы считает сервер.", "The life has been moved to the server. From now on the server computes outcomes."),
+  "store.moveAdjusted": t("Жизнь перенесена. Сервер исправил невозможные значения: {n}.", "The life has been moved. The server corrected impossible values: {n}."),
+  "store.moveHint": t(
+    "После переноса жизнь продолжится на сервере с новым броском судьбы. Копия в браузере останется, но ходить в ней будет нельзя.",
+    "After the move the life continues on the server with a fresh roll of fate. The browser copy stays, but it can no longer be played."
+  ),
+  "store.inBrowser": t("в браузере", "in browser"),
 
   "home.kicker": t("Симулятор жизни · RPG · Интерактивная история", "Life simulator · RPG · Interactive story"),
   "home.title": t("Одна жизнь. Тысяча решений.", "One life. A thousand choices."),

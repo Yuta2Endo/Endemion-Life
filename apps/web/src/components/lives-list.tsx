@@ -5,7 +5,7 @@ import type { LifeListItem } from "@endemion/shared";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ageLabel } from "@/lib/format";
-import { cloudStore, detectStoreKind, localStore } from "@/lib/store";
+import { cloudStore, detectStoreKind, localStore, LOCAL_ID_PREFIX } from "@/lib/store";
 import { useI18n } from "./locale-provider";
 
 /** Жизни игрока: из облака (если сервер доступен) и из этого браузера */
@@ -45,6 +45,7 @@ export function LivesList() {
                   {universe.name[locale]} · {ageLabel(life.age, locale)}
                   {life.generation > 1 && ` · ${t("home.generation", { n: life.generation })}`}
                   {life.continued && ` · ${t("home.continued")}`}
+                  {life.id.startsWith(LOCAL_ID_PREFIX) && <span className="text-gold-300" data-testid="life-local">{` · ${t("store.inBrowser")}`}</span>}
                 </span>
               </span>
               <span className={`shrink-0 text-xs ${life.status === "alive" ? "text-jade-300" : "text-bone-500"}`}>{life.status === "alive" ? "●" : "✝"}</span>

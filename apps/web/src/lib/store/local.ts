@@ -3,6 +3,7 @@
 import { applyAction, GameRuleError, newGame, parseSave, presentLineage, restoreState, succeed, type GameAction, type GameState, type HistoryEntry } from "@endemion/game-core";
 import { createLifeSchema, toLifeListItem, toLifeView, type LifeMeta, type SaveReason, type SaveView } from "@endemion/shared";
 import { ClientError } from "../api";
+import { newUuid } from "../uuid";
 import { LOCAL_ID_PREFIX, type GameStore } from "./types";
 
 const PREFIX = "endemion-life:v1";
@@ -25,6 +26,17 @@ interface LocalRecord {
   state: GameState;
   history: HistoryEntry[];
   snapshots: Snapshot[];
+  /** Stage 04: ключ переноса на сервер. Создаётся один раз: повтор после обрыва связи не создаст вторую жизнь */
+  importId?: string;
+  /** Stage 04: id жизни на сервере после переноса. Копия в браузере остаётся, но ходов больше не принимает */
+  movedTo?: string;
+}
+
+/** Stage 04: что отправляется на сервер при переносе */
+export interface ImportPayload {
+  importId: string;
+  state: GameState;
+  history: HistoryEntry[];
 }
 
 function storage(): Storage {
@@ -32,7 +44,30 @@ function storage(): Storage {
   return window.localStorage;
 }
 
-const lifeKey = (id: string) => `${PREFIX}:life:${id}`;
+const LIFE_PREFIX = `${PREFIX}:life:`;
+const lifeKey = (id: string) => `${LIFE_PREFIX}${id}`;
+
+/**
+ * Все жизни в браузере: из индекса и по ключам. Две вкладки могут перезаписать индекс друг друга,
+ * но запись жизни остаётся — поиск по ключам не даёт ей пропасть из списка
+ */
+function allIds(): string[] {
+  const ids = readIndex();
+  const s = storage();
+  for (let i = 0; i < s.length; i++) {
+    const key = s.key(i);
+    if (key?.startsWith(LIFE_PREFIX)) {
+      const id = key.slice(LIFE_PREFIX.length);
+      if (!ids.includes(id)) ids.push(id);
+    }
+  }
+  return ids;
+}
+
+/** Перенесённая жизнь закрыта для ходов: иначе у неё было бы два продолжения — в браузере и на сервере */
+function writable(record: LocalRecord): void {
+  if (record.movedTo) throw new ClientError(409, "MOVED", "Эта жизнь перенесена на сервер");
+}
 
 function readIndex(): string[] {
   try {
@@ -92,9 +127,11 @@ export const localStore: GameStore = {
 
   async list() {
     const items = [];
-    for (const id of readIndex()) {
+    for (const id of allIds()) {
       try {
         const record = read(id);
+        // Перенесённая жизнь видна в списке сервера: второй раз её не показываем
+        if (record.movedTo) continue;
         items.push(toLifeListItem(meta(record), record.state));
       } catch {
         // Повреждённое сохранение не мешает показать остальные
@@ -128,6 +165,7 @@ export const localStore: GameStore = {
 
   async act(id, expectedVersion, action: GameAction) {
     const record = read(id);
+    writable(record);
     if (record.state.version !== expectedVersion) {
       throw new ClientError(409, "VERSION_CONFLICT", "Состояние жизни изменилось", { currentVersion: record.state.version });
     }
@@ -159,6 +197,7 @@ export const localStore: GameStore = {
 
   async restore(id, version, expectedVersion) {
     const record = read(id);
+    writable(record);
     if (record.state.version !== expectedVersion) throw new ClientError(409, "VERSION_CONFLICT", "Состояние жизни изменилось");
     const target = record.snapshots.find((s) => s.version === version);
     if (!target || version >= record.state.version) throw new ClientError(404, "NOT_FOUND", "Такой версии сохранения нет");
@@ -177,6 +216,7 @@ export const localStore: GameStore = {
 
   async succeed(id, expectedVersion, heirId) {
     const record = read(id);
+    writable(record);
     if (record.state.version !== expectedVersion) throw new ClientError(409, "VERSION_CONFLICT", "Состояние жизни изменилось");
     const result = rules(() => succeed(record.state, heirId, crypto.randomUUID()));
     const now = new Date().toISOString();
@@ -205,3 +245,33 @@ export const localStore: GameStore = {
     return presentLineage(read(id).state);
   }
 };
+
+/**
+ * Stage 04: данные для переноса на сервер. Ключ переноса создаётся при первом вызове и сохраняется:
+ * повтор после обрыва связи или из другой вкладки пойдёт с тем же ключом, и сервер вернёт ту же жизнь
+ */
+export function importPayload(id: string): ImportPayload {
+  const record = read(id);
+  writable(record);
+  if (!record.importId) {
+    record.importId = newUuid();
+    write(record);
+  }
+  return { importId: record.importId, state: record.state, history: record.history };
+}
+
+/** Stage 04: перенос подтверждён сервером. Запись в браузере не удаляется: игрок удалит её сам, когда захочет */
+export function markMoved(id: string, serverId: string): void {
+  const record = read(id);
+  record.movedTo = serverId;
+  write(record);
+}
+
+/** Stage 04: куда перенесена жизнь (id на сервере) или null */
+export function movedTarget(id: string): string | null {
+  try {
+    return read(id).movedTo ?? null;
+  } catch {
+    return null;
+  }
+}
