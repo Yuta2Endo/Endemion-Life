@@ -51,7 +51,7 @@ push в main ──► CI (ci.yml) ──────────┐   lint, typ
 | `/opt/endemion-life-releases/<SHA>/` | `code.bundle` релиза |
 | `/opt/endemion-life-releases/current`, `previous` | Текущий релиз и релиз для отката по умолчанию |
 | `/opt/endemion-life-releases/history.log` | Журнал выкладок и откатов |
-| `/opt/endemion-life-releases/logs/` | Журналы контейнеров при неудачной выкладке (на сервере, не в GitHub: в них могут быть данные игроков) |
+| `/opt/endemion-life-releases/logs/` | Вывод `backup.sh` при каждой выкладке и журналы контейнеров при неудачной (на сервере, не в GitHub: в них могут быть данные игроков; в журнал Actions попадает только имя файла копии) |
 
 Хранятся текущий и прежний релизы и последние `RELEASE_KEEP` (2) успешных; остальные теги `:<SHA>` удаляются после успешной выкладки. Теги `:latest`, `:pre-stage*`, `:stage*` очистка не трогает.
 
@@ -120,7 +120,7 @@ command -v flock git curl docker   # все четыре должны найти
 sh /opt/endemion-life-deploy/status.sh   # только читает
 ```
 
-Настройки по умолчанию (`APP_DIR=/opt/endemion-life`, `RELEASES_DIR=/opt/endemion-life-releases`, `HEALTH_TIMEOUT=300`, `MIN_FREE_MB=5000`, `RELEASE_KEEP=2`) переопределяются файлом `/opt/endemion-life-deploy/deploy.conf` (строки `ИМЯ=значение`), если нужно.
+Настройки по умолчанию (`APP_DIR=/opt/endemion-life`, `RELEASES_DIR=/opt/endemion-life-releases`, `HEALTH_TIMEOUT=300`, `MIN_FREE_MB=5000`, `MAX_UPLOAD_MB=1024` — загрузка образов требует `MIN_FREE_MB + 2 × MAX_UPLOAD_MB` свободного места, `RELEASE_KEEP=2`) переопределяются файлом `/opt/endemion-life-deploy/deploy.conf` (строки `ИМЯ=значение`), если нужно.
 
 Когда в `main` меняются `infrastructure/deploy/*.sh`, выкладка предупреждает об этом, а `status` показывает «отличается от версии в коде». Установленные скрипты обновляются тем же `install` — вручную, после просмотра изменений.
 

@@ -86,8 +86,17 @@ if [ -n "$(git diff --name-only "$CURRENT" "$SHA" -- infrastructure/env.producti
   warn "изменён образец настроек env.production.example: проверьте, не нужны ли новые переменные в .env"
 fi
 
-log "Резервная копия базы перед выкладкой"
-dc exec -T backup backup.sh || die "резервная копия не создана: выкладка остановлена, рабочая версия не менялась"
+# Вывод backup.sh — на сервер: пробное восстановление печатает число игроков и жизней, а журнал Actions публичный
+mkdir -p "$RELEASES_DIR/logs"
+BACKUP_LOG="$RELEASES_DIR/logs/$(date -u +%Y%m%dT%H%M%SZ)-backup-$SHA.log"
+log "Резервная копия базы перед выкладкой (журнал на сервере: $BACKUP_LOG)"
+if ! dc exec -T backup backup.sh > "$BACKUP_LOG" 2>&1; then
+  chmod 600 "$BACKUP_LOG"
+  die "резервная копия не создана (журнал: $BACKUP_LOG): выкладка остановлена, рабочая версия не менялась"
+fi
+chmod 600 "$BACKUP_LOG"
+BACKUP_FILE=$(sed -n 's/.*Копия создана: \([^ "]*\).*/\1/p' "$BACKUP_LOG" | tail -n 1)
+log "Резервная копия создана: ${BACKUP_FILE:-имя файла — в журнале на сервере}"
 
 history_add deploy-start "$SHA" from "$CURRENT"
 if switch_code "$SHA" forward && start_release "$SHA" deploy; then

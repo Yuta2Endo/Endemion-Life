@@ -42,6 +42,8 @@ echo "Свободно на диске: $(df -Pm "$APP_DIR" | awk 'NR == 2 {prin
 
 # Скрипты выкладки на сервере ставятся вручную: напоминание, если в коде новая версия
 for f in "$APP_DIR"/infrastructure/deploy/*.sh; do
+  # Работающий коммит ещё без infrastructure/deploy/ (первая выкладка): сравнивать не с чем
+  [ -f "$f" ] || continue
   installed="$DEPLOY_HOME/$(basename "$f")"
   if [ ! -f "$installed" ] || ! cmp -s "$f" "$installed"; then
     echo "ВНИМАНИЕ: $installed отличается от версии в коде — обновите скрипты (docs/GITHUB_ACTIONS_DEPLOYMENT.md)"

@@ -20,8 +20,9 @@ RELEASE_SERVICES="migrate api web nginx"
 RELEASE_KEEP="${RELEASE_KEEP:-2}"
 HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-300}"
 MIN_FREE_MB="${MIN_FREE_MB:-5000}"
-# Предел архива образов (gzip). Четыре образа релиза сейчас — около 2,2 ГБ без сжатия
-MAX_UPLOAD_MB="${MAX_UPLOAD_MB:-2048}"
+# Предел архива образов (gzip). Четыре образа релиза сейчас — около 330 МБ в архиве. Загрузка требует
+# MIN_FREE_MB + 2 × MAX_UPLOAD_MB свободного места: при 11 ГБ на сервере больший предел не оставил бы запаса
+MAX_UPLOAD_MB="${MAX_UPLOAD_MB:-1024}"
 # Адрес для проверки по HTTP(S). Пусто — https://DOMAIN из .env
 HEALTH_URL="${HEALTH_URL:-}"
 MIGRATIONS_PATH=packages/database/prisma/migrations
