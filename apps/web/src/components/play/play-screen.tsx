@@ -1,6 +1,6 @@
 "use client";
 
-import { getUniverse, type GameAction, type HistoryEntry, type InteractionId } from "@endemion/game-core";
+import { getUniverse, type GameAction, type HistoryEntry, type InteractionId, type TradeSide } from "@endemion/game-core";
 import type { LifeView, SaveView } from "@endemion/shared";
 import { Button, Panel } from "@endemion/ui";
 import Link from "next/link";
@@ -225,6 +225,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
   ];
   const people = Object.fromEntries(life.profile.npcs.map((npc) => [npc.id, npc.name]));
   const interact = (npcId: string, interaction: InteractionId) => void perform({ type: "interact", npcId, interaction });
+  const tradeGood = (goodId: string, side: TradeSide, qty: number) => void perform({ type: "trade", goodId, side, qty });
   const shown = (id: Tab) => (tab === id ? "block" : "hidden lg:block");
 
   return (
@@ -289,13 +290,13 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
           )}
 
           <div className="hidden lg:block">
-            <Dossier life={life} busy={busy} store={store} onInteract={interact} />
+            <Dossier life={life} busy={busy} store={store} onInteract={interact} onTrade={tradeGood} />
           </div>
         </section>
 
         {/* На телефоне досье — отдельная вкладка */}
         <section className={tab === "people" ? "block lg:hidden" : "hidden"}>
-          <Dossier life={life} busy={busy} store={store} onInteract={interact} />
+          <Dossier life={life} busy={busy} store={store} onInteract={interact} onTrade={tradeGood} />
         </section>
 
         <aside className={shown("timeline")}>

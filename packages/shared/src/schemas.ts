@@ -1,5 +1,5 @@
 // Схемы запросов к API. Сервер проверяет ими всё, что приходит от клиента; сайт — то, что отправляет
-import { CHANGE_KINDS, GENDERS, HISTORY_KINDS, INTERACTIONS, LOCALES, MAX_ADVANCE_YEARS, NAME_MAX_LENGTH, SEED_MAX_LENGTH, UNIVERSE_IDS } from "@endemion/game-core";
+import { CHANGE_KINDS, GENDERS, HISTORY_KINDS, INTERACTIONS, LOCALES, MAX_ADVANCE_YEARS, MAX_TRADE_QTY, NAME_MAX_LENGTH, SEED_MAX_LENGTH, TRADE_SIDES, UNIVERSE_IDS } from "@endemion/game-core";
 import { z } from "zod";
 
 const optionId = z.string().regex(/^[a-z0-9-]{1,40}$/, "Некорректный идентификатор");
@@ -20,7 +20,9 @@ export const gameActionSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("advance"), years: z.int().min(1).max(MAX_ADVANCE_YEARS).optional() }),
   z.strictObject({ type: z.literal("choose"), choiceId: optionId }),
   /** Личное общение с NPC: id из профиля жизни (n1, n2…) */
-  z.strictObject({ type: z.literal("interact"), npcId: z.string().regex(/^n[0-9]{1,6}$/, "Некорректный идентификатор"), interaction: z.enum(INTERACTIONS) })
+  z.strictObject({ type: z.literal("interact"), npcId: z.string().regex(/^n[0-9]{1,6}$/, "Некорректный идентификатор"), interaction: z.enum(INTERACTIONS) }),
+  /** Stage 04: купить или продать товар рынка. Клиент называет товар, сторону и количество; цену считает сервер */
+  z.strictObject({ type: z.literal("trade"), goodId: optionId, side: z.enum(TRADE_SIDES), qty: z.int().min(1).max(MAX_TRADE_QTY) })
 ]);
 
 export const actionRequestSchema = z.strictObject({

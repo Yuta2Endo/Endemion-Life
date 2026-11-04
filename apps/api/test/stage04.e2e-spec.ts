@@ -222,6 +222,48 @@ describe("Stage 04: перенос жизни из браузера", () => {
     expect((restored.body as ActionResponse).life.life.age).toBe(save.life.age);
   });
 
+  it("рынок: цену считает сервер, лишние поля отклоняются, повтор не покупает дважды, нехватка денег — 409", async () => {
+    const client = agent();
+    const created = (await client.post("/api/lives").set("Origin", ORIGIN).send({ universeId: "murim" }).expect(201)).body.life as LifeView;
+    const save = structuredClone(SAVE_V3_ADULT) as { version: number; life: { age: number }; character: { name: string; wealth: number }; pending: { eventId: string; age: number } | null };
+    save.pending = null;
+    save.character.wealth = 100;
+    await t.prisma.client.life.update({ where: { id: created.id }, data: { state: save, version: save.version, age: save.life.age, name: save.character.name, schemaVersion: 3 } });
+
+    let life = (await client.get(`/api/lives/${created.id}`).expect(200)).body.life as LifeView;
+    expect(life.market.open).toBe(true);
+    const good = life.market.goods[0]!;
+    const send = (action: Record<string, unknown>, actionId: string = randomUUID(), expectedVersion = life.version) =>
+      client.post(`/api/lives/${life.id}/actions`).set("Origin", ORIGIN).send({ actionId, expectedVersion, action });
+
+    // Клиент не может назвать свою цену или подложить поле
+    expect((await send({ type: "trade", goodId: good.id, side: "buy", qty: 1, price: 0 }).expect(400)).body.error.code).toBe("VALIDATION");
+    expect((await send({ type: "trade", goodId: good.id, side: "buy", qty: 99 }).expect(400)).body.error.code).toBe("VALIDATION");
+    expect((await send({ type: "trade", goodId: "../hack", side: "buy", qty: 1 }).expect(400)).body.error.code).toBe("VALIDATION");
+
+    const actionId = randomUUID();
+    const first = (await send({ type: "trade", goodId: good.id, side: "buy", qty: 2 }, actionId).expect(200)).body as ActionResponse;
+    expect(first.life.character.wealth).toBe(100 - good.buy * 2);
+    expect(first.life.market.goods[0]!.stock).toBe(2);
+    expect(first.entries[0]!.kind).toBe("market");
+    // Повтор того же actionId: тот же результат, золото не списано второй раз.
+    // База хранит jsonb с другим порядком ключей — повтор с любым порядком ключей узнаётся (и с исходным тоже)
+    const again = (await send({ qty: 2, side: "buy", goodId: good.id, type: "trade" }, actionId).expect(200)).body as ActionResponse;
+    expect(again.replayed).toBe(true);
+    expect(again.life.character.wealth).toBe(first.life.character.wealth);
+    expect((await send({ type: "trade", goodId: good.id, side: "buy", qty: 2 }, actionId).expect(200)).body.replayed).toBe(true);
+    // Тот же actionId с другим действием — по-прежнему конфликт
+    expect((await send({ type: "trade", goodId: good.id, side: "buy", qty: 1 }, actionId).expect(409)).body.error.code).toBe("ACTION_ID_REUSED");
+    expect(await t.prisma.client.gameAction.count({ where: { actionId } })).toBe(1);
+    life = first.life;
+
+    // Не хватает золота — отказ сервера, состояние не меняется
+    expect((await send({ type: "trade", goodId: good.id, side: "buy", qty: 5 }).expect(409)).body.error.code).toBe("CHOICE_LOCKED");
+    const sold = (await send({ type: "trade", goodId: good.id, side: "sell", qty: 2 }).expect(200)).body as ActionResponse;
+    expect(sold.life.character.wealth).toBe(life.character.wealth + good.sell * 2);
+    expect(sold.life.character.wealth).toBeLessThan(100);
+  });
+
   it("лимит живых жизней действует и для переноса", async () => {
     const client = agent();
     const local = browserLife("api-import-limit", 2);

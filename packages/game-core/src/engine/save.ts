@@ -10,6 +10,7 @@ import { finishLife, foundLineage } from "../legacy/lineage.js";
 import { Rng } from "../rng.js";
 import { findProfession } from "../rpg/skills.js";
 import { MAX_ECONOMY_YEARS, newEconomy } from "../economy/economy.js";
+import { findGood, MAX_STOCK } from "../economy/market.js";
 import { RESOURCE_KEYS, STAT_KEYS, WEALTH_MAX } from "../stats.js";
 import {
   CHRONICLE_KINDS,
@@ -25,7 +26,8 @@ import {
   SELF_ID,
   type GameState,
   type NpcRole,
-  type NpcState
+  type NpcState,
+  type UniverseId
 } from "../types.js";
 import { getUniverse, isUniverseId } from "../universes/registry.js";
 import type { EngineContext } from "./context.js";
@@ -176,14 +178,23 @@ function migrateV2(save: Record<string, unknown>): Record<string, unknown> {
 function migrateV3(save: Record<string, unknown>): Record<string, unknown> {
   const life = save.life;
   const age = isRecord(life) && isInt(life.age, 0) ? life.age : 0;
-  return { ...save, economy: newEconomy(age) };
+  // Хозяйство формата 4 — без запаса товаров: его добавляет следующий шаг (4 → 5)
+  const { goods: _goods, ...economy } = newEconomy(age);
+  return { ...save, economy };
+}
+
+/** Формат 4 → 5 (Stage 04, рынок): только добавляется пустой запас товаров. Ничего не удаляется, генератор не нужен */
+function migrateV4(save: Record<string, unknown>): Record<string, unknown> {
+  const economy = save.economy;
+  return isRecord(economy) ? { ...save, economy: { ...economy, goods: {} } } : save;
 }
 
 /** Переходы между версиями формата: ключ — версия, из которой переводим. Новая версия формата добавляет сюда шаг */
 const MIGRATIONS: Readonly<Record<number, Migration>> = {
   1: migrateV1,
   2: migrateV2,
-  3: migrateV3
+  3: migrateV3,
+  4: migrateV4
 };
 
 function fail(reason: string): never {
@@ -297,13 +308,16 @@ function checkLineage(lineage: unknown): void {
 }
 
 /** Хозяйство формата 4: цикл, нехватка, статьи последнего года и итоги лет — с лимитами */
-function checkEconomy(economy: unknown): void {
+function checkEconomy(economy: unknown, universeId: UniverseId): void {
   if (!isRecord(economy) || !oneOf(ECONOMY_CYCLES, economy.cycle) || !isInt(economy.cycleSince, 0) || !isInt(economy.hardship, 0, 100)) fail("economy");
   const last = economy.last;
   const isLine = (x: unknown) => isRecord(x) && oneOf(ECONOMY_LINES, x.id) && isInt(x.amount, -WEALTH_MAX, WEALTH_MAX);
   if (last !== null && !(isRecord(last) && isInt(last.age, 0) && isInt(last.shortfall, 0, WEALTH_MAX) && Array.isArray(last.lines) && last.lines.length <= ECONOMY_LINES.length && last.lines.every(isLine))) fail("economy.last");
   const isYear = (x: unknown) => isRecord(x) && isInt(x.age, 0) && isInt(x.income, 0, WEALTH_MAX) && isInt(x.expenses, 0, WEALTH_MAX) && isInt(x.shortfall, 0, WEALTH_MAX);
   if (!Array.isArray(economy.years) || economy.years.length > MAX_ECONOMY_YEARS || !economy.years.every(isYear)) fail("economy.years");
+  // Формат 5: запас товаров — только товары рынка этого мира, от 1 до MAX_STOCK
+  const goods = economy.goods;
+  if (!isRecord(goods) || !Object.entries(goods).every(([id, n]) => findGood(universeId, id) !== undefined && isInt(n, 1, MAX_STOCK))) fail("economy.goods");
 }
 
 /** Проверяет сохранение и возвращает состояние игры. Бросает INVALID_SAVE, если что-то не так */
@@ -358,7 +372,7 @@ export function parseSave(raw: unknown): GameState {
   if (!isStringArray(save.questsDone) || !isStringArray(save.recentEvents)) fail("questsDone");
   checkLineage(save.lineage);
   if (!Array.isArray(save.memory) || save.memory.length > 50 || !save.memory.every((m) => isRecord(m) && isInt(m.age, 0) && typeof m.eventId === "string" && typeof m.choiceId === "string" && (m.success === null || typeof m.success === "boolean") && isInt(m.weight, 0))) fail("memory");
-  checkEconomy(save.economy);
+  checkEconomy(save.economy, c.universeId);
   // Родство: ни циклов, ни родителей младше детей, ни брака с умершим
   const problem = kinProblem(save as unknown as GameState);
   if (problem) fail(`родство: ${problem}`);

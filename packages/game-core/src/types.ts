@@ -433,7 +433,8 @@ export const CHANGE_KINDS = [
   "hidden",
   "renown",
   "achievement",
-  "thread"
+  "thread",
+  "good"
 ] as const;
 export type ChangeKind = (typeof CHANGE_KINDS)[number];
 
@@ -446,7 +447,7 @@ export interface HistoryChange {
 }
 
 /** import — Stage 04: жизнь перенесена из браузера на сервер */
-export const HISTORY_KINDS = ["birth", "event", "year", "death", "restore", "consequence", "quest", "people", "legacy", "import"] as const;
+export const HISTORY_KINDS = ["birth", "event", "year", "death", "restore", "consequence", "quest", "people", "legacy", "import", "market"] as const;
 export type HistoryKind = (typeof HISTORY_KINDS)[number];
 
 export interface HistoryEntry {
@@ -536,6 +537,8 @@ export interface EconomyState {
   last: { age: number; lines: EconomyLine[]; shortfall: number } | null;
   /** Итоги последних лет (не больше MAX_ECONOMY_YEARS) */
   years: EconomyYear[];
+  /** Формат 5: запас товаров рынка по id товара мира (economy/market.ts) */
+  goods: Record<string, number>;
 }
 
 export const INTERACTIONS = ["talk", "gift", "learn", "spar", "confront", "ask-help"] as const;
@@ -548,7 +551,12 @@ export type InteractionId = (typeof INTERACTIONS)[number];
 export type GameAction =
   | { type: "advance"; years?: number }
   | { type: "choose"; choiceId: string }
-  | { type: "interact"; npcId: string; interaction: InteractionId };
+  | { type: "interact"; npcId: string; interaction: InteractionId }
+  /** Stage 04: купить или продать товар рынка. Цену и остаток считает сервер */
+  | { type: "trade"; goodId: string; side: TradeSide; qty: number };
+
+export const TRADE_SIDES = ["buy", "sell"] as const;
+export type TradeSide = (typeof TRADE_SIDES)[number];
 export type GameActionType = GameAction["type"];
 
 export const MAX_ADVANCE_YEARS = 10;

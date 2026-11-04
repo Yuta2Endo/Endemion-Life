@@ -3,6 +3,7 @@ import {
   presentEconomy,
   presentEvent,
   presentLegacy,
+  presentMarket,
   presentProfile,
   summarizeCharacter,
   type CharacterState,
@@ -17,6 +18,7 @@ import {
   type LifeProfile,
   type LifeState,
   type LineageView,
+  type MarketView,
   type OptionView,
   type UniverseId,
   type UniverseSummary
@@ -47,6 +49,8 @@ export interface LifeView extends LifeMeta {
   legacy: LegacyBrief;
   /** Stage 04: хозяйство — состояние экономики мира, доходы и расходы последнего года, нехватка */
   economy: EconomyView;
+  /** Stage 04: рынок мира — товары, цены по нынешнему состоянию хозяйства, запас */
+  market: MarketView;
 }
 
 export interface LifeListItem extends LifeMeta {
@@ -169,7 +173,8 @@ export function toLifeView(meta: LifeMeta, state: GameState): LifeView {
     pendingEvent: presentEvent(state),
     profile: presentProfile(state),
     legacy: presentLegacy(state),
-    economy: presentEconomy(state)
+    economy: presentEconomy(state),
+    market: presentMarket(state)
   };
 }
 

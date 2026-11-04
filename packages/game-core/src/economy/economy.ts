@@ -32,7 +32,7 @@ const CYCLE_RETURN = 0.25;
 const JOBS: readonly { flag: string; base: number; stats: StatKey[] }[] = [{ flag: "guild-member", base: 6, stats: ["strength", "agility"] }];
 
 export function newEconomy(age = 0, cycle: EconomyCycle = "normal"): EconomyState {
-  return { cycle, cycleSince: age, hardship: 0, last: null, years: [] };
+  return { cycle, cycleSince: age, hardship: 0, last: null, years: [], goods: {} };
 }
 
 /** Стоимость жизни в год: с 16 лет, по ступени сословия и миру */

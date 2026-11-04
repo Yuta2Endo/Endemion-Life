@@ -51,6 +51,19 @@ function json(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
 }
 
+/**
+ * JSON с ключами по алфавиту. PostgreSQL хранит jsonb с переупорядоченными ключами (короче — раньше),
+ * поэтому сохранённое действие сравнивается с повтором без учёта порядка ключей
+ */
+function canonical(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
 /** Состояние из базы проверяется так же строго, как сохранение извне: битые данные не попадут в игру */
 function stateOf(row: Pick<LifeRow, "state">): GameState {
   return parseSave(row.state);
@@ -142,7 +155,7 @@ export class LivesService {
       // Повтор уже принятого действия (двойной клик, повтор после обрыва связи): вернуть прежний итог
       const previous = await tx.gameAction.findUnique({ where: { lifeId_actionId: { lifeId, actionId: request.actionId } } });
       if (previous) {
-        const sameRequest = previous.fromVersion === request.expectedVersion && JSON.stringify(previous.payload) === JSON.stringify(request.action);
+        const sameRequest = previous.fromVersion === request.expectedVersion && canonical(previous.payload) === canonical(request.action);
         if (!sameRequest) throw new ApiError(409, "ACTION_ID_REUSED", "Этот actionId уже использован для другого действия");
         return { life: toLifeView(meta(row), stateOf(row)), entries: previous.entries as unknown as HistoryEntry[], replayed: true };
       }

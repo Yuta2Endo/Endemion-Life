@@ -2,6 +2,7 @@
 import {
   findAchievement,
   findEducation,
+  findGood,
   findProfession,
   findSkill,
   findTalent,
@@ -129,6 +130,10 @@ export function formatChange(change: HistoryChange, universeId: UniverseId, loca
       const thread = THREADS[change.key ?? ""];
       if (!thread) return null;
       return change.value === "closed" ? { text: msg(locale, "change.threadClosed", { name: thread.name[locale] }), tone: "good" } : { text: msg(locale, "change.threadAdded", { name: thread.name[locale] }), tone: "neutral" };
+    }
+    case "good": {
+      const good = findGood(universeId, change.key ?? "");
+      return good ? { text: `${good.name[locale]} ${signed(delta)}`, tone: "neutral" } : null;
     }
   }
 }

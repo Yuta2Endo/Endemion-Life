@@ -9,6 +9,7 @@ import { STAT_KEYS, type StatKey } from "../stats.js";
 import type { LifeStage } from "../types.js";
 import { worldTrackFactor } from "../world/rules.js";
 import { economyYear } from "../economy/economy.js";
+import { consumeGoods } from "../economy/market.js";
 import { DEATH_CAUSES, naturalDeathChance } from "./death.js";
 import { stageForAge } from "./stages.js";
 
@@ -105,6 +106,8 @@ export function ageOneYear(ctx: EngineContext): YearSummary {
   if (life.age >= 5) gainXp(ctx, ctx.rng.round(4 + effectiveStats(c).wisdom / 5));
   // Stage 04: доходы и расходы года (economy/economy.ts). Основной генератор здесь новых чисел не тянет
   economyYear(ctx);
+  // Рынок: запасы тратятся по штуке в год на навык, шкалу мира или отношение фракции
+  consumeGoods(ctx);
   restore(ctx, life.stage);
 
   let diedOfAge = false;

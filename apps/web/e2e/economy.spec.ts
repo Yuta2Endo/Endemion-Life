@@ -73,6 +73,72 @@ test("хозяйство: у ребёнка — пояснение, у взро�
   await expect(panel.getByTestId("economy-society")).toContainText("Standing in society");
 });
 
+/** Отвечает на события, которые ждут ответа: пока событие открыто, рынок закрыт (так и задумано) */
+async function answerPending(page: Page) {
+  const screen = page.getByTestId("play-screen");
+  for (let i = 0; i < 10; i++) {
+    await openTab(page, "event");
+    const card = page.getByTestId("event-card");
+    if (!(await card.isVisible())) return;
+    const version = (await screen.getAttribute("data-version")) ?? "";
+    await card.locator('[data-testid="choice"][data-available="true"]').first().click();
+    await expect(screen).not.toHaveAttribute("data-version", version);
+  }
+}
+
+test("рынок: у ребёнка закрыт; взрослый покупает и продаёт, цену считает сервер, запас сохраняется после обновления", async ({ page }) => {
+  await page.goto("/create/isekai");
+  await page.getByTestId("name-input").fill("Лавочник");
+  await page.getByTestId("create-submit").click();
+  await expect(page.getByTestId("play-screen")).toBeVisible();
+
+  let panel = await openEconomy(page);
+  await expect(panel.getByTestId("market")).toHaveAttribute("data-open", "false");
+  await expect(panel.getByTestId("market-closed")).toBeVisible();
+  await expect(panel.getByTestId("good-buy").first()).toBeDisabled();
+
+  await liveTo(page, 18);
+  test.skip(await page.getByTestId("death-card").isVisible(), "персонаж умер раньше 18 лет при этом seed");
+  await answerPending(page);
+  panel = await openEconomy(page);
+  await expect(panel.getByTestId("market")).toHaveAttribute("data-open", "true");
+  const buyable = panel.locator('[data-testid="good-buy"]:enabled');
+  test.skip((await buyable.count()) === 0, "к 18 годам не хватило золота ни на один товар");
+
+  // Товар, который по карману: селектор :has ищет кнопку внутри каждого товара
+  const item = panel.locator('[data-testid="good"]:has([data-testid="good-buy"]:enabled)').first();
+  const goodId = (await item.getAttribute("data-good")) ?? "";
+  const price = Number(await item.getByTestId("good-buy").getAttribute("data-price"));
+  const wealth = Number(await panel.getByTestId("economy-wealth").textContent());
+  const screen = page.getByTestId("play-screen");
+  let version = (await screen.getAttribute("data-version")) ?? "";
+  await item.getByTestId("good-buy").click();
+  await expect(screen).not.toHaveAttribute("data-version", version);
+
+  panel = await openEconomy(page);
+  const bought = panel.locator(`[data-testid="good"][data-good="${goodId}"]`);
+  await expect(bought).toHaveAttribute("data-stock", "1");
+  await expect(panel.getByTestId("economy-wealth")).toHaveText(String(wealth - price));
+
+  await page.reload();
+  panel = await openEconomy(page);
+  await expect(panel.locator(`[data-testid="good"][data-good="${goodId}"]`)).toHaveAttribute("data-stock", "1");
+
+  const sellPrice = Number(await panel.locator(`[data-testid="good"][data-good="${goodId}"]`).getByTestId("good-sell").getAttribute("data-price"));
+  expect(sellPrice).toBeLessThan(price);
+  version = (await screen.getAttribute("data-version")) ?? "";
+  await panel.locator(`[data-testid="good"][data-good="${goodId}"]`).getByTestId("good-sell").click();
+  await expect(screen).not.toHaveAttribute("data-version", version);
+  panel = await openEconomy(page);
+  await expect(panel.locator(`[data-testid="good"][data-good="${goodId}"]`)).toHaveAttribute("data-stock", "0");
+  await expect(panel.getByTestId("economy-wealth")).toHaveText(String(wealth - price + sellPrice));
+
+  await page.getByRole("button", { name: "en", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  panel = await openEconomy(page);
+  await expect(panel.getByTestId("market")).toContainText("Market");
+});
+
 test("вкладки досье доступны с клавиатуры, раздел хозяйства — в их числе", async ({ page }) => {
   await page.goto("/create/hunter");
   await page.getByTestId("create-submit").click();

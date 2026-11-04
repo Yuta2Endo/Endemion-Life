@@ -11,6 +11,7 @@ import { ageOneYear } from "../life/aging.js";
 import { DEATH_CAUSES } from "../life/death.js";
 import { STAGE_INFO, stageForAge } from "../life/stages.js";
 import { newEconomy } from "../economy/economy.js";
+import { trade } from "../economy/market.js";
 import { newLineage } from "../legacy/chronicle.js";
 import { checkAchievements, finishLife, foundLineage, lineageYearly, recordStory } from "../legacy/lineage.js";
 import { consequencesYearly } from "../narrative/consequences.js";
@@ -23,6 +24,7 @@ import { worldYearly, type Emit } from "../world/rules.js";
 import {
   INTERACTIONS,
   MAX_ADVANCE_YEARS,
+  TRADE_SIDES,
   type ActionResult,
   type GameAction,
   type GameState,
@@ -38,9 +40,10 @@ import { applyEffects, isFatal, kill } from "./effects.js";
 /**
  * 1 — Stage 01; 2 — Stage 02: семья, NPC, таланты, навыки, шкалы мира, последствия;
  * 3 — Stage 03: родство по id, жизнь NPC, род, хроника рода, достижения, наследование (перевод в save.ts);
- * 4 — Stage 04: хозяйство (economy) — цикл мира, нехватка денег, доходы и расходы последних лет
+ * 4 — Stage 04: хозяйство (economy) — цикл мира, нехватка денег, доходы и расходы последних лет;
+ * 5 — Stage 04, рынок: запас товаров (economy.goods)
  */
-export const SAVE_SCHEMA_VERSION = 4;
+export const SAVE_SCHEMA_VERSION = 5;
 export const SEED_MAX_LENGTH = 64;
 
 const YEAR_TEXTS: readonly LocalizedText[] = [
@@ -317,6 +320,13 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
       if (!INTERACTIONS.includes(action.interaction)) throw new GameRuleError("INVALID_INPUT", "Неизвестное действие");
       interactWith(ctx, entries, action.npcId, action.interaction);
       break;
+    case "trade": {
+      if (!TRADE_SIDES.includes(action.side)) throw new GameRuleError("INVALID_INPUT", "Неизвестное действие");
+      // Сделка — без хода времени и без бросков: цену и остаток считает рынок мира
+      const result = trade(ctx, action.goodId, action.side, action.qty);
+      pushEntry(ctx, entries, "market", { title: result.title, text: result.text });
+      break;
+    }
     default:
       throw new GameRuleError("INVALID_INPUT", "Неизвестное действие");
   }

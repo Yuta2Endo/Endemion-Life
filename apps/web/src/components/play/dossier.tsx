@@ -9,7 +9,8 @@ import {
   getUniverse,
   TEMPERAMENTS,
   type InteractionId,
-  type NpcView
+  type NpcView,
+  type TradeSide
 } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
 import { Meter, Ornament, Panel } from "@endemion/ui";
@@ -368,7 +369,19 @@ function People({ life, busy, onInteract }: { life: LifeView; busy: boolean; onI
 }
 
 /** Досье персонажа: биография и происхождение, семья, род (древо, хроника рода, достижения, наследство), навыки и таланты, люди вокруг */
-export function Dossier({ life, busy, store, onInteract }: { life: LifeView; busy: boolean; store: GameStore; onInteract: (npcId: string, interaction: InteractionId) => void }) {
+export function Dossier({
+  life,
+  busy,
+  store,
+  onInteract,
+  onTrade
+}: {
+  life: LifeView;
+  busy: boolean;
+  store: GameStore;
+  onInteract: (npcId: string, interaction: InteractionId) => void;
+  onTrade: (goodId: string, side: TradeSide, qty: number) => void;
+}) {
   const { locale, l, t } = useI18n();
   const [section, setSection] = useState<Section>("bio");
   const universe = getUniverse(life.universeId);
@@ -430,7 +443,7 @@ export function Dossier({ life, busy, store, onInteract }: { life: LifeView; bus
       {section === "bio" && <Biography life={life} />}
       {section === "family" && <FamilyTree life={life} />}
       {section === "lineage" && <LineagePanel life={life} store={store} />}
-      {section === "economy" && <EconomyPanel life={life} />}
+      {section === "economy" && <EconomyPanel life={life} busy={busy} onTrade={onTrade} />}
       {section === "skills" && <SkillsAndTalents life={life} />}
       {section === "people" && <People life={life} busy={busy} onInteract={onInteract} />}
     </Panel>

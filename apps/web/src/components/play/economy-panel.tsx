@@ -1,10 +1,11 @@
 "use client";
 
-import { getUniverse } from "@endemion/game-core";
+import { getUniverse, type TradeSide } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
 import { Ornament } from "@endemion/ui";
 import { ageLabel } from "@/lib/format";
 import { useI18n } from "../locale-provider";
+import { MarketPanel } from "./market-panel";
 
 function Amount({ value }: { value: number }) {
   const tone = value > 0 ? "text-jade-300" : value < 0 ? "text-blood-300" : "text-bone-300";
@@ -60,7 +61,7 @@ function Society({ life }: { life: LifeView }) {
  * Stage 04: хозяйство персонажа — золото, состояние экономики мира, доходы и расходы последнего прожитого года,
  * налог и стоимость жизни, нехватка денег. Все суммы считает сервер; здесь только показ
  */
-export function EconomyPanel({ life }: { life: LifeView }) {
+export function EconomyPanel({ life, busy, onTrade }: { life: LifeView; busy: boolean; onTrade: (goodId: string, side: TradeSide, qty: number) => void }) {
   const { locale, l, t } = useI18n();
   const e = life.economy;
   const last = e.last;
@@ -140,6 +141,8 @@ export function EconomyPanel({ life }: { life: LifeView }) {
       </dl>
 
       <Society life={life} />
+
+      <MarketPanel life={life} busy={busy} onTrade={onTrade} />
 
       {e.years.length > 1 && (
         <div>
