@@ -31,7 +31,11 @@ export function checkCondition(state: GameState, condition: Condition): boolean 
     case "reputation":
       return inRange(c.reputation, condition.min, condition.max);
     case "wealth":
-      return c.wealth >= condition.min;
+      return inRange(c.wealth, condition.min, condition.max);
+    case "hardship":
+      return inRange(state.economy.hardship, condition.min, condition.max);
+    case "cycle":
+      return condition.ids.includes(state.economy.cycle);
     case "level":
       return c.level >= condition.min;
     case "rank":
@@ -141,7 +145,11 @@ export function describeCondition(condition: Condition, universe: UniverseDefini
     case "reputation":
       return join(t("Репутация", "Reputation"), rangeText(condition.min, condition.max));
     case "wealth":
-      return join(t("Золото", "Gold"), rangeText(condition.min));
+      return join(t("Золото", "Gold"), rangeText(condition.min, condition.max));
+    case "hardship":
+      return condition.min !== undefined ? t("Нужна нужда в деньгах", "Requires money troubles") : t("Сейчас не до этого: денег не хватает", "Not now: money is short");
+    case "cycle":
+      return t("Не то время для хозяйства", "Not the right economic times");
     case "level":
       return join(t("Уровень", "Level"), rangeText(condition.min));
     case "rank": {

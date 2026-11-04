@@ -1,4 +1,5 @@
 import { GameRuleError } from "../errors.js";
+import { WORLD_ECONOMY_EVENTS } from "../narrative/economy-events.js";
 import { COMMON_CONSEQUENCES } from "../narrative/people.js";
 import { UNIVERSE_IDS, type UniverseId } from "../types.js";
 import { ACADEMY } from "./academy.js";
@@ -15,7 +16,7 @@ import type { UniverseBase, UniverseDefinition, WorldDefinition } from "./types.
 import { XIANXIA } from "./xianxia.js";
 import { XIANXIA_WORLD } from "./xianxia.world.js";
 
-/** Мир целиком: описание Stage 01 и расширение Stage 02. Способности и события складываются */
+/** Мир целиком: описание Stage 01 и расширение Stage 02. Способности и события складываются; Stage 04 добавляет события хозяйства мира */
 function compose(base: UniverseBase, world: WorldDefinition): UniverseDefinition {
   const { abilityCategories, abilities, events, ...rest } = world;
   return {
@@ -23,7 +24,7 @@ function compose(base: UniverseBase, world: WorldDefinition): UniverseDefinition
     ...rest,
     consequences: [...COMMON_CONSEQUENCES, ...rest.consequences],
     abilities: [...base.abilities.map((ability) => ({ ...ability, category: ability.category ?? abilityCategories[ability.id] ?? "utility" })), ...abilities],
-    events: [...base.events, ...events]
+    events: [...base.events, ...events, ...WORLD_ECONOMY_EVENTS[base.id]]
   };
 }
 

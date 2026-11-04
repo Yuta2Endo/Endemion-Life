@@ -44,6 +44,9 @@ test("хозяйство: у ребёнка — пояснение, у взро�
   let panel = await openEconomy(page);
   await expect(panel.getByTestId("economy-empty")).toBeVisible();
   await expect(panel.getByTestId("economy-cycle")).toBeVisible();
+  // Положение в обществе: сословие и три фракции мира
+  await expect(panel.getByTestId("society-class")).not.toHaveText("—");
+  await expect(panel.getByTestId("society-factions").locator("li")).toHaveCount(3);
 
   await liveTo(page, 18);
   test.skip(await page.getByTestId("death-card").isVisible(), "персонаж умер раньше 18 лет при этом seed");
@@ -67,6 +70,7 @@ test("хозяйство: у ребёнка — пояснение, у взро�
   panel = await openEconomy(page);
   await expect(panel).toContainText("Net for the year");
   await expect(panel.locator('[data-line="living"]')).toContainText("Cost of living");
+  await expect(panel.getByTestId("economy-society")).toContainText("Standing in society");
 });
 
 test("вкладки досье доступны с клавиатуры, раздел хозяйства — в их числе", async ({ page }) => {

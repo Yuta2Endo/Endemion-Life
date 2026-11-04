@@ -81,8 +81,12 @@ test("вход переносит жизнь гостя в существующ�
   await otherPage.goto("/");
   await expect(otherPage.getByTestId("lives-list")).toContainText("Странник Ён");
 
-  // Выход со всех остальных устройств: второй браузер теряет доступ
-  await page.getByTestId("revoke-others").click();
+  // Выход со всех остальных устройств: второй браузер теряет доступ. Ждём ответа сервера:
+  // иначе под нагрузкой второй браузер успевал открыть страницу до того, как сессия отозвана
+  await Promise.all([
+    page.waitForResponse((res) => res.url().endsWith("/api/auth/sessions/revoke-others") && res.ok()),
+    page.getByTestId("revoke-others").click()
+  ]);
   await otherPage.goto("/account");
   await expect(otherPage.getByTestId("auth-submit")).toBeVisible();
 

@@ -1,7 +1,7 @@
 // Короткие конструкторы для описания контента: события вселенных читаются как сценарий, а не как JSON
 import type { LocalizedText } from "../i18n.js";
 import type { ResourceKey, StatKey } from "../stats.js";
-import type { HiddenKey, NpcRole, UniverseId } from "../types.js";
+import type { EconomyCycle, HiddenKey, NpcRole, UniverseId } from "../types.js";
 import type { Condition, Effect, NpcRef, StatCheck } from "./types.js";
 
 export const fx = {
@@ -54,6 +54,12 @@ export const when = {
   karmaAtMost: (max: number): Condition => ({ type: "karma", max }),
   reputation: (min: number): Condition => ({ type: "reputation", min }),
   wealth: (min: number): Condition => ({ type: "wealth", min }),
+  wealthAtMost: (max: number): Condition => ({ type: "wealth", max }),
+  /** Stage 04: денег не хватает уже min лет подряд */
+  hardship: (min = 1): Condition => ({ type: "hardship", min }),
+  noHardship: (): Condition => ({ type: "hardship", max: 0 }),
+  /** Stage 04: хозяйство мира в одном из состояний */
+  cycle: (...ids: EconomyCycle[]): Condition => ({ type: "cycle", ids }),
   level: (min: number): Condition => ({ type: "level", min }),
   rank: (min: number): Condition => ({ type: "rank", min }),
   rankAtMost: (max: number): Condition => ({ type: "rank", max }),

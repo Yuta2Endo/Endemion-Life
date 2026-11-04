@@ -1,6 +1,6 @@
 import type { LocalizedText } from "../i18n.js";
 import type { ResourceKey, StatKey } from "../stats.js";
-import type { HiddenKey, LifeStage, NpcRole, UniverseId } from "../types.js";
+import type { EconomyCycle, HiddenKey, LifeStage, NpcRole, UniverseId } from "../types.js";
 
 /** Роль NPC, любой из родителей или вся семья (родители, бабушки и дедушки, братья и сёстры, супруг, дети) */
 export type NpcRef = NpcRole | "parent" | "family";
@@ -11,7 +11,11 @@ export type Condition =
   | { type: "flag"; flag: string; has: boolean }
   | { type: "karma"; min?: number; max?: number }
   | { type: "reputation"; min?: number; max?: number }
-  | { type: "wealth"; min: number }
+  | { type: "wealth"; min?: number; max?: number }
+  /** Stage 04: сколько лет подряд не хватает денег на расходы */
+  | { type: "hardship"; min?: number; max?: number }
+  /** Stage 04: состояние хозяйства мира — спад, обычные годы, подъём */
+  | { type: "cycle"; ids: EconomyCycle[] }
   | { type: "level"; min: number }
   | { type: "rank"; min?: number; max?: number }
   /** Путь требует прорыва: очки упёрлись в порог следующего ранга */

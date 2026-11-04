@@ -1,5 +1,6 @@
 "use client";
 
+import { getUniverse } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
 import { Ornament } from "@endemion/ui";
 import { ageLabel } from "@/lib/format";
@@ -11,6 +12,49 @@ function Amount({ value }: { value: number }) {
 }
 
 const CYCLE_TONE = { slump: "border-blood-500/40 bg-blood-600/10 text-blood-200", normal: "border-line bg-ink-950/60 text-bone-200", boom: "border-jade-500/40 bg-jade-600/10 text-jade-200" } as const;
+
+/** Stage 04: положение в обществе — сословие и его ступень в мире, репутация, слава рода, отношение фракций */
+function Society({ life }: { life: LifeView }) {
+  const { l, t } = useI18n();
+  const universe = getUniverse(life.universeId);
+  const c = life.character;
+  const socialClass = universe.socialClasses.find((s) => s.id === c.socialClassId);
+  const top = Math.max(...universe.socialClasses.map((s) => s.standing));
+  return (
+    <div data-testid="economy-society">
+      <h3 className="mb-2 text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("society.title")}</h3>
+      <dl className="grid gap-2 text-sm sm:grid-cols-3">
+        <div className="rounded-md border border-line bg-ink-950/50 p-2">
+          <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("sheet.class")}</dt>
+          <dd className="text-bone-100" data-testid="society-class" data-standing={socialClass?.standing ?? 0}>
+            {socialClass ? l(socialClass.name) : "—"}
+          </dd>
+          <dd className="text-[11px] text-bone-500">{t("society.standing", { n: socialClass?.standing ?? 0, max: top })}</dd>
+        </div>
+        <div className="rounded-md border border-line bg-ink-950/50 p-2">
+          <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("society.reputation")}</dt>
+          <dd data-testid="society-reputation">
+            <Amount value={c.reputation} />
+          </dd>
+        </div>
+        <div className="rounded-md border border-line bg-ink-950/50 p-2">
+          <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("society.renown")}</dt>
+          <dd>
+            <Amount value={life.legacy.renown} />
+          </dd>
+        </div>
+      </dl>
+      <ul className="mt-3 space-y-1 text-sm" data-testid="society-factions">
+        {universe.factions.map((faction) => (
+          <li key={faction.id} className="flex items-baseline justify-between gap-3 border-b border-line/40 pb-1 last:border-0" title={l(faction.description)} data-faction={faction.id}>
+            <span className="text-bone-300">{l(faction.name)}</span>
+            <Amount value={c.factions[faction.id] ?? 0} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 /**
  * Stage 04: хозяйство персонажа — золото, состояние экономики мира, доходы и расходы последнего прожитого года,
@@ -94,6 +138,8 @@ export function EconomyPanel({ life }: { life: LifeView }) {
           </dd>
         </div>
       </dl>
+
+      <Society life={life} />
 
       {e.years.length > 1 && (
         <div>
