@@ -213,7 +213,7 @@ ssh-keyscan -t ed25519 185.175.156.196 2>/dev/null
 
 Без GitHub (ключ владельца): `sh /opt/endemion-life-deploy/rollback.sh [<SHA>] [--allow-newer-schema]`.
 
-Откат до выкладок через GitHub Actions (Stage 03 и раньше) — образы `:pre-stage04`, `:pre-stage02`, docs/ROLLBACK.md.
+Откат до выкладок через GitHub Actions (Stage 02) — образы `:pre-stage04`, docs/ROLLBACK.md. Образы `:pre-stage02` удалены 2026-11-04.
 
 ## Действия, которые требуют решения владельца
 
