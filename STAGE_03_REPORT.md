@@ -189,7 +189,18 @@
 
 ## 16. Статус CI
 
-Ветка `feature/stage-03` отправлена на GitHub; результат CI для неё записывается после прогона. Локально выполнены те же проверки, что в CI (раздел 12). В `main` ветка не влита: слияние — после зелёного CI и решения владельца.
+Ветка `feature/stage-03` отправлена на GitHub. Для коммита `b6bd993` (весь код Stage 03) 2026-11-04 прошли:
+
+| Проверка | Результат |
+| --- | --- |
+| Security | success |
+| CI: Lint, typecheck, unit tests, build | success |
+| CI: API tests and migrations (PostgreSQL, Redis) | success |
+| CI: Browser tests (Playwright) | success |
+| CI: Compose files are valid | success |
+| CI: Docker build — migrate, api, web, nginx, backup, monitor | success (6 из 6) |
+
+Следующий коммит в ветке меняет только этот отчёт. В `main` ветка не влита: слияние и выкладка — по решению владельца.
 
 ## 17. Статус production deployment
 
