@@ -27,7 +27,7 @@
 
 ## 1. Код на сервере
 
-Репозиторий: https://github.com/Yuta2Endo/Endemion-Life (закрытый). Для сервера нужен ключ только для чтения — deploy key в настройках репозитория. Варианты:
+Репозиторий: https://github.com/Yuta2Endo/Endemion-Life (публичный). Для сервера нужен ключ только для чтения — deploy key в настройках репозитория. Варианты:
 
 - **Через GitHub (владелец создаёт закрытый репозиторий):**
   ```bash
@@ -119,6 +119,8 @@ $DC exec monitor /opt/monitor/notify.sh "Проверка оповещений E
 Пройдите `docs/PRODUCTION_CHECKLIST.md`.
 
 ## Обновление
+
+Через GitHub Actions (сборка образов на runner, резервная копия, проверка и автоматический откат) — docs/GITHUB_ACTIONS_DEPLOYMENT.md. Ниже — ручной порядок, он остаётся запасным.
 
 ```bash
 cd /opt/endemion-life

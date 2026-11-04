@@ -1,5 +1,7 @@
 # Откат
 
+Релизы, выложенные через GitHub Actions, откатываются workflow Deploy (operation `rollback`) или `sh /opt/endemion-life-deploy/rollback.sh` — docs/GITHUB_ACTIONS_DEPLOYMENT.md, «Откат». Правила для миграций и форматов сохранений ниже действуют и там.
+
 ```bash
 cd /opt/endemion-life
 DC="docker compose -f infrastructure/docker-compose.prod.yml --env-file .env"   # + -f …behind-proxy.yml, если используется

@@ -62,5 +62,5 @@ git push -u origin main
 После первой отправки в настройках репозитория:
 
 1. **Branch protection** для `main`: запрет прямого push, обязательный pull request, запрет force push и удаления ветки. Обязательные проверки (имена задач из `.github/workflows/ci.yml` и `security.yml`): `Lint, typecheck, unit tests, build`, `API tests and migrations (PostgreSQL, Redis)`, `Browser tests (Playwright)`, `Docker build (migrate)`, `Docker build (api)`, `Docker build (web)`, `Docker build (nginx)`, `Docker build (backup)`, `Docker build (monitor)`, `Compose files are valid`, `Dependency audit (production)`, `Secrets in Git history (gitleaks)`, `Shell scripts and workflows`.
-2. **Secrets**: в CI секреты не нужны — тесты используют одноразовые PostgreSQL и Redis внутри GitHub Actions.
+2. **Secrets**: в CI секреты не нужны — тесты используют одноразовые PostgreSQL и Redis внутри GitHub Actions. Выкладке (`deploy.yml`) нужны `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS` — docs/GITHUB_ACTIONS_DEPLOYMENT.md. Secrets выкладки хранятся в environment `production` с required reviewers.
 3. **Dependabot alerts** и **secret scanning** — включить.

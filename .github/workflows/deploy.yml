@@ -1,0 +1,340 @@
+# Выкладка на рабочий сервер (life.endemion.online). Схема и настройка: docs/GITHUB_ACTIONS_DEPLOYMENT.md
+#
+# Автоматически — после зелёного CI на push в main, только если переменная репозитория DEPLOY_AUTO = true.
+# Вручную — Actions → Deploy → Run workflow (только с ветки main): deploy, rollback или status.
+#
+# Образы собираются здесь (на сервере 2 ГБ памяти, сборка мешала бы основному сайту), передаются по SSH
+# и переключаются скриптами infrastructure/deploy/*.sh на сервере. Ключ выкладки ограничен на сервере
+# командой ssh-gateway.sh: выполнить на сервере что-то кроме upload/deploy/rollback/status/health им нельзя.
+#
+# Environment production (secrets): DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS; variable DEPLOY_PORT.
+# Repository variable: DEPLOY_AUTO. Репозиторий публичный: журналы запусков видны всем, секреты в них не выводятся.
+# Запуски от pull request (в том числе из fork) выкладку не вызывают: gate требует event push в main этого репозитория
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "deploy — выложить коммит; rollback — вернуть релиз, который уже работал; status — только посмотреть"
+        type: choice
+        options: [deploy, rollback, status]
+        default: deploy
+      sha:
+        description: "deploy: коммит из main (пусто — последний коммит main). rollback: релиз (пусто — работавший до последней выкладки). Полный SHA"
+        required: false
+        default: ""
+      allow_migrations:
+        description: "deploy: разрешить новые миграции базы (сначала проверьте их, docs/ROLLBACK.md)"
+        type: boolean
+        default: false
+      allow_infra:
+        description: "deploy: разрешить изменения docker-compose.prod.yml / behind-proxy / backup / monitor"
+        type: boolean
+        default: false
+      allow_newer_schema:
+        description: "rollback: прежний код будет работать со схемой базы новее своей"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+# Одна операция с рабочим сервером одновременно; следующая ждёт, а не отменяет текущую
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Resolve and verify release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       vars.DEPLOY_AUTO == 'true' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    outputs:
+      operation: ${{ steps.resolve.outputs.operation }}
+      sha: ${{ steps.resolve.outputs.sha }}
+      flags: ${{ steps.resolve.outputs.flags }}
+    steps:
+      # Ручной запуск с другой ветки — явная ошибка, а не тихий пропуск
+      - name: Manual run only from main
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Deploy запускается только с ветки main (выбрана $GITHUB_REF_NAME)"
+          exit 1
+      # Без required reviewers в environment production задача production прошла бы без одобрения.
+      # Environment, который GitHub создаёт сам при первом упоминании, правил не имеет
+      - name: Production environment requires approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          rules=$(gh api "repos/$REPO/environments/production" --jq '[.protection_rules[]?.type] | join(" ")') || {
+            echo "::error::environment production не найден (docs/GITHUB_ACTIONS_DEPLOYMENT.md, «Environment production»)"; exit 1; }
+          case " $rules " in
+            *" required_reviewers "*) echo "environment production: $rules" ;;
+            *) echo "::error::в environment production нет required reviewers: выкладка без одобрения запрещена"; exit 1 ;;
+          esac
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve operation and commit
+        id: resolve
+        env:
+          EVENT: ${{ github.event_name }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          IN_OPERATION: ${{ inputs.operation }}
+          IN_SHA: ${{ inputs.sha }}
+          IN_ALLOW_MIGRATIONS: ${{ inputs.allow_migrations }}
+          IN_ALLOW_INFRA: ${{ inputs.allow_infra }}
+          IN_ALLOW_NEWER_SCHEMA: ${{ inputs.allow_newer_schema }}
+        run: |
+          if [ "$EVENT" = workflow_run ]; then
+            operation=deploy; sha="$RUN_SHA"; flags=""
+          else
+            operation="$IN_OPERATION"; sha="$IN_SHA"; flags=""
+            [ "$IN_ALLOW_MIGRATIONS" = true ] && flags="$flags --allow-migrations"
+            [ "$IN_ALLOW_INFRA" = true ] && flags="$flags --allow-infra"
+            [ "$IN_ALLOW_NEWER_SCHEMA" = true ] && flags="$flags --allow-newer-schema"
+          fi
+          case "$operation" in
+            deploy)
+              [ -n "$sha" ] || sha=$(git rev-parse origin/main)
+              case "$flags" in *--allow-newer-schema*) echo "::error::allow_newer_schema относится к rollback"; exit 1 ;; esac
+              ;;
+            rollback)
+              case "$flags" in *--allow-migrations*|*--allow-infra*) echo "::error::allow_migrations и allow_infra относятся к deploy"; exit 1 ;; esac
+              ;;
+            status) flags="" ;;
+            *) echo "::error::неизвестная операция"; exit 1 ;;
+          esac
+          if [ -n "$sha" ]; then
+            printf '%s' "$sha" | grep -Eq '^[0-9a-f]{40}$' || { echo "::error::нужен полный SHA коммита (40 символов)"; exit 1; }
+          fi
+          {
+            echo "operation=$operation"
+            echo "sha=$sha"
+            echo "flags=$flags"
+          } >> "$GITHUB_OUTPUT"
+          echo "Операция: $operation ${sha:-(по умолчанию)} $flags"
+
+      # Выкладывается только коммит из main, на котором зелёные CI и Security
+      - name: Verify commit is on main and checks passed
+        if: steps.resolve.outputs.operation == 'deploy'
+        env:
+          SHA: ${{ steps.resolve.outputs.sha }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          git cat-file -e "$SHA^{commit}" 2>/dev/null || { echo "::error::коммита $SHA нет в репозитории"; exit 1; }
+          git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::$SHA не входит в main"; exit 1; }
+          conclusion() {
+            gh api "repos/$REPO/actions/workflows/$1/runs?head_sha=$SHA&event=push&branch=main&per_page=20" \
+              --jq '[.workflow_runs[] | select(.status == "completed") | .conclusion] | if index("success") then "success" elif length > 0 then .[0] else "pending" end'
+          }
+          for wf in ci.yml security.yml; do
+            # Security обычно быстрее CI, но может ещё идти: ждём до 15 минут
+            for _ in $(seq 1 30); do
+              result=$(conclusion "$wf")
+              [ "$result" = pending ] || break
+              sleep 30
+            done
+            echo "$wf на $SHA: $result"
+            [ "$result" = success ] || { echo "::error::$wf на $SHA не зелёный ($result): выкладка запрещена"; exit 1; }
+          done
+
+  production:
+    name: Production (${{ needs.gate.outputs.operation }})
+    needs: gate
+    # Secrets выкладки — в environment production; задача ждёт одобрения (required reviewers), ветки — только main
+    environment:
+      name: production
+      url: https://life.endemion.online
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      OPERATION: ${{ needs.gate.outputs.operation }}
+      SHA: ${{ needs.gate.outputs.sha }}
+      FLAGS: ${{ needs.gate.outputs.flags }}
+    steps:
+      - name: Check deployment secrets
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          missing=""
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS; do
+            eval "value=\${$name:-}"
+            [ -n "$value" ] || missing="$missing $name"
+          done
+          [ -z "$missing" ] || { echo "::error::не заданы secrets:$missing (docs/GITHUB_ACTIONS_DEPLOYMENT.md)"; exit 1; }
+
+      # Ключ и known_hosts — только из secrets; проверка ключа сервера обязательна (StrictHostKeyChecking yes)
+      - name: Configure SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
+        run: |
+          install -d -m 700 ~/.ssh
+          (umask 077 && printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key)
+          (umask 077 && printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/deploy_known_hosts)
+          (umask 077 && cat > ~/.ssh/config <<EOF
+          Host production
+            HostName $DEPLOY_HOST
+            User $DEPLOY_USER
+            Port ${DEPLOY_PORT:-22}
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            UserKnownHostsFile ~/.ssh/deploy_known_hosts
+            BatchMode yes
+            ConnectTimeout 20
+            ServerAliveInterval 30
+            ServerAliveCountMax 10
+            LogLevel ERROR
+          EOF
+          )
+          ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null || { echo "::error::DEPLOY_SSH_KEY не читается как закрытый ключ без пароля"; exit 1; }
+
+      - name: Server status before
+        run: ssh production status
+
+      - uses: actions/checkout@v7
+        if: env.OPERATION == 'deploy'
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@v4
+        if: env.OPERATION == 'deploy'
+
+      # Те же цели и кэш, что в задаче Docker build файла ci.yml. Метка revision проверяется на сервере
+      - name: Build migrate image
+        if: env.OPERATION == 'deploy'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          target: migrate
+          load: true
+          push: false
+          provenance: false
+          sbom: false
+          tags: endemion-life-prod-migrate:${{ needs.gate.outputs.sha }}
+          labels: org.opencontainers.image.revision=${{ needs.gate.outputs.sha }}
+          cache-from: type=gha,scope=migrate
+      - name: Build api image
+        if: env.OPERATION == 'deploy'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          target: api
+          load: true
+          push: false
+          provenance: false
+          sbom: false
+          tags: endemion-life-prod-api:${{ needs.gate.outputs.sha }}
+          labels: org.opencontainers.image.revision=${{ needs.gate.outputs.sha }}
+          cache-from: type=gha,scope=api
+      - name: Build web image
+        if: env.OPERATION == 'deploy'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          target: web
+          load: true
+          push: false
+          provenance: false
+          sbom: false
+          tags: endemion-life-prod-web:${{ needs.gate.outputs.sha }}
+          labels: org.opencontainers.image.revision=${{ needs.gate.outputs.sha }}
+          cache-from: type=gha,scope=web
+      - name: Build nginx image
+        if: env.OPERATION == 'deploy'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: infrastructure/nginx/Dockerfile
+          load: true
+          push: false
+          provenance: false
+          sbom: false
+          tags: endemion-life-prod-nginx:${{ needs.gate.outputs.sha }}
+          labels: org.opencontainers.image.revision=${{ needs.gate.outputs.sha }}
+          cache-from: type=gha,scope=nginx
+
+      - name: Upload images to server
+        if: env.OPERATION == 'deploy'
+        run: |
+          # shellcheck disable=SC2029  # SHA проверен в задаче gate и повторно — ssh-gateway.sh на сервере
+          docker save \
+            "endemion-life-prod-migrate:$SHA" "endemion-life-prod-api:$SHA" \
+            "endemion-life-prod-web:$SHA" "endemion-life-prod-nginx:$SHA" \
+            | gzip -1 | ssh production "upload-images $SHA"
+
+      - name: Upload code to server
+        if: env.OPERATION == 'deploy'
+        run: |
+          git branch -f deploy-release "$SHA"
+          git bundle create "$RUNNER_TEMP/release.bundle" refs/heads/deploy-release
+          # shellcheck disable=SC2029  # SHA и флаги проверены в задаче gate и повторно — ssh-gateway.sh на сервере
+          ssh production "upload-bundle $SHA" < "$RUNNER_TEMP/release.bundle"
+
+      - name: Deploy
+        if: env.OPERATION == 'deploy'
+        run: |
+          rc=0
+          # shellcheck disable=SC2029  # SHA и флаги проверены в задаче gate и повторно — ssh-gateway.sh на сервере
+          ssh production "deploy $SHA $FLAGS" || rc=$?
+          case $rc in
+            0) echo "### Выложено: \`$SHA\`" >> "$GITHUB_STEP_SUMMARY" ;;
+            1) echo "::error::выкладка не прошла проверку, работает прежний релиз (журналы контейнеров — на сервере, путь выше)" ;;
+            2) echo "::error::выкладка не прошла проверку, автоматический откат НЕ выполнен — нужен человек (docs/ROLLBACK.md)" ;;
+            3) echo "::error::нужно решение владельца: запустите Deploy вручную с allow_migrations и/или allow_infra после проверки изменений" ;;
+            4) echo "::error::на сервере уже идёт другая выкладка или откат" ;;
+            *) echo "::error::выкладка завершилась с кодом $rc" ;;
+          esac
+          exit $rc
+
+      - name: Rollback
+        if: env.OPERATION == 'rollback'
+        run: |
+          rc=0
+          # shellcheck disable=SC2029  # SHA и флаги проверены в задаче gate и повторно — ssh-gateway.sh на сервере
+          ssh production "rollback $SHA $FLAGS" || rc=$?
+          case $rc in
+            0) echo "### Откат выполнен" >> "$GITHUB_STEP_SUMMARY" ;;
+            3) echo "::error::нужно решение: откат на релиз со старой схемой базы — allow_newer_schema (docs/ROLLBACK.md)" ;;
+            *) echo "::error::откат завершился с кодом $rc — проверьте сервер (docs/ROLLBACK.md)" ;;
+          esac
+          exit $rc
+
+      - name: Server status after
+        if: always() && env.OPERATION != 'status'
+        run: ssh production status || true
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key ~/.ssh/deploy_known_hosts ~/.ssh/config
