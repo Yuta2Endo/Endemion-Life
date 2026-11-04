@@ -9,9 +9,12 @@ import { newLineage } from "../legacy/chronicle.js";
 import { finishLife, foundLineage } from "../legacy/lineage.js";
 import { Rng } from "../rng.js";
 import { findProfession } from "../rpg/skills.js";
-import { RESOURCE_KEYS, STAT_KEYS } from "../stats.js";
+import { MAX_ECONOMY_YEARS, newEconomy } from "../economy/economy.js";
+import { RESOURCE_KEYS, STAT_KEYS, WEALTH_MAX } from "../stats.js";
 import {
   CHRONICLE_KINDS,
+  ECONOMY_CYCLES,
+  ECONOMY_LINES,
   HIDDEN_KEYS,
   LIFE_STAGES,
   NPC_DEATH_CAUSES,
@@ -166,10 +169,21 @@ function migrateV2(save: Record<string, unknown>): Record<string, unknown> {
   return state as unknown as Record<string, unknown>;
 }
 
+/**
+ * Формат 3 → 4 (Stage 04): только добавляется хозяйство с нейтральными значениями — обычные годы с нынешнего возраста,
+ * без нехватки и без прошлых счетов. Ничего не удаляется, rngState и seed не трогаются, генератор не нужен
+ */
+function migrateV3(save: Record<string, unknown>): Record<string, unknown> {
+  const life = save.life;
+  const age = isRecord(life) && isInt(life.age, 0) ? life.age : 0;
+  return { ...save, economy: newEconomy(age) };
+}
+
 /** Переходы между версиями формата: ключ — версия, из которой переводим. Новая версия формата добавляет сюда шаг */
 const MIGRATIONS: Readonly<Record<number, Migration>> = {
   1: migrateV1,
-  2: migrateV2
+  2: migrateV2,
+  3: migrateV3
 };
 
 function fail(reason: string): never {
@@ -282,6 +296,16 @@ function checkLineage(lineage: unknown): void {
   if (inheritance !== null && !(isRecord(inheritance) && isInt(inheritance.fromGen, 1) && typeof inheritance.fromName === "string" && isInt(inheritance.wealth, 0) && isInt(inheritance.held, 0) && isInt(inheritance.controlAge, 0) && Array.isArray(inheritance.shares) && isStringArray(inheritance.talents) && isStringArray(inheritance.weaknesses) && isStringArray(inheritance.threads) && isStringArray(inheritance.flags))) fail("lineage.inheritance");
 }
 
+/** Хозяйство формата 4: цикл, нехватка, статьи последнего года и итоги лет — с лимитами */
+function checkEconomy(economy: unknown): void {
+  if (!isRecord(economy) || !oneOf(ECONOMY_CYCLES, economy.cycle) || !isInt(economy.cycleSince, 0) || !isInt(economy.hardship, 0, 100)) fail("economy");
+  const last = economy.last;
+  const isLine = (x: unknown) => isRecord(x) && oneOf(ECONOMY_LINES, x.id) && isInt(x.amount, -WEALTH_MAX, WEALTH_MAX);
+  if (last !== null && !(isRecord(last) && isInt(last.age, 0) && isInt(last.shortfall, 0, WEALTH_MAX) && Array.isArray(last.lines) && last.lines.length <= ECONOMY_LINES.length && last.lines.every(isLine))) fail("economy.last");
+  const isYear = (x: unknown) => isRecord(x) && isInt(x.age, 0) && isInt(x.income, 0, WEALTH_MAX) && isInt(x.expenses, 0, WEALTH_MAX) && isInt(x.shortfall, 0, WEALTH_MAX);
+  if (!Array.isArray(economy.years) || economy.years.length > MAX_ECONOMY_YEARS || !economy.years.every(isYear)) fail("economy.years");
+}
+
 /** Проверяет сохранение и возвращает состояние игры. Бросает INVALID_SAVE, если что-то не так */
 export function parseSave(raw: unknown): GameState {
   const save = migrateSave(raw);
@@ -301,7 +325,8 @@ export function parseSave(raw: unknown): GameState {
   if (typeof c.temperamentId !== "string") fail("temperamentId");
   if (!isRecord(c.stats) || !STAT_KEYS.every((key) => isInt((c.stats as Record<string, unknown>)[key], 1, 100))) fail("stats");
   if (!isRecord(c.resources) || !RESOURCE_KEYS.every((key) => isInt((c.resources as Record<string, unknown>)[key], 0))) fail("resources");
-  for (const key of ["level", "xp", "wealth"] as const) if (!isInt(c[key], 0)) fail(key);
+  for (const key of ["level", "xp"] as const) if (!isInt(c[key], 0)) fail(key);
+  if (!isInt(c.wealth, 0, WEALTH_MAX)) fail("wealth");
   if (!isInt(c.reputation, -100, 100) || !isInt(c.karma, -100, 100)) fail("reputation/karma");
   if (!isStringArray(c.abilities)) fail("abilities");
   const track = c.track;
@@ -333,6 +358,7 @@ export function parseSave(raw: unknown): GameState {
   if (!isStringArray(save.questsDone) || !isStringArray(save.recentEvents)) fail("questsDone");
   checkLineage(save.lineage);
   if (!Array.isArray(save.memory) || save.memory.length > 50 || !save.memory.every((m) => isRecord(m) && isInt(m.age, 0) && typeof m.eventId === "string" && typeof m.choiceId === "string" && (m.success === null || typeof m.success === "boolean") && isInt(m.weight, 0))) fail("memory");
+  checkEconomy(save.economy);
   // Родство: ни циклов, ни родителей младше детей, ни брака с умершим
   const problem = kinProblem(save as unknown as GameState);
   if (problem) fail(`родство: ${problem}`);

@@ -5,6 +5,7 @@ import { recordDelta, record } from "../engine/record.js";
 import type { EngineContext } from "../engine/context.js";
 import { addChronicle, rememberName } from "../legacy/chronicle.js";
 import { lawOf } from "../legacy/laws.js";
+import { WEALTH_MAX } from "../stats.js";
 import { SELF_ID, type ChronicleKind, type DeathCauseId, type NpcLogKind, type NpcRole, type NpcState } from "../types.js";
 import { isKin, isPresent, KinGraph, MIN_PARENT_AGE, type KinRelation } from "./kin.js";
 
@@ -116,7 +117,7 @@ function distributeEstate(ctx: EngineContext, graph: KinGraph, npc: NpcState): v
   if (selfGets > 0) {
     const c = ctx.state.character;
     const before = c.wealth;
-    c.wealth += selfGets;
+    c.wealth = Math.min(WEALTH_MAX, c.wealth + selfGets);
     recordDelta(ctx, "wealth", before, c.wealth);
     chronicle(ctx, "inheritance", [npc.id, SELF_ID], { sum: selfGets, law: law.id });
   }

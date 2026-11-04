@@ -7,6 +7,7 @@ import { chronicle } from "../family/events.js";
 import { fillText, t } from "../i18n.js";
 import type { EventDefinition } from "../narrative/types.js";
 import type { LocalizedText } from "../i18n.js";
+import { WEALTH_MAX } from "../stats.js";
 import { SELF_ID, type HistoryKind } from "../types.js";
 import type { Emit } from "../world/rules.js";
 import { unlockAchievements } from "./achievements.js";
@@ -30,7 +31,7 @@ export function lineageYearly(ctx: EngineContext, emit: Emit): void {
   const inheritance = state.lineage.inheritance;
   if (inheritance && inheritance.held > 0 && state.life.age >= inheritance.controlAge) {
     const before = state.character.wealth;
-    state.character.wealth += inheritance.held;
+    state.character.wealth = Math.min(WEALTH_MAX, state.character.wealth + inheritance.held);
     recordDelta(ctx, "wealth", before, state.character.wealth);
     chronicle(ctx, "inheritance", [SELF_ID], { sum: inheritance.held, regency: 1 }, "regency");
     emit(

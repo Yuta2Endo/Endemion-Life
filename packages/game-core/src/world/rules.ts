@@ -97,7 +97,7 @@ const RULES: Readonly<Record<UniverseId, WorldRules>> = {
   },
 
   // Нео-Сеул: угроза Врат над городом растёт каждый год и прорывается событием района.
-  // Пробуждённые получают доход от зачисток по рангу и славе
+  // Доход пробуждённых от зачисток считает хозяйство мира (economy/worlds.ts): он входит в доходы года и облагается налогом
   hunter: {
     yearly(ctx) {
       const s = ctx.state;
@@ -105,10 +105,6 @@ const RULES: Readonly<Record<UniverseId, WorldRules>> = {
       changeMeter(ctx, "gate-threat", ctx.rng.int(2, 6));
       if (meterValue(s, "gate-threat") >= 80 && s.life.age >= 8 && !s.scheduled.some((x) => x.eventId === "hu.district-break")) {
         s.scheduled.push({ eventId: "hu.district-break", age: s.life.age });
-      }
-      if (has(s, "awakened") && s.life.age >= 16) {
-        const income = s.character.track.rank * 10 + Math.floor(meterValue(s, "fame") / 5);
-        if (income > 0) applyEffect(ctx, { type: "wealth", delta: income });
       }
       if (meterValue(s, "fame") > 0 && ctx.rng.chance(0.6)) changeMeter(ctx, "fame", -2);
     },

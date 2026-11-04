@@ -7,7 +7,7 @@ import { lineageYear } from "../legacy/chronicle.js";
 import type { Effect, NpcRef } from "../narrative/types.js";
 import { findEducation, findProfession, findSkill, SKILL_MAX } from "../rpg/skills.js";
 import { findTalent, findWeakness } from "../rpg/talents.js";
-import { clamp, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_MAX, STAT_MIN, type ResourceKey, type StatKey } from "../stats.js";
+import { clamp, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_MAX, STAT_MIN, WEALTH_MAX, type ResourceKey, type StatKey } from "../stats.js";
 import { SELF_ID, type DeathCauseId, type HiddenKey, type NpcRole } from "../types.js";
 import type { EngineContext } from "./context.js";
 import { record, recordDelta } from "./record.js";
@@ -355,7 +355,7 @@ export function applyEffect(ctx: EngineContext, effect: Effect): void {
     }
     case "wealth": {
       const before = c.wealth;
-      c.wealth = Math.max(0, before + effect.delta);
+      c.wealth = clamp(before + effect.delta, 0, WEALTH_MAX);
       return recordDelta(ctx, "wealth", before, c.wealth);
     }
     case "xp":

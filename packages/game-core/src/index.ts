@@ -38,6 +38,8 @@ export { allTalents, allWeaknesses, findTalent, findWeakness } from "./rpg/talen
 export { DEFAULT_COOLDOWN, RECENT_LIMIT } from "./narrative/selection.js";
 export { PEOPLE_EVENTS, COMMON_CONSEQUENCES } from "./narrative/people.js";
 export { meterValue, worldTrackFactor } from "./world/rules.js";
+export { ADULT_AGE, CYCLE_FACTOR, HARDSHIP_PENALTY_YEARS, livingCost, MAX_ECONOMY_YEARS, newEconomy, presentEconomy, yearLines, type EconomyLineView, type EconomyView } from "./economy/economy.js";
+export { economyOf, WORLD_ECONOMIES, type WorldEconomy } from "./economy/worlds.js";
 export { checkCondition, describeCondition } from "./engine/conditions.js";
 export { applyAction, newGame, restoreState, SAVE_SCHEMA_VERSION, SEED_MAX_LENGTH, type NewGameInput } from "./engine/game.js";
 export { migrateSave, parseSave } from "./engine/save.js";

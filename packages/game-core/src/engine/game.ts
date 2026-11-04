@@ -10,6 +10,7 @@ import { lifespanOf } from "../character/derived.js";
 import { ageOneYear } from "../life/aging.js";
 import { DEATH_CAUSES } from "../life/death.js";
 import { STAGE_INFO, stageForAge } from "../life/stages.js";
+import { newEconomy } from "../economy/economy.js";
 import { newLineage } from "../legacy/chronicle.js";
 import { checkAchievements, finishLife, foundLineage, lineageYearly, recordStory } from "../legacy/lineage.js";
 import { consequencesYearly } from "../narrative/consequences.js";
@@ -36,9 +37,10 @@ import { applyEffects, isFatal, kill } from "./effects.js";
 
 /**
  * 1 — Stage 01; 2 — Stage 02: семья, NPC, таланты, навыки, шкалы мира, последствия;
- * 3 — Stage 03: родство по id, жизнь NPC, род, хроника рода, достижения, наследование (перевод в save.ts)
+ * 3 — Stage 03: родство по id, жизнь NPC, род, хроника рода, достижения, наследование (перевод в save.ts);
+ * 4 — Stage 04: хозяйство (economy) — цикл мира, нехватка денег, доходы и расходы последних лет
  */
-export const SAVE_SCHEMA_VERSION = 3;
+export const SAVE_SCHEMA_VERSION = 4;
 export const SEED_MAX_LENGTH = 64;
 
 const YEAR_TEXTS: readonly LocalizedText[] = [
@@ -127,7 +129,8 @@ export function newGame(input: NewGameInput): ActionResult {
     questsDone: [],
     recentEvents: [],
     lineage: newLineage(""),
-    memory: []
+    memory: [],
+    economy: newEconomy()
   };
   // Семья, таланты и тайны — из отдельного потока: броски Stage 01 и дальнейшая жизнь от них не сдвигаются
   state.lineage.selfParents = bornInto({ state, rng: Rng.fromSeed(seed, "birth"), universe }, generatedName);

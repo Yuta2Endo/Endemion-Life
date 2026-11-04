@@ -73,6 +73,8 @@ export const RESOURCE_INFO: Readonly<Record<ResourceKey, { name: LocalizedText }
 
 export const REPUTATION_LIMIT = 100;
 export const KARMA_LIMIT = 100;
+/** Stage 04: предел золота персонажа. Никакой источник не поднимет его выше: число не переполнится и не потеряет точность */
+export const WEALTH_MAX = 1_000_000_000;
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));

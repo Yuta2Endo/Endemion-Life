@@ -1,15 +1,15 @@
 // Life Engine: что происходит с персонажем за один прожитый год
 import { effectiveStats, lifespanOf, maxResources, meanStat } from "../character/derived.js";
 import { TEMPERAMENTS } from "../character/temperaments.js";
-import { applyEffect, changeResource, changeSkill, changeStat, gainTrack, gainXp, isTrackOpen, kill } from "../engine/effects.js";
+import { changeResource, changeSkill, changeStat, gainTrack, gainXp, isTrackOpen, kill } from "../engine/effects.js";
 import type { EngineContext } from "../engine/context.js";
 import { findProfession, pathSkill } from "../rpg/skills.js";
 import { healingFactor, talentGrowth, talentSkills, talentTrackFactor } from "../rpg/talents.js";
 import { STAT_KEYS, type StatKey } from "../stats.js";
 import type { LifeStage } from "../types.js";
 import { worldTrackFactor } from "../world/rules.js";
+import { economyYear } from "../economy/economy.js";
 import { DEATH_CAUSES, naturalDeathChance } from "./death.js";
-import { yearlyIncome } from "./income.js";
 import { stageForAge } from "./stages.js";
 
 /** Сколько раз за год пробуется рост характеристик и с какой вероятностью */
@@ -103,8 +103,8 @@ export function ageOneYear(ctx: EngineContext): YearSummary {
   growSkills(ctx);
   trainTrack(ctx);
   if (life.age >= 5) gainXp(ctx, ctx.rng.round(4 + effectiveStats(c).wisdom / 5));
-  const income = yearlyIncome(ctx.state);
-  if (income > 0) applyEffect(ctx, { type: "wealth", delta: income });
+  // Stage 04: доходы и расходы года (economy/economy.ts). Основной генератор здесь новых чисел не тянет
+  economyYear(ctx);
   restore(ctx, life.stage);
 
   let diedOfAge = false;

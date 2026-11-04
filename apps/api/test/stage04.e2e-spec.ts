@@ -2,13 +2,15 @@
 // значений, повтор и одновременные запросы, права доступа, лимиты размера, старые форматы
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { applyAction, newGame, presentEvent, type GameState, type HistoryEntry } from "@endemion/game-core";
+import { applyAction, newGame, presentEvent, SAVE_SCHEMA_VERSION, type GameState, type HistoryEntry } from "@endemion/game-core";
 import type { ActionResponse, ImportResponse, LifeView } from "@endemion/shared";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createTestApp, ORIGIN, resetDatabase, type TestApp } from "./helpers.js";
 
 const SAVE_V2_YOUNG = JSON.parse(readFileSync(new URL("./fixtures/save-v2-young.json", import.meta.url), "utf8")) as Record<string, unknown>;
+/** Сохранение формата 3, записанное кодом до Stage 04 slice 2 (коммит 7857c77) */
+const SAVE_V3_ADULT = JSON.parse(readFileSync(new URL("./fixtures/save-v3-adult.json", import.meta.url), "utf8")) as Record<string, unknown>;
 
 let t: TestApp;
 
@@ -186,6 +188,38 @@ describe("Stage 04: перенос жизни из браузера", () => {
     const row = await t.prisma.client.life.findUniqueOrThrow({ where: { id: reply.life.id } });
     expect(row.schemaVersion).toBeGreaterThan(2);
     expect(row.origin).toBe("local-import");
+  });
+
+  it("жизнь формата 3 в базе открывается, после хода пишется в формате 4 с хозяйством; откат к снимку формата 3 работает", async () => {
+    const client = agent();
+    const created = (await client.post("/api/lives").set("Origin", ORIGIN).send({ universeId: "murim" }).expect(201)).body.life as LifeView;
+    const save = SAVE_V3_ADULT as { version: number; life: { age: number }; character: { name: string } };
+    await t.prisma.client.life.update({ where: { id: created.id }, data: { state: save, version: save.version, age: save.life.age, name: save.character.name, schemaVersion: 3 } });
+    await t.prisma.client.lifeSnapshot.updateMany({ where: { lifeId: created.id }, data: { state: save, version: save.version, age: save.life.age } });
+
+    const opened = (await client.get(`/api/lives/${created.id}`).expect(200)).body.life as LifeView;
+    expect(opened.life.age).toBe(save.life.age);
+    expect(opened.economy.last).toBeNull();
+    expect(opened.economy.cycle).toBe("normal");
+
+    let life = opened;
+    for (let i = 0; i < 3; i++) {
+      const choice = life.pendingEvent?.choices.find((c) => c.available);
+      const res = await client
+        .post(`/api/lives/${life.id}/actions`)
+        .set("Origin", ORIGIN)
+        .send({ actionId: randomUUID(), expectedVersion: life.version, action: choice ? { type: "choose", choiceId: choice.id } : { type: "advance" } })
+        .expect(200);
+      life = (res.body as ActionResponse).life;
+    }
+    const row = await t.prisma.client.life.findUniqueOrThrow({ where: { id: created.id } });
+    expect(row.schemaVersion).toBe(SAVE_SCHEMA_VERSION);
+    expect((row.state as { economy?: unknown }).economy).toBeDefined();
+    expect(life.economy.last).not.toBeNull();
+    expect(JSON.stringify(life.economy)).not.toMatch(/"(seed|rngState)"/);
+
+    const restored = await client.post(`/api/lives/${created.id}/restore`).set("Origin", ORIGIN).send({ version: save.version, expectedVersion: life.version }).expect(200);
+    expect((restored.body as ActionResponse).life.life.age).toBe(save.life.age);
   });
 
   it("лимит живых жизней действует и для переноса", async () => {

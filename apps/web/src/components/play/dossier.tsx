@@ -18,9 +18,10 @@ import { ageLabel } from "@/lib/format";
 import type { MessageKey } from "@/lib/messages";
 import type { GameStore } from "@/lib/store";
 import { useI18n } from "../locale-provider";
+import { EconomyPanel } from "./economy-panel";
 import { LineagePanel } from "./lineage";
 
-type Section = "bio" | "family" | "lineage" | "skills" | "people";
+type Section = "bio" | "family" | "lineage" | "economy" | "skills" | "people";
 
 function Signed({ value }: { value: number }) {
   const tone = value > 0 ? "text-jade-300" : value < 0 ? "text-blood-300" : "text-bone-300";
@@ -375,6 +376,7 @@ export function Dossier({ life, busy, store, onInteract }: { life: LifeView; bus
     { id: "bio", label: t("dossier.bio") },
     { id: "family", label: t("dossier.family") },
     { id: "lineage", label: t("dossier.lineage") },
+    { id: "economy", label: t("dossier.economy") },
     { id: "skills", label: t("dossier.skills") },
     { id: "people", label: t("dossier.people") }
   ];
@@ -428,6 +430,7 @@ export function Dossier({ life, busy, store, onInteract }: { life: LifeView; bus
       {section === "bio" && <Biography life={life} />}
       {section === "family" && <FamilyTree life={life} />}
       {section === "lineage" && <LineagePanel life={life} store={store} />}
+      {section === "economy" && <EconomyPanel life={life} />}
       {section === "skills" && <SkillsAndTalents life={life} />}
       {section === "people" && <People life={life} busy={busy} onInteract={onInteract} />}
     </Panel>

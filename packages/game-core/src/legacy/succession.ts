@@ -16,10 +16,11 @@ import { stageForAge } from "../life/stages.js";
 import { hashSeed, Rng } from "../rng.js";
 import { allTalents, allWeaknesses, findTalent, findWeakness } from "../rpg/talents.js";
 import { findProfession, pathSkill } from "../rpg/skills.js";
-import { BIRTH_STAT_MAX, clamp, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_MAX, STAT_MIN, type StatKey } from "../stats.js";
+import { BIRTH_STAT_MAX, clamp, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_MAX, STAT_MIN, WEALTH_MAX, type StatKey } from "../stats.js";
 import { SELF_ID, type GameState, type HistoryChange, type HistoryEntry, type InheritanceRecord, type NpcState } from "../types.js";
 import { getUniverse } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
+import { newEconomy } from "../economy/economy.js";
 import { lawOf, type InheritanceLaw } from "./laws.js";
 import { unlockAchievements } from "./achievements.js";
 import { lineageYear } from "./chronicle.js";
@@ -260,7 +261,7 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
   // Имущество: доля по закону. У младшего наследника её держит опекун до возраста закона
   const regency = candidate.age < law.controlAge;
   const ownWealth = heir.wealth;
-  c.wealth = ownWealth + (regency ? 0 : candidate.wealth);
+  c.wealth = Math.min(WEALTH_MAX, ownWealth + (regency ? 0 : candidate.wealth));
   c.reputation = clamp(Math.round(prev.reputation * 0.3 + dead.lineage.renown / 10), -REPUTATION_LIMIT, REPUTATION_LIMIT);
   c.karma = clamp(Math.round(prev.karma * 0.1) + (temperament?.karma ?? 0), -KARMA_LIMIT, KARMA_LIMIT);
   // Отношение фракций: своё по происхождению и треть того, что заслужил предшественник
@@ -347,7 +348,9 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
     questsDone: [],
     recentEvents: [],
     lineage: deepClone(dead.lineage),
-    memory: []
+    memory: [],
+    // Хозяйство мира продолжается: спад или подъём не кончаются со смертью; нехватка и счета — свои у наследника
+    economy: newEconomy(age, dead.economy.cycle)
   };
   return { state, record, deceasedId: "" };
 }

@@ -1,0 +1,886 @@
+{
+ "schemaVersion": 3,
+ "seed": "v3-murim-adult",
+ "rngState": 4164461816,
+ "version": 59,
+ "character": {
+  "name": "Тан Ми клана Су",
+  "gender": "female",
+  "universeId": "murim",
+  "raceId": "human",
+  "originId": "street-rat",
+  "temperamentId": "brave",
+  "stats": {
+   "strength": 16,
+   "intelligence": 11,
+   "agility": 12,
+   "vitality": 16,
+   "wisdom": 10,
+   "charisma": 12,
+   "luck": 12,
+   "willpower": 21
+  },
+  "resources": {
+   "health": 124,
+   "energy": 102,
+   "mana": 92,
+   "stamina": 114
+  },
+  "level": 2,
+  "xp": 166,
+  "reputation": -3,
+  "karma": -10,
+  "wealth": 186,
+  "abilities": [
+   "light-step",
+   "blood-art"
+  ],
+  "track": {
+   "points": 60,
+   "rank": 2
+  },
+  "socialClassId": "commoner",
+  "talents": [
+   "iron-body"
+  ],
+  "weaknesses": [],
+  "skills": {
+   "stealth": 8,
+   "athletics": 7,
+   "martial-arts": 14,
+   "trade": 16,
+   "medicine": 5,
+   "inner-cultivation": 3
+  },
+  "professionId": "merchant",
+  "educationId": null,
+  "specializationId": null,
+  "factions": {
+   "demonic-cult": 80,
+   "orthodox-alliance": -40
+  }
+ },
+ "life": {
+  "age": 34,
+  "stage": "adult",
+  "alive": true,
+  "deathAge": null,
+  "deathCause": null
+ },
+ "flags": [
+  "childhood-friend",
+  "martial-school",
+  "demonic-path",
+  "profession",
+  "job-merchant"
+ ],
+ "occurrences": {
+  "common.first-steps": 1,
+  "common.night-fear": 1,
+  "common.fever": 1,
+  "common.first-friend": 1,
+  "mu.village-school": 1,
+  "common.study-or-play": 1,
+  "common.sibling-quarrel": 1,
+  "mu.school": 1,
+  "mu.bottleneck": 2,
+  "mu.duel": 2,
+  "legacy.relative-vanishes": 1,
+  "common.calling": 1,
+  "common.parent-illness": 1,
+  "common.potential-sign": 1,
+  "common.trade-offer": 1,
+  "mu.bandits": 1,
+  "common.first-love": 1,
+  "common.talent-awakens": 1,
+  "common.love-test": 1,
+  "common.friend-needs-help": 1,
+  "common.lost-purse": 1,
+  "mu.deviation-crisis": 1
+ },
+ "lastSeen": {
+  "common.first-steps": 2,
+  "common.night-fear": 3,
+  "common.fever": 4,
+  "common.first-friend": 5,
+  "mu.village-school": 6,
+  "common.study-or-play": 7,
+  "common.sibling-quarrel": 8,
+  "mu.school": 9,
+  "mu.bottleneck": 33,
+  "mu.duel": 26,
+  "legacy.relative-vanishes": 19,
+  "common.calling": 20,
+  "common.parent-illness": 21,
+  "common.potential-sign": 22,
+  "common.trade-offer": 23,
+  "mu.bandits": 24,
+  "common.first-love": 25,
+  "common.talent-awakens": 27,
+  "common.love-test": 28,
+  "common.friend-needs-help": 29,
+  "common.lost-purse": 30,
+  "mu.deviation-crisis": 31
+ },
+ "pending": null,
+ "scheduled": [],
+ "nextSeq": 65,
+ "background": {
+  "familyName": "клана Су",
+  "birthplace": {
+   "ru": "лавка лекаря на рыночной улице",
+   "en": "a physician's shop on the market street"
+  },
+  "omen": {
+   "ru": "Над рекой всю ночь кричали журавли.",
+   "en": "Cranes cried over the river all night."
+  },
+  "familyHistory": {
+   "ru": "Мать торгует лепёшками у пристани. Отец ушёл в цзянху и не вернулся.",
+   "en": "Mother sells flatbreads at the pier. Father left for the jianghu and never returned."
+  },
+  "biography": [
+   {
+    "ru": "Тан Ми клана Су родилась: лавка лекаря на рыночной улице. Над рекой всю ночь кричали журавли.",
+    "en": "Тан Ми клана Су was born: a physician's shop on the market street. Cranes cried over the river all night."
+   },
+   {
+    "ru": "Мать торгует лепёшками у пристани. Отец ушёл в цзянху и не вернулся.",
+    "en": "Mother sells flatbreads at the pier. Father left for the jianghu and never returned."
+   },
+   {
+    "ru": "Мать — Бай Лин клана Су, торговка лепёшками. Об отце мать не говорит никогда. Братья и сёстры: Бай, Цзян.",
+    "en": "Mother: Бай Лин клана Су, flatbread seller. Mother never speaks of the father. Siblings: Бай, Цзян."
+   }
+  ]
+ },
+ "hidden": {
+  "potential": 4,
+  "destiny": 7,
+  "dormantTalents": [],
+  "familySecret": null,
+  "revealed": [
+   "potential",
+   "destiny"
+  ]
+ },
+ "npcs": [
+  {
+   "id": "n1",
+   "role": "mother",
+   "name": "Бай Лин клана Су",
+   "gender": "female",
+   "bornAt": -31,
+   "temperamentId": "kind",
+   "traitId": "stern",
+   "occupation": {
+    "ru": "Торговка лепёшками",
+    "en": "Flatbread seller"
+   },
+   "bio": {
+    "ru": "Торговка лепёшками. Хвалит редко, требует много. Характер: добрый.",
+    "en": "Flatbread seller. Praises rarely and demands much. Temperament: kind."
+   },
+   "affinity": 63,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 0,
+   "power": 31,
+   "skillId": "survival",
+   "interactedAt": null,
+   "familyName": "клана Су",
+   "status": "alive",
+   "cause": null,
+   "parents": [],
+   "spouseId": null,
+   "formerSpouses": [
+    "n4"
+   ],
+   "adopted": false,
+   "raceId": "human",
+   "socialClassId": "disciple",
+   "educationTier": 1,
+   "goal": "wealth",
+   "professionId": "wanderer",
+   "careerRank": 2,
+   "factionId": null,
+   "health": 85,
+   "wealth": 113,
+   "talentId": "steady-heart",
+   "weaknessId": "reckless",
+   "log": [
+    {
+     "at": 3,
+     "kind": "married",
+     "value": "n4"
+    },
+    {
+     "at": 20,
+     "kind": "promotion",
+     "value": "2"
+    },
+    {
+     "at": 29,
+     "kind": "ill"
+    },
+    {
+     "at": 32,
+     "kind": "class-up",
+     "value": "disciple"
+    },
+    {
+     "at": 32,
+     "kind": "divorced",
+     "value": "n4"
+    }
+   ],
+   "lifeGen": null
+  },
+  {
+   "id": "n2",
+   "role": "sibling",
+   "name": "Бай Лин клана Су",
+   "gender": "female",
+   "bornAt": 0,
+   "temperamentId": "calm",
+   "traitId": "proud",
+   "occupation": {
+    "ru": "Странник",
+    "en": "Wanderer"
+   },
+   "bio": {
+    "ru": "Сестра. Не прощает обид и не просит помощи. Характер: спокойный.",
+    "en": "Sister. Never forgives a slight and never asks for help. Temperament: calm."
+   },
+   "affinity": 10,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 0,
+   "power": 47,
+   "skillId": null,
+   "interactedAt": null,
+   "familyName": "клана Су",
+   "status": "alive",
+   "cause": null,
+   "parents": [
+    "n1"
+   ],
+   "spouseId": null,
+   "formerSpouses": [],
+   "adopted": false,
+   "raceId": "human",
+   "socialClassId": "commoner",
+   "educationTier": 1,
+   "goal": null,
+   "professionId": "wanderer",
+   "careerRank": 0,
+   "factionId": "beggars-sect",
+   "health": 100,
+   "wealth": 21,
+   "talentId": null,
+   "weaknessId": null,
+   "log": [
+    {
+     "at": 6,
+     "kind": "education",
+     "value": "mu-village-school"
+    },
+    {
+     "at": 8,
+     "kind": "ill"
+    },
+    {
+     "at": 9,
+     "kind": "ill"
+    },
+    {
+     "at": 10,
+     "kind": "ill"
+    },
+    {
+     "at": 32,
+     "kind": "job",
+     "value": "wanderer"
+    }
+   ],
+   "lifeGen": null
+  },
+  {
+   "id": "n3",
+   "role": "sibling",
+   "name": "Цзян Хо клана Су",
+   "gender": "male",
+   "bornAt": -2,
+   "temperamentId": "calm",
+   "traitId": "proud",
+   "occupation": {
+    "ru": "Брат",
+    "en": "Brother"
+   },
+   "bio": {
+    "ru": "Брат. Не прощает обид и не просит помощи. Характер: спокойный.",
+    "en": "Brother. Never forgives a slight and never asks for help. Temperament: calm."
+   },
+   "affinity": 17,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 0,
+   "power": 43,
+   "skillId": null,
+   "interactedAt": null,
+   "familyName": "клана Су",
+   "status": "alive",
+   "cause": null,
+   "parents": [
+    "n1"
+   ],
+   "spouseId": null,
+   "formerSpouses": [],
+   "adopted": false,
+   "raceId": "human",
+   "socialClassId": "commoner",
+   "educationTier": 1,
+   "goal": null,
+   "professionId": null,
+   "careerRank": 0,
+   "factionId": "demonic-cult",
+   "health": 87,
+   "wealth": 19,
+   "talentId": null,
+   "weaknessId": "frail",
+   "log": [
+    {
+     "at": 2,
+     "kind": "ill"
+    },
+    {
+     "at": 3,
+     "kind": "ill"
+    },
+    {
+     "at": 4,
+     "kind": "education",
+     "value": "mu-village-school"
+    },
+    {
+     "at": 5,
+     "kind": "ill"
+    },
+    {
+     "at": 18,
+     "kind": "ill"
+    },
+    {
+     "at": 19,
+     "kind": "missing"
+    },
+    {
+     "at": 22,
+     "kind": "returned"
+    }
+   ],
+   "lifeGen": null
+  },
+  {
+   "id": "n4",
+   "role": "in-law",
+   "name": "Гао Шань клана Су",
+   "gender": "male",
+   "bornAt": -33,
+   "temperamentId": "ambitious",
+   "traitId": "ambitious",
+   "occupation": {
+    "ru": "Родственник",
+    "en": "Relative"
+   },
+   "bio": {
+    "ru": "Родственник. Мечтает о большем и ждёт того же от близких. Характер: честолюбивый.",
+    "en": "Relative. Dreams of more and expects the same of those close to them. Temperament: ambitious."
+   },
+   "affinity": 1,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 3,
+   "power": 22,
+   "skillId": null,
+   "interactedAt": null,
+   "familyName": "клана Су",
+   "status": "retired",
+   "cause": null,
+   "parents": [],
+   "spouseId": null,
+   "formerSpouses": [
+    "n1"
+   ],
+   "adopted": false,
+   "raceId": "human",
+   "socialClassId": "disciple",
+   "educationTier": 0,
+   "goal": "wealth",
+   "professionId": "laborer",
+   "careerRank": 1,
+   "factionId": "orthodox-alliance",
+   "health": 100,
+   "wealth": 97,
+   "talentId": "silver-tongue",
+   "weaknessId": null,
+   "log": [
+    {
+     "at": 3,
+     "kind": "married",
+     "value": "n1"
+    },
+    {
+     "at": 24,
+     "kind": "class-up",
+     "value": "disciple"
+    },
+    {
+     "at": 25,
+     "kind": "retired",
+     "value": "laborer"
+    },
+    {
+     "at": 32,
+     "kind": "divorced",
+     "value": "n1"
+    }
+   ],
+   "lifeGen": null
+  },
+  {
+   "id": "n5",
+   "role": "friend",
+   "name": "Мэй Инь долины Бай",
+   "gender": "female",
+   "bornAt": 2,
+   "temperamentId": "brave",
+   "traitId": "secretive",
+   "occupation": {
+    "ru": "Торговец",
+    "en": "Merchant"
+   },
+   "bio": {
+    "ru": "Мальчишка из Секты нищих. О прошлом молчит, даже когда спрашивают. Характер: отважный.",
+    "en": "Boy from the Beggars' Sect. Stays silent about the past even when asked. Temperament: brave."
+   },
+   "affinity": 27,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 5,
+   "power": 45,
+   "skillId": null,
+   "interactedAt": null,
+   "familyName": "долины Бай",
+   "status": "alive",
+   "cause": null,
+   "parents": [],
+   "spouseId": null,
+   "formerSpouses": [],
+   "adopted": false,
+   "raceId": "human",
+   "socialClassId": "disciple",
+   "educationTier": 1,
+   "goal": null,
+   "professionId": "merchant",
+   "careerRank": 0,
+   "factionId": null,
+   "health": 63,
+   "wealth": 32,
+   "talentId": "quick-learner",
+   "weaknessId": null,
+   "log": [
+    {
+     "at": 19,
+     "kind": "job",
+     "value": "scholar"
+    },
+    {
+     "at": 20,
+     "kind": "education",
+     "value": "mu-village-school"
+    },
+    {
+     "at": 26,
+     "kind": "promotion",
+     "value": "1"
+    },
+    {
+     "at": 29,
+     "kind": "job-loss",
+     "value": "scholar"
+    },
+    {
+     "at": 33,
+     "kind": "job",
+     "value": "merchant"
+    },
+    {
+     "at": 34,
+     "kind": "ill"
+    }
+   ],
+   "lifeGen": null
+  },
+  {
+   "id": "n6",
+   "role": "ex-partner",
+   "name": "Ма Цзюнь реки Ло",
+   "gender": "male",
+   "bornAt": 3,
+   "temperamentId": "kind",
+   "traitId": "secretive",
+   "occupation": {
+    "ru": "Знакомый по работе",
+    "en": "A colleague"
+   },
+   "bio": {
+    "ru": "Знакомый по работе. О прошлом молчит, даже когда спрашивают. Характер: добрый.",
+    "en": "A colleague. Stays silent about the past even when asked. Temperament: kind."
+   },
+   "affinity": 20,
+   "alive": true,
+   "diedAt": null,
+   "metAt": 25,
+   "power": 44,
+   "skillId": null,
+   "interactedAt": null,
+   "familyName": "реки Ло",
+   "status": "alive",
+   "cause": null,
+   "parents": [],
+   "spouseId": null,
+   "formerSpouses": [],
+   "adopted": false,
+   "raceId": "human",
+   "socialClassId": "commoner",
+   "educationTier": 2,
+   "goal": "knowledge",
+   "professionId": "escort",
+   "careerRank": 1,
+   "factionId": null,
+   "health": 100,
+   "wealth": 56,
+   "talentId": null,
+   "weaknessId": null,
+   "log": [
+    {
+     "at": 34,
+     "kind": "promotion",
+     "value": "1"
+    }
+   ],
+   "lifeGen": null
+  }
+ ],
+ "nextNpcId": 7,
+ "meters": {
+  "qi-deviation": 73
+ },
+ "consequences": [],
+ "quest": null,
+ "questsDone": [],
+ "recentEvents": [
+  "mu.bottleneck",
+  "mu.deviation-crisis",
+  "common.lost-purse",
+  "common.friend-needs-help"
+ ],
+ "lineage": {
+  "name": "клана Су",
+  "generation": 1,
+  "epoch": 0,
+  "selfParents": [
+   "n1"
+  ],
+  "selfAdopted": false,
+  "renown": 0,
+  "startRenown": 0,
+  "lives": [],
+  "chronicle": [
+   {
+    "id": 1,
+    "year": 0,
+    "gen": 1,
+    "kind": "origin",
+    "who": [
+     "self"
+    ],
+    "v": {
+     "world": "murim",
+     "origin": "street-rat",
+     "race": "human",
+     "family": "клана Су",
+     "n0": "Тан Ми клана Су",
+     "g0": "f"
+    },
+    "src": "birth",
+    "link": null
+   },
+   {
+    "id": 2,
+    "year": 3,
+    "gen": 1,
+    "kind": "marriage",
+    "who": [
+     "n1",
+     "n4"
+    ],
+    "v": {
+     "n0": "Бай Лин клана Су",
+     "g0": "f",
+     "n1": "Гао Шань клана Су",
+     "g1": "m"
+    },
+    "src": "npc",
+    "link": null
+   },
+   {
+    "id": 3,
+    "year": 19,
+    "gen": 1,
+    "kind": "missing",
+    "who": [
+     "n3"
+    ],
+    "v": {
+     "role": "sibling",
+     "n0": "Цзян Хо клана Су",
+     "g0": "m"
+    },
+    "src": "npc",
+    "link": null
+   },
+   {
+    "id": 4,
+    "year": 19,
+    "gen": 1,
+    "kind": "story",
+    "who": [
+     "self"
+    ],
+    "v": {
+     "story": "legacy.relative-vanishes",
+     "choice": "wait",
+     "ok": "",
+     "n0": "Тан Ми клана Су",
+     "g0": "f"
+    },
+    "src": "legacy.relative-vanishes",
+    "link": null
+   },
+   {
+    "id": 5,
+    "year": 22,
+    "gen": 1,
+    "kind": "return",
+    "who": [
+     "n3"
+    ],
+    "v": {
+     "role": "sibling",
+     "n0": "Цзян Хо клана Су",
+     "g0": "m"
+    },
+    "src": "npc",
+    "link": null
+   },
+   {
+    "id": 6,
+    "year": 22,
+    "gen": 1,
+    "kind": "achievement",
+    "who": [
+     "self"
+    ],
+    "v": {
+     "achievement": "know-thyself",
+     "n0": "Тан Ми клана Су",
+     "g0": "f"
+    },
+    "src": "achievement",
+    "link": null
+   },
+   {
+    "id": 7,
+    "year": 24,
+    "gen": 1,
+    "kind": "class",
+    "who": [
+     "n4"
+    ],
+    "v": {
+     "cls": "disciple",
+     "dir": 1,
+     "n0": "Гао Шань клана Су",
+     "g0": "m"
+    },
+    "src": "npc",
+    "link": null
+   },
+   {
+    "id": 8,
+    "year": 32,
+    "gen": 1,
+    "kind": "class",
+    "who": [
+     "n1"
+    ],
+    "v": {
+     "cls": "disciple",
+     "dir": 1,
+     "n0": "Бай Лин клана Су",
+     "g0": "f"
+    },
+    "src": "npc",
+    "link": null
+   },
+   {
+    "id": 9,
+    "year": 32,
+    "gen": 1,
+    "kind": "divorce",
+    "who": [
+     "n4",
+     "n1"
+    ],
+    "v": {
+     "n0": "Гао Шань клана Су",
+     "g0": "m",
+     "n1": "Бай Лин клана Су",
+     "g1": "f"
+    },
+    "src": "npc",
+    "link": null
+   },
+   {
+    "id": 10,
+    "year": 33,
+    "gen": 1,
+    "kind": "achievement",
+    "who": [
+     "self"
+    ],
+    "v": {
+     "achievement": "path-adept",
+     "n0": "Тан Ми клана Су",
+     "g0": "f"
+    },
+    "src": "achievement",
+    "link": null
+   }
+  ],
+  "nextEntry": 11,
+  "achievements": [
+   {
+    "id": "know-thyself",
+    "gen": 1,
+    "age": 22
+   },
+   {
+    "id": "path-adept",
+    "gen": 1,
+    "age": 33
+   }
+  ],
+  "traits": {
+   "talents": {},
+   "weaknesses": {}
+  },
+  "threads": [],
+  "pending": [],
+  "stories": {
+   "legacy.relative-vanishes": 1
+  },
+  "continuedBy": null,
+  "archived": 0,
+  "inheritance": null,
+  "names": {}
+ },
+ "memory": [
+  {
+   "age": 5,
+   "eventId": "common.first-friend",
+   "choiceId": "defend",
+   "success": false,
+   "weight": 6
+  },
+  {
+   "age": 13,
+   "eventId": "mu.bottleneck",
+   "choiceId": "seclusion",
+   "success": true,
+   "weight": 6
+  },
+  {
+   "age": 19,
+   "eventId": "legacy.relative-vanishes",
+   "choiceId": "wait",
+   "success": null,
+   "weight": 6
+  },
+  {
+   "age": 20,
+   "eventId": "common.calling",
+   "choiceId": "merchant",
+   "success": null,
+   "weight": 4
+  },
+  {
+   "age": 21,
+   "eventId": "common.parent-illness",
+   "choiceId": "nurse",
+   "success": true,
+   "weight": 4
+  },
+  {
+   "age": 23,
+   "eventId": "common.trade-offer",
+   "choiceId": "invest",
+   "success": true,
+   "weight": 4
+  },
+  {
+   "age": 25,
+   "eventId": "common.first-love",
+   "choiceId": "gift",
+   "success": true,
+   "weight": 4
+  },
+  {
+   "age": 26,
+   "eventId": "mu.duel",
+   "choiceId": "accept",
+   "success": false,
+   "weight": 5
+  },
+  {
+   "age": 28,
+   "eventId": "common.love-test",
+   "choiceId": "stay",
+   "success": false,
+   "weight": 8
+  },
+  {
+   "age": 29,
+   "eventId": "common.friend-needs-help",
+   "choiceId": "stand",
+   "success": false,
+   "weight": 4
+  },
+  {
+   "age": 31,
+   "eventId": "mu.deviation-crisis",
+   "choiceId": "calm",
+   "success": true,
+   "weight": 4
+  },
+  {
+   "age": 33,
+   "eventId": "mu.bottleneck",
+   "choiceId": "pill",
+   "success": true,
+   "weight": 6
+  }
+ ]
+}

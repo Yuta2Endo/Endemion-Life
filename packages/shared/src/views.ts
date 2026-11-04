@@ -1,11 +1,13 @@
 // Ответы API. Представление жизни строится одной функцией и на сервере, и в офлайн-режиме сайта
 import {
+  presentEconomy,
   presentEvent,
   presentLegacy,
   presentProfile,
   summarizeCharacter,
   type CharacterState,
   type CharacterSummary,
+  type EconomyView,
   type EventView,
   type GameErrorCode,
   type GameState,
@@ -43,6 +45,8 @@ export interface LifeView extends LifeMeta {
   profile: LifeProfile;
   /** Stage 03: род, наследство, итоги жизни и наследники (когда жизнь закончилась) */
   legacy: LegacyBrief;
+  /** Stage 04: хозяйство — состояние экономики мира, доходы и расходы последнего года, нехватка */
+  economy: EconomyView;
 }
 
 export interface LifeListItem extends LifeMeta {
@@ -164,7 +168,8 @@ export function toLifeView(meta: LifeMeta, state: GameState): LifeView {
     life: state.life,
     pendingEvent: presentEvent(state),
     profile: presentProfile(state),
-    legacy: presentLegacy(state)
+    legacy: presentLegacy(state),
+    economy: presentEconomy(state)
   };
 }
 

@@ -500,6 +500,42 @@ export interface GameState {
   lineage: LineageState;
   /** Ключевые решения этой жизни */
   memory: MemoryEntry[];
+  /** Stage 04: хозяйство — экономический цикл мира, нехватка денег, доходы и расходы последних лет */
+  economy: EconomyState;
+}
+
+/** Stage 04: состояние хозяйства мира. Спад и подъём меняют заработок */
+export const ECONOMY_CYCLES = ["slump", "normal", "boom"] as const;
+export type EconomyCycle = (typeof ECONOMY_CYCLES)[number];
+
+/** Статьи доходов и расходов года */
+export const ECONOMY_LINES = ["profession", "guild", "trade", "class", "thrift", "world", "cycle", "tax", "living"] as const;
+export type EconomyLineId = (typeof ECONOMY_LINES)[number];
+
+export interface EconomyLine {
+  id: EconomyLineId;
+  /** Плюс — доход, минус — расход */
+  amount: number;
+}
+
+export interface EconomyYear {
+  age: number;
+  income: number;
+  expenses: number;
+  /** Сколько не хватило, чтобы оплатить расходы года */
+  shortfall: number;
+}
+
+export interface EconomyState {
+  cycle: EconomyCycle;
+  /** Возраст персонажа, с которого держится нынешнее состояние хозяйства */
+  cycleSince: number;
+  /** Сколько лет подряд не хватает денег на расходы */
+  hardship: number;
+  /** Статьи последнего года */
+  last: { age: number; lines: EconomyLine[]; shortfall: number } | null;
+  /** Итоги последних лет (не больше MAX_ECONOMY_YEARS) */
+  years: EconomyYear[];
 }
 
 export const INTERACTIONS = ["talk", "gift", "learn", "spar", "confront", "ask-help"] as const;
