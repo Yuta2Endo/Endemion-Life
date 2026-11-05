@@ -205,8 +205,9 @@ function Summary({ summary }: { summary: LifeSummaryView }) {
         {summary.decisions.length === 0 ? (
           <p className="text-xs text-bone-500">{t("summary.noDecisions")}</p>
         ) : (
+          <>
           <ol className="space-y-1.5 text-sm" data-testid="key-decisions">
-            {summary.decisions.map((d, i) => (
+            {summary.decisions.slice(0, 4).map((d, i) => (
               <li key={i} className="border-l border-line pl-3">
                 <span className="text-[10px] uppercase tracking-wider text-bone-500">{ageLabel(d.age, locale)}</span>
                 <p className="text-bone-100">{l(d.title)}</p>
@@ -217,12 +218,31 @@ function Summary({ summary }: { summary: LifeSummaryView }) {
               </li>
             ))}
           </ol>
+          {summary.decisions.length > 4 && (
+            <details className="mt-2">
+              <summary className="cursor-pointer text-xs text-gold-300">{t("summary.moreDecisions")}</summary>
+              <ol className="mt-2 space-y-1.5 text-sm">
+                {summary.decisions.slice(4).map((d, i) => (
+                  <li key={i} className="border-l border-line pl-3">
+                    <span className="text-[10px] uppercase tracking-wider text-bone-500">{ageLabel(d.age, locale)}</span>
+                    <p className="text-bone-100">{l(d.title)}</p>
+                    <p className="text-xs text-gold-300">→ {l(d.choice)}</p>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          )}
+          </>
         )}
       </div>
 
       <div>
         <Heading>{t("summary.achievements")}</Heading>
-        {summary.achievements.length === 0 ? <p className="text-xs text-bone-500">{t("summary.noAchievements")}</p> : <AchievementList achievements={summary.achievements} compact />}
+        {summary.achievements.filter((item) => item.unlocked).length === 0 ? (
+          <p className="text-xs text-bone-500">{t("summary.noAchievements")}</p>
+        ) : (
+          <AchievementList achievements={summary.achievements.filter((item) => item.unlocked)} compact />
+        )}
       </div>
 
       {summary.threads.length > 0 && (
@@ -248,16 +268,15 @@ export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: b
   const available = heirs.filter((h) => h.available);
   return (
     <Panel accent className="animate-rise space-y-6" data-testid="death-card">
+      <div data-testid="death-choice" className="space-y-6">
       <div className="text-center">
         <p className="text-4xl text-blood-400" aria-hidden="true">
           ✝
         </p>
         <h2 className="mt-2 font-display text-4xl text-gilded">{t("summary.title")}</h2>
         <p className="mt-2 text-bone-300">{t("play.deathLived", { name: summary.name, age: ageLabel(summary.age, locale) })}</p>
+        <p className="mt-3 text-sm text-gold-200">{l(summary.title)} · {summary.score}/100</p>
       </div>
-      <Summary summary={summary} />
-
-      <Ornament />
       <section aria-labelledby="heirs-title" data-testid="legacy-selection">
         <h3 id="heirs-title" className="font-display text-2xl text-bone-100">
           {t("summary.heirs")}
@@ -269,9 +288,10 @@ export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: b
         ) : available.length > 0 ? (
           <>
             <p className="mt-1 text-sm text-bone-300">{t("summary.heirsHint")}</p>
-            <p className="mt-1 text-xs text-bone-500">
-              {l(summary.law.name)}: {l(summary.law.description)}
-            </p>
+            <details className="mt-1">
+              <summary className="cursor-pointer text-xs text-gold-300">{t("summary.lawMore")}: {l(summary.law.name)}</summary>
+              <p className="mt-1 text-xs text-bone-500">{l(summary.law.description)}</p>
+            </details>
             <ul className="mt-4 grid gap-3 lg:grid-cols-2">
               {heirs.map((heir) => (
                 <HeirCard key={heir.id} heir={heir} controlAge={summary.law.controlAge} busy={busy} onChoose={setConfirm} />
@@ -302,6 +322,8 @@ export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: b
           </Link>
         </div>
       </section>
+      </div>
+      <Summary summary={summary} />
       <ConfirmDialog
         heir={confirm}
         busy={busy}

@@ -144,6 +144,14 @@ function Biography({ life }: { life: LifeView }) {
           <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("dossier.birthplace")}</dt>
           <dd className="text-bone-100">{l(p.birthplace)}</dd>
         </div>
+        {p.omen.ru.trim() && (
+          <div>
+            <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("dossier.omen")}</dt>
+            <dd className="text-bone-100" data-testid="omen">
+              {l(p.omen)}
+            </dd>
+          </div>
+        )}
         <div>
           <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("create.temperament")}</dt>
           <dd className="text-bone-100">{temperament ? l(temperament.name) : "—"}</dd>
@@ -326,6 +334,8 @@ function People({ life, busy, onInteract }: { life: LifeView; busy: boolean; onI
                 </p>
               </div>
               <p className="mt-1 text-xs text-bone-300">{l(npc.bio)}</p>
+              {npc.occupation.ru.trim() && <p className="mt-1 text-xs text-bone-400">{l(npc.occupation)}</p>}
+              <p className="mt-1 text-[11px] text-bone-500">{t("dossier.met", { age: npc.metAt })}</p>
               <div className="mt-2 flex items-center gap-2">
                 <div
                   className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-ink-950/80 ring-1 ring-line"
@@ -361,14 +371,26 @@ function People({ life, busy, onInteract }: { life: LifeView; busy: boolean; onI
                         {interaction.chance !== null && <span className="ml-1 tabular-nums text-bone-500">{Math.round(interaction.chance * 100)}%</span>}
                       </button>
                     ))}
-                  {npc.interactions
-                    .filter((interaction) => !interaction.available && interaction.locked === "уже в этом году")
-                    .slice(0, 1)
-                    .map((interaction) => (
-                      <span key={interaction.id} className="px-2 py-1 text-[11px] text-bone-500" data-testid="interact-locked">
-                        {t("dossier.lockedYear")}
+                  {(() => {
+                    const locked = npc.interactions.find((interaction) => !interaction.available && interaction.locked);
+                    if (!locked) return null;
+                    const label =
+                      locked.locked === "year"
+                        ? t("dossier.lockedYear")
+                        : locked.locked === "rule"
+                          ? t("dossier.lockedRule")
+                          : locked.locked === "dead"
+                            ? t("dossier.lockedDead")
+                            : locked.locked === "missing"
+                              ? t("dossier.lockedMissing")
+                              : null;
+                    if (!label || (locked.locked !== "year" && npc.interactions.some((interaction) => interaction.available))) return null;
+                    return (
+                      <span className="px-2 py-1 text-[11px] text-bone-500" data-testid="interact-locked" data-lock={locked.locked}>
+                        {label}
                       </span>
-                    ))}
+                    );
+                  })()}
                 </div>
               )}
             </li>
@@ -384,6 +406,8 @@ export function Dossier({
   life,
   busy,
   store,
+  section: requested,
+  jump,
   onInteract,
   onTrade,
   onVenture
@@ -391,12 +415,19 @@ export function Dossier({
   life: LifeView;
   busy: boolean;
   store: GameStore;
+  section?: Section;
+  jump?: number;
   onInteract: (npcId: string, interaction: InteractionId) => void;
   onTrade: (goodId: string, side: TradeSide, qty: number) => void;
   onVenture: (action: { adventureId?: string; choiceId?: string; abandon?: boolean }) => void;
 }) {
   const { locale, l, t } = useI18n();
-  const [section, setSection] = useState<Section>("bio");
+  const [section, setSection] = useState<Section>(requested ?? "bio");
+  const [seenJump, setSeenJump] = useState(jump);
+  if (jump !== seenJump) {
+    setSeenJump(jump);
+    if (requested) setSection(requested);
+  }
   const tabsRef = useRef<HTMLDivElement>(null);
   const universe = getUniverse(life.universeId);
   const sections: { id: Section; label: string }[] = [

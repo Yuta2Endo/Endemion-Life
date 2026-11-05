@@ -111,6 +111,10 @@ export function CreateForm({ universe, temperaments }: { universe: UniverseSumma
           </p>
           <h1 className="mt-1 font-display text-4xl text-gilded">{t("create.title")}</h1>
           <p className="mt-2 text-sm text-bone-300">{t("create.lead")}</p>
+          <p className="mt-2 text-xs text-bone-400" data-testid="create-world">
+            {t("worlds.path")}: {l(universe.track.name)} · {t("worlds.lifespan", { years: universe.lifespan })}
+          </p>
+          {universe.rules[0] && <p className="mt-1 max-w-xl text-xs text-bone-300">{l(universe.rules[0])}</p>}
         </div>
       </header>
 

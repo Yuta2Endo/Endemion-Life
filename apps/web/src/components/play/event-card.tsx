@@ -16,6 +16,7 @@ export function EventCard({ event, busy, onChoose }: { event: EventView; busy: b
         {l(event.title)}
       </h2>
       <p className="mt-4 text-base leading-relaxed text-bone-100">{l(event.text)}</p>
+      <p className="mt-2 text-xs text-bone-400">{event.scheduled ? t("play.scheduled") : t("play.thisYear")}</p>
       <Ornament className="my-6" />
       <h3 className="mb-3 text-[11px] uppercase tracking-[0.22em] text-bone-500">{t("play.choose")}</h3>
       <ul className="space-y-2.5">
@@ -32,6 +33,9 @@ export function EventCard({ event, busy, onChoose }: { event: EventView; busy: b
             >
               <span>
                 <span className="block text-sm text-bone-100 transition group-enabled:group-hover:text-gold-100">{l(choice.text)}</span>
+                {choice.available && choice.touches.length > 0 && (
+                  <span className="mt-1 block text-xs text-bone-400">{choice.touches.map((touch) => t(`play.touch.${touch}`)).join(" · ")}</span>
+                )}
                 {!choice.available && <span className="mt-1 block text-xs text-blood-300">{choice.locked.map(l).join(" · ")}</span>}
               </span>
               {choice.chance !== null && (

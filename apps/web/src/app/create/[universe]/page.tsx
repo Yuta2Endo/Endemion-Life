@@ -2,8 +2,12 @@ import { getUniverse, isUniverseId, summarizeUniverse, temperamentCatalog } from
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CreateForm } from "@/components/create-form";
+import { getServerI18n } from "@/lib/locale-server";
 
-export const metadata: Metadata = { title: "Character" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getServerI18n();
+  return { title: t("create.title"), robots: { index: false } };
+}
 
 export default async function CreatePage({ params }: { params: Promise<{ universe: string }> }) {
   const { universe: id } = await params;

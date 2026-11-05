@@ -26,6 +26,10 @@ describe("тексты интерфейса", () => {
     expect(msg("en", "now.nextEvent")).toContain("event");
     expect(msg("ru", "guide.hide")).toBe("Скрыть");
     expect(msg("en", "play.advanceBlockedEvent")).toContain("event");
+    expect(msg("ru", "play.advance5")).toContain("до");
+    expect(msg("en", "play.scheduled")).toContain("earlier");
+    expect(msg("ru", "play.thisYear")).toContain("год");
+    expect(msg("ru", "dossier.lockedDead")).toContain("живых");
   });
 
   it("возраст склоняется", () => {

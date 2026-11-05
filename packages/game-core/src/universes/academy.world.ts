@@ -90,7 +90,8 @@ export const ACADEMY_WORLD: WorldDefinition = {
     { id: "ac.c-duel-grudge", title: t("Месть проигравшего", "The loser's revenge"), text: t("Тот, кого {name} победил на дуэли, распускает слухи при дворе.", "The one {name} defeated in a duel spreads rumours at court."), chance: 0.7, effects: [fx.meter("scandal", 15), fx.npc("rival")] },
     { id: "ac.c-ball-acquaintance", title: t("Знакомство с бала", "An acquaintance from the ball"), text: t("Партнёр по танцу присылает письмо. Потом второе.", "The dance partner sends a letter. Then a second one."), conditions: [when.noNpc("spouse")], effects: [fx.npc("partner"), fx.meter("court-favor", 5)] },
     { id: "ac.c-silence-price", title: t("Цена молчания", "The price of silence"), text: t("Тот, кому заплатили за молчание, хочет ещё. Шантаж набирает силу.", "The one paid for silence wants more. The blackmail grows."), effects: [fx.wealth(-40), fx.meter("scandal", 20), fx.karma(-5)] },
-    { id: "ac.c-bribe-exposed", title: t("Взятка раскрыта", "The bribe exposed"), text: t("Ревизия академии нашла запись о взятке за поступление.", "An academy audit found a record of the admission bribe."), chance: 0.5, effects: [fx.meter("scandal", 25), fx.faction("magic-tower", -15)] }
+    { id: "ac.c-bribe-exposed", title: t("Взятка раскрыта", "The bribe exposed"), text: t("Ревизия академии нашла запись о взятке за поступление.", "An academy audit found a record of the admission bribe."), chance: 0.5, effects: [fx.meter("scandal", 25), fx.faction("magic-tower", -15)] },
+    { id: "ac.c-exam-notice", title: t("Заметка Башни", "A note from the Tower"), text: t("Архимаг, чей экзамен {name} не пропустил ради бала, присылает короткое письмо: дверь Башни ещё открыта.", "The archmage whose exam {name} did not skip for a ball sends a short letter: the Tower's door is still open."), effects: [fx.faction("magic-tower", 8), fx.skill("arcana", 3)] }
   ],
   abilityCategories: { "arcane-shield": "magic", starfall: "magic", etiquette: "social" },
   abilities: [
@@ -98,6 +99,35 @@ export const ACADEMY_WORLD: WorldDefinition = {
     { id: "riposte-circle", name: t("Круговой рипост", "Circle Riposte"), description: t("Ответный выпад, усиленный кругом маны.", "A counter-thrust strengthened by a mana circle."), category: "combat" }
   ],
   events: [
+    {
+      id: "ac.child-bow",
+      kind: "personal",
+      title: t("Первый поклон", "The first bow"),
+      text: t("На детском вечере дома нужно поклониться незнакомому гербу. Гувернантка смотрит, не дрогнут ли колени.", "At the house's children's evening you must bow to an unfamiliar crest. The governess watches whether the knees shake."),
+      minAge: 6,
+      maxAge: 12,
+      maxOccurrences: 1,
+      weight: 2,
+      choices: [
+        { id: "bow", text: t("Поклониться как учили", "Bow as you were taught"), success: { text: t("Герб принимает поклон. Колени держат.", "The crest accepts the bow. The knees hold."), effects: [fx.stat("charisma", 1), fx.meter("court-favor", 2)] } },
+        { id: "still", text: t("Стоять прямо", "Stay standing"), success: { text: t("Зал замечает. Гувернантка молчит до дома.", "The hall notices. The governess is silent until home."), effects: [fx.stat("willpower", 1), fx.meter("scandal", 2)] } },
+        { id: "ask", text: t("Спросить, чей это герб", "Ask whose crest it is"), success: { text: t("Вопрос детский. Ответ запоминают взрослые.", "The question is a child's. The adults remember the answer."), effects: [fx.stat("intelligence", 1), fx.skill("etiquette", 2)] } }
+      ]
+    },
+    {
+      id: "ac.last-name",
+      kind: "age",
+      title: t("Имя на программе", "A name on the programme"),
+      text: t("Дом ставит последний бал при вашей жизни. Спрашивают, чьё имя поставить первым в программе: наследника или оставить своё и закрыть вечер.", "The house holds the last ball of your life. They ask whose name goes first on the programme: the heir's, or yours, and then the evening closes."),
+      minAge: 56,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("academy-student")],
+      choices: [
+        { id: "heir", text: t("Поставить имя наследника", "Put the heir's name first"), success: { text: t("Программа открывается чужим именем. Зал принимает.", "The programme opens on another name. The hall accepts it."), effects: [fx.rep(4), fx.karma(3), fx.meter("court-favor", 4)] } },
+        { id: "own", text: t("Оставить своё и закрыть", "Keep your own and close it"), success: { text: t("Вечер короткий. Долг дома закрыт.", "The evening is short. The house's debt is closed."), effects: [fx.stat("wisdom", 1), fx.meter("court-favor", -2)] } }
+      ]
+    },
     {
       id: "ac.tutor",
       kind: "personal",
@@ -189,6 +219,63 @@ export const ACADEMY_WORLD: WorldDefinition = {
       choices: [
         { id: "accept", text: t("Подняться в Башню", "Ascend the Tower"), check: check(["intelligence", "wisdom"], 15, 0, { skill: "arcana" }), success: { text: t("Двери Башни открываются.", "The Tower's doors open."), effects: [fx.education("ac-tower"), fx.npc("mentor"), fx.faction("magic-tower", 20), fx.track(10)] }, failure: { text: t("Архимаг выбирает другого.", "The archmage chooses another."), effects: [fx.skill("arcana", 3)] } },
         { id: "court", text: t("Остаться при дворе", "Stay at court"), success: { text: t("Двор ближе, чем звёзды.", "The court is closer than the stars."), effects: [fx.meter("court-favor", 8)] } }
+      ]
+    },
+    {
+      id: "ac.circle-side",
+      kind: "path",
+      title: t("Чей круг", "Whose circle"),
+      text: t("Третий круг держится. Башня и двор предлагают не кафедру, а чьим именем подписывать работу. Второго выбора не будет.", "The Third Circle holds. The Tower and the court offer not a chair, but whose name the work will carry. There will not be a second choice."),
+      minAge: 18,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("academy-student"), when.rank(2)],
+      choices: [
+        { id: "tower", text: t("Подпись Башни", "The Tower's signature"), success: { text: t("Работа уходит в архив Башни.", "The work goes into the Tower's archive."), effects: [fx.faction("magic-tower", 10), fx.skill("arcana", 4)] } },
+        { id: "court", text: t("Подпись двора", "The court's signature"), success: { text: t("Имя звучит в зале, не в архиве.", "The name sounds in the hall, not in the archive."), effects: [fx.meter("court-favor", 10), fx.stat("charisma", 1)] } }
+      ]
+    },
+    {
+      id: "ac.tower-reply",
+      kind: "chain",
+      title: t("Ответ Башни", "The Tower's reply"),
+      text: t("Башня отвечает на ночь, которую {name} провёл над кругами, а не на балу. Дом ждёт, куда встанет имя.", "The Tower answers the night {name} spent over the circles, not at the ball. The house waits to see where the name will stand."),
+      minAge: 18,
+      maxOccurrences: 1,
+      scheduledOnly: true,
+      conditions: [when.flag("academy-student")],
+      choices: [
+        { id: "climb", text: t("Принять место в Башне", "Take the place in the Tower"), success: { text: t("Дверь Башни открыта. Дом пришлёт холодную записку.", "The Tower's door is open. The house will send a cold note."), effects: [fx.faction("magic-tower", 10), fx.skill("arcana", 4), fx.meter("court-favor", -4)] } },
+        { id: "house", text: t("Вернуть ответ дому", "Return the answer to the house"), success: { text: t("Башня подождёт. Кровь — нет.", "The Tower can wait. Blood will not."), effects: [fx.meter("court-favor", 8), fx.faction("magic-tower", -4), fx.stat("charisma", 1)] } }
+      ]
+    },
+    {
+      id: "ac.late-ball",
+      kind: "family",
+      title: t("Бал, который нельзя пропустить", "A ball that cannot be missed"),
+      text: t("Дом ставит бал в честь стареющего родителя. Башня в ту же ночь принимает закрытый разбор.", "The house holds a ball in honour of an ageing parent. The Tower sits a closed review the same night."),
+      minAge: 40,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("academy-student"), when.npc("parent")],
+      choices: [
+        { id: "dance", text: t("Танцевать с родителем", "Dance with the parent"), success: { text: t("Один танец стоит места в Башне.", "One dance is worth a place in the Tower."), effects: [fx.affinity("parent", 16), fx.meter("court-favor", 4), fx.faction("magic-tower", -3)] } },
+        { id: "review", text: t("Сидеть на разборе", "Sit the review"), success: { text: t("Башня кивает. Дома танцуют без вас.", "The Tower nods. At home they dance without you."), effects: [fx.skill("arcana", 4), fx.track(4), fx.affinity("parent", -10)] } }
+      ]
+    },
+    {
+      id: "ac.ball-or-exam",
+      kind: "personal",
+      title: t("Бал или экзамен", "The ball or the exam"),
+      text: t("Дом устраивает бал в ту же ночь, когда Башня принимает закрытый экзамен. Пропустить бал — оскорбить кровь. Пропустить экзамен — закрыть Башню на годы.", "The house holds a ball the same night the Tower sits a closed exam. Missing the ball insults the blood. Missing the exam closes the Tower for years."),
+      minAge: 16,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("academy-student")],
+      choices: [
+        { id: "ball", text: t("Танцевать до рассвета", "Dance until dawn"), success: { text: t("Имя дома звучит в каждой зале. Башня молчит.", "The house's name sounds in every hall. The Tower is silent."), effects: [fx.meter("court-favor", 12), fx.rep(6), fx.faction("magic-tower", -6), fx.stat("charisma", 1)] } },
+        { id: "exam", text: t("Сидеть над кругами", "Sit over the circles"), success: { text: t("Чернила вместо танца. Дом пришлёт холодное письмо.", "Ink instead of a dance. The house will send a cold letter."), effects: [fx.skill("arcana", 6), fx.track(6), fx.meter("court-favor", -5), fx.later("ac.c-exam-notice", 2), fx.flag("sat-exam"), fx.schedule("ac.tower-reply", 4)] } },
+        { id: "both", text: t("Успеть на оба", "Make both"), check: check(["intelligence", "charisma"], 14, 0, { skill: "etiquette" }), success: { text: t("Один танец и одна решённая печать. Никто не заметил отсутствия.", "One dance and one solved seal. No one noticed the absence."), effects: [fx.meter("court-favor", 4), fx.skill("arcana", 3), fx.stat("luck", 1)] }, failure: { text: t("Опоздание на бал и пустой лист на экзамене.", "Late to the ball and a blank sheet at the exam."), effects: [fx.meter("scandal", 8), fx.rep(-4)] } }
       ]
     }
   ]

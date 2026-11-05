@@ -1,5 +1,6 @@
 import { universeCatalog } from "@endemion/game-core";
 import { Ornament } from "@endemion/ui";
+import Image from "next/image";
 import Link from "next/link";
 import { LivesList } from "@/components/lives-list";
 import { PlayGuide } from "@/components/play-guide";
@@ -28,6 +29,7 @@ export default async function HomePage() {
           {t("home.title")}
         </h1>
         <p className="relative mt-6 max-w-2xl animate-rise text-base leading-relaxed text-bone-300 sm:text-lg">{t("home.lead")}</p>
+        <p className="relative mt-3 max-w-2xl text-sm leading-relaxed text-bone-400">{t("home.loop")}</p>
         <div className="relative mt-10 flex animate-rise flex-col gap-3 sm:flex-row">
           <Link
             href="/worlds"
@@ -52,13 +54,25 @@ export default async function HomePage() {
         ))}
       </section>
 
-      <section className="mt-20">
+      <section className="mt-16 grid gap-5 lg:grid-cols-2">
+        <figure className="overflow-hidden rounded-xl border border-line bg-ink-900/70">
+          <Image src="/shot-event.png" alt={t("home.shotEvent")} width={880} height={520} className="h-auto w-full" />
+          <figcaption className="px-4 py-3 text-sm text-bone-300">{t("home.shotEvent")}</figcaption>
+        </figure>
+        <figure className="overflow-hidden rounded-xl border border-line bg-ink-900/70">
+          <Image src="/shot-ending.png" alt={t("home.shotEnding")} width={880} height={720} className="h-auto w-full" />
+          <figcaption className="px-4 py-3 text-sm text-bone-300">{t("home.shotEnding")}</figcaption>
+        </figure>
+      </section>
+
+      <section className="mt-16">
+        <PlayGuide />
+      </section>
+
+      <section className="mt-16">
         <h2 className="font-display text-3xl text-bone-100">{t("home.continue")}</h2>
         <Ornament className="my-5 max-w-xs" />
         <LivesList />
-        <div className="mt-6">
-          <PlayGuide />
-        </div>
       </section>
 
       <section id="worlds" className="mt-20 scroll-mt-20">

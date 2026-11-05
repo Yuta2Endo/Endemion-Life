@@ -2,7 +2,7 @@
 
 import type { SaveView } from "@endemion/shared";
 import { Button } from "@endemion/ui";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ageLabel } from "@/lib/format";
 import type { MessageKey } from "@/lib/messages";
 import { useI18n } from "../locale-provider";
@@ -25,6 +25,7 @@ export function SavesDialog({
 }) {
   const { locale, t } = useI18n();
   const ref = useRef<HTMLDialogElement>(null);
+  const [pending, setPending] = useState<{ version: number; age: number } | null>(null);
   const opener = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -43,9 +44,13 @@ export function SavesDialog({
   return (
     <dialog
       ref={ref}
-      onClose={onClose}
+      onClose={() => {
+        setPending(null);
+        onClose();
+      }}
       onCancel={(event) => {
         event.preventDefault();
+        setPending(null);
         onClose();
       }}
       aria-labelledby="saves-title"
@@ -70,7 +75,7 @@ export function SavesDialog({
                 {current ? (
                   <span className="text-xs text-gold-300">{t("play.current")}</span>
                 ) : (
-                  <Button onClick={() => onRestore(save.version, save.age)} disabled={busy} data-testid="restore-button">
+                  <Button onClick={() => setPending({ version: save.version, age: save.age })} disabled={busy} data-testid="restore-button">
                     {t("play.restore")}
                   </Button>
                 )}
@@ -78,8 +83,27 @@ export function SavesDialog({
             );
           })}
         </ul>
-        <div className="mt-5 text-right">
-          <Button variant="quiet" onClick={onClose}>
+        {pending && (
+          <p className="mt-4 rounded-md border border-blood-500/40 bg-blood-600/10 px-3 py-2 text-sm text-blood-200" data-testid="restore-confirm">
+            {t("play.restoreConfirm", { age: ageLabel(pending.age, locale) })}
+          </p>
+        )}
+        <div className="mt-5 flex justify-end gap-2">
+          {pending && (
+            <Button
+              variant="primary"
+              disabled={busy}
+              data-testid="restore-confirm-button"
+              onClick={() => {
+                const chosen = pending;
+                setPending(null);
+                onRestore(chosen.version, chosen.age);
+              }}
+            >
+              {t("play.restore")}
+            </Button>
+          )}
+          <Button variant="quiet" onClick={() => { setPending(null); onClose(); }}>
             {t("play.close")}
           </Button>
         </div>

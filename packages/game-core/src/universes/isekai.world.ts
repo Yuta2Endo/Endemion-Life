@@ -87,7 +87,8 @@ export const ISEKAI_WORLD: WorldDefinition = {
     { id: "is.c-patent", title: t("Патент короны", "A crown patent"), text: t("Изобретение {name} разошлось по королевству. Корона выплачивает долю.", "{name}'s invention has spread across the realm. The crown pays a share."), effects: [fx.wealth(60), fx.faction("crown", 10), fx.skill("invention", 5)] },
     { id: "is.c-shared-knowledge", title: t("Подаренное знание", "A gifted knowledge"), text: t("Деревня, которой {name} рассказал о мыловарении, больше не болеет. Старейшины приходят с благодарностью.", "The village {name} taught soap-making no longer falls ill. The elders come to give thanks."), effects: [fx.rep(10), fx.karma(5), fx.npc("friend")] },
     { id: "is.c-demon-scar", title: t("Шрам войны", "A scar of war"), text: t("Рана из похода против Короля демонов открывается снова.", "The wound from the campaign against the Demon Lord reopens."), chance: 0.6, effects: [fx.health(-20), fx.weakness("otherworld-ache")] },
-    { id: "is.c-rival-reincarnator", title: t("Второй перерождённый", "The second reincarnator"), text: t("Тот, кто тоже помнит прошлый мир, узнаёт в {name} своего. Теперь у {name} есть соперник, который знает те же секреты.", "Someone else who remembers the old world recognises {name}. Now {name} has a rival who knows the same secrets."), effects: [fx.npc("rival"), fx.stat("intelligence", 1)] }
+    { id: "is.c-rival-reincarnator", title: t("Второй перерождённый", "The second reincarnator"), text: t("Тот, кто тоже помнит прошлый мир, узнаёт в {name} своего. Теперь у {name} есть соперник, который знает те же секреты.", "Someone else who remembers the old world recognises {name}. Now {name} has a rival who knows the same secrets."), effects: [fx.npc("rival"), fx.stat("intelligence", 1)] },
+    { id: "is.c-guild-year", title: t("Год по контракту", "The contract year"), text: t("Гильдия закрывает годовой контракт и кладёт на стол долю, о которой в деревне только слышали.", "The guild closes the year's contract and lays down a share the village has only heard of."), effects: [fx.wealth(35), fx.faction("guild", 8), fx.skill("guild-craft", 3)] }
   ],
   quests: [
     { id: "is.q-learn", title: t("Знание — сила", "Knowledge is power"), text: t("Система: поднимите навык «Знания» до 15.", "System: raise the Lore skill to 15."), goal: [when.skill("lore", 15)], years: 4, reward: [fx.xp(60), fx.stat("intelligence", 2)], penalty: [fx.stat("intelligence", -1)], minAge: 10 },
@@ -102,6 +103,34 @@ export const ISEKAI_WORLD: WorldDefinition = {
     { id: "fireball", name: t("Огненный шар", "Fireball"), description: t("Классика. Работает всегда.", "A classic. Always works."), category: "magic" }
   ],
   events: [
+    {
+      id: "is.child-window",
+      kind: "personal",
+      title: t("Окно, которого не было", "A window that was not there"),
+      text: t("Система на секунду показывает окно из прошлого мира: кухня, дождь, чужой голос. Дети деревни этого не видят.", "For a second the System shows a window from the old world: a kitchen, rain, a stranger's voice. The village children do not see it."),
+      minAge: 6,
+      maxAge: 12,
+      maxOccurrences: 1,
+      weight: 2,
+      choices: [
+        { id: "look", text: t("Смотреть, пока не погаснет", "Watch until it fades"), success: { text: t("Дождь пахнет иначе, чем в Арденвейле.", "The rain smells unlike Ardenvale."), effects: [fx.stat("intelligence", 1), fx.skill("lore", 2)] } },
+        { id: "close", text: t("Закрыть окно", "Close the window"), success: { text: t("Прошлое гаснет. Руки возвращаются к миске.", "The past goes dark. The hands return to the bowl."), effects: [fx.stat("willpower", 1), fx.karma(2)] } },
+        { id: "tell", text: t("Рассказать детям", "Tell the other children"), success: { text: t("Им не верят. Зато слушают до темноты.", "They do not believe it. They listen until dark anyway."), effects: [fx.stat("charisma", 1), fx.affinity("friend", 4)] } }
+      ]
+    },
+    {
+      id: "is.last-window",
+      kind: "age",
+      title: t("Последнее окно", "The last window"),
+      text: t("Система предлагает закрыть интерфейс навсегда или оставить одну строку тому, кто придёт после.", "The System offers to close the interface for good, or to leave one line for whoever comes after."),
+      minAge: 55,
+      maxOccurrences: 1,
+      weight: 2,
+      choices: [
+        { id: "close", text: t("Закрыть навсегда", "Close it for good"), success: { text: t("Мир остаётся миром, без подписей.", "The world stays a world, without captions."), effects: [fx.stat("wisdom", 2), fx.karma(3)] } },
+        { id: "leave", text: t("Оставить одну строку", "Leave one line"), success: { text: t("Строка короткая. Её прочтёт не всякий.", "The line is short. Not everyone will read it."), effects: [fx.rep(4), fx.skill("lore", 3)] } }
+      ]
+    },
     {
       id: "is.temple-school",
       kind: "personal",
@@ -212,6 +241,63 @@ export const ISEKAI_WORLD: WorldDefinition = {
         { id: "enter", text: t("Поступить (60 золота)", "Enrol (60 gold)"), requires: [when.wealth(60)], success: { text: t("Мантия академии сидит как влитая.", "The academy robe fits perfectly."), effects: [fx.wealth(-60), fx.education("is-royal-academy"), fx.faction("crown", 10), fx.npc("teacher")] } },
         { id: "scholarship", text: t("Сдать экзамен на стипендию", "Sit the scholarship exam"), check: check(["intelligence", "wisdom"], 15, 0, { skill: "spellcraft" }), success: { text: t("Стипендия получена. Завистников сразу много.", "Scholarship granted. Envious rivals appear at once."), effects: [fx.education("is-royal-academy"), fx.npc("rival")] }, failure: { text: t("Не хватило пары баллов.", "A couple of points short."), effects: [fx.skill("spellcraft", 3)] } },
         { id: "decline", text: t("Отказаться", "Decline"), success: { text: t("Свобода дороже мантии.", "Freedom is worth more than a robe."), effects: [fx.stat("luck", 1)] } }
+      ]
+    },
+    {
+      id: "is.rank-mark",
+      kind: "path",
+      title: t("Метка ранга", "The rank mark"),
+      text: t("Система предлагает закрепить ранг не золотом, а стороной: гильдия или корона. Второго знака не будет.", "The System offers to fix the rank not with gold, but with a side: the guild or the crown. There will not be a second mark."),
+      minAge: 18,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.rank(2), when.noFlag("rank-marked")],
+      choices: [
+        { id: "guild", text: t("Метка гильдии", "The guild mark"), success: { text: t("Печать гильдии садится на ладонь.", "The guild seal settles on the palm."), effects: [fx.flag("rank-marked"), fx.faction("guild", 12), fx.skill("guild-craft", 4)] } },
+        { id: "crown", text: t("Метка короны", "The crown mark"), success: { text: t("Корона замечает имя.", "The crown notices the name."), effects: [fx.flag("rank-marked"), fx.faction("crown", 12), fx.rep(4)] } }
+      ]
+    },
+    {
+      id: "is.seal-year",
+      kind: "chain",
+      title: t("Год печати истёк", "The sealed year is over"),
+      text: t("Гильдия закрывает книгу года и спрашивает, продлевать ли печать. Деревня уже знает дорогу к дому {name}.", "The guild closes the year's book and asks whether to renew the seal. The village already knows the road to {name}'s house."),
+      minAge: 18,
+      maxOccurrences: 1,
+      scheduledOnly: true,
+      conditions: [when.profession("adventurer")],
+      choices: [
+        { id: "renew", text: t("Продлить печать", "Renew the seal"), success: { text: t("Ещё год чужих Врат. Доля больше, дом дальше.", "Another year of other people's Gates. The share is larger, the house farther."), effects: [fx.wealth(30), fx.faction("guild", 8), fx.affinity("mother", -6)] } },
+        { id: "release", text: t("Снять печать", "Lift the seal"), success: { text: t("Имя остаётся в книге. Обязательств больше нет.", "The name stays in the book. The obligation does not."), effects: [fx.stat("willpower", 1), fx.faction("guild", -4), fx.karma(3)] } }
+      ]
+    },
+    {
+      id: "is.hearth-late",
+      kind: "family",
+      title: t("Поздний очаг", "A late hearth"),
+      text: t("Матери уже за сорок ваших лет, и она пишет короче прежнего. Гильдия как раз зовёт в дальний контракт.", "Mother is past forty of your years, and her letters are shorter. The guild is calling for a far contract at the same time."),
+      minAge: 40,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.npc("mother")],
+      choices: [
+        { id: "visit", text: t("Отложить контракт и приехать", "Delay the contract and visit"), success: { text: t("Неделя у очага стоит дороже печати.", "A week by the hearth is worth more than a seal."), effects: [fx.affinity("mother", 16), fx.karma(4), fx.faction("guild", -3)] } },
+        { id: "send", text: t("Послать золото и уйти (20)", "Send gold and go (20)"), requires: [when.wealth(20)], success: { text: t("Кошель легче. Письмо в ответ приходит не скоро.", "The purse is lighter. The reply is slow to come."), effects: [fx.wealth(-20), fx.affinity("mother", 6)] } }
+      ]
+    },
+    {
+      id: "is.guild-or-home",
+      kind: "family",
+      title: t("Печать или крыша", "A seal or a roof"),
+      text: t("Гильдия хочет эксклюзивный год: никакой другой работы. В тот же день мать пишет, что крыша течёт, а весной некому сеять.", "The guild wants an exclusive year: no other work. The same day mother writes that the roof leaks and there will be no one to sow in spring."),
+      minAge: 16,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.profession("adventurer"), when.npc("mother")],
+      choices: [
+        { id: "sign", text: t("Подписать год гильдии", "Sign the guild year"), success: { text: t("Печать горячая. Письмо матери остаётся без ответа.", "The seal is hot. Mother's letter goes unanswered."), effects: [fx.wealth(40), fx.faction("guild", 15), fx.affinity("mother", -12), fx.later("is.c-guild-year", 1), fx.flag("guild-sealed"), fx.schedule("is.seal-year", 4)] } },
+        { id: "home", text: t("Вернуться чинить крышу", "Go home and mend the roof"), success: { text: t("Гильдия найдёт другого. Мать — нет.", "The guild will find someone else. Mother will not."), effects: [fx.affinity("mother", 18), fx.skill("craft", 4), fx.karma(5), fx.faction("guild", -4)] } },
+        { id: "teach", text: t("Научить деревню и уйти", "Teach the village, then leave"), requires: [when.skill("invention", 8)], success: { text: t("Мыло, жёлоб и уход до рассвета.", "Soap, a gutter, and a leaving before dawn."), effects: [fx.skill("invention", 3), fx.rep(4), fx.later("is.c-shared-knowledge", 3)] } }
       ]
     }
   ]

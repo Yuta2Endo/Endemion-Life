@@ -295,7 +295,7 @@ export function AchievementList({ achievements, compact = false }: { achievement
   return (
     <div className="space-y-4" data-testid="achievements">
       {ACHIEVEMENT_CATEGORIES.map((category) => {
-        const list = achievements.filter((a) => a.category === category);
+        const list = achievements.filter((a) => a.category === category && (category !== "hidden" || a.unlocked));
         if (list.length === 0) return null;
         return (
           <div key={category}>
@@ -307,7 +307,7 @@ export function AchievementList({ achievements, compact = false }: { achievement
                     <span aria-hidden="true">{a.unlocked ? "✦ " : "◇ "}</span>
                     {l(a.name)}
                   </p>
-                  <p className="text-xs text-bone-500">{l(a.description)}</p>
+                  <p className="text-xs text-bone-500">{a.unlocked ? l(a.description) : t("ach.sealed")}</p>
                   {a.unlocked && a.gen !== null && <p className="text-[10px] text-gold-400/80">{t("lineage.achievementGot", { gen: a.gen, age: a.age ?? 0 })}</p>}
                 </li>
               ))}

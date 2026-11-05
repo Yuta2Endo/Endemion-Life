@@ -1,6 +1,6 @@
 "use client";
 
-import { getUniverse, STAT_INFO, STAT_KEYS, TEMPERAMENTS, xpForLevel } from "@endemion/game-core";
+import { getUniverse, STAGE_INFO, STAT_INFO, STAT_KEYS, TEMPERAMENTS, xpForLevel } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
 import { Meter, Ornament, Panel } from "@endemion/ui";
 import { ageLabel } from "@/lib/format";
@@ -34,7 +34,7 @@ export function CharacterSheet({ life }: { life: LifeView }) {
             {c.name}
           </h2>
           <p className="text-xs text-bone-500">
-            <span data-testid="character-age">{ageLabel(life.life.age, locale)}</span> · {t("sheet.level", { n: c.level })}
+            <span data-testid="character-age">{ageLabel(life.life.age, locale)}</span> · {l(STAGE_INFO[life.life.stage].name)} · {t("sheet.level", { n: c.level })}
           </p>
         </div>
       </div>

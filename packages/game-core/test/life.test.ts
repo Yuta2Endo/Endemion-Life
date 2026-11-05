@@ -12,6 +12,16 @@ describe("Life Engine", () => {
     expect(result.entries.some((e) => e.kind === "year" && e.age === 1)).toBe(true);
   });
 
+  it("тихий год называет то, что выросло, а не крутит одну фразу по возрасту", () => {
+    const state = start({ seed: "quiet-year", universeId: "hunter" });
+    state.character.professionId = "hunter";
+    state.life = { ...state.life, age: 20, stage: "adult" };
+    const result = applyAction(state, { type: "advance" });
+    const year = result.entries.find((entry) => entry.kind === "year");
+    expect(year?.text.ru).toMatch(/Ремесло|Путь силы|Золото|повседневных|Времена|Тихий год|Ничего|Дни похожи/);
+    if (year?.changes.some((change) => change.kind === "skill")) expect(year.text.ru).toContain("Ремесло");
+  });
+
   it("исходное состояние не меняется", () => {
     const state = start({ seed: "pure" });
     const copy = deepClone(state);

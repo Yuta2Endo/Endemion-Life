@@ -18,8 +18,9 @@ export function MasteryPanel({ life }: { life: LifeView }) {
       </p>
       <ul className="space-y-1.5">
         {board.objectives.map((item) => (
-          <li key={item.id} className="rounded-md border border-line bg-ink-950/50 px-3 py-2" data-testid="mastery-objective" data-objective={item.id} data-done={item.done}>
+          <li key={item.id} className={`rounded-md border px-3 py-2 ${item.done ? "border-gold-500/40 bg-gold-500/5" : "border-line bg-ink-950/50"}`} data-testid="mastery-objective" data-objective={item.id} data-done={item.done}>
             <p className="text-sm text-bone-100">
+              {item.done ? `${t("mastery.mastered")} · ` : ""}
               {l(item.name)}
               {item.rare ? <span className="ml-2 text-[10px] uppercase tracking-wider text-gold-300">{t("mastery.rare")}</span> : null}
             </p>

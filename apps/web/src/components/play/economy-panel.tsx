@@ -1,6 +1,6 @@
 "use client";
 
-import { getUniverse, type TradeSide } from "@endemion/game-core";
+import { findProfession, getUniverse, type TradeSide } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
 import { Meter, Ornament } from "@endemion/ui";
 import { ageLabel } from "@/lib/format";
@@ -94,6 +94,7 @@ export function EconomyPanel({ life, busy, onTrade }: { life: LifeView; busy: bo
   const { locale, l, t } = useI18n();
   const e = life.economy;
   const last = e.last;
+  const profession = life.character.professionId ? findProfession(getUniverse(life.universeId), life.character.professionId) : undefined;
   return (
     <div className="space-y-5" data-testid="dossier-economy">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -110,6 +111,11 @@ export function EconomyPanel({ life, busy, onTrade }: { life: LifeView; busy: bo
         </div>
       </div>
       <p className="text-xs text-bone-400">{l(e.cycleDescription)}</p>
+      {profession && (
+        <p className="text-sm text-bone-100" data-testid="economy-profession">
+          {l(profession.name)}
+        </p>
+      )}
 
       {e.hardship > 0 && (
         <p className="rounded-md border border-blood-500/40 bg-blood-600/10 px-3 py-2 text-sm text-blood-200" role="status" data-testid="economy-hardship" data-years={e.hardship}>

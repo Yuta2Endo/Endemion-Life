@@ -88,10 +88,11 @@ export function SocialPanel() {
             className="w-full rounded-md border border-line bg-ink-950 px-3 py-2 text-sm text-bone-100"
             data-testid="social-search"
           />
-          <Button onClick={() => void search()} disabled={busy} data-testid="social-search-go">
+          <Button onClick={() => void search()} disabled={busy || query.trim().length < 3} data-testid="social-search-go">
             {t("social.search")}
           </Button>
         </div>
+        {query.trim().length > 0 && query.trim().length < 3 && <p className="mt-2 text-xs text-bone-400">{t("social.short")}</p>}
         <ul className="mt-3 space-y-2">
           {found.map((player) => (
             <li key={player.id} className="flex items-center justify-between gap-2" data-testid="social-found">

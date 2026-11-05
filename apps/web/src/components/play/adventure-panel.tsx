@@ -2,6 +2,7 @@
 
 import type { LifeView } from "@endemion/shared";
 import { Button } from "@endemion/ui";
+import { useState } from "react";
 import { ageLabel } from "@/lib/format";
 import type { MessageKey } from "@/lib/messages";
 import { useI18n } from "../locale-provider";
@@ -43,6 +44,7 @@ export function AdventurePanel({
   onAbandon: () => void;
 }) {
   const { locale, l, t } = useI18n();
+  const [leaving, setLeaving] = useState(false);
   const board = life.adventure;
   const dead = life.status === "dead";
   const current = board.current;
@@ -86,17 +88,39 @@ export function AdventurePanel({
                   {l(choice.text)}
                   {choice.chance !== null && <span className="ml-1 tabular-nums text-bone-400">{Math.round(choice.chance * 100)}%</span>}
                 </Button>
-                {choice.rewards.length > 0 && (
-                  <p className="mt-1 text-xs text-jade-300" data-testid="adventure-reward">
-                    {t("adventure.reward")} {choice.rewards.map((reward) => l(reward.text)).join(", ")}
+                {!choice.available && choice.locked.length > 0 && <p className="mt-1 text-xs text-blood-300">{choice.locked.map(l).join(" · ")}</p>}
+                {choice.available && choice.rewards.length > 0 && (
+                  <p className="mt-1 text-xs text-bone-400" data-testid="adventure-reward">
+                    {t("adventure.ifSuccess")}
                   </p>
                 )}
               </li>
             ))}
           </ul>
-          <Button variant="quiet" onClick={onAbandon} disabled={busy || dead} data-testid="adventure-abandon">
-            {t("adventure.abandon")}
-          </Button>
+          {leaving ? (
+            <div className="space-y-2" data-testid="adventure-abandon-confirm">
+              <p className="text-xs text-bone-300">{t("adventure.abandonConfirm")}</p>
+              <div className="flex gap-2">
+                <Button variant="quiet" onClick={() => setLeaving(false)} disabled={busy}>
+                  {t("play.close")}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setLeaving(false);
+                    onAbandon();
+                  }}
+                  disabled={busy || dead}
+                  data-testid="adventure-abandon"
+                >
+                  {t("adventure.abandon")}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="quiet" onClick={() => setLeaving(true)} disabled={busy || dead} data-testid="adventure-leave">
+              {t("adventure.abandon")}
+            </Button>
+          )}
         </div>
       ) : (
         <div className="space-y-2">

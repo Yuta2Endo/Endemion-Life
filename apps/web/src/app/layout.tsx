@@ -19,9 +19,12 @@ const sans = Manrope({
   display: "swap"
 });
 
+const DESCRIPTION = "Браузерный симулятор жизни, RPG и интерактивная история в шести мирах. A browser life simulator, RPG and interactive story across six worlds.";
+
 export const metadata: Metadata = {
   title: { default: "Endemion Life", template: "%s · Endemion Life" },
-  description: "Браузерный симулятор жизни, RPG и интерактивная история в шести мирах. A browser life simulator, RPG and interactive story across six worlds."
+  description: DESCRIPTION,
+  openGraph: { title: "Endemion Life", description: DESCRIPTION, type: "website" }
 };
 
 export const viewport: Viewport = {

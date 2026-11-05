@@ -12,6 +12,7 @@ import { useI18n } from "./locale-provider";
 export function LivesList() {
   const { locale, t } = useI18n();
   const [lives, setLives] = useState<LifeListItem[] | null>(null);
+  const [more, setMore] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -29,9 +30,12 @@ export function LivesList() {
   if (lives === null) return <div className="h-20 animate-pulse rounded-xl border border-line bg-ink-900/60" aria-busy="true" />;
   if (lives.length === 0) return <p className="text-sm text-bone-500">{t("home.noLives")}</p>;
 
+  const ordered = [...lives].sort((a, b) => Number(b.status === "alive") - Number(a.status === "alive") || b.updatedAt.localeCompare(a.updatedAt));
+  const shown = more ? ordered : ordered.slice(0, 9);
   return (
+    <>
     <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="lives-list">
-      {lives.slice(0, 9).map((life) => {
+      {shown.map((life) => {
         const universe = getUniverse(life.universeId);
         return (
           <li key={life.id}>
@@ -54,5 +58,11 @@ export function LivesList() {
         );
       })}
     </ul>
+    {!more && ordered.length > 9 && (
+      <button type="button" className="mt-3 text-sm text-gold-200 underline decoration-gold-500/40" onClick={() => setMore(true)} data-testid="lives-more">
+        {t("home.moreLives")}
+      </button>
+    )}
+    </>
   );
 }

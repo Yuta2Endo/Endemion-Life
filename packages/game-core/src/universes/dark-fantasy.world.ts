@@ -89,7 +89,8 @@ export const DARK_FANTASY_WORLD: WorldDefinition = {
     { id: "df.c-village-gratitude", title: t("Деревня помнит", "The village remembers"), text: t("Спасённые от чумы присылают гонца: в деревне {name} называют святым.", "Those saved from the plague send a messenger: in the village they call {name} a saint."), effects: [fx.rep(10), fx.faction("order-of-ash", 10), fx.npc("friend")] },
     { id: "df.c-relic-curse", title: t("Проклятие реликвии", "The relic's curse"), text: t("Украденная святыня мстит: тени у кровати {name} шепчут имена мёртвых.", "The stolen relic takes revenge: shadows by {name}'s bed whisper the names of the dead."), chance: 0.7, effects: [fx.weakness("haunted"), fx.karma(-5)] },
     { id: "df.c-mill-years", title: t("Годы на мельнице", "The mill years"), text: t("Долг отца отработан. Мельник отпускает {name} и на прощание даёт рекомендацию в цех.", "Father's debt is worked off. The miller releases {name} and gives a recommendation to the guild."), effects: [fx.socialClass("townsfolk"), fx.skill("craft", 5), fx.wealth(10)] },
-    { id: "df.c-hollow-mercy", title: t("Полый, которого пощадили", "The hollow that was spared"), text: t("Тот, кого {name} однажды пощадил, приходит снова. Он ещё помнит своё имя и приносит предупреждение.", "The one {name} once spared returns. It still remembers its name and brings a warning."), effects: [fx.skill("hollow-hunting", 5), fx.stat("wisdom", 1), fx.meter("ember", 5)] }
+    { id: "df.c-hollow-mercy", title: t("Полый, которого пощадили", "The hollow that was spared"), text: t("Тот, кого {name} однажды пощадил, приходит снова. Он ещё помнит своё имя и приносит предупреждение.", "The one {name} once spared returns. It still remembers its name and brings a warning."), effects: [fx.skill("hollow-hunting", 5), fx.stat("wisdom", 1), fx.meter("ember", 5)] },
+    { id: "df.c-winter-kept", title: t("Зима у очага", "The winter by the hearth"), text: t("Деревня, которую {name} не бросил зимой, присылает хлеб и просит назвать ребёнка в честь спасителя.", "The village {name} did not abandon in winter sends bread and asks to name a child after the one who stayed."), effects: [fx.renown(4), fx.affinity("family", 8), fx.karma(3)] }
   ],
   abilityCategories: { "ember-ward": "magic", "cinder-blade": "combat", "mist-sight": "magic" },
   abilities: [
@@ -97,6 +98,35 @@ export const DARK_FANTASY_WORLD: WorldDefinition = {
     { id: "hollow-mark", name: t("Метка полого", "Hollow Mark"), description: t("Удар, после которого полый не встаёт.", "A strike after which a hollow does not rise."), category: "combat" }
   ],
   events: [
+    {
+      id: "df.child-ash",
+      kind: "personal",
+      title: t("Горсть пепла", "A handful of ash"),
+      text: t("Сестра часовни даёт детям горсть холодного пепла и просит не пробовать его на язык. Кто-то из сверстников уже пробует.", "A chapel sister gives the children a handful of cold ash and asks them not to taste it. One of the others already does."),
+      minAge: 6,
+      maxAge: 12,
+      maxOccurrences: 1,
+      weight: 2,
+      choices: [
+        { id: "keep", text: t("Сжать пепел в кулаке", "Close the ash in a fist"), success: { text: t("Ладонь серая до вечера. Сестра кивает.", "The palm stays grey until evening. The sister nods."), effects: [fx.stat("willpower", 1), fx.faction("order-of-ash", 4)] } },
+        { id: "taste", text: t("Попробовать, как другие", "Taste it, like the others"), success: { text: t("Вкус железа и сна. Мгла запоминает рот.", "A taste of iron and sleep. The Mist remembers the mouth."), effects: [fx.meter("corruption", 4), fx.stat("wisdom", 1)] } },
+        { id: "home", text: t("Отнести горсть домой", "Carry the handful home"), success: { text: t("Дома пепел сыплют в очаг. Ночь теплее.", "At home the ash goes into the hearth. The night is warmer."), effects: [fx.affinity("parent", 6), fx.karma(2)] } }
+      ]
+    },
+    {
+      id: "df.last-oath",
+      kind: "age",
+      title: t("Последняя клятва", "The last oath"),
+      text: t("Силы уже не хватает на стену. Орден спрашивает, кому передать клинок: послушнику или оставить его у соборного огня.", "There is no longer strength for the wall. The Order asks who will take the blade: a novice, or the cathedral fire."),
+      minAge: 50,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("oath-sworn")],
+      choices: [
+        { id: "novice", text: t("Отдать клинок послушнику", "Give the blade to a novice"), success: { text: t("Чужие руки принимают вес. Имя остаётся на стене.", "Other hands take the weight. The name stays on the wall."), effects: [fx.rep(6), fx.karma(4), fx.faction("order-of-ash", 6)] } },
+        { id: "fire", text: t("Положить клинок в огонь", "Lay the blade in the fire"), success: { text: t("Сталь гаснет. Клятва не просит продолжения.", "The steel goes dark. The oath asks for no continuation."), effects: [fx.meter("ember", 8), fx.stat("wisdom", 1)] } }
+      ]
+    },
     {
       id: "df.chapel-school",
       kind: "personal",
@@ -218,6 +248,63 @@ export const DARK_FANTASY_WORLD: WorldDefinition = {
       choices: [
         { id: "study", text: t("Учиться в схоле", "Study at the schola"), check: check(["intelligence", "wisdom"], 14), success: { text: t("Книги открывают, откуда пришла Мгла.", "The books reveal where the Mist came from."), effects: [fx.education("df-schola"), fx.socialClass("clergy"), fx.stat("intelligence", 2)] }, failure: { text: t("Наставники схолы не впечатлены.", "The schola's masters are not impressed."), effects: [fx.stat("intelligence", 1)] } },
         { id: "decline", text: t("Остаться на стенах", "Stay on the walls"), success: { text: t("Кто-то должен держать огни.", "Someone has to keep the lights."), effects: [fx.rep(3)] } }
+      ]
+    },
+    {
+      id: "df.oath-weight",
+      kind: "path",
+      title: t("Вес клятвы", "The weight of the oath"),
+      text: t("Клятва окрепла. Орден предлагает не новый ранг, а сторону: держать огонь для слабых или уйти во Мглу, где сила дешевле.", "The oath has grown. The Order offers not a new rank, but a side: keep the fire for the weak, or walk into the Mist where power is cheaper."),
+      minAge: 20,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("oath-sworn"), when.rank(2)],
+      choices: [
+        { id: "flame", text: t("Держать огонь", "Keep the fire"), success: { text: t("Пламя узнаёт своего.", "The flame recognises its own."), effects: [fx.meter("ember", 12), fx.faction("order-of-ash", 10), fx.karma(4)] } },
+        { id: "mist", text: t("Шагнуть во Мглу", "Step into the Mist"), success: { text: t("Мгла отвечает быстрее собора.", "The Mist answers faster than the cathedral."), effects: [fx.meter("corruption", 10), fx.track(8), fx.karma(-6), fx.faction("mist-cult", 8)] } }
+      ]
+    },
+    {
+      id: "df.ash-return",
+      kind: "chain",
+      title: t("Пепел возвращается", "The ash returns"),
+      text: t("Прошло несколько лет. Орден спрашивает, держит ли {name} слово, данное у собора, или Мгла уже ближе клятвы.", "Years have passed. The Order asks whether {name} still keeps the word sworn at the cathedral, or whether the Mist is closer than the oath."),
+      minAge: 20,
+      maxOccurrences: 1,
+      scheduledOnly: true,
+      conditions: [when.flag("oath-sworn")],
+      choices: [
+        { id: "hold", text: t("Повторить клятву вслух", "Repeat the oath aloud"), success: { text: t("Пепел снова ложится на плечи. Клятва тяжелее, но своя.", "Ash settles on the shoulders again. The oath is heavier, but it is yours."), effects: [fx.meter("ember", 10), fx.faction("order-of-ash", 8), fx.karma(4)] } },
+        { id: "break", text: t("Сказать, что клятва кончилась", "Say the oath is over"), success: { text: t("Орден отворачивается. Сила не уходит сразу.", "The Order turns away. The power does not leave at once."), effects: [fx.faction("order-of-ash", -12), fx.meter("corruption", 8), fx.stat("willpower", 1)] } }
+      ]
+    },
+    {
+      id: "df.elder-fire",
+      kind: "family",
+      title: t("Огонь для старого дома", "A fire for the old house"),
+      text: t("Родитель не выходит за порог уже третью зиму. Соборный огонь можно унести в горсти пепла — или оставить собору.", "A parent has not crossed the threshold for a third winter. The cathedral fire can be carried home in a handful of ash — or left to the cathedral."),
+      minAge: 40,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("order-oath"), when.npc("parent")],
+      choices: [
+        { id: "carry", text: t("Унести горсть домой", "Carry a handful home"), success: { text: t("Дома становится теплее. Собор замечает недостачу.", "The house grows warmer. The cathedral notices the lack."), effects: [fx.affinity("parent", 14), fx.faction("order-of-ash", -4), fx.karma(3)] } },
+        { id: "leave", text: t("Оставить огонь собору", "Leave the fire to the cathedral"), success: { text: t("Клятва цела. Дома жгут сырые дрова.", "The oath is whole. At home they burn wet wood."), effects: [fx.faction("order-of-ash", 6), fx.affinity("parent", -8)] } }
+      ]
+    },
+    {
+      id: "df.winter-call",
+      kind: "family",
+      title: t("Зимний вызов", "A winter summons"),
+      text: t("Орден зовёт клятвенника на северную стену. В ту же ночь деревня просит остаться: Мгла уже у околицы, а дома некому держать огонь.", "The Order calls its sworn to the northern wall. The same night the village asks them to stay: the Mist is already at the lane, and no one at home can keep the fire."),
+      minAge: 18,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("oath-sworn"), when.npc("parent")],
+      choices: [
+        { id: "stay", text: t("Остаться у очага", "Stay by the hearth"), success: { text: t("Стена переживёт ночь без одного клинка. Дом — нет.", "The wall will last the night without one blade. The house will not."), effects: [fx.affinity("parent", 16), fx.karma(6), fx.faction("order-of-ash", -6), fx.later("df.c-winter-kept", 2), fx.flag("winter-kept"), fx.schedule("df.ash-return", 4)] } },
+        { id: "ride", text: t("Скакать к Ордену", "Ride for the Order"), success: { text: t("Клятва громче кровли. Дома запомнят, кто уехал.", "The oath is louder than the roof. Home will remember who rode away."), effects: [fx.faction("order-of-ash", 12), fx.track(8), fx.affinity("parent", -12), fx.rep(4)] } },
+        { id: "mist", text: t("Пойти во Мглу одному", "Walk into the Mist alone"), requires: [when.flag("mist-oath")], success: { text: t("Мгла расступается перед своим. Деревня видит тень и молится.", "The Mist parts for its own. The village sees a shadow and prays."), effects: [fx.meter("corruption", 8), fx.wealth(20), fx.karma(-6), fx.skill("hollow-hunting", 4)] } }
       ]
     }
   ]

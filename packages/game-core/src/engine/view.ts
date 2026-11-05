@@ -6,8 +6,21 @@ import { findEvent } from "../narrative/selection.js";
 import type { Resources, Stats } from "../stats.js";
 import type { GameState, LifeStage } from "../types.js";
 import { getUniverse } from "../universes/registry.js";
+import type { Effect } from "../narrative/types.js";
 import { checkChance } from "./checks.js";
 import { checkCondition, describeCondition } from "./conditions.js";
+
+function touchesOf(effects: readonly Effect[]): ChoiceTouch[] {
+  const found = new Set<ChoiceTouch>();
+  for (const effect of effects) {
+    if (effect.type === "affinity" || effect.type === "npc" || effect.type === "npcRole" || effect.type === "npcDies") found.add("relation");
+    else if (effect.type === "wealth") found.add("gold");
+    else if (effect.type === "track" || effect.type === "breakthrough" || effect.type === "skill" || effect.type === "specialization") found.add("path");
+  }
+  return [...found];
+}
+
+export type ChoiceTouch = "relation" | "gold" | "path";
 
 export interface ChoiceView {
   id: string;
@@ -17,6 +30,8 @@ export interface ChoiceView {
   locked: LocalizedText[];
   /** Шанс успеха проверки. null — вариант без проверки */
   chance: number | null;
+  /** Что заденет удачный исход, без чисел */
+  touches: ChoiceTouch[];
 }
 
 export interface EventView {
@@ -25,6 +40,8 @@ export interface EventView {
   title: LocalizedText;
   text: LocalizedText;
   choices: ChoiceView[];
+  /** Событие пришло только как продолжение цепочки, не как случайный год */
+  scheduled: boolean;
 }
 
 export interface CharacterSummary {
@@ -50,6 +67,7 @@ export function presentEvent(state: GameState): EventView | null {
     age: state.pending.age,
     title: fillText(event.title, vars),
     text: fillText(event.text, vars),
+    scheduled: event.scheduledOnly === true,
     choices: event.choices.map((choice) => {
       const failed = (choice.requires ?? []).filter((condition) => !checkCondition(state, condition));
       return {
@@ -57,7 +75,8 @@ export function presentEvent(state: GameState): EventView | null {
         text: fillText(choice.text, vars),
         available: failed.length === 0,
         locked: failed.map((condition) => describeCondition(condition, universe)),
-        chance: choice.check ? checkChance(state.character, choice.check, state) : null
+        chance: choice.check ? checkChance(state.character, choice.check, state) : null,
+        touches: touchesOf(choice.success.effects)
       };
     })
   };

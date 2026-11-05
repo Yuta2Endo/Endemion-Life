@@ -89,7 +89,8 @@ export const XIANXIA_WORLD: WorldDefinition = {
     { id: "xx.c-herb-serpent", title: t("Змея помнит", "The serpent remembers"), text: t("Змея-страж выросла и нашла того, кто украл её траву.", "The guardian serpent has grown and found the one who stole its herb."), chance: 0.6, effects: [fx.health(-30), fx.meter("karmic-debt", 5)] },
     { id: "xx.c-alchemy-fame", title: t("Слава первой пилюли", "Fame of the first pill"), text: t("Пилюли {name} хвалят на рынке секты. Приходят заказчики.", "{name}'s pills are praised at the sect market. Customers arrive."), effects: [fx.wealth(40), fx.skill("alchemy", 5), fx.faction("cloud-peak", 5)] },
     { id: "xx.c-mortal-kin", title: t("Смертные родные", "Mortal kin"), text: t("Пока {name} культивировал, смертные родные постарели. Пора навестить их, пока не поздно.", "While {name} cultivated, mortal kin grew old. Time to visit before it's too late."), conditions: [when.npc("parent")], effects: [fx.affinity("parent", 10), fx.meter("dao-heart", 5)] },
-    { id: "xx.c-tribulation-scar", title: t("Шрам скорби", "Tribulation scar"), text: t("Молнии оставили шрам на душе. Внутренний демон шепчет по ночам.", "The lightning left a scar on the soul. An inner demon whispers at night."), chance: 0.5, effects: [fx.weakness("inner-demon")] }
+    { id: "xx.c-tribulation-scar", title: t("Шрам скорби", "Tribulation scar"), text: t("Молнии оставили шрам на душе. Внутренний демон шепчет по ночам.", "The lightning left a scar on the soul. An inner demon whispers at night."), chance: 0.5, effects: [fx.weakness("inner-demon")] },
+    { id: "xx.c-letter-unopened", title: t("Нераспечатанное письмо", "The unopened letter"), text: t("Письмо смертных родных так и лежит на алтаре. Чернила выцвели. Сердце Дао от этого не стало яснее.", "The letter from mortal kin still lies on the altar. The ink has faded. The Dao heart is no clearer for it."), effects: [fx.affinity("parent", -8), fx.meter("karmic-debt", 6)] }
   ],
   abilityCategories: { "flying-sword": "cultivation", "spirit-sense": "cultivation", alchemy: "utility" },
   abilities: [
@@ -97,6 +98,35 @@ export const XIANXIA_WORLD: WorldDefinition = {
     { id: "thunder-talisman", name: t("Громовой талисман", "Thunder Talisman"), description: t("Печать, призывающая гром.", "A seal that calls down thunder."), category: "magic" }
   ],
   events: [
+    {
+      id: "xx.child-stone",
+      kind: "personal",
+      title: t("Камень у ручья", "A stone by the stream"),
+      text: t("У ручья лежит гладкий камень. Старшие говорят: если корень духа есть, камень потеплеет в ладони. Если нет — останется холодным.", "A smooth stone lies by the stream. The elders say: if there is a spirit root, the stone will warm in the palm. If not, it stays cold."),
+      minAge: 6,
+      maxAge: 12,
+      maxOccurrences: 1,
+      weight: 2,
+      choices: [
+        { id: "hold", text: t("Держать, пока не ответит", "Hold it until it answers"), success: { text: t("Ладонь теплеет не сразу. Этого достаточно.", "The palm does not warm at once. That is enough."), effects: [fx.stat("wisdom", 1), fx.meter("dao-heart", 3)] } },
+        { id: "skip", text: t("Бросить камень в воду", "Throw the stone into the water"), success: { text: t("Круги расходятся. Вопрос остаётся на берегу.", "The rings spread. The question stays on the bank."), effects: [fx.stat("willpower", 1)] } },
+        { id: "home", text: t("Унести камень матери", "Take the stone to mother"), success: { text: t("Мать кладёт его на алтарь и ничего не спрашивает.", "Mother sets it on the altar and asks nothing."), effects: [fx.affinity("mother", 6), fx.karma(2)] } }
+      ]
+    },
+    {
+      id: "xx.last-incense",
+      kind: "age",
+      title: t("Последнее благовоние", "The last incense"),
+      text: t("Срок, отпущенный смертному телу, близок. Пик спрашивает, передать ли печь ученику или погасить её самому.", "The span given to a mortal body is near. The peak asks whether to pass the furnace to a student or put it out yourself."),
+      minAge: 55,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("spirit-root")],
+      choices: [
+        { id: "pass", text: t("Передать печь", "Pass the furnace"), success: { text: t("Чужие руки принимают жар. Имя остаётся на табличке.", "Other hands take the heat. The name stays on the tablet."), effects: [fx.rep(5), fx.faction("cloud-peak", 6), fx.karma(3)] } },
+        { id: "quench", text: t("Погасить самому", "Put it out yourself"), success: { text: t("Дым редеет. Долг перед пиком закрыт.", "The smoke thins. The debt to the peak is closed."), effects: [fx.meter("dao-heart", 6), fx.stat("wisdom", 1)] } }
+      ]
+    },
     {
       id: "xx.taoist",
       kind: "personal",
@@ -188,6 +218,63 @@ export const XIANXIA_WORLD: WorldDefinition = {
         { id: "sword", text: t("Меч", "The sword"), success: { text: t("Меч взлетает и слушается мысли.", "The sword rises and obeys thought."), effects: [fx.specialization("sword-immortal")] } },
         { id: "pill", text: t("Пилюли", "Pills"), success: { text: t("Печь становится второй душой.", "The furnace becomes a second soul."), effects: [fx.specialization("pill-sage"), fx.profession("alchemist")] } },
         { id: "formation", text: t("Формации", "Formations"), success: { text: t("Горы складываются в узор.", "The mountains fold into a pattern."), effects: [fx.specialization("formation-master"), fx.ability("thunder-talisman")] } }
+      ]
+    },
+    {
+      id: "xx.dao-side",
+      kind: "path",
+      title: t("Сторона Дао", "A side of the Dao"),
+      text: t("Основание держится. Пик и Кровавая Луна предлагают не пилюлю, а сторону. Второго раза не будет.", "The Foundation holds. The peak and the Blood Moon offer not a pill, but a side. There will not be a second time."),
+      minAge: 20,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("spirit-root"), when.rank(2)],
+      choices: [
+        { id: "peak", text: t("Остаться на пике", "Stay on the peak"), success: { text: t("Сердце Дао яснее. Луна отступает.", "The Dao heart is clearer. The moon withdraws."), effects: [fx.faction("cloud-peak", 10), fx.meter("dao-heart", 8)] } },
+        { id: "moon", text: t("Принять тень Луны", "Accept the moon's shadow"), success: { text: t("Сила приходит с долгом.", "Power comes with a debt."), effects: [fx.faction("blood-moon", 10), fx.meter("karmic-debt", 8), fx.track(6)] } }
+      ]
+    },
+    {
+      id: "xx.cave-door",
+      kind: "chain",
+      title: t("Дверь пещеры снова", "The cave door again"),
+      text: t("Срок, который {name} купил молчанием, кончился. Секта спрашивает, открывать ли дверь смертным или закрыть её навсегда.", "The time {name} bought with silence is over. The sect asks whether to open the door to mortals or shut it for good."),
+      minAge: 22,
+      maxOccurrences: 1,
+      scheduledOnly: true,
+      conditions: [when.flag("spirit-root")],
+      choices: [
+        { id: "open", text: t("Открыть дверь", "Open the door"), success: { text: t("Ци рассеивается. Родные ещё ждут на тропе.", "Qi scatters. Kin are still waiting on the path."), effects: [fx.affinity("parent", 12), fx.meter("dao-heart", -4), fx.karma(6)] } },
+        { id: "seal", text: t("Запечатать дверь", "Seal the door"), success: { text: t("Год ци возвращается. Письма больше не кладут у порога.", "The year of qi returns. Letters are no longer left at the threshold."), effects: [fx.track(8), fx.meter("dao-heart", 6), fx.affinity("parent", -8)] } }
+      ]
+    },
+    {
+      id: "xx.mortal-winter",
+      kind: "family",
+      title: t("Зима смертных", "A mortal winter"),
+      text: t("Пока пик молчит, смертный родитель пишет, что зима будет последней, которую он встретит на ногах.", "While the peak is silent, a mortal parent writes that this winter will be the last they meet on their feet."),
+      minAge: 40,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("spirit-root"), when.npc("parent")],
+      choices: [
+        { id: "descend", text: t("Спуститься на зиму", "Descend for the winter"), success: { text: t("Ци стынет по дороге. Дома ещё топят печь.", "Qi cools on the road. At home the stove is still lit."), effects: [fx.affinity("parent", 16), fx.track(-3), fx.karma(5)] } },
+        { id: "incense", text: t("Жечь благовоние на пике", "Burn incense on the peak"), success: { text: t("Дым уходит вверх. Письмо остаётся в рукаве.", "The smoke goes up. The letter stays in the sleeve."), effects: [fx.meter("dao-heart", 5), fx.affinity("parent", -10)] } }
+      ]
+    },
+    {
+      id: "xx.seclusion-letter",
+      kind: "family",
+      title: t("Письмо в затворе", "A letter in seclusion"),
+      text: t("На сороковой день затвора у двери пещеры кладут письмо. Смертные родные просят спуститься, пока ещё живы. Секта говорит: кто выйдет раньше срока, потеряет год ци.", "On the fortieth day of seclusion a letter is left at the cave door. Mortal kin ask for a descent while they still live. The sect says whoever leaves early loses a year of qi."),
+      minAge: 18,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("spirit-root"), when.npc("parent")],
+      choices: [
+        { id: "break", text: t("Сломать затвор", "Break seclusion"), success: { text: t("Ци рассеивается по дороге вниз. Мать ещё узнаёт.", "Qi scatters on the road down. Mother still recognises you."), effects: [fx.affinity("parent", 18), fx.meter("dao-heart", -6), fx.karma(8), fx.track(-4)] } },
+        { id: "stay", text: t("Не открывать дверь", "Do not open the door"), success: { text: t("Год ци сохранён. Письмо остаётся за порогом.", "The year of qi is kept. The letter stays outside the threshold."), effects: [fx.track(12), fx.meter("dao-heart", 6), fx.affinity("parent", -12), fx.later("xx.c-letter-unopened", 2), fx.flag("door-shut"), fx.schedule("xx.cave-door", 4)] } },
+        { id: "pill", text: t("Послать пилюлю с учеником", "Send a pill with a disciple"), requires: [when.skill("alchemy", 8)], success: { text: t("Пилюля дойдёт быстрее ног. Затвор не сломан.", "The pill will arrive sooner than feet. Seclusion holds."), effects: [fx.skill("alchemy", 2), fx.affinity("parent", 10), fx.faction("cloud-peak", 4)] } }
       ]
     }
   ]

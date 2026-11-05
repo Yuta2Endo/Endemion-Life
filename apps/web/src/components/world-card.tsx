@@ -22,6 +22,11 @@ export function WorldCard({ universe, locale, detailed = false }: { universe: Un
         <div className="min-w-0">
           <h3 className="font-display text-2xl font-semibold leading-tight text-bone-100">{universe.name[locale]}</h3>
           <p className="mt-1 text-sm leading-relaxed text-bone-300">{universe.tagline[locale]}</p>
+          {!detailed && (
+            <p className="mt-2 text-xs text-bone-400">
+              {msg(locale, "worlds.path")}: {universe.track.name[locale]} · {msg(locale, "worlds.lifespan", { years: universe.lifespan })}
+            </p>
+          )}
         </div>
       </div>
 

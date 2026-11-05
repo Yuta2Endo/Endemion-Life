@@ -85,7 +85,8 @@ export const MURIM_WORLD: WorldDefinition = {
     { id: "mu.c-bandit-revenge", title: t("Месть разбойников", "The bandits' revenge"), text: t("Атаман, которого {name} когда-то опозорил, вернулся с братьями.", "The chieftain {name} once shamed has returned with his brothers."), chance: 0.7, effects: [fx.health(-25), fx.npc("rival")] },
     { id: "mu.c-saved-merchant", title: t("Долг спасённого", "The rescued man's debt"), text: t("Купец, спасённый от разбойников, разбогател и не забыл: он присылает подарки и рекомендации.", "The merchant saved from bandits has grown rich and not forgotten: he sends gifts and recommendations."), effects: [fx.wealth(50), fx.rep(5), fx.npc("friend")] },
     { id: "mu.c-cult-summons", title: t("Зов культа", "The cult's summons"), text: t("Тёмный культ напоминает, что его техники не бывают бесплатными.", "The Demonic Cult reminds that its techniques are never free."), conditions: [when.flag("demonic-path")], effects: [fx.faction("demonic-cult", 10), fx.faction("orthodox-alliance", -15), fx.meter("qi-deviation", 10)] },
-    { id: "mu.c-duel-fame", title: t("Слава поединка", "Fame of the duel"), text: t("О поединке {name} поют в чайных. Ученики ищут встречи.", "Teahouses sing of {name}'s duel. Students seek a meeting."), effects: [fx.rep(8), fx.faction("orthodox-alliance", 5)] }
+    { id: "mu.c-duel-fame", title: t("Слава поединка", "Fame of the duel"), text: t("О поединке {name} поют в чайных. Ученики ищут встречи.", "Teahouses sing of {name}'s duel. Students seek a meeting."), effects: [fx.rep(8), fx.faction("orthodox-alliance", 5)] },
+    { id: "mu.c-mother-blessing", title: t("Благословение матери", "A mother's blessing"), text: t("Мать, к которой {name} приехал вместо турнира, вкладывает в ладонь старый амулет. Ци от него тише и ровнее.", "The mother {name} visited instead of the tournament presses an old amulet into the palm. The qi from it is quieter and steadier."), effects: [fx.skill("inner-cultivation", 4), fx.affinity("mother", 6), fx.stat("willpower", 1)] }
   ],
   abilityCategories: { "light-step": "combat", "sword-qi": "combat", "blood-art": "cultivation" },
   abilities: [
@@ -93,6 +94,35 @@ export const MURIM_WORLD: WorldDefinition = {
     { id: "golden-bell", name: t("Золотой колокол", "Golden Bell"), description: t("Ци одевает тело в броню.", "Qi clothes the body in armour."), category: "cultivation" }
   ],
   events: [
+    {
+      id: "mu.child-rice",
+      kind: "personal",
+      title: t("Лепёшка на двоих", "A cake for two"),
+      text: t("На рынке одна рисовая лепёшка и двое голодных. Старший мальчик уже тянет руку.", "There is one rice cake at the market and two hungry children. The older boy is already reaching."),
+      minAge: 6,
+      maxAge: 12,
+      maxOccurrences: 1,
+      weight: 2,
+      choices: [
+        { id: "share", text: t("Разломить пополам", "Break it in half"), success: { text: t("Меньше еды, больше компании до заката.", "Less food, more company until sunset."), effects: [fx.karma(3), fx.stat("charisma", 1)] } },
+        { id: "keep", text: t("Съесть самому", "Eat it yourself"), success: { text: t("Голод отступает. Взгляд старшего остаётся.", "The hunger retreats. The older boy's look stays."), effects: [fx.stat("vitality", 1), fx.karma(-2)] } },
+        { id: "give", text: t("Отдать целиком", "Give it all"), success: { text: t("Чужой голод страшнее своего.", "Someone else's hunger is worse than your own."), effects: [fx.karma(5), fx.stat("willpower", 1)] } }
+      ]
+    },
+    {
+      id: "mu.last-form",
+      kind: "age",
+      title: t("Последняя форма", "The last form"),
+      text: t("Руки уже не держат полный комплекс. Секта спрашивает, кому передать стойку: ученику или записать её и сжечь черновик.", "The hands no longer hold the full set. The sect asks who will take the stance: a student, or a page that will then be burned."),
+      minAge: 52,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("martial-school")],
+      choices: [
+        { id: "student", text: t("Поставить ученика рядом", "Set a student beside you"), success: { text: t("Чужие ноги повторяют то, что ноги уже не могут.", "Other feet repeat what these feet no longer can."), effects: [fx.rep(5), fx.faction("orthodox-alliance", 4), fx.karma(3)] } },
+        { id: "burn", text: t("Записать и сжечь", "Write it down and burn it"), success: { text: t("Форма уходит с дымом. Долг закрыт.", "The form leaves with the smoke. The debt is closed."), effects: [fx.stat("wisdom", 1), fx.meter("qi-deviation", -4)] } }
+      ]
+    },
     {
       id: "mu.village-school",
       kind: "personal",
@@ -185,6 +215,63 @@ export const MURIM_WORLD: WorldDefinition = {
       conditions: [when.education(2), when.rank(1), when.faction("orthodox-alliance", 10)],
       choices: [
         { id: "enter", text: t("Войти", "Enter"), check: check(["willpower", "agility"], 13, 0, { skill: "inner-cultivation" }), success: { text: t("Ворота внутреннего двора закрываются за спиной.", "The inner court's gates close behind."), effects: [fx.education("mu-inner-court"), fx.npc("mentor"), fx.track(10)] }, failure: { text: t("Старейшина качает головой: не сейчас.", "The elder shakes his head: not now."), effects: [fx.skill("inner-cultivation", 2)] } }
+      ]
+    },
+    {
+      id: "mu.qi-side",
+      kind: "path",
+      title: t("Куда течёт ци", "Where the qi flows"),
+      text: t("Внутренняя работа окрепла. Союз и культ оба зовут не учеником, а стороной. Золота в этом выборе нет.", "The inner work has grown. Both the alliance and the cult call not for a disciple, but for a side. There is no gold in this choice."),
+      minAge: 18,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("martial-school"), when.rank(2)],
+      choices: [
+        { id: "orthodox", text: t("Оставить ци праведной", "Keep the qi orthodox"), success: { text: t("Дыхание ровнее. Культ отворачивается.", "The breath is steadier. The cult turns away."), effects: [fx.faction("orthodox-alliance", 10), fx.meter("qi-deviation", -6), fx.karma(3)] } },
+        { id: "dark", text: t("Взять тёмную ветвь", "Take the dark branch"), success: { text: t("Ци быстрее и грязнее.", "The qi is faster and dirtier."), effects: [fx.faction("demonic-cult", 10), fx.meter("qi-deviation", 8), fx.track(6), fx.karma(-6)] } }
+      ]
+    },
+    {
+      id: "mu.platform-return",
+      kind: "chain",
+      title: t("Помост зовёт снова", "The platform calls again"),
+      text: t("Союз помнит, кто не вышел в прошлый раз. Старейшина ставит выбор прямо: имя секты или порог матери.", "The alliance remembers who did not step out last time. The elder sets the choice plainly: the sect's name, or mother's threshold."),
+      minAge: 18,
+      maxOccurrences: 1,
+      scheduledOnly: true,
+      conditions: [when.flag("martial-school")],
+      choices: [
+        { id: "step", text: t("Выйти и закрыть долг", "Step out and close the debt"), check: check(["strength", "willpower"], 12), success: { text: t("Имя секты снова звучит. Долг помоста закрыт.", "The sect's name sounds again. The platform's debt is closed."), effects: [fx.rep(6), fx.faction("orthodox-alliance", 8), fx.track(6)] }, failure: { text: t("Поражение всё равно закрывает прошлый отказ.", "A loss still closes the old refusal."), effects: [fx.health(-12), fx.faction("orthodox-alliance", 2)] } },
+        { id: "bow", text: t("Поклониться и остаться", "Bow and stay"), success: { text: t("Старейшина принимает поклон. Турнир проходит без вас.", "The elder accepts the bow. The tournament passes without you."), effects: [fx.stat("wisdom", 1), fx.affinity("mother", 6)] } }
+      ]
+    },
+    {
+      id: "mu.old-threshold",
+      kind: "family",
+      title: t("Старый порог", "The old threshold"),
+      text: t("Мать больше не выходит за калитку. Секта зовёт на осенний сбор учеников.", "Mother no longer steps past the gate. The sect is calling the autumn gathering of disciples."),
+      minAge: 40,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("martial-school"), when.npc("mother")],
+      choices: [
+        { id: "stay", text: t("Остаться у калитки", "Stay by the gate"), success: { text: t("Сбор пройдёт без одного ученика. Калитка — нет.", "The gathering will pass without one disciple. The gate will not."), effects: [fx.affinity("mother", 14), fx.karma(4), fx.faction("orthodox-alliance", -3)] } },
+        { id: "go", text: t("Идти на сбор", "Go to the gathering"), success: { text: t("Секта видит верность. Дома считают дни.", "The sect sees loyalty. At home they count the days."), effects: [fx.faction("orthodox-alliance", 6), fx.affinity("mother", -8), fx.track(4)] } }
+      ]
+    },
+    {
+      id: "mu.tournament-or-mother",
+      kind: "family",
+      title: t("Турнир или порог", "The tournament or the threshold"),
+      text: t("Секта выставляет {name} на турнир союза. В тот же день приходит весть: мать больна и просит приехать, пока ещё узнаёт.", "The sect enters {name} in the alliance tournament. The same day word comes: mother is ill and asks for a visit while she still recognises her child."),
+      minAge: 15,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("martial-school"), when.npc("mother")],
+      choices: [
+        { id: "fight", text: t("Выйти на помост", "Step onto the platform"), check: check(["strength", "agility"], 12, 0, { skill: "melee" }), success: { text: t("Имя секты гремит. Письмо матери остаётся в рукаве.", "The sect's name rings out. Mother's letter stays in the sleeve."), effects: [fx.track(10), fx.rep(8), fx.faction("orthodox-alliance", 8), fx.affinity("mother", -14)] }, failure: { text: t("Поражение и пустая дорога домой.", "A loss, and an empty road home."), effects: [fx.health(-18), fx.affinity("mother", -6), fx.rep(-3)] } },
+        { id: "go", text: t("Бросить турнир и ехать", "Leave the tournament and go"), success: { text: t("Старейшина молчит. Мать держит руку до утра.", "The elder is silent. Mother holds the hand until morning."), effects: [fx.affinity("mother", 20), fx.karma(6), fx.faction("orthodox-alliance", -6), fx.later("mu.c-mother-blessing", 1), fx.flag("left-platform"), fx.schedule("mu.platform-return", 4)] } },
+        { id: "silver", text: t("Послать серебро и остаться (25)", "Send silver and stay (25)"), requires: [when.wealth(25)], success: { text: t("Лекарь приедет. Сам {name} — нет.", "A healer will come. {name} will not."), effects: [fx.wealth(-25), fx.affinity("mother", 8), fx.karma(2)] } }
       ]
     }
   ]

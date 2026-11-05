@@ -2,7 +2,7 @@
 // Броски идут из отдельного потока seed::adventure — основной генератор жизни новых чисел не берёт.
 // Награда шага выдаётся один раз: шаг записывается до эффектов, закрытое приключение не переигрывается.
 import { checkChance } from "../engine/checks.js";
-import { checkAll } from "../engine/conditions.js";
+import { checkAll, checkCondition, describeCondition } from "../engine/conditions.js";
 import type { EngineContext } from "../engine/context.js";
 import { applyEffects } from "../engine/effects.js";
 import { GameRuleError } from "../errors.js";
@@ -216,6 +216,8 @@ export interface ChoiceView {
   id: string;
   text: LocalizedText;
   available: boolean;
+  /** Почему шаг закрыт. Пусто — можно */
+  locked: LocalizedText[];
   chance: number | null;
   rewards: RewardView[];
 }
@@ -263,12 +265,14 @@ export interface AdventureBoard {
 }
 
 function choiceView(state: GameState, choice: VentureChoice): ChoiceView {
-  const available = checkAll(state, choice.requires);
+  const universe = getUniverse(state.character.universeId);
+  const failed = (choice.requires ?? []).filter((condition) => !checkCondition(state, condition));
   return {
     id: choice.id,
     text: choice.text,
-    available,
-    chance: choice.check && available ? checkChance(state.character, choice.check, state) : null,
+    available: failed.length === 0,
+    locked: failed.map((condition) => describeCondition(condition, universe)),
+    chance: choice.check && failed.length === 0 ? checkChance(state.character, choice.check, state) : null,
     rewards: rewardsOf(state, choice.success)
   };
 }

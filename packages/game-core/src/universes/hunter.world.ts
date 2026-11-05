@@ -90,7 +90,8 @@ export const HUNTER_WORLD: WorldDefinition = {
     { id: "hu.c-saved-civilians", title: t("Спасённые помнят", "The saved remember"), text: t("Люди, которых {name} вывел из прорыва, собрали деньги и подарили новое снаряжение.", "The people {name} led out of the break pooled money and gifted new gear."), effects: [fx.meter("fame", 15), fx.wealth(40), fx.npc("friend")] },
     { id: "hu.c-guild-contract", title: t("Контракт гильдии", "The guild contract"), text: t("Гильдия требует отработать подписанный контракт в самом опасном рейде года.", "The guild demands the signed contract be honoured in the year's most dangerous raid."), conditions: [when.flag("guild-member")], effects: [fx.health(-25), fx.track(12), fx.wealth(60)] },
     { id: "hu.c-hidden-power", title: t("Скрытое всплывает", "The hidden surfaces"), text: t("Ассоциация узнала, что на переоценке {name} скрыл силу. Штраф и пристальное внимание.", "The Association learned {name} hid power at re-evaluation. A fine and close scrutiny."), chance: 0.6, effects: [fx.wealth(-30), fx.faction("association", -15)] },
-    { id: "hu.c-ran-away", title: t("Цена бегства", "The price of fleeing"), text: t("Видео, где {name} убегает от прорыва, набирает миллионы просмотров.", "A video of {name} fleeing a break gets millions of views."), effects: [fx.meter("fame", -10), fx.rep(-8), fx.weakness("gate-trauma")] }
+    { id: "hu.c-ran-away", title: t("Цена бегства", "The price of fleeing"), text: t("Видео, где {name} убегает от прорыва, набирает миллионы просмотров.", "A video of {name} fleeing a break gets millions of views."), effects: [fx.meter("fame", -10), fx.rep(-8), fx.weakness("gate-trauma")] },
+    { id: "hu.c-missed-night", title: t("Пропущенный вечер", "The missed evening"), text: t("Запись школьного вечера доходит до телефона {name}. Брат на сцене ищет глазами пустой ряд.", "A recording of the school evening reaches {name}'s phone. On stage a sibling searches the empty row."), effects: [fx.affinity("sibling", -10), fx.karma(-2)] }
   ],
   abilityCategories: { "mana-blade": "combat", "shadow-step": "combat", "gate-sense": "magic" },
   abilities: [
@@ -98,6 +99,35 @@ export const HUNTER_WORLD: WorldDefinition = {
     { id: "chain-lightning", name: t("Цепная молния", "Chain Lightning"), description: t("Молния прыгает от монстра к монстру.", "Lightning leaps from monster to monster."), category: "magic" }
   ],
   events: [
+    {
+      id: "hu.child-siren",
+      kind: "personal",
+      title: t("Первая сирена", "The first siren"),
+      text: t("Над районом воет сирена Врат. Учитель говорит лечь под парту. В окне уже видно фиолетовое небо.", "A Gate siren howls over the district. The teacher says to get under the desk. The window already shows a violet sky."),
+      minAge: 6,
+      maxAge: 12,
+      maxOccurrences: 1,
+      weight: 2,
+      choices: [
+        { id: "desk", text: t("Лечь под парту", "Get under the desk"), success: { text: t("Пол холодный. Сирена кончается раньше страха.", "The floor is cold. The siren ends before the fear does."), effects: [fx.stat("willpower", 1)] } },
+        { id: "window", text: t("Смотреть в окно", "Watch the window"), success: { text: t("Небо помнится дольше урока.", "The sky stays longer than the lesson."), effects: [fx.stat("wisdom", 1), fx.meter("fame", 1)] } },
+        { id: "hand", text: t("Держать руку соседа", "Hold the next child's hand"), success: { text: t("Чужая ладонь дрожит меньше, когда её держат.", "The other palm shakes less when it is held."), effects: [fx.karma(3), fx.stat("charisma", 1)] } }
+      ]
+    },
+    {
+      id: "hu.last-licence",
+      kind: "age",
+      title: t("Сдать лицензию", "Hand in the licence"),
+      text: t("Ноги уже не держат рейд. Ассоциация предлагает сдать лицензию ученику или оставить её в ящике и закрыть долг.", "The legs no longer hold a raid. The Association offers to pass the licence to a student, or to leave it in the drawer and close the debt."),
+      minAge: 58,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("awakened")],
+      choices: [
+        { id: "pass", text: t("Передать лицензию", "Pass the licence on"), success: { text: t("Чужое имя встаёт в реестр. Ваше остаётся в скобках.", "Another name enters the register. Yours stays in brackets."), effects: [fx.rep(4), fx.faction("association", 4), fx.karma(3)] } },
+        { id: "drawer", text: t("Положить в ящик", "Leave it in the drawer"), success: { text: t("Ящик закрывается. Рейды больше не зовут.", "The drawer shuts. The raids no longer call."), effects: [fx.stat("wisdom", 1), fx.meter("fame", -2)] } }
+      ]
+    },
     {
       id: "hu.district-break",
       kind: "world",
@@ -188,6 +218,63 @@ export const HUNTER_WORLD: WorldDefinition = {
       choices: [
         { id: "accept", text: t("Принять", "Accept"), success: { text: t("Имя {name} теперь знает каждый.", "Everyone now knows {name}'s name."), effects: [fx.socialClass("national-hunter"), fx.meter("fame", 30), fx.faction("association", 25)] } },
         { id: "refuse", text: t("Остаться свободным", "Stay free"), success: { text: t("Свобода выбирать, кого спасать.", "The freedom to choose whom to save."), effects: [fx.stat("willpower", 2), fx.faction("association", -10)] } }
+      ]
+    },
+    {
+      id: "hu.licence-side",
+      kind: "path",
+      title: t("Сторона лицензии", "A side of the licence"),
+      text: t("Ранг держится. Ассоциация и гильдия «Белый тигр» предлагают не деньги, а чью лицензию носить. Второго штампа не будет.", "The rank holds. The Association and the White Tiger guild offer not money, but whose licence to wear. There will not be a second stamp."),
+      minAge: 18,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("awakened"), when.rank(2)],
+      choices: [
+        { id: "state", text: t("Штамп Ассоциации", "The Association stamp"), success: { text: t("Лицензия государственная. Рейды назначают сверху.", "The licence is the state's. Raids are assigned from above."), effects: [fx.faction("association", 12), fx.meter("fame", 4)] } },
+        { id: "guild", text: t("Штамп «Белого тигра»", "The White Tiger stamp"), success: { text: t("Гильдия платит вниманием, не свободой.", "The guild pays in attention, not freedom."), effects: [fx.faction("white-tiger", 12), fx.rep(4)] } }
+      ]
+    },
+    {
+      id: "hu.ranking-cut",
+      kind: "chain",
+      title: t("Срез рейтинга", "The ranking cut"),
+      text: t("Ассоциация публикует срез. Рейд, который {name} выбрал вместо вечера, либо поднял имя, либо оставил дыру в зале.", "The Association publishes the cut. The raid {name} chose over the evening either raised the name or left a hole in the hall."),
+      minAge: 18,
+      maxOccurrences: 1,
+      scheduledOnly: true,
+      conditions: [when.flag("awakened")],
+      choices: [
+        { id: "claim", text: t("Принять место в рейтинге", "Take the place in the ranking"), success: { text: t("Имя выше. Вечер в записи уже не пересмотреть.", "The name is higher. The evening on the recording cannot be replayed."), effects: [fx.meter("fame", 8), fx.faction("association", 6), fx.affinity("sibling", -4)] } },
+        { id: "decline", text: t("Снять имя со среза", "Take the name off the cut"), success: { text: t("Рейтинг пустеет на одну строку. Дома об этом не спрашивают.", "The ranking loses one line. At home they do not ask."), effects: [fx.karma(4), fx.meter("fame", -4), fx.affinity("sibling", 8)] } }
+      ]
+    },
+    {
+      id: "hu.late-call",
+      kind: "family",
+      title: t("Поздний звонок", "A late call"),
+      text: t("Брат или сестра звонит ночью: больница, не Врата. Ассоциация в ту же ночь поднимает рейд.", "A sibling calls at night: a hospital, not a Gate. The Association raises a raid the same night."),
+      minAge: 40,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("awakened"), when.npc("sibling")],
+      choices: [
+        { id: "hospital", text: t("Ехать в больницу", "Go to the hospital"), success: { text: t("Рейд закроют без вас. Коридор больницы — нет.", "The raid will close without you. The hospital corridor will not."), effects: [fx.affinity("sibling", 16), fx.karma(5), fx.faction("association", -4)] } },
+        { id: "raid", text: t("Идти в рейд", "Go on the raid"), success: { text: t("Врата закрыты к утру. Звонок остаётся без ответа.", "The Gate is closed by morning. The call goes unanswered."), effects: [fx.wealth(25), fx.meter("fame", 4), fx.affinity("sibling", -12)] } }
+      ]
+    },
+    {
+      id: "hu.raid-or-recital",
+      kind: "family",
+      title: t("Рейд или вечер", "The raid or the evening"),
+      text: t("Гильдия ставит ночной рейд в Врата ранга C. В ту же ночь у брата или сестры школьный вечер, и билет уже лежит на столе.", "The guild sets a night raid into a C-rank Gate. The same night a sibling has a school evening, and the ticket is already on the table."),
+      minAge: 16,
+      maxOccurrences: 1,
+      weight: 2,
+      conditions: [when.flag("awakened"), when.npc("sibling")],
+      choices: [
+        { id: "raid", text: t("Идти в рейд", "Go on the raid"), success: { text: t("Врата закрыты к рассвету. Вечер прошёл без вас.", "The Gate is closed by dawn. The evening passed without you."), effects: [fx.wealth(50), fx.meter("fame", 8), fx.track(6), fx.affinity("sibling", -14), fx.later("hu.c-missed-night", 1), fx.flag("chose-raid"), fx.schedule("hu.ranking-cut", 4)] } },
+        { id: "stay", text: t("Оставить рейд и сесть в зал", "Leave the raid and sit in the hall"), success: { text: t("Гильдия вычтет долю. Брат этого не узнает.", "The guild will dock the share. The sibling will not know that."), effects: [fx.affinity("sibling", 18), fx.karma(8), fx.faction("white-tiger", -6)] } },
+        { id: "split", text: t("Успеть и туда, и туда", "Make both"), check: check(["agility", "luck"], 14), success: { text: t("Финал рейда и последний поклон. Никто не заметил пустого места.", "The raid's end and the last bow. No one noticed the empty seat."), effects: [fx.wealth(20), fx.affinity("sibling", 8), fx.stat("agility", 1)] }, failure: { text: t("Опоздание на оба порога.", "Late to both doors."), effects: [fx.health(-12), fx.affinity("sibling", -8), fx.rep(-2)] } }
       ]
     }
   ]

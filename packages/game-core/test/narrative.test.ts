@@ -35,6 +35,7 @@ describe("Narrative Engine", () => {
     expect(view!.choices.some((c) => c.available)).toBe(true);
     expect(view!.title.ru.length).toBeGreaterThan(0);
     expect(view!.title.en.length).toBeGreaterThan(0);
+    expect(view!.scheduled).toBe(false);
   });
 
   it("выбор меняет характеристики и записывается в историю", () => {
@@ -59,6 +60,13 @@ describe("Narrative Engine", () => {
     expect(physician.available).toBe(false);
     expect(physician.locked[0]?.ru).toContain("Золото");
     expect(() => applyAction(state, { type: "choose", choiceId: "physician" })).toThrow(expect.objectContaining({ code: "CHOICE_LOCKED" }));
+  });
+
+  it("продолжение цепочки помечено на карточке и не пишется в сохранение", () => {
+    const base = start({ seed: "chain" });
+    const state = withPending(base, "common.love-test");
+    expect(presentEvent(state)!.scheduled).toBe(true);
+    expect(state.pending).toEqual({ eventId: "common.love-test", age: base.life.age });
   });
 
   it("неизвестный вариант и выбор без события отклоняются", () => {

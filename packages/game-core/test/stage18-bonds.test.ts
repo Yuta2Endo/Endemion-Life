@@ -42,7 +42,7 @@ describe("Stage 18: доверие", () => {
     expect(once.entries.some((entry) => entry.kind === "people")).toBe(true);
     const again = once.state.npcs.find((item) => item.id === npc.id)!;
     const ctx2: EngineContext = { state: once.state, rng: new Rng(1), universe: getUniverse(state.character.universeId), changes: [] };
-    expect(interactionBlock(ctx2, again, "talk")).toBe("уже в этом году");
+    expect(interactionBlock(ctx2, again, "talk")).toBe("year");
     expect(() => applyAction(once.state, { type: "interact", npcId: npc.id, interaction: "gift" })).toThrow();
     expect(() => applyAction(once.state, { type: "interact", npcId: "n999", interaction: "talk" })).toThrow();
   });

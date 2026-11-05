@@ -203,7 +203,17 @@ function advance(ctx: EngineContext, entries: HistoryEntry[], years: number): vo
       worldYearly(ctx, defer);
       npcYearly(ctx, defer);
     }
-    const text = summary.stageChanged ? STAGE_INFO[state.life.stage].begins : (YEAR_TEXTS[age % YEAR_TEXTS.length] ?? YEAR_TEXTS[0]!);
+    const grewSkill = ctx.changes.some((change) => change.kind === "skill");
+    const grewPath = ctx.changes.some((change) => change.kind === "track");
+    const grewGold = ctx.changes.some((change) => change.kind === "wealth");
+    const quiet = grewSkill
+      ? t("Тихий год. Ремесло стало увереннее.", "A quiet year. The craft grew surer.")
+      : grewPath
+        ? t("Тихий год. Путь силы стал крепче.", "A quiet year. The path of power grew firmer.")
+        : grewGold
+          ? t("Тихий год. Золото в доме изменилось.", "A quiet year. The gold in the house changed.")
+          : (YEAR_TEXTS[age % YEAR_TEXTS.length] ?? YEAR_TEXTS[0]!);
+    const text = summary.stageChanged ? STAGE_INFO[state.life.stage].begins : quiet;
     pushEntry(ctx, entries, "year", { title: ageText(age), text: named(ctx, text) });
     for (const item of deferred) pushEntry(ctx, entries, item.kind, { title: named(ctx, item.title), text: named(ctx, item.text) });
     if (!settle(ctx, entries)) return;

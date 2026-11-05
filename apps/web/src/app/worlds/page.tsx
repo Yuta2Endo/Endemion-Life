@@ -4,7 +4,10 @@ import type { Metadata } from "next";
 import { WorldCard } from "@/components/world-card";
 import { getServerI18n } from "@/lib/locale-server";
 
-export const metadata: Metadata = { title: "Worlds" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getServerI18n();
+  return { title: t("worlds.title") };
+}
 
 export default async function WorldsPage() {
   const { locale, t } = await getServerI18n();
