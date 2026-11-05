@@ -7,7 +7,7 @@ export const MAX_CHRONICLE = 400;
 /** Обрезка идёт пачкой, чтобы не двигать массив на каждой записи */
 const TRIM_TO = 340;
 /** Эти записи не архивируются: без них не восстановить историю поколений */
-const KEEP: readonly ChronicleKind[] = ["origin", "succession", "inheritance", "achievement", "secret"];
+const KEEP: readonly ChronicleKind[] = ["origin", "succession", "inheritance", "achievement", "deed", "secret"];
 /** Сколько имён ушедших в архив людей помнит род */
 const MAX_NAMES = 600;
 

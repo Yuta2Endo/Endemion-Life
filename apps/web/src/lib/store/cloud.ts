@@ -41,8 +41,15 @@ export const cloudStore: GameStore = {
     return (await apiFetch<{ saves: SaveView[] }>(`/api/lives/${encodeURIComponent(id)}/saves`)).saves;
   },
 
-  async restore(id, version, expectedVersion) {
-    return postJson<ActionResponse>(`/api/lives/${encodeURIComponent(id)}/restore`, { version, expectedVersion });
+  async restore(id, version, expectedVersion, actionId) {
+    const body = actionId ? { version, expectedVersion, actionId } : { version, expectedVersion };
+    const send = () => postJson<ActionResponse>(`/api/lives/${encodeURIComponent(id)}/restore`, body);
+    try {
+      return await send();
+    } catch (error) {
+      if (actionId && error instanceof ClientError && error.code === "NETWORK") return send();
+      throw error;
+    }
   },
 
   async succeed(id, expectedVersion, heirId, actionId) {

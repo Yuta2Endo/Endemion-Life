@@ -18,7 +18,8 @@ model Player {
   lastSeenAt DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(3)
   /// Endemion ID (claim sub). Прогресс привязан к игроку, игрок — к sub: смена username или почты его не меняет
   endemionSub   String? @unique @map("endemion_sub") @db.Uuid
-  /// Профиль из Endemion ID для показа в игре, обновляется при сверке сессии
+  /// Профиль из Endemion ID для показа в игре, обновляется при сверке сессии.
+  /// Поиск идёт по lower() этих двух колонок. Индексы — миграция 20261105210000: Prisma их в схеме не описывает
   idUsername    String? @map("id_username") @db.VarChar(24)
   idDisplayName String? @map("id_display_name") @db.VarChar(40)
   idAvatarUrl   String? @map("id_avatar_url") @db.VarChar(512)
@@ -28,8 +29,33 @@ model Player {
   actions  GameAction[]
   sessions Session[]
   account  Account?
+  /// Stage 07: связи, где игрок стоит первым в паре (меньший id)
+  tiesAsA  Tie[]    @relation("TieA")
+  /// Связи, где игрок стоит вторым
+  tiesAsB  Tie[]    @relation("TieB")
 
   @@map("players")
+}
+
+/// Stage 07: связь двух игроков. player_a всегда меньше player_b, поэтому пара одна.
+/// pending — ждёт ответа, accepted — друзья, blocked — автор блока в asked_by
+model Tie {
+  id        String   @id @default(uuid()) @db.Uuid
+  playerAId String   @map("player_a") @db.Uuid
+  playerBId String   @map("player_b") @db.Uuid
+  status    String   @db.VarChar(16)
+  /// Кто отправил запрос или поставил блок
+  askedById String   @map("asked_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  playerA Player @relation("TieA", fields: [playerAId], references: [id], onDelete: Cascade)
+  playerB Player @relation("TieB", fields: [playerBId], references: [id], onDelete: Cascade)
+
+  @@unique([playerAId, playerBId])
+  @@index([playerAId])
+  @@index([playerBId])
+  @@map("ties")
 }
 
 /// Сессия (устройство). В cookie лежит случайный токен, здесь — только его SHA-256.

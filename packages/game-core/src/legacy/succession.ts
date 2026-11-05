@@ -20,6 +20,8 @@ import { BIRTH_STAT_MAX, clamp, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_M
 import { SELF_ID, type GameState, type HistoryChange, type HistoryEntry, type InheritanceRecord, type NpcState } from "../types.js";
 import { getUniverse } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
+import { newAdventure } from "../adventure/adventure.js";
+import { newMastery } from "../endgame/mastery.js";
 import { newEconomy } from "../economy/economy.js";
 import { lawOf, type InheritanceLaw } from "./laws.js";
 import { unlockAchievements } from "./achievements.js";
@@ -350,7 +352,13 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
     lineage: deepClone(dead.lineage),
     memory: [],
     // Хозяйство мира продолжается: спад или подъём не кончаются со смертью; нехватка и счета — свои у наследника
-    economy: newEconomy(age, dead.economy.cycle)
+    economy: newEconomy(age, dead.economy.cycle),
+    // Открытые места и приключения — личный опыт, наследнику они не переходят
+    adventure: newAdventure(),
+    // Край переживает человека: наследник застаёт ту же землю, и след приключений предка уже учтён
+    region: deepClone(dead.region),
+    // Освоение мира — личный опыт, как и приключение. Достижения рода остаются в lineage
+    mastery: newMastery()
   };
   return { state, record, deceasedId: "" };
 }

@@ -10,6 +10,7 @@ import type { LifeStage } from "../types.js";
 import { worldTrackFactor } from "../world/rules.js";
 import { economyYear } from "../economy/economy.js";
 import { consumeGoods } from "../economy/market.js";
+import { regionYear } from "../economy/region.js";
 import { DEATH_CAUSES, naturalDeathChance } from "./death.js";
 import { stageForAge } from "./stages.js";
 
@@ -108,6 +109,8 @@ export function ageOneYear(ctx: EngineContext): YearSummary {
   economyYear(ctx);
   // Рынок: запасы тратятся по штуке в год на навык, шкалу мира или отношение фракции
   consumeGoods(ctx);
+  // Stage 06: склад края восстанавливается, напряжение остывает, след приключения учитывается один раз
+  regionYear(ctx);
   restore(ctx, life.stage);
 
   let diedOfAge = false;

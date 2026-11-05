@@ -6,6 +6,7 @@ import type { LocalizedText } from "../i18n.js";
 import { lineageYear } from "../legacy/chronicle.js";
 import type { Effect, NpcRef } from "../narrative/types.js";
 import { findEducation, findProfession, findSkill, SKILL_MAX } from "../rpg/skills.js";
+import { changeProsperity, changeStrain } from "../economy/region.js";
 import { findTalent, findWeakness } from "../rpg/talents.js";
 import { clamp, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_MAX, STAT_MIN, WEALTH_MAX, type ResourceKey, type StatKey } from "../stats.js";
 import { SELF_ID, type DeathCauseId, type HiddenKey, type NpcRole } from "../types.js";
@@ -408,6 +409,12 @@ export function applyEffect(ctx: EngineContext, effect: Effect): void {
     }
     case "meter":
       return changeMeter(ctx, effect.id, effect.delta);
+    case "strain":
+      changeStrain(ctx.state, effect.delta);
+      return;
+    case "prosperity":
+      changeProsperity(ctx.state, effect.delta);
+      return;
     case "faction":
       return changeFaction(ctx, effect.id, effect.delta);
     case "socialClass":

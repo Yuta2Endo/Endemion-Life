@@ -11,6 +11,60 @@ const life = (event: EventDefinition): EventDefinition => ({ kind: "life", ...ev
 const world = (event: EventDefinition): EventDefinition => ({ kind: "world", ...event });
 
 export const ECONOMY_EVENTS: readonly EventDefinition[] = [
+  // Stage 09: дело и достижение. Приходят один раз и только когда факт уже есть
+  life({
+    id: "eco.deed-fame",
+    title: t("Слава по дороге", "Fame from the road"),
+    text: t("О деле {name} говорят на дорогах. Славу можно взять себе или оставить краю.", "People on the roads talk of {name}'s deed. The fame can be taken or left to the land."),
+    minAge: 16,
+    conditions: [when.deedAny()],
+    cooldown: 4,
+    maxOccurrences: 1,
+    choices: [
+      { id: "take", text: t("Принять славу", "Take the fame"), success: { text: t("Имя звучит громче.", "The name rings louder."), effects: [fx.rep(6)] } },
+      { id: "leave", text: t("Оставить славу краю", "Leave the fame to the land"), success: { text: t("Говорят о крае, не о вас. Краю от этого легче.", "They talk of the land, not of you. The land is easier for it."), effects: [fx.prosperity(4), fx.karma(2)] } }
+    ]
+  }),
+  life({
+    id: "eco.dynasty",
+    title: t("Род помнит", "The family remembers"),
+    text: t("Четвёртое поколение. Старейшины спрашивают, чем {name} укрепит дом.", "The fourth generation. The elders ask what {name} will strengthen the house with."),
+    minAge: 16,
+    conditions: [when.achievement("dynasty")],
+    cooldown: 4,
+    maxOccurrences: 1,
+    choices: [
+      { id: "name", text: t("Укрепить имя рода", "Strengthen the family name"), success: { text: t("О доме говорят с уважением.", "The house is spoken of with respect."), effects: [fx.renown(6)] } },
+      { id: "gold", text: t("Попросить золото на дом", "Ask for gold for the house"), success: { text: t("Сундук тяжелеет. Имя подождёт.", "The chest grows heavier. The name can wait."), effects: [fx.wealth(30)] } }
+    ]
+  }),
+  // Stage 06: край. Приходят только при накопленном напряжении или благополучии и не повторяются чаще паузы
+  life({
+    id: "eco.strain",
+    title: t("Край на пределе", "The land at its limit"),
+    text: t("Дороги разбиты, в лавках пусто, люди злы. {name} может вложить золото в общий котёл или переждать.", "The roads are broken, the shops are empty, people are angry. {name} can put gold into the common pot or wait it out."),
+    minAge: 16,
+    conditions: [when.strain(60)],
+    cooldown: 6,
+    maxOccurrences: 4,
+    choices: [
+      { id: "help", text: t("Вложить 20 золота", "Put in 20 gold"), requires: [when.wealth(20)], success: { text: t("Котёл полнеет. Напряжение спадает.", "The pot fills. The strain eases."), effects: [fx.wealth(-20), fx.strain(-8), fx.rep(2)] } },
+      { id: "wait", text: t("Переждать", "Wait it out"), success: { text: t("Год проходит. Край держится сам, но люди запоминают, кто прошёл мимо.", "The year passes. The land holds on its own, but people remember who walked past."), effects: [fx.rep(-1)] } }
+    ]
+  }),
+  life({
+    id: "eco.prosper",
+    title: t("Щедрый год", "A generous year"),
+    text: t("Край сыт: амбары полны, и староста предлагает долю тем, кто живёт здесь.", "The land is well fed: the barns are full, and the elder offers a share to those who live here."),
+    minAge: 16,
+    conditions: [when.prosperity(50)],
+    cooldown: 6,
+    maxOccurrences: 4,
+    choices: [
+      { id: "take", text: t("Взять долю", "Take the share"), success: { text: t("Доля весома. Амбары после этого заметно пустее.", "The share is generous. The barns are noticeably emptier after."), effects: [fx.wealth(15), fx.prosperity(-6)] } },
+      { id: "leave", text: t("Оставить долю краю", "Leave the share to the land"), success: { text: t("Амбары остаются полными. Об этом говорят до зимы.", "The barns stay full. People talk of it until winter."), effects: [fx.prosperity(2), fx.rep(2), fx.karma(2)] } }
+    ]
+  }),
   // ——— Общие ———
   life({
     id: "eco.hard-times",

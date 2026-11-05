@@ -8,9 +8,14 @@ import { t } from "../i18n.js";
 import { newLineage } from "../legacy/chronicle.js";
 import { finishLife, foundLineage } from "../legacy/lineage.js";
 import { Rng } from "../rng.js";
-import { findProfession } from "../rpg/skills.js";
+import { findProfession, findSkill } from "../rpg/skills.js";
+import { findObjective, newMastery } from "../endgame/mastery.js";
+import { newAdventure } from "../adventure/adventure.js";
+import { adventuresOf, placesOf } from "../adventure/content.js";
+import { ADVENTURE_LOG_KINDS } from "../adventure/types.js";
 import { MAX_ECONOMY_YEARS, newEconomy } from "../economy/economy.js";
-import { findGood, MAX_STOCK } from "../economy/market.js";
+import { MAX_REGION_LOG, newRegion, REGION_LOG_KINDS, STOCK_MAX } from "../economy/region.js";
+import { findGood, goodsOf, MAX_STOCK } from "../economy/market.js";
 import { RESOURCE_KEYS, STAT_KEYS, WEALTH_MAX } from "../stats.js";
 import {
   CHRONICLE_KINDS,
@@ -189,12 +194,32 @@ function migrateV4(save: Record<string, unknown>): Record<string, unknown> {
   return isRecord(economy) ? { ...save, economy: { ...economy, goods: {} } } : save;
 }
 
+/** Формат 5 → 6 (Stage 05): только добавляется пустое приключение. Ничего не удаляется, генератор не нужен */
+function migrateV5(save: Record<string, unknown>): Record<string, unknown> {
+  return { ...save, adventure: newAdventure() };
+}
+
+/** Формат 6 → 7 (Stage 06): край с полным складом и нулевым напряжением. Ничего не удаляется, генератор не нужен */
+function migrateV6(save: Record<string, unknown>): Record<string, unknown> {
+  const character = save.character;
+  const universeId = isRecord(character) && isUniverseId(character.universeId) ? character.universeId : "dark-fantasy";
+  return { ...save, region: newRegion(universeId) };
+}
+
+/** Формат 7 → 8 (Stage 10): пустое мастерство. Ничего не удаляется, генератор не нужен */
+function migrateV7(save: Record<string, unknown>): Record<string, unknown> {
+  return { ...save, mastery: newMastery() };
+}
+
 /** Переходы между версиями формата: ключ — версия, из которой переводим. Новая версия формата добавляет сюда шаг */
 const MIGRATIONS: Readonly<Record<number, Migration>> = {
   1: migrateV1,
   2: migrateV2,
   3: migrateV3,
-  4: migrateV4
+  4: migrateV4,
+  5: migrateV5,
+  6: migrateV6,
+  7: migrateV7
 };
 
 function fail(reason: string): never {
@@ -320,6 +345,57 @@ function checkEconomy(economy: unknown, universeId: UniverseId): void {
   if (!isRecord(goods) || !Object.entries(goods).every(([id, n]) => findGood(universeId, id) !== undefined && isInt(n, 1, MAX_STOCK))) fail("economy.goods");
 }
 
+const MAX_ADVENTURE_LIST = 32;
+
+/** Приключение формата 6: только места и приключения этого мира, одно активное, журнал с лимитом */
+function checkAdventure(adventure: unknown, universeId: UniverseId): void {
+  if (!isRecord(adventure)) fail("adventure");
+  const places = new Set(placesOf(universeId).map((place) => place.id));
+  const adventures = new Set(adventuresOf(universeId).map((item) => item.id));
+  const known = (id: string) => places.has(id) || adventures.has(id);
+  if (!isStringArray(adventure.discovered) || adventure.discovered.length > MAX_ADVENTURE_LIST || !adventure.discovered.every((id) => places.has(id))) fail("adventure.discovered");
+  if (new Set(adventure.discovered).size !== adventure.discovered.length) fail("adventure.discovered");
+  const active = adventure.active;
+  if (active !== null) {
+    if (!isRecord(active) || !adventures.has(String(active.id)) || typeof active.step !== "string" || !isInt(active.since, 0)) fail("adventure.active");
+    const definition = adventuresOf(universeId).find((item) => item.id === active.id);
+    if (!definition?.steps.some((step) => step.id === active.step)) fail("adventure.active.step");
+  }
+  for (const key of ["done", "failed"] as const) {
+    const list = adventure[key];
+    if (!isStringArray(list) || list.length > MAX_ADVENTURE_LIST || !list.every((id) => adventures.has(id)) || new Set(list).size !== list.length) fail(`adventure.${key}`);
+  }
+  if (!Array.isArray(adventure.log) || adventure.log.length > MAX_ADVENTURE_LIST) fail("adventure.log");
+  for (const entry of adventure.log) {
+    if (!isRecord(entry) || !known(String(entry.adventureId)) || !isInt(entry.age, 0) || !oneOf(ADVENTURE_LOG_KINDS, entry.kind)) fail("adventure.log");
+  }
+}
+
+/** Край формата 7: склад только по товарам мира, числа в пределах, след — по id приключений */
+/** Мастерство формата 8: только известные цели и навыки этого мира, без повторов */
+function checkMastery(mastery: unknown, universeId: UniverseId): void {
+  if (!isRecord(mastery)) fail("mastery");
+  const universe = getUniverse(universeId);
+  if (!isStringArray(mastery.objectives) || mastery.objectives.length > 16 || !mastery.objectives.every((id) => findObjective(id))) fail("mastery.objectives");
+  if (new Set(mastery.objectives).size !== mastery.objectives.length) fail("mastery.objectives");
+  if (!isStringArray(mastery.skills) || mastery.skills.length > 16 || !mastery.skills.every((id) => findSkill(universe, id))) fail("mastery.skills");
+  if (new Set(mastery.skills).size !== mastery.skills.length) fail("mastery.skills");
+}
+
+function checkRegion(region: unknown, universeId: UniverseId): void {
+  if (!isRecord(region)) fail("region");
+  const goods = new Set(goodsOf(universeId).map((item) => item.id));
+  const adventures = new Set(adventuresOf(universeId).map((item) => item.id));
+  const stock = region.stock;
+  if (!isRecord(stock) || !Object.entries(stock).every(([id, n]) => goods.has(id) && isInt(n, 0, STOCK_MAX))) fail("region.stock");
+  if (!isInt(region.strain, 0, 100) || !isInt(region.prosperity, 0, 100)) fail("region.strain");
+  if (!isStringArray(region.seen) || region.seen.length > MAX_ADVENTURE_LIST || !region.seen.every((id) => adventures.has(id)) || new Set(region.seen).size !== region.seen.length) fail("region.seen");
+  if (!Array.isArray(region.log) || region.log.length > MAX_REGION_LOG) fail("region.log");
+  for (const entry of region.log) {
+    if (!isRecord(entry) || !isInt(entry.age, 0) || !oneOf(REGION_LOG_KINDS, entry.kind)) fail("region.log");
+  }
+}
+
 /** Проверяет сохранение и возвращает состояние игры. Бросает INVALID_SAVE, если что-то не так */
 export function parseSave(raw: unknown): GameState {
   const save = migrateSave(raw);
@@ -373,6 +449,9 @@ export function parseSave(raw: unknown): GameState {
   checkLineage(save.lineage);
   if (!Array.isArray(save.memory) || save.memory.length > 50 || !save.memory.every((m) => isRecord(m) && isInt(m.age, 0) && typeof m.eventId === "string" && typeof m.choiceId === "string" && (m.success === null || typeof m.success === "boolean") && isInt(m.weight, 0))) fail("memory");
   checkEconomy(save.economy, c.universeId);
+  checkAdventure(save.adventure, c.universeId);
+  checkRegion(save.region, c.universeId);
+  checkMastery(save.mastery, c.universeId);
   // Родство: ни циклов, ни родителей младше детей, ни брака с умершим
   const problem = kinProblem(save as unknown as GameState);
   if (problem) fail(`родство: ${problem}`);

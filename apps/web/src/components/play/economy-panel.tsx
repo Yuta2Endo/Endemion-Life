@@ -2,10 +2,39 @@
 
 import { getUniverse, type TradeSide } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
-import { Ornament } from "@endemion/ui";
+import { Meter, Ornament } from "@endemion/ui";
 import { ageLabel } from "@/lib/format";
 import { useI18n } from "../locale-provider";
 import { MarketPanel } from "./market-panel";
+
+const BAND = { low: "region.bandLow", enough: "region.bandEnough", high: "region.bandHigh" } as const;
+
+/** Stage 06: край этой жизни. Склад и напряжение считает сервер, клиент только показывает */
+function RegionPanel({ life }: { life: LifeView }) {
+  const { l, t } = useI18n();
+  const region = life.region;
+  return (
+    <div data-testid="region">
+      <h3 className="mb-2 text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("region.title")}</h3>
+      <div className="space-y-2">
+        <div data-testid="region-strain" data-value={region.strain}>
+          <Meter label={t("region.strain")} value={region.strain} max={100} tone={region.strained ? "blood" : "azure"} caption={String(region.strain)} />
+        </div>
+        <div data-testid="region-prosperity" data-value={region.prosperity}>
+          <Meter label={t("region.prosperity")} value={region.prosperity} max={100} tone="jade" caption={String(region.prosperity)} />
+        </div>
+      </div>
+      <ul className="mt-3 space-y-1" data-testid="region-stock">
+        {region.goods.map((item) => (
+          <li key={item.id} className="flex justify-between gap-3 text-xs text-bone-300" data-good={item.id} data-stock={item.stock} data-band={item.band}>
+            <span>{l(item.name)}</span>
+            <span className="text-bone-400">{t(BAND[item.band])}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function Amount({ value }: { value: number }) {
   const tone = value > 0 ? "text-jade-300" : value < 0 ? "text-blood-300" : "text-bone-300";
@@ -143,6 +172,8 @@ export function EconomyPanel({ life, busy, onTrade }: { life: LifeView; busy: bo
       <Society life={life} />
 
       <MarketPanel life={life} busy={busy} onTrade={onTrade} />
+
+      <RegionPanel life={life} />
 
       {e.years.length > 1 && (
         <div>

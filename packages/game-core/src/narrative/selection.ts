@@ -1,10 +1,16 @@
 // Narrative Engine: какое событие случится в этом году
 import { checkAll } from "../engine/conditions.js";
 import type { EngineContext } from "../engine/context.js";
-import type { GameState, LifeStage } from "../types.js";
+import { ACHIEVEMENTS } from "../legacy/achievements.js";
+import { LINEAGE_CONSEQUENCES, THREADS } from "../legacy/stories.js";
+import { findProfession, findSkill } from "../rpg/skills.js";
+import { allTalents, allWeaknesses } from "../rpg/talents.js";
+import { STAT_KEYS } from "../stats.js";
+import { NPC_ROLES, UNIVERSE_IDS, type GameState, type LifeStage, type UniverseId } from "../types.js";
+import { getUniverse, listUniverses } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import { COMMON_EVENTS } from "./common.js";
-import type { EventDefinition } from "./types.js";
+import type { Condition, Effect, EventDefinition } from "./types.js";
 
 /** Вероятность, что год принесёт событие */
 const EVENT_CHANCE: Readonly<Record<LifeStage, number>> = {
@@ -92,4 +98,141 @@ export function selectEvent(ctx: EngineContext): EventDefinition | undefined {
   const candidates = eligible.filter((event) => !recent.has(event.id));
   // Чем чаще событие уже было, тем реже оно приходит снова: вес делится на 1 + число повторов
   return ctx.rng.weighted(candidates, (event) => (event.weight ?? (universeEvents.has(event.id) ? 2 : 1)) / (1 + (ctx.state.occurrences[event.id] ?? 0)));
+}
+
+const ROLES = new Set<string>([...NPC_ROLES, "parent", "family"]);
+
+function knownIds(universe: UniverseDefinition, kind: string): ReadonlySet<string> | undefined {
+  switch (kind) {
+    case "origin":
+      return new Set(universe.origins.map((item) => item.id));
+    case "race":
+      return new Set(universe.races.map((item) => item.id));
+    case "ability":
+      return new Set(universe.abilities.map((item) => item.id));
+    case "meter":
+      return new Set(universe.meters.map((item) => item.id));
+    case "faction":
+      return new Set(universe.factions.map((item) => item.id));
+    case "socialClass":
+      return new Set(universe.socialClasses.map((item) => item.id));
+    default:
+      return undefined;
+  }
+}
+
+function skillKnown(universe: UniverseDefinition, id: string): boolean {
+  return findSkill(universe, id) !== undefined;
+}
+
+/** Ссылка условия, которой в этом мире нет. Пустая строка — ссылка верна или её тут нет */
+function brokenCondition(universe: UniverseDefinition, condition: Condition, events: ReadonlyMap<string, EventDefinition>): string {
+  const ids = "ids" in condition ? condition.ids : [];
+  const table = condition.type === "skill" ? undefined : knownIds(universe, condition.type);
+  if (table) {
+    const missing = ids.filter((id) => !table.has(id));
+    if (missing.length > 0) return `${condition.type} ${missing.join(",")}`;
+  }
+  switch (condition.type) {
+    case "skill":
+      return skillKnown(universe, condition.id) ? "" : `навык ${condition.id}`;
+    case "talent":
+      return ids.every((id) => allTalents(universe).some((item) => item.id === id)) ? "" : `талант ${ids.join(",")}`;
+    case "weakness":
+      return ids.every((id) => allWeaknesses(universe).some((item) => item.id === id)) ? "" : `слабость ${ids.join(",")}`;
+    case "profession":
+      return ids.every((id) => findProfession(universe, id)) ? "" : `ремесло ${ids.join(",")}`;
+    case "achievement":
+      return ACHIEVEMENTS.some((item) => item.id === condition.id) ? "" : `достижение ${condition.id}`;
+    case "thread":
+      return condition.id in THREADS ? "" : `нить ${condition.id}`;
+    case "story":
+      return events.has(condition.id) ? "" : `сюжет ${condition.id}`;
+    case "deed":
+      return "";
+    case "world":
+      return ids.every((id) => (UNIVERSE_IDS as readonly string[]).includes(id)) ? "" : `мир ${ids.join(",")}`;
+    case "npc":
+    case "affinity":
+      return ROLES.has(condition.role) ? "" : `роль ${condition.role}`;
+    default:
+      return "";
+  }
+}
+
+function brokenEffect(universe: UniverseDefinition, effect: Effect, events: ReadonlyMap<string, EventDefinition>, consequences: ReadonlySet<string>): string {
+  switch (effect.type) {
+    case "ability":
+      return universe.abilities.some((item) => item.id === effect.id) ? "" : `способность ${effect.id}`;
+    case "skill":
+      return skillKnown(universe, effect.id) ? "" : `навык ${effect.id}`;
+    case "faction":
+      return universe.factions.some((item) => item.id === effect.id) ? "" : `фракция ${effect.id}`;
+    case "meter":
+      return universe.meters.some((item) => item.id === effect.id) ? "" : `шкала ${effect.id}`;
+    case "socialClass":
+      return universe.socialClasses.some((item) => item.id === effect.id) ? "" : `сословие ${effect.id}`;
+    case "profession":
+      return findProfession(universe, effect.id) ? "" : `ремесло ${effect.id}`;
+    case "education":
+      return universe.education.some((item) => item.id === effect.id) ? "" : `образование ${effect.id}`;
+    case "talent":
+      return allTalents(universe).some((item) => item.id === effect.id) ? "" : `талант ${effect.id}`;
+    case "weakness":
+      return allWeaknesses(universe).some((item) => item.id === effect.id) ? "" : `слабость ${effect.id}`;
+    case "schedule":
+      return events.has(effect.eventId) ? "" : `событие ${effect.eventId}`;
+    case "later":
+      return consequences.has(effect.id) ? "" : `последствие ${effect.id}`;
+    case "thread":
+      return effect.id in THREADS ? "" : `нить ${effect.id}`;
+    case "stat":
+      return (STAT_KEYS as readonly string[]).includes(effect.stat) ? "" : `характеристика ${effect.stat}`;
+    default:
+      return "";
+  }
+}
+
+/**
+ * Проверка событий года. Ничего не меняет.
+ * Ловит повтор id, пустой список вариантов, продолжение и последствие в никуда, награду не из этого мира
+ */
+export function eventProblems(universeId?: UniverseId): string[] {
+  const problems: string[] = [];
+  const worlds = universeId ? [getUniverse(universeId)] : listUniverses();
+  for (const universe of worlds) {
+    const events = eventIndex(universe);
+    const consequences = new Set([...universe.consequences.map((item) => item.id), ...LINEAGE_CONSEQUENCES.map((item) => item.id)]);
+    const ids = [...events.keys()];
+    if (new Set(ids).size !== ids.length) problems.push(`${universe.id}: повтор id события`);
+    for (const event of events.values()) {
+      const where = `${universe.id} ${event.id}`;
+      if (event.choices.length === 0) problems.push(`${where}: нет вариантов`);
+      const choiceIds = event.choices.map((choice) => choice.id);
+      if (new Set(choiceIds).size !== choiceIds.length) problems.push(`${where}: повтор варианта`);
+      const texts = [event.title, event.text, ...event.choices.flatMap((choice) => [choice.text, choice.success.text])];
+      if (texts.some((text) => text.ru.trim().length === 0 || text.en.trim().length === 0)) problems.push(`${where}: пустой текст`);
+      for (const condition of event.conditions ?? []) {
+        const broken = brokenCondition(universe, condition, events);
+        if (broken) problems.push(`${where}: ${broken}`);
+      }
+      for (const choice of event.choices) {
+        for (const condition of choice.requires ?? []) {
+          const broken = brokenCondition(universe, condition, events);
+          if (broken) problems.push(`${where}: ${broken}`);
+        }
+        for (const effect of [...choice.success.effects, ...(choice.failure?.effects ?? [])]) {
+          const broken = brokenEffect(universe, effect, events, consequences);
+          if (broken) problems.push(`${where}: ${broken}`);
+        }
+      }
+    }
+    for (const consequence of [...universe.consequences, ...LINEAGE_CONSEQUENCES]) {
+      for (const effect of consequence.effects) {
+        const broken = brokenEffect(universe, effect, events, consequences);
+        if (broken) problems.push(`${universe.id} ${consequence.id}: ${broken}`);
+      }
+    }
+  }
+  return problems;
 }

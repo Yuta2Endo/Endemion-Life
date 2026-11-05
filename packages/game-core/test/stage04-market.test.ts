@@ -109,7 +109,10 @@ describe("Stage 04: рынок", () => {
     expect(bought.state.life.age).toBe(state.life.age);
     expect(bought.state.version).toBe(state.version + 1);
     const sold = sell(bought.state, good.id, 3).state;
-    expect(sold.character.wealth).toBe(bought.state.character.wealth + price.sell * 3);
+    // Цена продажи считается заново: покупка уменьшила склад, поэтому она чуть выше прежней
+    const sellNow = pricesOf(bought.state, good).sell;
+    expect(sellNow).toBeGreaterThanOrEqual(price.sell);
+    expect(sold.character.wealth).toBe(bought.state.character.wealth + sellNow * 3);
     expect(sold.economy.goods[good.id]).toBeUndefined();
   });
 
@@ -209,10 +212,14 @@ describe("Stage 04: рынок", () => {
       const state = parseSave(deepClone(raw));
       expect(state.schemaVersion, key).toBe(SAVE_SCHEMA_VERSION);
       expect(state.economy.goods, key).toEqual({});
+      expect(state.adventure, key).toEqual({ discovered: [], active: null, done: [], failed: [], log: [] });
       const rest = deepClone(state) as unknown as Record<string, unknown>;
       const before = deepClone(raw) as Record<string, unknown>;
       (rest.economy as Record<string, unknown>).goods = undefined;
       delete (rest.economy as Record<string, unknown>).goods;
+      delete rest.adventure;
+      delete rest.region;
+      delete rest.mastery;
       delete rest.schemaVersion;
       delete before.schemaVersion;
       expect(rest, key).toEqual(before);

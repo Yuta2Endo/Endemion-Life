@@ -38,8 +38,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <SiteHeader />
           {/* Выше подвала: фиксированная панель вкладок на телефоне не должна уходить под него */}
           <div className="relative z-20">{children}</div>
-          <footer className="relative z-10 mt-20 border-t border-line/60 py-8 text-center text-xs text-bone-500">
-            Endemion Life · Stage 01 · {new Date().getFullYear()}
+          <footer className="relative z-10 mt-20 border-t border-line/60 py-8 pb-24 text-center text-xs text-bone-500 lg:pb-8">
+            Endemion Life · {new Date().getFullYear()}
           </footer>
         </LocaleProvider>
       </body>

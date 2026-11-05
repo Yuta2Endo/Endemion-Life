@@ -56,12 +56,13 @@ export function EventCard({ event, busy, onChoose }: { event: EventView; busy: b
 export function OutcomeCard({ entry, universeId, people }: { entry: HistoryEntry; universeId: UniverseId; people?: PeopleNames }) {
   const { l, t } = useI18n();
   return (
-    <Panel className="animate-rise" data-testid="outcome">
+    <Panel className="animate-rise" data-testid="outcome" aria-live="polite">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("play.outcome")}</h3>
         {entry.check && (
           <span className={`text-xs ${entry.check.success ? "text-jade-300" : "text-blood-300"}`}>
             {entry.check.success ? t("play.success") : t("play.failure")} · {Math.round(entry.check.chance * 100)}%
+            <span aria-hidden="true">{entry.check.success ? " +" : " −"}</span>
           </span>
         )}
       </div>

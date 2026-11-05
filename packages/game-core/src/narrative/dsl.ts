@@ -43,7 +43,9 @@ export const fx = {
   kinReturns: (): Effect => ({ type: "kinReturns" }),
   kinMissing: (role: NpcRef): Effect => ({ type: "kinMissing", role }),
   classStep: (delta: 1 | -1): Effect => ({ type: "classStep", delta }),
-  adopt: (): Effect => ({ type: "adopt" })
+  adopt: (): Effect => ({ type: "adopt" }),
+  strain: (delta: number): Effect => ({ type: "strain", delta }),
+  prosperity: (delta: number): Effect => ({ type: "prosperity", delta })
 };
 
 export const when = {
@@ -60,6 +62,16 @@ export const when = {
   noHardship: (): Condition => ({ type: "hardship", max: 0 }),
   /** Stage 04: хозяйство мира в одном из состояний */
   cycle: (...ids: EconomyCycle[]): Condition => ({ type: "cycle", ids }),
+  /** Stage 06: напряжение края не ниже */
+  strain: (min: number): Condition => ({ type: "strain", min }),
+  /** Stage 06: благополучие края не ниже */
+  prosperity: (min: number): Condition => ({ type: "prosperity", min }),
+  /** Stage 09: конкретное приключение пройдено */
+  deed: (id: string, done = true): Condition => ({ type: "deed", id, done }),
+  /** Stage 09: пройдено хоть одно приключение */
+  deedAny: (): Condition => ({ type: "deedAny" }),
+  /** Stage 09: у рода есть достижение */
+  achievement: (id: string): Condition => ({ type: "achievement", id }),
   level: (min: number): Condition => ({ type: "level", min }),
   rank: (min: number): Condition => ({ type: "rank", min }),
   rankAtMost: (max: number): Condition => ({ type: "rank", max }),

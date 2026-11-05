@@ -344,11 +344,21 @@ export class LivesService {
 
   /**
    * Откат к сохранённой версии. Записи истории после неё удаляются (этих событий не было),
-   * версии из отменённой ветки тоже, а номер версии продолжает расти
+   * версии из отменённой ветки тоже, а номер версии продолжает расти.
+   * С actionId повтор (вторая вкладка, обрыв связи) возвращает уже сделанный откат и не стирает новую ветку
    */
   async restore(playerId: string, lifeId: string, request: RestoreRequest): Promise<ActionResponse> {
     return this.db.$transaction(async (tx) => {
       const row = await this.lockLife(tx, playerId, lifeId);
+      const actionId = request.actionId;
+      if (actionId) {
+        const previous = await tx.gameAction.findUnique({ where: { lifeId_actionId: { lifeId, actionId } } });
+        if (previous) {
+          const same = previous.type === "restore" && canonical(previous.payload) === canonical({ version: request.version });
+          if (!same) throw new ApiError(409, "ACTION_ID_REUSED", "Этот actionId уже использован для другого действия");
+          return { life: toLifeView(meta(row), stateOf(row)), entries: previous.entries as unknown as HistoryEntry[], replayed: true };
+        }
+      }
       this.checkVersion(row, request.expectedVersion);
       if (request.version >= row.version) throw new ApiError(400, "VALIDATION", "Вернуться можно только к прошлой версии");
       // Род уже продолжен наследником: откат этой жизни дал бы второй вариант истории и второго наследника
@@ -365,6 +375,20 @@ export class LivesService {
       const updated = await tx.life.update({ where: { id: lifeId }, data: lifeColumns(state) });
       await this.writeEntries(tx, lifeId, entries);
       await this.writeSnapshot(tx, lifeId, state, "restore");
+      if (actionId) {
+        await tx.gameAction.create({
+          data: {
+            lifeId,
+            playerId,
+            actionId,
+            type: "restore",
+            payload: json({ version: request.version }),
+            fromVersion: row.version,
+            toVersion: state.version,
+            entries: json(entries)
+          }
+        });
+      }
       return { life: toLifeView(meta(updated), state), entries, replayed: false };
     });
   }

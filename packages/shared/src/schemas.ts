@@ -2,7 +2,9 @@
 import { CHANGE_KINDS, GENDERS, HISTORY_KINDS, INTERACTIONS, LOCALES, MAX_ADVANCE_YEARS, MAX_TRADE_QTY, NAME_MAX_LENGTH, SEED_MAX_LENGTH, TRADE_SIDES, UNIVERSE_IDS } from "@endemion/game-core";
 import { z } from "zod";
 
+/** id контента: буквы, цифры, дефис и точка (места и приключения — «мир.имя») */
 const optionId = z.string().regex(/^[a-z0-9-]{1,40}$/, "Некорректный идентификатор");
+const contentId = z.string().regex(/^[a-z0-9.-]{1,40}$/, "Некорректный идентификатор");
 
 export const createLifeSchema = z.strictObject({
   universeId: z.enum(UNIVERSE_IDS),
@@ -22,7 +24,9 @@ export const gameActionSchema = z.discriminatedUnion("type", [
   /** Личное общение с NPC: id из профиля жизни (n1, n2…) */
   z.strictObject({ type: z.literal("interact"), npcId: z.string().regex(/^n[0-9]{1,6}$/, "Некорректный идентификатор"), interaction: z.enum(INTERACTIONS) }),
   /** Stage 04: купить или продать товар рынка. Клиент называет товар, сторону и количество; цену считает сервер */
-  z.strictObject({ type: z.literal("trade"), goodId: optionId, side: z.enum(TRADE_SIDES), qty: z.int().min(1).max(MAX_TRADE_QTY) })
+  z.strictObject({ type: z.literal("trade"), goodId: optionId, side: z.enum(TRADE_SIDES), qty: z.int().min(1).max(MAX_TRADE_QTY) }),
+  /** Stage 05: начать приключение (adventureId), сделать шаг (choiceId) или сдаться (пустое) */
+  z.strictObject({ type: z.literal("venture"), adventureId: contentId.optional(), choiceId: optionId.optional() })
 ]);
 
 export const actionRequestSchema = z.strictObject({
@@ -50,7 +54,12 @@ export const restoreSchema = z.strictObject({
   /** Версия сохранения, к которой вернуться */
   version: z.int().min(1),
   /** Текущая версия, которую видел игрок */
-  expectedVersion: z.int().min(1)
+  expectedVersion: z.int().min(1),
+  /**
+   * Ключ этого отката. Повтор с тем же ключом возвращает тот же результат и не откатывает второй раз.
+   * Старые клиенты ключ не шлют: для них откат остаётся как был
+   */
+  actionId: z.uuid().optional()
 });
 export type RestoreRequest = z.infer<typeof restoreSchema>;
 

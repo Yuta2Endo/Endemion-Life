@@ -1,13 +1,17 @@
 // Ответы API. Представление жизни строится одной функцией и на сервере, и в офлайн-режиме сайта
 import {
+  presentAdventure,
+  presentMastery,
   presentEconomy,
   presentEvent,
   presentLegacy,
   presentMarket,
+  presentRegion,
   presentProfile,
   summarizeCharacter,
   type CharacterState,
   type CharacterSummary,
+  type AdventureBoard,
   type EconomyView,
   type EventView,
   type GameErrorCode,
@@ -19,6 +23,8 @@ import {
   type LifeState,
   type LineageView,
   type MarketView,
+  type MasteryView,
+  type RegionView,
   type OptionView,
   type UniverseId,
   type UniverseSummary
@@ -51,6 +57,12 @@ export interface LifeView extends LifeMeta {
   economy: EconomyView;
   /** Stage 04: рынок мира — товары, цены по нынешнему состоянию хозяйства, запас */
   market: MarketView;
+  /** Stage 05: места, приключения и текущий шаг */
+  adventure: AdventureBoard;
+  /** Stage 06: край этой жизни — напряжение, благополучие, склад */
+  region: RegionView;
+  /** Stage 10: цели освоения и отметки навыков. Наград не показывает — их нет */
+  mastery: MasteryView;
 }
 
 export interface LifeListItem extends LifeMeta {
@@ -174,7 +186,10 @@ export function toLifeView(meta: LifeMeta, state: GameState): LifeView {
     profile: presentProfile(state),
     legacy: presentLegacy(state),
     economy: presentEconomy(state),
-    market: presentMarket(state)
+    market: presentMarket(state),
+    adventure: presentAdventure(state),
+    region: presentRegion(state),
+    mastery: presentMastery(state)
   };
 }
 

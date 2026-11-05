@@ -219,6 +219,42 @@ describe("жизни", () => {
     expect(history.body.entries.map((e: { kind: string }) => e.kind)).toEqual(["restore", "birth"]);
     // Откат к будущей версии невозможен
     await client.post(`/api/lives/${life.id}/restore`).set("Origin", ORIGIN).send({ version: restored.version, expectedVersion: restored.version }).expect(400);
+
+    let current = restored;
+    for (let i = 0; i < 3; i++) {
+      const step = current.pendingEvent
+        ? await act(client, current, { type: "choose", choiceId: current.pendingEvent.choices.find((c) => c.available)!.id })
+        : await act(client, current, { type: "advance" });
+      current = (step.body as ActionResponse).life;
+    }
+    const actionId = randomUUID();
+    const again = await client
+      .post(`/api/lives/${life.id}/restore`)
+      .set("Origin", ORIGIN)
+      .send({ version: restored.version, expectedVersion: current.version, actionId })
+      .expect(200);
+    const second = (again.body as ActionResponse).life;
+    expect(again.body.replayed).toBe(false);
+    const replay = await client
+      .post(`/api/lives/${life.id}/restore`)
+      .set("Origin", ORIGIN)
+      .send({ version: restored.version, expectedVersion: current.version, actionId })
+      .expect(200);
+    expect(replay.body.replayed).toBe(true);
+    expect((replay.body as ActionResponse).life.version).toBe(second.version);
+    const moved = await client
+      .post(`/api/lives/${life.id}/restore`)
+      .set("Origin", ORIGIN)
+      .send({ version: restored.version, expectedVersion: second.version, actionId })
+      .expect(200);
+    expect(moved.body.replayed).toBe(true);
+    expect((moved.body as ActionResponse).life.version).toBe(second.version);
+    const other = await client
+      .post(`/api/lives/${life.id}/restore`)
+      .set("Origin", ORIGIN)
+      .send({ version: firstVersion, expectedVersion: second.version, actionId })
+      .expect(409);
+    expect(other.body.error.code).toBe("ACTION_ID_REUSED");
   });
 
   it("история загружается страницами", async () => {

@@ -12,6 +12,7 @@ import { findSkill, SKILL_MAX } from "../rpg/skills.js";
 import type { GameState, UniverseId } from "../types.js";
 import { getUniverse } from "../universes/registry.js";
 import { ADULT_AGE, CYCLE_FACTOR } from "./economy.js";
+import { regionStock, stockFactor, tradeRegion } from "./region.js";
 
 /** Рынок открыт с этого возраста: свои деньги — с того же возраста, что и свои расходы */
 export const MARKET_AGE = ADULT_AGE;
@@ -81,9 +82,13 @@ export function findGood(universeId: UniverseId, id: string): GoodDefinition | u
   return WORLD_GOODS[universeId].find((g) => g.id === id);
 }
 
-/** Цены сейчас: от базы товара и состояния хозяйства мира */
+/**
+ * Цены сейчас: база товара, состояние хозяйства и склад края.
+ * Пустой склад дороже полного, но покупка при любом складе и цикле остаётся дороже продажи:
+ * скидка 0.8 и наценка 1.25 шире, чем размах склада (economy/region.ts)
+ */
 export function pricesOf(state: GameState, good: GoodDefinition): { buy: number; sell: number } {
-  const factor = CYCLE_FACTOR[state.economy.cycle];
+  const factor = CYCLE_FACTOR[state.economy.cycle] * stockFactor(regionStock(state, good.id));
   return { buy: Math.ceil(good.base * factor * BUY_MARKUP), sell: Math.max(0, Math.floor(good.base * factor * SELL_DISCOUNT)) };
 }
 
@@ -143,6 +148,7 @@ export function trade(ctx: EngineContext, goodId: string, side: "buy" | "sell", 
     if (stock + qty > MAX_STOCK) throw new GameRuleError("CHOICE_LOCKED", `Больше ${MAX_STOCK} штук не хранится`);
     applyEffect(ctx, { type: "wealth", delta: -cost });
     changeStock(ctx, item.id, qty);
+    tradeRegion(state, item.id, "buy", qty);
     return {
       title: t("Рынок", "Market"),
       text: t(`Куплено: ${item.name.ru} × ${qty} за ${cost} золота.`, `Bought: ${item.name.en} × ${qty} for ${cost} gold.`)
@@ -152,6 +158,7 @@ export function trade(ctx: EngineContext, goodId: string, side: "buy" | "sell", 
   const income = prices.sell * qty;
   changeStock(ctx, item.id, -qty);
   applyEffect(ctx, { type: "wealth", delta: income });
+  tradeRegion(state, item.id, "sell", qty);
   return {
     title: t("Рынок", "Market"),
     text: t(`Продано: ${item.name.ru} × ${qty} за ${income} золота.`, `Sold: ${item.name.en} × ${qty} for ${income} gold.`)

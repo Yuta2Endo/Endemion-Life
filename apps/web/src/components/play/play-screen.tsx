@@ -14,6 +14,7 @@ import { ChangeChips } from "../change-chips";
 import { useI18n } from "../locale-provider";
 import { CharacterSheet } from "./character-sheet";
 import { Dossier } from "./dossier";
+import { NowPanel } from "./now-panel";
 import { EventCard, OutcomeCard } from "./event-card";
 import { LifeSummary } from "./life-summary";
 import { LocalLifeBanner } from "./local-life-banner";
@@ -182,13 +183,18 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
 
   async function restore(version: number, age: number) {
     if (!life || !window.confirm(t("play.restoreConfirm", { age: ageLabel(age, locale) }))) return;
+    const key = JSON.stringify([life.version, "restore", version]);
+    if (pendingAction.current?.key !== key) pendingAction.current = { key, actionId: newUuid() };
+    const { actionId } = pendingAction.current;
     setBusy(true);
     try {
-      await store.restore(lifeId, version, life.version);
+      await store.restore(lifeId, version, life.version, actionId);
+      pendingAction.current = null;
       setSavesOpen(false);
       setOutcome(null);
       await load();
     } catch (error) {
+      if (error instanceof ClientError && error.code === "VERSION_CONFLICT") pendingAction.current = null;
       setNotice(errorText(error));
     } finally {
       setBusy(false);
@@ -196,12 +202,18 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
   }
 
   if (status === "loading") {
-    return <main className="mx-auto max-w-7xl px-4 py-24 text-center text-bone-500">{t("play.loading")}</main>;
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-24 text-center text-bone-500" aria-live="polite">
+        {t("play.loading")}
+      </main>
+    );
   }
   if (status !== "ready" || !life) {
     return (
       <main className="mx-auto flex max-w-xl flex-col items-center px-4 py-24 text-center">
-        <p className="text-bone-300">{status === "missing" ? t("play.notFound") : t("error.generic")}</p>
+        <p className="text-bone-300" role="alert">
+          {status === "missing" ? t("play.notFound") : t("error.generic")}
+        </p>
         <div className="mt-6 flex gap-3">
           {status === "error" && <Button onClick={() => void load()}>{t("play.retry")}</Button>}
           <Link href="/" className="rounded-md border border-line px-4 py-2 text-sm text-bone-100 hover:border-gold-500/60">
@@ -226,6 +238,10 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
   const people = Object.fromEntries(life.profile.npcs.map((npc) => [npc.id, npc.name]));
   const interact = (npcId: string, interaction: InteractionId) => void perform({ type: "interact", npcId, interaction });
   const tradeGood = (goodId: string, side: TradeSide, qty: number) => void perform({ type: "trade", goodId, side, qty });
+  const venture = (action: { adventureId?: string; choiceId?: string; abandon?: boolean }) => {
+    if (action.abandon && !window.confirm(t("adventure.abandonConfirm"))) return;
+    void perform({ type: "venture", adventureId: action.adventureId, choiceId: action.choiceId });
+  };
   const shown = (id: Tab) => (tab === id ? "block" : "hidden lg:block");
 
   return (
@@ -234,15 +250,19 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
       style={{ "--accent": universe.theme.accent, "--accent-glow": universe.theme.glow } as React.CSSProperties}
       data-testid="play-screen"
       data-version={life.version}
+      aria-busy={busy}
     >
       <div className="pointer-events-none fixed inset-x-0 top-0 h-80 opacity-70 blur-3xl" style={{ background: `radial-gradient(600px 200px at 50% 0%, ${universe.theme.glow}, transparent)` }} aria-hidden="true" />
 
       {store.kind === "local" && <LocalLifeBanner lifeId={lifeId} disabled={busy} />}
-      {notice && (
-        <p className="relative mb-4 rounded-md border border-blood-500/40 bg-blood-600/10 px-3 py-2 text-sm text-blood-300" role="alert" data-testid="notice">
-          {notice}
-        </p>
-      )}
+      <div className="relative mb-4" aria-live="polite">
+        {notice && (
+          <p className="rounded-md border border-blood-500/40 bg-blood-600/10 px-3 py-2 text-sm text-blood-300" role="alert" data-testid="notice">
+            {notice}
+          </p>
+        )}
+        {busy && !notice && <p className="text-xs text-bone-300">{t("play.working")}</p>}
+      </div>
 
       {/* minmax(0,1fr) на телефоне: широкое древо прокручивается в своей рамке и не растягивает страницу */}
       <div className="relative grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[300px_minmax(0,1fr)_340px]">
@@ -269,6 +289,8 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
             </Panel>
           )}
 
+          <NowPanel life={life} />
+
           {!dead && (
             <Panel className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap gap-2">
@@ -285,18 +307,20 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
               <Button variant="quiet" onClick={() => void openSaves()} disabled={busy} data-testid="saves-button">
                 {t("play.saves")}
               </Button>
-              <p className="w-full text-xs text-bone-500">{t("play.advanceHint")}</p>
+              <p className="w-full text-xs text-bone-300">
+                {event ? t("play.advanceBlockedEvent") : busy ? t("play.advanceBlockedBusy") : t("play.advanceHint")}
+              </p>
             </Panel>
           )}
 
           <div className="hidden lg:block">
-            <Dossier life={life} busy={busy} store={store} onInteract={interact} onTrade={tradeGood} />
+            <Dossier life={life} busy={busy} store={store} onInteract={interact} onTrade={tradeGood} onVenture={venture} />
           </div>
         </section>
 
         {/* На телефоне досье — отдельная вкладка */}
         <section className={tab === "people" ? "block lg:hidden" : "hidden"}>
-          <Dossier life={life} busy={busy} store={store} onInteract={interact} onTrade={tradeGood} />
+          <Dossier life={life} busy={busy} store={store} onInteract={interact} onTrade={tradeGood} onVenture={venture} />
         </section>
 
         <aside className={shown("timeline")}>
@@ -305,14 +329,14 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
       </div>
 
       {/* Вкладки для телефона: на большом экране все три колонки видны сразу */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-ink-950/95 backdrop-blur-md lg:hidden" aria-label="Sections">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-ink-950/95 backdrop-blur-md lg:hidden" aria-label={t("play.sections")}>
         {tabs.map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => setTab(item.id)}
             aria-pressed={tab === item.id}
-            className={`relative py-3.5 text-[11px] uppercase tracking-[0.14em] transition ${tab === item.id ? "text-gold-200" : "text-bone-500"}`}
+            className={`relative min-h-12 py-3.5 text-[11px] uppercase tracking-[0.14em] transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-gold-300 ${tab === item.id ? "text-gold-200" : "text-bone-300"}`}
             data-testid={`tab-${item.id}`}
           >
             {item.label}

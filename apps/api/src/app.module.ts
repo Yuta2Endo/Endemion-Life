@@ -18,9 +18,11 @@ import { RateLimitGuard } from "./redis/rate-limit.guard.js";
 import { RedisService } from "./redis/redis.service.js";
 import { SessionController } from "./session/session.controller.js";
 import { SessionService } from "./session/session.service.js";
+import { SocialController } from "./social/social.controller.js";
+import { SocialService } from "./social/social.service.js";
 
 @Module({
-  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController],
+  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, SocialController],
   providers: [
     { provide: APP_CONFIG, useFactory: (): AppConfig => readConfig() },
     PrismaService,
@@ -31,6 +33,7 @@ import { SessionService } from "./session/session.service.js";
     AuthThrottle,
     AuthService,
     LivesService,
+    SocialService,
     // Порядок важен: сначала лимит запросов, потом проверка источника запроса
     { provide: APP_GUARD, useClass: RateLimitGuard },
     { provide: APP_GUARD, useClass: RequestGuard },

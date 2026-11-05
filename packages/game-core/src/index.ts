@@ -10,7 +10,7 @@ export type * from "./narrative/types.js";
 export type * from "./universes/types.js";
 export { getUniverse, isUniverseId, listUniverses } from "./universes/registry.js";
 export { COMMON_EVENTS } from "./narrative/common.js";
-export { eventIndex, findEvent, isEligible } from "./narrative/selection.js";
+export { eventIndex, eventProblems, findEvent, isEligible } from "./narrative/selection.js";
 
 export { TEMPERAMENTS, type TemperamentDefinition } from "./character/temperaments.js";
 export {
@@ -41,6 +41,23 @@ export { meterValue, worldTrackFactor } from "./world/rules.js";
 export { ADULT_AGE, CYCLE_FACTOR, HARDSHIP_PENALTY_YEARS, livingCost, MAX_ECONOMY_YEARS, newEconomy, presentEconomy, yearLines, type EconomyLineView, type EconomyView } from "./economy/economy.js";
 export { economyOf, WORLD_ECONOMIES, type WorldEconomy } from "./economy/worlds.js";
 export {
+  changeProsperity,
+  changeStrain,
+  newRegion,
+  presentRegion,
+  regionStock,
+  regionYear,
+  STOCK_MAX,
+  STOCK_REGEN,
+  STOCK_START,
+  stockBand,
+  stockFactor,
+  tradeRegion,
+  type RegionState,
+  type RegionView,
+  type StockBand
+} from "./economy/region.js";
+export {
   BUY_MARKUP,
   findGood,
   goodsOf,
@@ -57,6 +74,7 @@ export {
 } from "./economy/market.js";
 export { checkCondition, describeCondition } from "./engine/conditions.js";
 export { applyAction, newGame, restoreState, SAVE_SCHEMA_VERSION, SEED_MAX_LENGTH, type NewGameInput } from "./engine/game.js";
+export { findObjective, newMastery, presentMastery, SKILL_MASTERY, type MasteryState, type MasteryView } from "./endgame/mastery.js";
 export { migrateSave, parseSave } from "./engine/save.js";
 export { importLevelCap, importWealthCap, prepareImport, type ImportAdjustment, type ImportResult } from "./engine/import.js";
 export { presentEvent, summarizeCharacter, type ChoiceView, type CharacterSummary, type EventView } from "./engine/view.js";
@@ -70,6 +88,22 @@ export { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, findAchievement, unlockAchievemen
 export { scoreLife, LIFE_TITLES, SCORE_PARTS, SCORE_PART_NAMES, type LifeScore, type ScorePart } from "./legacy/summary.js";
 export { LEGACY_EVENTS, LINEAGE_CONSEQUENCES, THREADS } from "./legacy/stories.js";
 export { MAX_CHRONICLE, lineageYear } from "./legacy/chronicle.js";
+export {
+  abandonAdventure,
+  adventureBlock,
+  beginAdventure,
+  MAX_ADVENTURE_LOG,
+  newAdventure,
+  presentAdventure,
+  venture,
+  type AdventureBoard,
+  type AdventureView as AdventureCardView,
+  type ChoiceView as VentureChoiceView,
+  type PlaceView,
+  type RewardView
+} from "./adventure/adventure.js";
+export { adventuresOf, contentProblems, findAdventure, findPlace, placesOf } from "./adventure/content.js";
+export type { AdventureDefinition, AdventureState, PlaceDefinition, StepOutcome, VentureChoice } from "./adventure/types.js";
 export {
   presentHeirs,
   presentLegacy,

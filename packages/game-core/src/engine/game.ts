@@ -10,7 +10,10 @@ import { lifespanOf } from "../character/derived.js";
 import { ageOneYear } from "../life/aging.js";
 import { DEATH_CAUSES } from "../life/death.js";
 import { STAGE_INFO, stageForAge } from "../life/stages.js";
+import { abandonAdventure, beginAdventure, discoverYearly, newAdventure, venture } from "../adventure/adventure.js";
+import { masteryYearly, newMastery } from "../endgame/mastery.js";
 import { newEconomy } from "../economy/economy.js";
+import { newRegion } from "../economy/region.js";
 import { trade } from "../economy/market.js";
 import { newLineage } from "../legacy/chronicle.js";
 import { checkAchievements, finishLife, foundLineage, lineageYearly, recordStory } from "../legacy/lineage.js";
@@ -41,9 +44,12 @@ import { applyEffects, isFatal, kill } from "./effects.js";
  * 1 — Stage 01; 2 — Stage 02: семья, NPC, таланты, навыки, шкалы мира, последствия;
  * 3 — Stage 03: родство по id, жизнь NPC, род, хроника рода, достижения, наследование (перевод в save.ts);
  * 4 — Stage 04: хозяйство (economy) — цикл мира, нехватка денег, доходы и расходы последних лет;
- * 5 — Stage 04, рынок: запас товаров (economy.goods)
+ * 5 — Stage 04, рынок: запас товаров (economy.goods);
+ * 6 — Stage 05: открытые места и приключение (adventure);
+ * 7 — Stage 06: край этой жизни (region) — склад товаров, напряжение, благополучие;
+ * 8 — Stage 10: освоение мира и мастерство навыков (mastery). Наград не даёт
  */
-export const SAVE_SCHEMA_VERSION = 5;
+export const SAVE_SCHEMA_VERSION = 8;
 export const SEED_MAX_LENGTH = 64;
 
 const YEAR_TEXTS: readonly LocalizedText[] = [
@@ -133,7 +139,10 @@ export function newGame(input: NewGameInput): ActionResult {
     recentEvents: [],
     lineage: newLineage(""),
     memory: [],
-    economy: newEconomy()
+    economy: newEconomy(),
+    adventure: newAdventure(),
+    region: newRegion(character.universeId),
+    mastery: newMastery()
   };
   // Семья, таланты и тайны — из отдельного потока: броски Stage 01 и дальнейшая жизнь от них не сдвигаются
   state.lineage.selfParents = bornInto({ state, rng: Rng.fromSeed(seed, "birth"), universe }, generatedName);
@@ -201,8 +210,11 @@ function advance(ctx: EngineContext, entries: HistoryEntry[], years: number): vo
 
     const emit = emitter(ctx, entries);
     questYearly(ctx, emit);
+    const discovered = discoverYearly(state);
+    if (discovered) pushEntry(ctx, entries, "adventure", { title: t("Новое место", "A new place"), text: discovered });
     consequencesYearly(ctx, emit);
     lineageYearly(ctx, emit);
+    masteryYearly(state);
     if (!settle(ctx, entries)) return;
 
     const event = selectEvent(ctx);
@@ -325,6 +337,19 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
       // Сделка — без хода времени и без бросков: цену и остаток считает рынок мира
       const result = trade(ctx, action.goodId, action.side, action.qty);
       pushEntry(ctx, entries, "market", { title: result.title, text: result.text });
+      break;
+    }
+    case "venture": {
+      // Шаг приключения не тратит год и не берёт числа из основного генератора
+      const result = action.adventureId
+        ? beginAdventure(ctx, action.adventureId)
+        : action.choiceId
+          ? venture(ctx, action.choiceId)
+          : abandonAdventure(ctx);
+      const fields: Omit<HistoryEntry, "seq" | "age" | "kind" | "changes"> = { title: result.title, text: result.text };
+      if (result.check) fields.check = result.check;
+      pushEntry(ctx, entries, "adventure", fields);
+      settle(ctx, entries);
       break;
     }
     default:

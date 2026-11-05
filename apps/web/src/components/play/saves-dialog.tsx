@@ -25,23 +25,35 @@ export function SavesDialog({
 }) {
   const { locale, t } = useI18n();
   const ref = useRef<HTMLDialogElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
+    if (open && !dialog.open) {
+      opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      dialog.showModal();
+    }
+    if (!open && dialog.open) {
+      dialog.close();
+      opener.current?.focus();
+    }
   }, [open]);
 
   return (
     <dialog
       ref={ref}
       onClose={onClose}
-      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-xl border border-gold-500/40 bg-ink-900 p-0 text-bone-100 backdrop:bg-ink-950/80 backdrop:backdrop-blur-sm"
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      aria-labelledby="saves-title"
+      className="m-auto w-[min(32rem,calc(100vw-2rem))] max-h-[calc(100dvh-2rem)] rounded-xl border border-gold-500/40 bg-ink-900 p-0 text-bone-100 backdrop:bg-ink-950/80 backdrop:backdrop-blur-sm"
       data-testid="saves-dialog"
     >
       <div className="p-6">
-        <h2 className="font-display text-2xl text-gilded">{t("play.savesTitle")}</h2>
+        <h2 id="saves-title" className="font-display text-2xl text-gilded">{t("play.savesTitle")}</h2>
         <p className="mt-2 text-sm text-bone-300">{t("play.savesHint")}</p>
         <ul className="scroll-thin mt-5 max-h-[50vh] space-y-2 overflow-y-auto pr-1">
           {saves === null && <li className="h-12 animate-pulse rounded-md bg-ink-800" />}

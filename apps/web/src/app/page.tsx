@@ -2,6 +2,7 @@ import { universeCatalog } from "@endemion/game-core";
 import { Ornament } from "@endemion/ui";
 import Link from "next/link";
 import { LivesList } from "@/components/lives-list";
+import { PlayGuide } from "@/components/play-guide";
 import { WorldCard } from "@/components/world-card";
 import { getServerI18n } from "@/lib/locale-server";
 
@@ -55,6 +56,9 @@ export default async function HomePage() {
         <h2 className="font-display text-3xl text-bone-100">{t("home.continue")}</h2>
         <Ornament className="my-5 max-w-xs" />
         <LivesList />
+        <div className="mt-6">
+          <PlayGuide />
+        </div>
       </section>
 
       <section id="worlds" className="mt-20 scroll-mt-20">

@@ -21,6 +21,13 @@ describe("тексты интерфейса", () => {
     expect(toLocale(undefined)).toBe("ru");
   });
 
+  it("сводка и справка есть на обоих языках", () => {
+    expect(msg("ru", "now.nextYear")).toContain("год");
+    expect(msg("en", "now.nextEvent")).toContain("event");
+    expect(msg("ru", "guide.hide")).toBe("Скрыть");
+    expect(msg("en", "play.advanceBlockedEvent")).toContain("event");
+  });
+
   it("возраст склоняется", () => {
     expect(ageLabel(1, "ru")).toBe("1 год");
     expect(ageLabel(3, "ru")).toBe("3 года");

@@ -58,12 +58,18 @@ describe("Stage 04: перевод сохранений 3 → 4", () => {
     const raw = SAVES_V3[key] as GameState;
     const state = parseSave(deepClone(raw));
     expect(state.schemaVersion).toBe(SAVE_SCHEMA_VERSION);
-    // Цепочка 3 → 4 → 5: хозяйство формата 4 и пустой запас товаров формата 5
+    // Цепочка 3 → 8: хозяйство, запас, пустое приключение, край и пустое мастерство
     expect(state.economy).toEqual({ cycle: "normal", cycleSince: raw.life.age, hardship: 0, last: null, years: [], goods: {} });
-    // Всё прежнее — без изменений: перевод только добавляет поле
+    expect(state.adventure).toEqual({ discovered: [], active: null, done: [], failed: [], log: [] });
+    expect(state.region.strain).toBe(0);
+    expect(state.mastery).toEqual({ objectives: [], skills: [] });
+    // Всё прежнее — без изменений: перевод только добавляет поля
     const rest = deepClone(state) as unknown as Record<string, unknown>;
     const before = deepClone(raw) as unknown as Record<string, unknown>;
     delete rest.economy;
+    delete rest.adventure;
+    delete rest.region;
+    delete rest.mastery;
     delete rest.schemaVersion;
     delete before.schemaVersion;
     expect(rest).toEqual(before);

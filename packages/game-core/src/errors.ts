@@ -9,7 +9,9 @@ export const GAME_ERROR_CODES = [
   // Stage 03: продолжение рода
   "LIFE_NOT_ENDED",
   "HEIR_LOCKED",
-  "LINEAGE_CONTINUED"
+  "LINEAGE_CONTINUED",
+  // Stage 05: приключение недоступно (возраст, место, предпосылки, уже завершено)
+  "ADVENTURE_LOCKED"
 ] as const;
 export type GameErrorCode = (typeof GAME_ERROR_CODES)[number];
 

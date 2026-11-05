@@ -36,6 +36,16 @@ export function checkCondition(state: GameState, condition: Condition): boolean 
       return inRange(state.economy.hardship, condition.min, condition.max);
     case "cycle":
       return condition.ids.includes(state.economy.cycle);
+    case "strain":
+      return inRange(state.region.strain, condition.min, condition.max);
+    case "prosperity":
+      return inRange(state.region.prosperity, condition.min, condition.max);
+    case "deed":
+      return (condition.done ? state.adventure.done : state.adventure.failed).includes(condition.id);
+    case "deedAny":
+      return state.adventure.done.length > 0;
+    case "achievement":
+      return state.lineage.achievements.some((item) => item.id === condition.id);
     case "level":
       return c.level >= condition.min;
     case "rank":
@@ -150,6 +160,16 @@ export function describeCondition(condition: Condition, universe: UniverseDefini
       return condition.min !== undefined ? t("Нужна нужда в деньгах", "Requires money troubles") : t("Сейчас не до этого: денег не хватает", "Not now: money is short");
     case "cycle":
       return t("Не то время для хозяйства", "Not the right economic times");
+    case "strain":
+      return t("Край должен быть на пределе", "The land must be strained");
+    case "prosperity":
+      return t("Край должен быть благополучен", "The land must be prospering");
+    case "deed":
+      return t("Сначала нужно покончить с делом", "A deed must be settled first");
+    case "deedAny":
+      return t("Сначала нужно завершить хоть одно дело", "At least one deed must be completed");
+    case "achievement":
+      return t("Род ещё не заслужил этого", "The family has not earned this yet");
     case "level":
       return join(t("Уровень", "Level"), rangeText(condition.min));
     case "rank": {

@@ -7,6 +7,9 @@ export default defineConfig({
     environment: "node",
     globalSetup: ["./test/global-setup.ts"],
     fileParallelism: false,
+    // Все файлы делят одну тестовую базу и чистят её через TRUNCATE. Второй воркер ловит чужой сброс.
+    maxWorkers: 1,
+    minWorkers: 1,
     testTimeout: 30_000,
     hookTimeout: 120_000
   }

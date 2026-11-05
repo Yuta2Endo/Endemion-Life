@@ -14,15 +14,17 @@ import {
 } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
 import { Meter, Ornament, Panel } from "@endemion/ui";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ageLabel } from "@/lib/format";
 import type { MessageKey } from "@/lib/messages";
 import type { GameStore } from "@/lib/store";
 import { useI18n } from "../locale-provider";
+import { AdventurePanel } from "./adventure-panel";
+import { MasteryPanel } from "./mastery-panel";
 import { EconomyPanel } from "./economy-panel";
 import { LineagePanel } from "./lineage";
 
-type Section = "bio" | "family" | "lineage" | "economy" | "skills" | "people";
+type Section = "bio" | "family" | "lineage" | "economy" | "adventure" | "skills" | "people";
 
 function Signed({ value }: { value: number }) {
   const tone = value > 0 ? "text-jade-300" : value < 0 ? "text-blood-300" : "text-bone-300";
@@ -374,22 +376,26 @@ export function Dossier({
   busy,
   store,
   onInteract,
-  onTrade
+  onTrade,
+  onVenture
 }: {
   life: LifeView;
   busy: boolean;
   store: GameStore;
   onInteract: (npcId: string, interaction: InteractionId) => void;
   onTrade: (goodId: string, side: TradeSide, qty: number) => void;
+  onVenture: (action: { adventureId?: string; choiceId?: string; abandon?: boolean }) => void;
 }) {
   const { locale, l, t } = useI18n();
   const [section, setSection] = useState<Section>("bio");
+  const tabsRef = useRef<HTMLDivElement>(null);
   const universe = getUniverse(life.universeId);
   const sections: { id: Section; label: string }[] = [
     { id: "bio", label: t("dossier.bio") },
     { id: "family", label: t("dossier.family") },
     { id: "lineage", label: t("dossier.lineage") },
     { id: "economy", label: t("dossier.economy") },
+    { id: "adventure", label: t("dossier.adventure") },
     { id: "skills", label: t("dossier.skills") },
     { id: "people", label: t("dossier.people") }
   ];
@@ -398,15 +404,34 @@ export function Dossier({
     <Panel className="space-y-4" data-testid="dossier">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-2xl text-bone-100">{t("dossier.title")}</h2>
-        <div className="flex flex-wrap rounded-md border border-line bg-ink-950/70 p-0.5" role="tablist" aria-label={t("dossier.title")}>
+          <div
+            ref={tabsRef}
+            className="flex flex-wrap rounded-md border border-line bg-ink-950/70 p-0.5"
+            role="tablist"
+            aria-label={t("dossier.title")}
+            onKeyDown={(event) => {
+              const keys = ["ArrowRight", "ArrowLeft", "Home", "End"];
+              if (!keys.includes(event.key)) return;
+              event.preventDefault();
+              const index = sections.findIndex((item) => item.id === section);
+              const next =
+                event.key === "Home" ? 0 : event.key === "End" ? sections.length - 1 : event.key === "ArrowRight" ? (index + 1) % sections.length : (index - 1 + sections.length) % sections.length;
+              const id = sections[next]?.id;
+              if (!id) return;
+              setSection(id);
+              tabsRef.current?.querySelector<HTMLButtonElement>(`[data-tab="${id}"]`)?.focus();
+            }}
+          >
           {sections.map((item) => (
             <button
               key={item.id}
               type="button"
               role="tab"
+              data-tab={item.id}
               aria-selected={section === item.id}
+              tabIndex={section === item.id ? 0 : -1}
               onClick={() => setSection(item.id)}
-              className={`rounded px-2.5 py-1 text-xs transition ${section === item.id ? "bg-gold-500/20 text-gold-100" : "text-bone-300 hover:text-bone-100"}`}
+              className={`rounded px-2.5 py-1 text-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${section === item.id ? "bg-gold-500/20 text-gold-100" : "text-bone-300 hover:text-bone-100"}`}
               data-testid={`dossier-tab-${item.id}`}
             >
               {item.label}
@@ -444,6 +469,18 @@ export function Dossier({
       {section === "family" && <FamilyTree life={life} />}
       {section === "lineage" && <LineagePanel life={life} store={store} />}
       {section === "economy" && <EconomyPanel life={life} busy={busy} onTrade={onTrade} />}
+      {section === "adventure" && (
+        <>
+        <MasteryPanel life={life} />
+        <AdventurePanel
+          life={life}
+          busy={busy}
+          onBegin={(adventureId) => onVenture({ adventureId })}
+          onChoose={(choiceId) => onVenture({ choiceId })}
+          onAbandon={() => onVenture({ abandon: true })}
+        />
+        </>
+      )}
       {section === "skills" && <SkillsAndTalents life={life} />}
       {section === "people" && <People life={life} busy={busy} onInteract={onInteract} />}
     </Panel>

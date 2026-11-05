@@ -16,6 +16,16 @@ export type Condition =
   | { type: "hardship"; min?: number; max?: number }
   /** Stage 04: состояние хозяйства мира — спад, обычные годы, подъём */
   | { type: "cycle"; ids: EconomyCycle[] }
+  /** Stage 06: напряжение края, 0–100 */
+  | { type: "strain"; min?: number; max?: number }
+  /** Stage 06: благополучие края, 0–100 */
+  | { type: "prosperity"; min?: number; max?: number }
+  /** Stage 09: конкретное приключение пройдено (done) или провалено */
+  | { type: "deed"; id: string; done: boolean }
+  /** Stage 09: пройдено хоть одно приключение */
+  | { type: "deedAny" }
+  /** Stage 09: у рода есть достижение */
+  | { type: "achievement"; id: string }
   | { type: "level"; min: number }
   | { type: "rank"; min?: number; max?: number }
   /** Путь требует прорыва: очки упёрлись в порог следующего ранга */
@@ -125,7 +135,11 @@ export type Effect =
   /** Сословие на ступень выше или ниже */
   | { type: "classStep"; delta: 1 | -1 }
   /** Персонаж берёт на воспитание ребёнка: приёмный сын или дочь, наследник наравне с родными */
-  | { type: "adopt" };
+  | { type: "adopt" }
+  /** Stage 06: напряжение края */
+  | { type: "strain"; delta: number }
+  /** Stage 06: благополучие края */
+  | { type: "prosperity"; delta: number };
 
 export interface StatCheck {
   /** Берётся среднее по этим характеристикам (с бонусом ранга) */

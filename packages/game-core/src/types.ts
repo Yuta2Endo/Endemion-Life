@@ -1,3 +1,6 @@
+import type { AdventureState } from "./adventure/types.js";
+import type { MasteryState } from "./endgame/mastery.js";
+import type { RegionState } from "./economy/region.js";
 import type { LocalizedText } from "./i18n.js";
 import type { Resources, Stats } from "./stats.js";
 
@@ -240,6 +243,8 @@ export const CHRONICLE_KINDS = [
   "succession",
   "inheritance",
   "achievement",
+  /** Stage 08: пройденное или проваленное приключение. Имя берётся при показе, в сохранении только id */
+  "deed",
   "talent",
   "secret",
   "story"
@@ -447,7 +452,8 @@ export interface HistoryChange {
 }
 
 /** import — Stage 04: жизнь перенесена из браузера на сервер */
-export const HISTORY_KINDS = ["birth", "event", "year", "death", "restore", "consequence", "quest", "people", "legacy", "import", "market"] as const;
+/** adventure — Stage 05: приключение (начало, шаг, завершение, провал) */
+export const HISTORY_KINDS = ["birth", "event", "year", "death", "restore", "consequence", "quest", "people", "legacy", "import", "market", "adventure"] as const;
 export type HistoryKind = (typeof HISTORY_KINDS)[number];
 
 export interface HistoryEntry {
@@ -503,6 +509,12 @@ export interface GameState {
   memory: MemoryEntry[];
   /** Stage 04: хозяйство — экономический цикл мира, нехватка денег, доходы и расходы последних лет */
   economy: EconomyState;
+  /** Stage 05: открытые места и текущее приключение */
+  adventure: AdventureState;
+  /** Stage 06: край этой жизни — склад, напряжение, благополучие */
+  region: RegionState;
+  /** Stage 10: освоенные цели и навыки этой жизни. Наград не даёт */
+  mastery: MasteryState;
 }
 
 /** Stage 04: состояние хозяйства мира. Спад и подъём меняют заработок */
@@ -553,7 +565,12 @@ export type GameAction =
   | { type: "choose"; choiceId: string }
   | { type: "interact"; npcId: string; interaction: InteractionId }
   /** Stage 04: купить или продать товар рынка. Цену и остаток считает сервер */
-  | { type: "trade"; goodId: string; side: TradeSide; qty: number };
+  | { type: "trade"; goodId: string; side: TradeSide; qty: number }
+  /**
+   * Stage 05: приключение. adventureId — начать, choiceId — шаг активного, пустое — сдаться.
+   * Исход и награду считает сервер
+   */
+  | { type: "venture"; adventureId?: string; choiceId?: string };
 
 export const TRADE_SIDES = ["buy", "sell"] as const;
 export type TradeSide = (typeof TRADE_SIDES)[number];

@@ -4,6 +4,7 @@ import { lifespanOf } from "../character/derived.js";
 import { affinityLabel, roleName } from "../character/npcs.js";
 import { isKin, KinGraph, type KinRelation } from "../family/kin.js";
 import { fillText, t, type LocalizedText } from "../i18n.js";
+import { findAdventure } from "../adventure/content.js";
 import { findEvent } from "../narrative/selection.js";
 import { findProfession } from "../rpg/skills.js";
 import { findTalent, findWeakness } from "../rpg/talents.js";
@@ -584,6 +585,14 @@ function names(universe: UniverseDefinition, entry: ChronicleEntry): LocalizedTe
     case "achievement": {
       const achievement = ACHIEVEMENTS.find((a) => a.id === v.achievement);
       return achievement ? t(`${n0}: достижение «${achievement.name.ru}».`, `${n0}: achievement "${achievement.name.en}".`) : t(n0, n0);
+    }
+    case "deed": {
+      const adventure = findAdventure(universe.id, String(v.deed));
+      const done = v.outcome === "done";
+      if (!adventure) return t(n0, n0);
+      return done
+        ? t(`${n0} завершает дело: «${adventure.name.ru}».`, `${n0} completes a deed: "${adventure.name.en}".`)
+        : t(`${n0} не справляется с делом: «${adventure.name.ru}».`, `${n0} fails a deed: "${adventure.name.en}".`);
     }
     case "story": {
       const id = String(v.story);
