@@ -61,7 +61,7 @@ describe("Stage 06: край", () => {
       const row = await t.prisma.client.life.findUniqueOrThrow({ where: { id: life.id } });
       const state = row.state as GameState;
       state.character.wealth = Math.max(state.character.wealth, 200);
-      await t.prisma.client.life.update({ where: { id: life.id }, data: { state: state as object } });
+      await t.prisma.client.life.update({ where: { id: life.id }, data: { state } });
       life = ((await client.get(`/api/lives/${life.id}`).expect(200)).body as { life: LifeView }).life;
     }
     const good = life.market.goods.find((item) => item.canBuy);
