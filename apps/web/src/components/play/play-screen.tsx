@@ -47,6 +47,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
   const [outcome, setOutcome] = useState<HistoryEntry | null>(null);
   const [tab, setTab] = useState<Tab>("event");
   const [savesOpen, setSavesOpen] = useState(false);
+  const [wide, setWide] = useState(false);
   const [saves, setSaves] = useState<SaveView[] | null>(null);
   // actionId неотправленного или оборвавшегося действия: повтор того же действия идёт с тем же id и не применится дважды
   const pendingAction = useRef<{ key: string; actionId: string } | null>(null);
@@ -66,6 +67,14 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
 
   /** Повторная загрузка: после конфликта версий, отката или ошибки */
   const load = useCallback(() => fetchLife().then(apply, fail), [fetchLife, apply, fail]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    const apply = () => setWide(media.matches);
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
 
   useEffect(() => {
     // Stage 04: жизнь уже перенесена на сервер (в этой или другой вкладке) — открыть её там
@@ -314,7 +323,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
           )}
 
           <div className="hidden lg:block">
-            <Dossier life={life} busy={busy} store={store} onInteract={interact} onTrade={tradeGood} onVenture={venture} />
+            {wide && <Dossier life={life} busy={busy} store={store} onInteract={interact} onTrade={tradeGood} onVenture={venture} />}
           </div>
         </section>
 
