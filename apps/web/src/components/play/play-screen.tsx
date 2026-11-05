@@ -242,7 +242,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
     if (action.abandon && !window.confirm(t("adventure.abandonConfirm"))) return;
     void perform({ type: "venture", adventureId: action.adventureId, choiceId: action.choiceId });
   };
-  const shown = (id: Tab) => (tab === id ? "block" : "hidden lg:block");
+  const shown = (id: Tab) => (tab === id ? "block" : "max-lg:hidden lg:block");
 
   return (
     <main
@@ -319,7 +319,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
         </section>
 
         {/* На телефоне досье — отдельная вкладка */}
-        <section className={tab === "people" ? "block lg:hidden" : "hidden"}>
+        <section className={tab === "people" ? "block lg:hidden" : "max-lg:hidden"}>
           <Dossier life={life} busy={busy} store={store} onInteract={interact} onTrade={tradeGood} onVenture={venture} />
         </section>
 
@@ -336,7 +336,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
             type="button"
             onClick={() => setTab(item.id)}
             aria-pressed={tab === item.id}
-            className={`relative min-h-12 py-3.5 text-[11px] uppercase tracking-[0.14em] transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-gold-300 ${tab === item.id ? "text-gold-200" : "text-bone-300"}`}
+            className={`relative min-h-12 truncate px-1 py-3.5 text-[11px] uppercase tracking-[0.14em] transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-gold-300 ${tab === item.id ? "text-gold-200" : "text-bone-300"}`}
             data-testid={`tab-${item.id}`}
           >
             {item.label}

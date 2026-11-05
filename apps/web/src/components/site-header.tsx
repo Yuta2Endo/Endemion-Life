@@ -7,7 +7,7 @@ import { StoreBadge } from "./store-badge";
 
 export async function SiteHeader() {
   const { t } = await getServerI18n();
-  const link = "rounded-sm text-sm text-bone-300 transition hover:text-gold-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300";
+  const link = "shrink-0 rounded-sm text-sm text-bone-300 transition hover:text-gold-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300";
   return (
     <header className="sticky top-0 z-30 border-b border-line/70 bg-ink-950/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
@@ -15,7 +15,7 @@ export async function SiteHeader() {
           <span className="font-display text-xl font-semibold tracking-[0.2em] text-gilded">ENDEMION</span>
           <span className="text-[10px] uppercase tracking-[0.4em] text-bone-500 transition group-hover:text-gold-300">Life</span>
         </Link>
-        <nav className="flex items-center gap-3 sm:gap-5" aria-label={t("nav.primary")}>
+        <nav className="flex min-w-0 items-center gap-2 sm:gap-5" aria-label={t("nav.primary")}>
           <NavLink href="/" className={`${link} hidden sm:inline`}>
             {t("nav.home")}
           </NavLink>
