@@ -1,5 +1,5 @@
 -- Stage 13: поиск игрока по точному имени без учёта регистра.
--- Запрос: lower(column) = lower($1). Обычный btree по колонке его не берёт.
--- Частичный: гости без имени в индекс не попадают. Данные строк не меняются.
-CREATE INDEX "players_id_display_name_lower_idx" ON "players" (lower("id_display_name")) WHERE "id_display_name" IS NOT NULL;
-CREATE INDEX "players_id_username_lower_idx" ON "players" (lower("id_username")) WHERE "id_username" IS NOT NULL;
+-- Запрос Prisma: lower(column) = lower($1). PostgreSQL берёт для него обычный btree (планировщик).
+-- Функциональный индекс по lower() Prisma в схеме не описывает, и сверка миграций сочла бы его дрейфом.
+CREATE INDEX "players_id_display_name_idx" ON "players"("id_display_name");
+CREATE INDEX "players_id_username_idx" ON "players"("id_username");

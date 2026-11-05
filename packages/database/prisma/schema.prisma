@@ -19,7 +19,7 @@ model Player {
   /// Endemion ID (claim sub). Прогресс привязан к игроку, игрок — к sub: смена username или почты его не меняет
   endemionSub   String? @unique @map("endemion_sub") @db.Uuid
   /// Профиль из Endemion ID для показа в игре, обновляется при сверке сессии.
-  /// Поиск идёт по lower() этих двух колонок. Индексы — миграция 20261105210000: Prisma их в схеме не описывает
+  /// Поиск без учёта регистра идёт по индексам ниже: PostgreSQL берёт их для lower(column) = lower($1)
   idUsername    String? @map("id_username") @db.VarChar(24)
   idDisplayName String? @map("id_display_name") @db.VarChar(40)
   idAvatarUrl   String? @map("id_avatar_url") @db.VarChar(512)
@@ -34,6 +34,8 @@ model Player {
   /// Связи, где игрок стоит вторым
   tiesAsB  Tie[]    @relation("TieB")
 
+  @@index([idDisplayName])
+  @@index([idUsername])
   @@map("players")
 }
 

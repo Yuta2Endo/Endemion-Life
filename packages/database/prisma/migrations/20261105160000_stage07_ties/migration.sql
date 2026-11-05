@@ -1,7 +1,7 @@
 -- Stage 07: связи игроков. Только новая таблица: прежние данные не меняются.
 -- player_a всегда меньше player_b, уникальность не даёт завести пару дважды.
 CREATE TABLE "ties" (
-  "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+  "id" UUID NOT NULL,
   "player_a" UUID NOT NULL,
   "player_b" UUID NOT NULL,
   "status" VARCHAR(16) NOT NULL,
