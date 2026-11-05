@@ -129,6 +129,8 @@ jobs:
         run: pnpm --filter @endemion/web exec playwright install --with-deps chromium
       - name: Playwright
         run: pnpm test:e2e
+        env:
+          CI: "true"
       - name: Upload traces on failure
         if: failure()
         uses: actions/upload-artifact@v7

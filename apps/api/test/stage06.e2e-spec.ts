@@ -33,9 +33,10 @@ async function growUp(client: Agent, life: LifeView): Promise<LifeView> {
     if (res.status !== 200) throw new Error(`ход вернул ${res.status}: ${JSON.stringify(res.body).slice(0, 200)}`);
     current = (res.body as ActionResponse).life;
   }
-  if (current.pendingEvent) {
+  for (let i = 0; i < 6 && current.pendingEvent && current.status === "alive"; i++) {
     const choice = current.pendingEvent.choices.find((item) => item.available);
-    if (choice) current = ((await act(client, current, { type: "choose", choiceId: choice.id }).expect(200)).body as ActionResponse).life;
+    if (!choice) break;
+    current = ((await act(client, current, { type: "choose", choiceId: choice.id }).expect(200)).body as ActionResponse).life;
   }
   return current;
 }
@@ -56,12 +57,13 @@ describe("Stage 06: край", () => {
   it("покупка уменьшает склад, повтор того же actionId не уменьшает его снова", async () => {
     const client = agent();
     const life = await growUp(client, await createLife(client));
-    const good = life.region.goods[0];
-    expect(good).toBeDefined();
+    const good = life.market.goods.find((item) => item.canBuy);
+    expect(good, "нет товара, который можно купить").toBeDefined();
+    const before = life.region.goods.find((item) => item.id === good!.id)?.stock ?? 0;
     const actionId = randomUUID();
     const bought = (await act(client, life, { type: "trade", goodId: good!.id, side: "buy", qty: 1 }, actionId).expect(200)).body as ActionResponse;
     const stock = bought.life.region.goods.find((item) => item.id === good!.id)?.stock;
-    expect(stock).toBeLessThan(good!.stock);
+    expect(stock).toBeLessThan(before);
     const again = (await act(client, life, { type: "trade", goodId: good!.id, side: "buy", qty: 1 }, actionId).expect(200)).body as ActionResponse;
     expect(again.replayed).toBe(true);
     expect(again.life.region.goods.find((item) => item.id === good!.id)?.stock).toBe(stock);

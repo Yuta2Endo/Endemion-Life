@@ -37,9 +37,16 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
 }
 
 export async function resetDatabase(prisma: PrismaService): Promise<void> {
-  await prisma.client.$executeRawUnsafe(
-    "TRUNCATE players, sessions, accounts, auth_tokens, lives, life_snapshots, history_entries, game_actions, oidc_logins, ties CASCADE"
-  );
+  // Файлы делят одну базу. TRUNCATE рвёт чужую открытую транзакцию, поэтому ждём, пока ходы допишутся.
+  await prisma.client.$executeRawUnsafe("SELECT pg_advisory_lock(7140513)");
+  try {
+    await prisma.client.$queryRaw`SELECT id FROM lives FOR UPDATE`;
+    await prisma.client.$executeRawUnsafe(
+      "TRUNCATE players, sessions, accounts, auth_tokens, lives, life_snapshots, history_entries, game_actions, oidc_logins, ties CASCADE"
+    );
+  } finally {
+    await prisma.client.$executeRawUnsafe("SELECT pg_advisory_unlock(7140513)");
+  }
 }
 
 /** Значение cookie сессии из ответа, если сервер её выставил */
