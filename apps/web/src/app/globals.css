@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@media (max-width: 1023px) {
+  [data-testid="play-screen"] button,
+  [data-testid="play-screen"] a,
+  [data-testid="choice"] {
+    scroll-margin-top: 7.5rem;
+  }
+}
+
 /* Компоненты общего пакета UI тоже используют классы Tailwind */
 @source "../../../../packages/ui/src";
 

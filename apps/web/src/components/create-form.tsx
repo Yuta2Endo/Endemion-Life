@@ -153,7 +153,7 @@ export function CreateForm({ universe, temperaments }: { universe: UniverseSumma
       </aside>
 
       <details className="rounded-xl border border-line bg-ink-900/40 px-4 py-3">
-        <summary className="cursor-pointer text-sm text-gold-200">{t("create.choose")}</summary>
+        <summary className="cursor-pointer text-sm text-gold-200" data-testid="create-choose">{t("create.choose")}</summary>
       <Panel className="mt-4 space-y-8">
           <fieldset>
             <legend className="mb-2 text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("create.gender")}</legend>
@@ -179,7 +179,7 @@ export function CreateForm({ universe, temperaments }: { universe: UniverseSumma
         <OptionGrid legend={t("create.temperament")} name="temperament" options={temperaments} value={temperamentId} onChange={setTemperamentId} />
 
         <details className="group">
-          <summary className="cursor-pointer text-sm text-bone-300 transition hover:text-gold-200">{t("create.advanced")}</summary>
+          <summary className="cursor-pointer text-sm text-bone-300 transition hover:text-gold-200" data-testid="create-advanced">{t("create.advanced")}</summary>
           <label className="mt-4 block max-w-md">
             <span className="mb-2 block text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("create.seed")}</span>
             <input
