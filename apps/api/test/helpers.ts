@@ -42,7 +42,7 @@ export async function resetDatabase(prisma: PrismaService): Promise<void> {
   try {
     await prisma.client.$queryRaw`SELECT id FROM lives FOR UPDATE`;
     await prisma.client.$executeRawUnsafe(
-      "TRUNCATE players, sessions, accounts, auth_tokens, lives, life_snapshots, history_entries, game_actions, oidc_logins, ties CASCADE"
+      "TRUNCATE players, sessions, accounts, auth_tokens, lives, life_snapshots, history_entries, game_actions, oidc_logins, ties, live_windows, live_parts, live_log, insights CASCADE"
     );
   } finally {
     await prisma.client.$executeRawUnsafe("SELECT pg_advisory_unlock(7140513)");

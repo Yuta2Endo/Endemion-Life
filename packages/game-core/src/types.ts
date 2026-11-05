@@ -73,7 +73,8 @@ export const NPC_LOG_KINDS = [
   "returned",
   "retired",
   "goal",
-  "estate"
+  "estate",
+  "bond"
 ] as const;
 export type NpcLogKind = (typeof NPC_LOG_KINDS)[number];
 

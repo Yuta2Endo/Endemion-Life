@@ -56,7 +56,14 @@ beforeEach(async () => {
 describe("Stage 06: край", () => {
   it("покупка уменьшает склад, повтор того же actionId не уменьшает его снова", async () => {
     const client = agent();
-    const life = await growUp(client, await createLife(client));
+    let life = await growUp(client, await createLife(client));
+    if (!life.market.goods.some((item) => item.canBuy) && life.status === "alive" && !life.pendingEvent) {
+      const row = await t.prisma.client.life.findUniqueOrThrow({ where: { id: life.id } });
+      const state = row.state as GameState;
+      state.character.wealth = Math.max(state.character.wealth, 200);
+      await t.prisma.client.life.update({ where: { id: life.id }, data: { state: state as object } });
+      life = ((await client.get(`/api/lives/${life.id}`).expect(200)).body as { life: LifeView }).life;
+    }
     const good = life.market.goods.find((item) => item.canBuy);
     expect(good, "нет товара, который можно купить").toBeDefined();
     const before = life.region.goods.find((item) => item.id === good!.id)?.stock ?? 0;

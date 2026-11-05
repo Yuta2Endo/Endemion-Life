@@ -1,6 +1,6 @@
 // То, что игрок видит о жизни персонажа помимо листа: биография, семья и люди вокруг, шкалы мира, задание Системы.
 // Скрытое (спящие таланты, потенциал, судьба, тайна рода) попадает сюда только после раскрытия: клиенту его не отдаём
-import { interactionAvailable, interactionChance, INTERACTION_RULES } from "../character/interactions.js";
+import { interactionAvailable, interactionBlock, interactionChance, INTERACTION_RULES } from "../character/interactions.js";
 import { affinityLabel, isFamily, npcAge, roleName } from "../character/npcs.js";
 import { TEMPERAMENTS } from "../character/temperaments.js";
 import { t, type LocalizedText } from "../i18n.js";
@@ -17,6 +17,8 @@ export interface InteractionView {
   available: boolean;
   /** Шанс успеха. null — сейчас недоступно */
   chance: number | null;
+  /** Почему закрыто: год, условия, пропал. Пусто — открыто */
+  locked: string;
 }
 
 export interface NpcView {
@@ -40,6 +42,8 @@ export interface NpcView {
   /** Сила NPC: игрок видит её как ориентир для поединков и учёбы */
   power: number;
   skillId: string | null;
+  /** Отношение хоть раз доходило до самого близкого. Повтор не отмечается */
+  bond: boolean;
   interactions: InteractionView[];
 }
 
@@ -93,7 +97,7 @@ function interactionsOf(ctx: EngineContext, npcId: string): InteractionView[] {
   if (!npc) return [];
   return INTERACTIONS.map((id) => {
     const available = !ctx.state.pending && ctx.state.life.alive && interactionAvailable(ctx, npc, id);
-    return { id, name: INTERACTION_RULES[id].name, available, chance: available ? interactionChance(ctx, npc, id) : null };
+    return { id, name: INTERACTION_RULES[id].name, available, chance: available ? interactionChance(ctx, npc, id) : null, locked: available ? "" : interactionBlock(ctx, npc, id) };
   });
 }
 
@@ -132,6 +136,7 @@ export function presentProfile(state: GameState): LifeProfile {
       bio: npc.bio,
       power: npc.power,
       skillId: npc.skillId,
+      bond: npc.log.some((entry) => entry.kind === "bond"),
       interactions: npc.alive ? interactionsOf(ctx, npc.id) : []
     })),
     meters: universe.meters.map((meter) => ({

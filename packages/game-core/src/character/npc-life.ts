@@ -12,6 +12,7 @@ import { clamp } from "../stats.js";
 import { SELF_ID, type DeathCauseId, type NpcLogKind, type NpcRole, type NpcState } from "../types.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import type { Emit } from "../world/rules.js";
+import { regionFactor } from "../economy/region.js";
 import { canAddRole, createNpc, isFamily, npcAge, npcLifespan, rollProfession, roleName, shiftAffinity } from "./npcs.js";
 
 /** За столько лет до конца срока NPC начинает рисковать умереть от старости */
@@ -180,7 +181,8 @@ const BEHAVIOURS: readonly Behaviour[] = [
     weight: (turn) => {
       const { npc } = turn;
       if (since(turn, "job", "promotion", "job-change") < 5) return 0;
-      return (npc.goal === "mastery" ? 2 : 1) * (npc.talentId ? 1.4 : 1) * (npc.weaknessId ? 0.7 : 1) * (npc.educationTier >= 2 ? 1.3 : 1);
+      const ease = regionFactor("promotion", turn.ctx.state.region.strain, turn.ctx.state.region.prosperity);
+      return (npc.goal === "mastery" ? 2 : 1) * (npc.talentId ? 1.4 : 1) * (npc.weaknessId ? 0.7 : 1) * (npc.educationTier >= 2 ? 1.3 : 1) * ease;
     },
     run: (turn) => {
       const { npc, ctx, rng } = turn;
@@ -209,7 +211,8 @@ const BEHAVIOURS: readonly Behaviour[] = [
     when: ({ npc, age }) => npc.professionId !== null && npc.status === "alive" && age < 60,
     weight: (turn) => {
       if (since(turn, "job", "job-change", "job-loss") < 6) return 0;
-      return 0.15 * (hasTrait(turn.npc, "drinker") ? 3 : 1) * (turn.npc.weaknessId ? 1.5 : 1) * (turn.ctx.universe.id === "hunter" ? 1.3 : 1);
+      const pressure = regionFactor("job-loss", turn.ctx.state.region.strain, turn.ctx.state.region.prosperity);
+      return 0.15 * (hasTrait(turn.npc, "drinker") ? 3 : 1) * (turn.npc.weaknessId ? 1.5 : 1) * (turn.ctx.universe.id === "hunter" ? 1.3 : 1) * pressure;
     },
     run: (turn) => {
       const { npc, ctx } = turn;
@@ -348,7 +351,7 @@ const BEHAVIOURS: readonly Behaviour[] = [
   {
     id: "illness",
     when: ({ age }) => age >= 1,
-    weight: ({ npc, age }) => 0.25 * (age > 50 ? 2 : age < 6 ? 1.5 : 1) * (npc.weaknessId === "frail" ? 2 : 1) * (npc.health < 60 ? 1.5 : 1),
+    weight: ({ npc, age, ctx }) => 0.25 * (age > 50 ? 2 : age < 6 ? 1.5 : 1) * (npc.weaknessId === "frail" ? 2 : 1) * (npc.health < 60 ? 1.5 : 1) * regionFactor("illness", ctx.state.region.strain, ctx.state.region.prosperity),
     run: (turn) => {
       const { npc, rng, ctx } = turn;
       npc.health -= rng.int(15, 45);

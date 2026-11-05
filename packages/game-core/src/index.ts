@@ -11,6 +11,34 @@ export type * from "./universes/types.js";
 export { getUniverse, isUniverseId, listUniverses } from "./universes/registry.js";
 export { COMMON_EVENTS } from "./narrative/common.js";
 export { eventIndex, eventProblems, findEvent, isEligible } from "./narrative/selection.js";
+export {
+  canClaim,
+  canMove,
+  dayKey,
+  dueStatus,
+  isLiveStatus,
+  joinBlock,
+  utcDay,
+  utcWeek,
+  weekKey,
+  worldFits,
+  LIVE_STATUSES,
+  type LiveRules,
+  type LiveStatus
+} from "./live/ops.js";
+export { findTemplate, LIVE_TEMPLATES, type LiveTemplate } from "./live/templates.js";
+export {
+  balanceNote,
+  factProblem,
+  isInsightName,
+  INSIGHT_HARD_RATE,
+  INSIGHT_KEEP_DAYS,
+  INSIGHT_MIN_SAMPLE,
+  INSIGHT_NAMES,
+  type BalanceNote,
+  type InsightFact,
+  type InsightName
+} from "./live/insights.js";
 
 export { TEMPERAMENTS, type TemperamentDefinition } from "./character/temperaments.js";
 export {
@@ -31,7 +59,8 @@ export { naturalDeathChance } from "./life/death.js";
 export { checkChance, MAX_CHANCE, MIN_CHANCE } from "./engine/checks.js";
 export { presentProfile, type InteractionView, type LifeProfile, type MeterView, type NpcView, type QuestView, type SecretView } from "./engine/profile.js";
 export { AFFINITY_LIMIT, affinityLabel, FAMILY_ROLES, roleName } from "./character/npcs.js";
-export { GIFT_COST, INTERACTION_RULES } from "./character/interactions.js";
+export { GIFT_COST, INTERACTION_RULES, interactionBlock } from "./character/interactions.js";
+export { BOND_AT, BOND_FLAG, changeNpcAffinity } from "./engine/effects.js";
 export { COMMON_PROFESSIONS, COMMON_SKILLS, COMMON_TALENTS, COMMON_WEAKNESSES, NPC_TRAITS } from "./rpg/common.js";
 export { allProfessions, allSkills, educationTier, findEducation, findProfession, findSkill, pathSkill, SKILL_MAX } from "./rpg/skills.js";
 export { allTalents, allWeaknesses, findTalent, findWeakness } from "./rpg/talents.js";
@@ -45,6 +74,7 @@ export {
   changeStrain,
   newRegion,
   presentRegion,
+  regionFactor,
   regionStock,
   regionYear,
   STOCK_MAX,

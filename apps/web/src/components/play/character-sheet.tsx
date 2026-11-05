@@ -41,6 +41,11 @@ export function CharacterSheet({ life }: { life: LifeView }) {
       <p className="text-xs leading-relaxed text-bone-300">
         {[race && l(race.name), origin && l(origin.name), temperament && l(temperament.name)].filter(Boolean).join(" · ")}
       </p>
+      {temperament && (
+        <p className="text-xs text-bone-400" data-testid="sheet-bent">
+          {l(temperament.description)}
+        </p>
+      )}
       {socialClass && (
         <p className="-mt-3 text-xs text-gold-300" data-testid="sheet-class">
           {t("sheet.class")}: {l(socialClass.name)}

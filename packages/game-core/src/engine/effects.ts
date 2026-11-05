@@ -1,6 +1,6 @@
 import { isTrackReady, maxResources, MAX_LEVEL, nextRankThreshold, xpForLevel } from "../character/derived.js";
 import { AFFINITY_LIMIT, canAddRole, createNpc, livingWith, shiftAffinity } from "../character/npcs.js";
-import { canParent, chronicle, markDeath, returnHome, setMissing } from "../family/events.js";
+import { canParent, chronicle, logNpc, markDeath, returnHome, setMissing } from "../family/events.js";
 import { isKin, KinGraph, MIN_PARENT_AGE, selfSpouse } from "../family/kin.js";
 import type { LocalizedText } from "../i18n.js";
 import { lineageYear } from "../legacy/chronicle.js";
@@ -9,7 +9,7 @@ import { findEducation, findProfession, findSkill, SKILL_MAX } from "../rpg/skil
 import { changeProsperity, changeStrain } from "../economy/region.js";
 import { findTalent, findWeakness } from "../rpg/talents.js";
 import { clamp, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_MAX, STAT_MIN, WEALTH_MAX, type ResourceKey, type StatKey } from "../stats.js";
-import { SELF_ID, type DeathCauseId, type HiddenKey, type NpcRole } from "../types.js";
+import { SELF_ID, type DeathCauseId, type HiddenKey, type NpcRole, type NpcState } from "../types.js";
 import type { EngineContext } from "./context.js";
 import { record, recordDelta } from "./record.js";
 
@@ -142,20 +142,36 @@ export function setWeakness(ctx: EngineContext, id: string, add: boolean): void 
   }
 }
 
+/** 75 — порог «самого близкого». Флаг один на жизнь: повтор не даёт вторую репутацию */
+export const BOND_AT = 75;
+export const BOND_FLAG = "bond";
+
+function noteBond(ctx: EngineContext, npc: NpcState, before: number): void {
+  if (before >= BOND_AT || npc.affinity < BOND_AT) return;
+  if (!npc.log.some((entry) => entry.kind === "bond")) logNpc(ctx, npc, "bond");
+  if (ctx.state.flags.includes(BOND_FLAG)) return;
+  setFlag(ctx, BOND_FLAG, true);
+  applyEffect(ctx, { type: "reputation", delta: 2 });
+}
+
 /** Отношение NPC роли меняется. Для «family» и «parent» — у каждого живого родственника */
 export function changeAffinity(ctx: EngineContext, role: NpcRef, delta: number): void {
   const targets = role === "family" || role === "parent" ? livingWith(ctx.state, role) : livingWith(ctx.state, role).slice(0, 1);
   for (const npc of targets) {
+    const before = npc.affinity;
     const applied = shiftAffinity(npc, delta);
     if (applied !== 0) record(ctx, { kind: "relation", key: npc.id, delta: applied });
+    noteBond(ctx, npc, before);
   }
 }
 
 export function changeNpcAffinity(ctx: EngineContext, npcId: string, delta: number): void {
   const npc = ctx.state.npcs.find((n) => n.id === npcId);
   if (!npc?.alive) return;
+  const before = npc.affinity;
   const applied = shiftAffinity(npc, delta);
   if (applied !== 0) record(ctx, { kind: "relation", key: npc.id, delta: applied });
+  noteBond(ctx, npc, before);
 }
 
 /**

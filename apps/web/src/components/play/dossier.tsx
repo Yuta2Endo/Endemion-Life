@@ -339,6 +339,7 @@ function People({ life, busy, onInteract }: { life: LifeView; busy: boolean; onI
                   <div className={`h-full rounded-full ${npc.affinity >= 0 ? "bg-jade-400" : "bg-blood-400"}`} style={{ width: `${percent}%` }} />
                 </div>
                 <span className="w-32 shrink-0 text-right text-[11px] text-bone-300" data-testid="affinity" data-value={npc.affinity}>
+                  {npc.bond ? `${t("dossier.bond")} · ` : ""}
                   {l(npc.affinityLabel)} <Signed value={npc.affinity} />
                 </span>
               </div>
@@ -359,6 +360,14 @@ function People({ life, busy, onInteract }: { life: LifeView; busy: boolean; onI
                         {l(interaction.name)}
                         {interaction.chance !== null && <span className="ml-1 tabular-nums text-bone-500">{Math.round(interaction.chance * 100)}%</span>}
                       </button>
+                    ))}
+                  {npc.interactions
+                    .filter((interaction) => !interaction.available && interaction.locked === "уже в этом году")
+                    .slice(0, 1)
+                    .map((interaction) => (
+                      <span key={interaction.id} className="px-2 py-1 text-[11px] text-bone-500" data-testid="interact-locked">
+                        {t("dossier.lockedYear")}
+                      </span>
                     ))}
                 </div>
               )}

@@ -8,6 +8,52 @@ import type { EventDefinition } from "./types.js";
 
 export const COMMON_EVENTS: readonly EventDefinition[] = [
   {
+    id: "common.own-bent",
+    kind: "personal",
+    title: t("Свой нрав", "One's own bent"),
+    text: t("Год выдался тихим, и {name} может заняться тем, к чему характер тянет сам.", "The year is quiet, and {name} can spend it on what the temperament itself leans toward."),
+    minAge: 16,
+    maxOccurrences: 1,
+    choices: [
+      {
+        id: "brave",
+        text: t("Идти туда, где опасно", "Go where it is dangerous"),
+        requires: [when.temperament("brave")],
+        success: { text: t("Страх не исчез. Рука стала твёрже.", "The fear did not leave. The hand grew steadier."), effects: [fx.stat("strength", 1), fx.rep(2)] }
+      },
+      {
+        id: "cunning",
+        text: t("Обойти преграду, а не ломать её", "Go around the obstacle instead of breaking it"),
+        requires: [when.temperament("cunning")],
+        success: { text: t("Обход короче прямой дороги.", "The way around is shorter than the straight road."), effects: [fx.stat("intelligence", 1), fx.wealth(8)] }
+      },
+      {
+        id: "kind",
+        text: t("Отложить своё и помочь", "Set your own work aside and help"),
+        requires: [when.temperament("kind")],
+        success: { text: t("Чужое дело съело день. Имя запомнили.", "Someone else's trouble ate the day. The name was remembered."), effects: [fx.stat("wisdom", 1), fx.karma(3)] }
+      },
+      {
+        id: "ambitious",
+        text: t("Взять дело выше своих лет", "Take a task beyond your years"),
+        requires: [when.temperament("ambitious")],
+        success: { text: t("Дело тяжелее, чем казалось. Отказываться поздно.", "The task is heavier than it looked. It is too late to refuse."), effects: [fx.stat("willpower", 1), fx.xp(15)] }
+      },
+      {
+        id: "calm",
+        text: t("Не спешить и доделать", "Do not hurry, and finish it"),
+        requires: [when.temperament("calm")],
+        success: { text: t("Год ушёл на одно дело. Оно сделано.", "The year went to one task. It is done."), effects: [fx.stat("wisdom", 1), fx.res("energy", 10)] }
+      },
+      {
+        id: "curious",
+        text: t("Открыть то, что закрыто", "Open what is shut"),
+        requires: [when.temperament("curious")],
+        success: { text: t("За дверью оказался не клад, а вопрос. Этого хватило.", "Behind the door was not a hoard but a question. That was enough."), effects: [fx.stat("intelligence", 1), fx.xp(10)] }
+      }
+    ]
+  },
+  {
     id: "common.first-steps",
     title: t("Первые шаги", "First steps"),
     text: t(

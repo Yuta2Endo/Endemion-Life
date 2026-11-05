@@ -1,5 +1,6 @@
 // Stage 05: приключения шести миров. Это описания, не правила: исход считает adventure/adventure.ts.
 // Stage 11: у каждого мира вторая дорога. Она требует первую и открывается с места, которое уже есть.
+// Stage 17: в конце второй дороги есть развилка. Оба конца завершают дело, награды разные и не больше первой ветки.
 // Награды — существующие эффекты игры. Пройденное второй раз не начинается.
 import { t } from "../i18n.js";
 import { check, fx, when } from "../narrative/dsl.js";
@@ -98,7 +99,8 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           id: "keep",
           text: t("Настоятельница спрашивает, кому отдать остывшую реликвию.", "The abbess asks who should keep the cooled relic."),
           choices: [
-            { id: "order", text: t("Оставить Ордену", "Leave it with the Order"), success: { text: t("Реликвия уходит в ризницу. Орден записывает ваше имя рядом.", "The relic goes to the sacristy. The Order writes your name beside it."), effects: [fx.xp(30), fx.faction("order-of-ash", 6), fx.rep(4)], complete: true } }
+            { id: "order", text: t("Оставить Ордену", "Leave it with the Order"), success: { text: t("Реликвия уходит в ризницу. Орден записывает ваше имя рядом.", "The relic goes to the sacristy. The Order writes your name beside it."), effects: [fx.xp(30), fx.faction("order-of-ash", 6), fx.rep(4)], complete: true } },
+            { id: "bury", text: t("Закопать за стеной, чтобы Мгла не нашла", "Bury it beyond the wall so the Mist cannot find it"), success: { text: t("Реликвия уходит в холодную землю. Огонь в груди становится тише, но скверна не получает пищи.", "The relic goes into cold earth. The fire in the chest grows quieter, but the corruption gets no food."), effects: [fx.xp(20), fx.meter("corruption", -8), fx.karma(4), fx.faction("order-of-ash", -3)], complete: true } }
           ]
         }
       ]
@@ -164,7 +166,8 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           id: "turnin",
           text: t("Клерк сверяет добычу со списком.", "The clerk checks the spoils against the list."),
           choices: [
-            { id: "report", text: t("Сдать контракт", "Turn in the contract"), success: { text: t("Второе дело в книге Гильдии. Доля больше первой.", "A second job in the Guild's book. The share is larger than the first."), effects: [fx.xp(30), fx.wealth(25), fx.faction("guild", 5), fx.rep(3)], complete: true } }
+            { id: "report", text: t("Сдать контракт", "Turn in the contract"), success: { text: t("Второе дело в книге Гильдии. Доля больше первой.", "A second job in the Guild's book. The share is larger than the first."), effects: [fx.xp(30), fx.wealth(25), fx.faction("guild", 5), fx.rep(3)], complete: true } },
+            { id: "keep", text: t("Оставить шкуру себе и заплатить штраф", "Keep the hide and pay the fine"), success: { text: t("Клерк ставит штраф и закрывает лист. Шкура остаётся, книга Гильдии — нет.", "The clerk writes a fine and closes the sheet. The hide stays, the Guild book does not."), effects: [fx.xp(15), fx.wealth(-10), fx.skill("survival", 3), fx.faction("guild", -4)], complete: true } }
           ]
         }
       ]
@@ -230,7 +233,8 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           id: "return",
           text: t("Серебро на столе. Союз ждёт ответа.", "The silver is on the table. The Alliance waits for an answer."),
           choices: [
-            { id: "alliance", text: t("Отвезти долг Союзу", "Take the debt to the Alliance"), success: { text: t("Союз закрывает книгу. Ваше имя остаётся в ней.", "The Alliance closes the book. Your name stays in it."), effects: [fx.xp(30), fx.faction("orthodox-alliance", 6), fx.wealth(15), fx.rep(3)], complete: true } }
+            { id: "alliance", text: t("Отвезти долг Союзу", "Take the debt to the Alliance"), success: { text: t("Союз закрывает книгу. Ваше имя остаётся в ней.", "The Alliance closes the book. Your name stays in it."), effects: [fx.xp(30), fx.faction("orthodox-alliance", 6), fx.wealth(15), fx.rep(3)], complete: true } },
+            { id: "share", text: t("Разделить серебро с Сектой нищих", "Split the silver with the Beggars' Sect"), success: { text: t("Половина уходит нищим. Союз получит меньше, но дорога запомнит щедрость.", "Half goes to the beggars. The Alliance gets less, but the road remembers the generosity."), effects: [fx.xp(20), fx.faction("beggars-sect", 6), fx.faction("orthodox-alliance", 2), fx.karma(4)], complete: true } }
           ]
         }
       ]
@@ -294,7 +298,8 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           id: "leave",
           text: t("Старейшина ждёт у тропы и спрашивает, что вы видели.", "The elder waits on the path and asks what you saw."),
           choices: [
-            { id: "tell", text: t("Рассказать как было", "Tell it as it was"), success: { text: t("Секта записывает вас в число тех, кого источник принял.", "The sect writes you among those the spring accepted."), effects: [fx.xp(30), fx.faction("cloud-peak", 6), fx.rep(4)], complete: true } }
+            { id: "tell", text: t("Рассказать как было", "Tell it as it was"), success: { text: t("Секта записывает вас в число тех, кого источник принял.", "The sect writes you among those the spring accepted."), effects: [fx.xp(30), fx.faction("cloud-peak", 6), fx.rep(4)], complete: true } },
+            { id: "silence", text: t("Промолчать и оставить источник себе", "Stay silent and keep the spring to yourself"), success: { text: t("Старейшина кивает на пустой ответ. Ци в груди гуще, долг перед Небесами — тоже.", "The elder nods at the empty answer. The qi in the chest is thicker, and so is the debt to the Heavens."), effects: [fx.xp(20), fx.track(6), fx.meter("karmic-debt", 5), fx.faction("cloud-peak", -2)], complete: true } }
           ]
         }
       ]
@@ -358,7 +363,8 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           id: "register",
           text: t("Клерк взвешивает кристалл и открывает книгу.", "The clerk weighs the crystal and opens the book."),
           choices: [
-            { id: "sign", text: t("Сдать добычу по правилам", "Register the loot by the rules"), success: { text: t("Доля переведена, ранг в книге поднят на строку.", "The share is paid and the rank in the book moves up a line."), effects: [fx.xp(30), fx.wealth(30), fx.meter("fame", 6), fx.rep(3)], complete: true } }
+            { id: "sign", text: t("Сдать добычу по правилам", "Register the loot by the rules"), success: { text: t("Доля переведена, ранг в книге поднят на строку.", "The share is paid and the rank in the book moves up a line."), effects: [fx.xp(30), fx.wealth(30), fx.meter("fame", 6), fx.rep(3)], complete: true } },
+            { id: "quiet", text: t("Сдать кристалл без имени", "Turn in the crystal without a name"), success: { text: t("Клерк принимает кристалл и не спрашивает жетон. Славы нет, доля меньше, угроза Врат падает тише.", "The clerk takes the crystal and does not ask for the token. There is no fame, the share is smaller, and the Gate threat falls more quietly."), effects: [fx.xp(20), fx.wealth(12), fx.meter("gate-threat", -6), fx.meter("fame", -2)], complete: true } }
           ]
         }
       ]
@@ -424,7 +430,8 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           id: "book",
           text: t("Секретарь открывает книгу поручений на вашей строке.", "The secretary opens the book of errands at your line."),
           choices: [
-            { id: "sign", text: t("Поставить вторую отметку", "Make the second mark"), success: { text: t("Вторая отметка ложится под первой. Двор отличает тех, кто приходит дважды.", "The second mark goes under the first. The court tells apart those who come twice."), effects: [fx.xp(30), fx.faction("imperial-court", 6), fx.meter("court-favor", 4), fx.wealth(15)], complete: true } }
+            { id: "sign", text: t("Поставить вторую отметку", "Make the second mark"), success: { text: t("Вторая отметка ложится под первой. Двор отличает тех, кто приходит дважды.", "The second mark goes under the first. The court tells apart those who come twice."), effects: [fx.xp(30), fx.faction("imperial-court", 6), fx.meter("court-favor", 4), fx.wealth(15)], complete: true } },
+            { id: "rose", text: t("Отдать заслугу Обществу Розы", "Give the credit to the Rose Society"), success: { text: t("Секретарь вычёркивает строку. Роза запоминает тех, кто умеет не светиться.", "The secretary strikes the line. The Rose remembers those who know how not to shine."), effects: [fx.xp(20), fx.faction("rose-society", 6), fx.meter("court-favor", -3), fx.meter("scandal", -4)], complete: true } }
           ]
         }
       ]

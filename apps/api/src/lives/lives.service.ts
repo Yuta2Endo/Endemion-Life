@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@endemion/database";
-import { applyAction, GameRuleError, newGame, parseSave, prepareImport, presentLineage, restoreState, succeed, type GameState, type HistoryEntry, type LineageView } from "@endemion/game-core";
+import { applyAction, GameRuleError, newGame, parseSave, prepareImport, presentLineage, restoreState, succeed, type GameState, type HistoryEntry, type InsightFact, type LineageView } from "@endemion/game-core";
 import {
   MAX_ALIVE_LIVES,
   lifeStatus,
@@ -24,6 +24,7 @@ import {
 } from "@endemion/shared";
 import { Inject, Injectable } from "@nestjs/common";
 import { ApiError } from "../common/api-error.js";
+import { InsightsService } from "../insights/insights.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 /** Сколько последних версий сохранения хранится у жизни */
@@ -69,6 +70,21 @@ function stateOf(row: Pick<LifeRow, "state">): GameState {
   return parseSave(row.state);
 }
 
+/** Факты успешного хода. Сравнение до и после, без текста хроники. Ключ — actionId */
+function factsOf(actionId: string, before: GameState, state: GameState): InsightFact[] {
+  const base = { world: state.character.universeId, age: state.life.age, level: state.character.level, amount: 0, ref: actionId };
+  const facts: InsightFact[] = [];
+  if (before.life.alive && !state.life.alive) facts.push({ ...base, name: "life.died" });
+  if (state.character.track.rank > before.character.track.rank) facts.push({ ...base, name: "track.rank", amount: state.character.track.rank });
+  if (state.character.level > before.character.level) facts.push({ ...base, name: "level.up", amount: state.character.level });
+  if (state.questsDone.length > before.questsDone.length) facts.push({ ...base, name: "quest.done" });
+  else if (before.quest && !state.quest) facts.push({ ...base, name: "quest.failed" });
+  if (state.adventure.done.length > before.adventure.done.length) facts.push({ ...base, name: "adventure.done" });
+  if (state.adventure.failed.length > before.adventure.failed.length) facts.push({ ...base, name: "adventure.failed" });
+  if (JSON.stringify(state.economy.goods) !== JSON.stringify(before.economy.goods)) facts.push({ ...base, name: "market.trade" });
+  return facts;
+}
+
 function lifeColumns(state: GameState) {
   return {
     name: state.character.name,
@@ -89,8 +105,19 @@ function lifeColumns(state: GameState) {
 export class LivesService {
   private readonly db: PrismaClient;
 
-  constructor(@Inject(PrismaService) prisma: PrismaService) {
+  constructor(
+    @Inject(PrismaService) prisma: PrismaService,
+    @Inject(InsightsService) private readonly insights: InsightsService
+  ) {
     this.db = prisma.client;
+  }
+
+  /** Откат снял флаг награды окна — отметку выдачи тоже снимаем, иначе золото пропадёт навсегда */
+  private async releaseUndoneClaims(tx: Tx, lifeId: string, state: GameState): Promise<void> {
+    const parts = await tx.livePart.findMany({ where: { lifeId, claimedAt: { not: null } }, include: { window: { select: { flag: true } } } });
+    const undo = parts.filter((part) => !state.flags.includes(part.window.flag)).map((part) => part.id);
+    if (undo.length === 0) return;
+    await tx.livePart.updateMany({ where: { id: { in: undo } }, data: { claimedAt: null } });
   }
 
   private async writeEntries(tx: Tx, lifeId: string, entries: HistoryEntry[]): Promise<void> {
@@ -134,7 +161,9 @@ export class LivesService {
       await this.writeSnapshot(tx, life.id, state, "create");
       return life;
     });
-    return { life: toLifeView(meta(row), state), entries };
+    const created = { life: toLifeView(meta(row), state), entries };
+    await this.insights.note({ name: "life.created", world: state.character.universeId, age: 0, level: 1, amount: 0, ref: row.id });
+    return created;
   }
 
   async list(playerId: string): Promise<LifeListItem[]> {
@@ -149,36 +178,46 @@ export class LivesService {
   }
 
   async act(playerId: string, lifeId: string, request: ActionRequest): Promise<ActionResponse> {
-    return this.db.$transaction(async (tx) => {
-      const row = await this.lockLife(tx, playerId, lifeId);
+    try {
+      const outcome = await this.db.$transaction(async (tx) => {
+        const row = await this.lockLife(tx, playerId, lifeId);
 
-      // Повтор уже принятого действия (двойной клик, повтор после обрыва связи): вернуть прежний итог
-      const previous = await tx.gameAction.findUnique({ where: { lifeId_actionId: { lifeId, actionId: request.actionId } } });
-      if (previous) {
-        const sameRequest = previous.fromVersion === request.expectedVersion && canonical(previous.payload) === canonical(request.action);
-        if (!sameRequest) throw new ApiError(409, "ACTION_ID_REUSED", "Этот actionId уже использован для другого действия");
-        return { life: toLifeView(meta(row), stateOf(row)), entries: previous.entries as unknown as HistoryEntry[], replayed: true };
-      }
-
-      this.checkVersion(row, request.expectedVersion);
-      const { state, entries } = applyAction(stateOf(row), request.action);
-      const updated = await tx.life.update({ where: { id: lifeId }, data: lifeColumns(state) });
-      await this.writeEntries(tx, lifeId, entries);
-      await this.writeSnapshot(tx, lifeId, state, "action");
-      await tx.gameAction.create({
-        data: {
-          lifeId,
-          playerId,
-          actionId: request.actionId,
-          type: request.action.type,
-          payload: json(request.action),
-          fromVersion: row.version,
-          toVersion: state.version,
-          entries: json(entries)
+        // Повтор уже принятого действия (двойной клик, повтор после обрыва связи): вернуть прежний итог
+        const previous = await tx.gameAction.findUnique({ where: { lifeId_actionId: { lifeId, actionId: request.actionId } } });
+        if (previous) {
+          const sameRequest = previous.fromVersion === request.expectedVersion && canonical(previous.payload) === canonical(request.action);
+          if (!sameRequest) throw new ApiError(409, "ACTION_ID_REUSED", "Этот actionId уже использован для другого действия");
+          return { response: { life: toLifeView(meta(row), stateOf(row)), entries: previous.entries as unknown as HistoryEntry[], replayed: true }, facts: [] as InsightFact[] };
         }
+
+        this.checkVersion(row, request.expectedVersion);
+        const before = stateOf(row);
+        const { state, entries } = applyAction(before, request.action);
+      const updated = await tx.life.update({ where: { id: lifeId }, data: lifeColumns(state) });
+        await this.writeEntries(tx, lifeId, entries);
+        await this.writeSnapshot(tx, lifeId, state, "action");
+        await tx.gameAction.create({
+          data: {
+            lifeId,
+            playerId,
+            actionId: request.actionId,
+            type: request.action.type,
+            payload: json(request.action),
+            fromVersion: row.version,
+            toVersion: state.version,
+            entries: json(entries)
+          }
+        });
+        return { response: { life: toLifeView(meta(updated), state), entries, replayed: false }, facts: factsOf(request.actionId, before, state) };
       });
-      return { life: toLifeView(meta(updated), state), entries, replayed: false };
-    });
+      await this.insights.noteMany(outcome.facts);
+      return outcome.response;
+    } catch (error) {
+      if (error instanceof GameRuleError) {
+        await this.insights.note({ name: "action.rejected", world: "", age: 0, level: 0, amount: 0, ref: request.actionId });
+      }
+      throw error;
+    }
   }
 
   /**
@@ -370,6 +409,7 @@ export class LivesService {
 
       const target = parseSave(snapshot.state);
       const { state, entries } = restoreState(target, row.version);
+      await this.releaseUndoneClaims(tx, lifeId, state);
       await tx.historyEntry.deleteMany({ where: { lifeId, seq: { gte: target.nextSeq } } });
       await tx.lifeSnapshot.deleteMany({ where: { lifeId, version: { gt: request.version } } });
       const updated = await tx.life.update({ where: { id: lifeId }, data: lifeColumns(state) });

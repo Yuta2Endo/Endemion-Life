@@ -133,6 +133,15 @@ export interface InteractionResult {
   check: { chance: number; success: boolean };
 }
 
+/** Почему общение закрыто. Пустая строка — можно */
+export function interactionBlock(ctx: EngineContext, npc: NpcState, interaction: InteractionId): string {
+  if (!npc.alive) return "нет в живых";
+  if (npc.status === "missing") return "пропал";
+  if (npc.interactedAt === ctx.state.life.age) return "уже в этом году";
+  if (!INTERACTION_RULES[interaction].allowed(ctx, npc)) return "условия";
+  return "";
+}
+
 export function interactionAvailable(ctx: EngineContext, npc: NpcState, interaction: InteractionId): boolean {
   return npc.alive && npc.status !== "missing" && npc.interactedAt !== ctx.state.life.age && INTERACTION_RULES[interaction].allowed(ctx, npc);
 }

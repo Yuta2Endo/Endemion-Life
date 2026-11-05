@@ -2,6 +2,7 @@
 // Запись лежит в сохранении (state.mastery) и ничего не выдаёт: ни золота, ни статов, ни опыта.
 // Она только помнит, какие цели и отметки уже зачтены, чтобы одно и то же не зачлось дважды.
 import { adventuresOf, placesOf } from "../adventure/content.js";
+import { TEMPERAMENTS } from "../character/temperaments.js";
 import { t, type LocalizedText } from "../i18n.js";
 import { pathSkill, SKILL_MAX } from "../rpg/skills.js";
 import type { GameState } from "../types.js";
@@ -95,6 +96,16 @@ export const MASTERY_OBJECTIVES: readonly MasteryObjective[] = [
     text: t("Открыть все места, пройти приключение мира и довести навык пути до мастерства.", "Discover every place, complete the world's adventure and master the path skill."),
     rare: true,
     check: (state) => placesKnown(state) && deedDone(state) && handMastered(state)
+  },
+  {
+    id: "bent",
+    name: t("Свой нрав", "One's own bent"),
+    text: t("Довести до 40 характеристику, которую характер растит первой. Другие дороги не закрывает.", "Bring to 40 the stat your temperament grows first. Other roads stay open."),
+    rare: false,
+    check: (state) => {
+      const bent = TEMPERAMENTS.find((item) => item.id === state.character.temperamentId)?.growth[0];
+      return bent !== undefined && state.character.stats[bent] >= 40;
+    }
   }
 ];
 

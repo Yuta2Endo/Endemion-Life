@@ -27,6 +27,10 @@ export const STOCK_PER_SELL = 3;
  */
 export const STOCK_SWING = 0.02;
 const STRAIN_MAX = 100;
+/** С этого напряжения край начинает давить на болезни и потерю работы NPC */
+export const STRAIN_PRESSURE = 40;
+/** С этого благополучия повышение NPC чуть вероятнее. Выше 1.25 множитель не растёт */
+export const PROSPERITY_EASE = 40;
 /** За тихий год напряжение спадает на столько */
 const STRAIN_DECAY = 2;
 const PROSPERITY_DECAY = 1;
@@ -106,6 +110,19 @@ export function tradeRegion(state: GameState, goodId: string, side: "buy" | "sel
     region.stock[goodId] = clamp(stock + qty * STOCK_PER_SELL, STOCK_MAX);
     region.prosperity = clamp(region.prosperity + 1, STRAIN_MAX);
   }
+}
+
+/**
+ * Множитель веса поведения NPC от края этой жизни. Не выдаёт золота и не зовёт генератор.
+ * Болезнь и потеря работы — не выше 1.5. Повышение — не выше 1.25. Ниже порога — 1.
+ */
+export function regionFactor(kind: "illness" | "job-loss" | "promotion", strain: number, prosperity: number): number {
+  if (kind === "promotion") {
+    if (prosperity < PROSPERITY_EASE) return 1;
+    return Math.min(1.25, 1 + prosperity / 400);
+  }
+  if (strain < STRAIN_PRESSURE) return 1;
+  return Math.min(1.5, 1 + strain / 200);
 }
 
 export function changeStrain(state: GameState, delta: number): void {

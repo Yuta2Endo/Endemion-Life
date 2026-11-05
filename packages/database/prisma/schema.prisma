@@ -33,6 +33,8 @@ model Player {
   tiesAsA  Tie[]    @relation("TieA")
   /// Связи, где игрок стоит вторым
   tiesAsB  Tie[]    @relation("TieB")
+  /// Stage 15: вклады игрока в живые окна
+  liveParts LivePart[]
 
   @@index([idDisplayName])
   @@index([idUsername])
@@ -245,4 +247,100 @@ model GameAction {
   @@unique([lifeId, actionId])
   @@index([playerId, createdAt])
   @@map("game_actions")
+}
+
+/// Stage 15: живое окно. Срок в UTC. Состояние меняется только проверенным переходом.
+/// draft — черновик, scheduled — ждёт срока, active — идёт, completed — срок вышел,
+/// cancelled — снято, archived — убрано из доски
+model LiveWindow {
+  id         String    @id @default(uuid()) @db.Uuid
+  /// Шаблон из кода. Пустое — окно задано вручную
+  templateId String?   @map("template_id") @db.VarChar(40)
+  /// Ключ слота шаблона: повтор того же дня или недели находит эту строку
+  slotKey    String?   @unique @map("slot_key") @db.VarChar(80)
+  titleRu    String    @map("title_ru") @db.VarChar(80)
+  titleEn    String    @map("title_en") @db.VarChar(80)
+  textRu     String    @map("text_ru") @db.VarChar(400)
+  textEn     String    @map("text_en") @db.VarChar(400)
+  status     String    @db.VarChar(16)
+  /// Пусто — все шесть миров. Иначе id через запятую
+  worlds     String    @default("") @db.VarChar(80)
+  minAge     Int       @default(10) @map("min_age")
+  goal       Int
+  /// Сколько раз одна жизнь может вложиться
+  perLife    Int       @default(1) @map("per_life")
+  /// Золото награды. Новой валюты нет
+  gold       Int       @default(0)
+  /// Флаг в жизни после выдачи: live.<id окна>
+  flag       String    @db.VarChar(40)
+  progress   Int       @default(0)
+  startsAt   DateTime  @map("starts_at") @db.Timestamptz(3)
+  endsAt     DateTime  @map("ends_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  parts LivePart[]
+  log   LiveLog[]
+
+  @@index([status, endsAt])
+  @@map("live_windows")
+}
+
+/// Вклад одной жизни в одно окно. Повтор в тот же год жизни не считается
+model LivePart {
+  id         String   @id @default(uuid()) @db.Uuid
+  windowId   String   @map("window_id") @db.Uuid
+  playerId   String   @map("player_id") @db.Uuid
+  lifeId     String   @map("life_id") @db.Uuid
+  count      Int      @default(0)
+  /// Год жизни, в котором уже вложились. Пусто — ещё не вкладывались
+  lastAge    Int?     @map("last_age")
+  /// Когда награда записана. Повтор не выдаёт золото второй раз
+  claimedAt  DateTime? @map("claimed_at") @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  window LiveWindow @relation(fields: [windowId], references: [id], onDelete: Cascade)
+  player Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([windowId, lifeId])
+  @@index([playerId])
+  @@map("live_parts")
+}
+
+/// Кто перевёл окно и куда. Удаления нет
+model LiveLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  windowId  String   @map("window_id") @db.Uuid
+  actor     String   @db.VarChar(16)
+  from      String   @db.VarChar(16)
+  to        String   @db.VarChar(16)
+  note      String   @default("") @db.VarChar(120)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  window LiveWindow @relation(fields: [windowId], references: [id], onDelete: Cascade)
+
+  @@index([windowId, createdAt])
+  @@map("live_log")
+}
+
+/// Stage 16: факт хода. Не состояние игры. Игрок, почта и текст сюда не пишутся.
+/// ref уникален вместе с name: повтор того же хода не двоит счётчик
+model Insight {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(24)
+  /// Мир, если факт к нему относится. Пусто — общий
+  world     String   @default("") @db.VarChar(32)
+  /// Возраст персонажа в момент факта. 0 — не про жизнь
+  age       Int      @default(0)
+  level     Int      @default(0)
+  /// Количество: золото, ранг, число сделок. Не текст
+  amount    Int      @default(0)
+  /// Ключ идемпотентности: actionId хода или свой uuid
+  ref       String   @db.VarChar(80)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([name, ref])
+  @@index([createdAt])
+  @@index([name, createdAt])
+  @@map("insights")
 }

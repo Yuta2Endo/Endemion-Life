@@ -77,6 +77,7 @@ export const when = {
   rankAtMost: (max: number): Condition => ({ type: "rank", max }),
   trackReady: (): Condition => ({ type: "trackReady" }),
   origin: (...ids: string[]): Condition => ({ type: "origin", ids }),
+  temperament: (...ids: string[]): Condition => ({ type: "temperament", ids }),
   race: (...ids: string[]): Condition => ({ type: "race", ids }),
   ability: (id: string): Condition => ({ type: "ability", id, has: true }),
   skill: (id: string, min: number): Condition => ({ type: "skill", id, min }),

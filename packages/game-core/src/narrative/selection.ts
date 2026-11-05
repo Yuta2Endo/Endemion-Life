@@ -1,6 +1,7 @@
 // Narrative Engine: какое событие случится в этом году
 import { checkAll } from "../engine/conditions.js";
 import type { EngineContext } from "../engine/context.js";
+import { TEMPERAMENTS } from "../character/temperaments.js";
 import { ACHIEVEMENTS } from "../legacy/achievements.js";
 import { LINEAGE_CONSEQUENCES, THREADS } from "../legacy/stories.js";
 import { findProfession, findSkill } from "../rpg/skills.js";
@@ -152,6 +153,8 @@ function brokenCondition(universe: UniverseDefinition, condition: Condition, eve
       return "";
     case "world":
       return ids.every((id) => (UNIVERSE_IDS as readonly string[]).includes(id)) ? "" : `мир ${ids.join(",")}`;
+    case "temperament":
+      return ids.every((id) => TEMPERAMENTS.some((item) => item.id === id)) ? "" : `характер ${ids.join(",")}`;
     case "npc":
     case "affinity":
       return ROLES.has(condition.role) ? "" : `роль ${condition.role}`;

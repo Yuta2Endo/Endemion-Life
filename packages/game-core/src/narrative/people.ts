@@ -239,6 +239,27 @@ export const PEOPLE_EVENTS: readonly EventDefinition[] = [
       { id: "talk", text: t("Остановиться поговорить", "Stop to talk"), success: { text: t("Старая дружба оживает, будто и не было этих лет.", "An old friendship revives as if the years never passed."), effects: [fx.npc("friend"), fx.affinity("friend", 15), fx.stat("charisma", 1)] } },
       { id: "pass", text: t("Сделать вид, что не узнал", "Pretend not to recognise them"), success: { text: t("Прошлое остаётся в прошлом.", "The past stays in the past."), effects: [] } }
     ]
+  },
+  {
+    id: "common.kept-word",
+    kind: "personal",
+    title: t("Слово, которое держат", "A word that is kept"),
+    text: t("Тот, кому {name} доверяет больше всех, просит не рассказывать о чужой беде.", "The person {name} trusts most asks that someone else's trouble not be told."),
+    minAge: 16,
+    maxOccurrences: 1,
+    conditions: [when.flag("bond")],
+    choices: [
+      {
+        id: "keep",
+        text: t("Промолчать", "Stay silent"),
+        success: { text: t("Слово остаётся при вас. Близкий это замечает.", "The word stays with you. The close one notices."), effects: [fx.affinity("family", 4), fx.karma(3)] }
+      },
+      {
+        id: "tell",
+        text: t("Рассказать тому, кому это нужно", "Tell the one who needs to know"),
+        success: { text: t("Правда выходит. Доверие не рушится, но теплее не становится.", "The truth comes out. Trust does not break, but it does not grow warmer."), effects: [fx.rep(3), fx.affinity("family", -4)] }
+      }
+    ]
   }
 ];
 

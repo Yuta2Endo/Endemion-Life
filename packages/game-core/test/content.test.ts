@@ -20,7 +20,9 @@ describe("Контент вселенных", () => {
     const abilityIds = new Set(universe.abilities.map((a) => a.id));
     const setFlags = new Set([
       ...universe.origins.flatMap((o) => o.flags ?? []),
-      ...[...index.values()].flatMap((e) => allEffects(e).flatMap((fx) => (fx.type === "flag" && fx.set ? [fx.flag] : [])))
+      ...[...index.values()].flatMap((e) => allEffects(e).flatMap((fx) => (fx.type === "flag" && fx.set ? [fx.flag] : []))),
+      // Stage 18: флаг ставит веха доверия, не эффект события
+      "bond"
     ]);
 
     expect(universe.events.length).toBeGreaterThanOrEqual(5);

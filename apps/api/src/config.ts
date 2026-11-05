@@ -38,6 +38,11 @@ export interface AppConfig {
   sentryDsn: string | null;
   /** Вход через Endemion ID (auth.endemion.online). null — выключен, работает старый вход по почте */
   endemionId: EndemionIdConfig | null;
+  /**
+   * Stage 15: токен управления окнами. Пустой — маршрутов управления нет.
+   * В рабочей среде не задаётся, пока окна не ведут вручную
+   */
+  liveOpsToken: string | null;
 }
 
 export interface EndemionIdConfig {
@@ -78,7 +83,8 @@ const envSchema = z.object({
   ENDEMION_ID_ISSUER: z.string().optional(),
   ENDEMION_ID_CLIENT_ID: z.string().optional(),
   ENDEMION_ID_CLIENT_SECRET: z.string().optional(),
-  ENDEMION_ID_TOKEN_KEY: z.string().optional()
+  ENDEMION_ID_TOKEN_KEY: z.string().optional(),
+  LIVE_OPS_TOKEN: z.string().optional()
 });
 
 function readEndemionId(e: z.infer<typeof envSchema>, production: boolean, publicUrl: string): EndemionIdConfig | null {
@@ -153,6 +159,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     mail: { driver, from: e.MAIL_FROM, smtpUrl, outboxDir: e.MAIL_OUTBOX_DIR },
     log: { level: e.LOG_LEVEL, format: e.LOG_FORMAT ?? (production ? "json" : "pretty") },
     sentryDsn: blankToNull(e.SENTRY_DSN),
-    endemionId: readEndemionId(e, production, publicUrl)
+    endemionId: readEndemionId(e, production, publicUrl),
+    liveOpsToken: blankToNull(e.LIVE_OPS_TOKEN)
   };
 }

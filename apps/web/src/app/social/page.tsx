@@ -1,5 +1,6 @@
 import { Ornament } from "@endemion/ui";
 import type { Metadata } from "next";
+import { LiveBoard } from "@/components/social/live-board";
 import { SocialPanel } from "@/components/social/social-panel";
 import { getServerI18n } from "@/lib/locale-server";
 
@@ -14,7 +15,8 @@ export default async function SocialPage() {
         <p className="mx-auto mt-4 max-w-xl text-bone-300">{t("social.lead")}</p>
         <Ornament className="mx-auto mt-8 max-w-sm" />
       </header>
-      <div className="mt-10">
+      <div className="mt-10 space-y-8">
+        <LiveBoard />
         <SocialPanel />
       </div>
     </main>

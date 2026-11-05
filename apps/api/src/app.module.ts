@@ -12,6 +12,10 @@ import { APP_CONFIG, readConfig, type AppConfig } from "./config.js";
 import { HealthController } from "./health/health.controller.js";
 import { LivesController } from "./lives/lives.controller.js";
 import { LivesService } from "./lives/lives.service.js";
+import { InsightsController } from "./insights/insights.controller.js";
+import { InsightsService } from "./insights/insights.service.js";
+import { LiveController } from "./live/live.controller.js";
+import { LiveService } from "./live/live.service.js";
 import { MailService } from "./mail/mail.service.js";
 import { PrismaService } from "./prisma/prisma.service.js";
 import { RateLimitGuard } from "./redis/rate-limit.guard.js";
@@ -22,7 +26,7 @@ import { SocialController } from "./social/social.controller.js";
 import { SocialService } from "./social/social.service.js";
 
 @Module({
-  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, SocialController],
+  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, SocialController, LiveController, InsightsController],
   providers: [
     { provide: APP_CONFIG, useFactory: (): AppConfig => readConfig() },
     PrismaService,
@@ -34,6 +38,8 @@ import { SocialService } from "./social/social.service.js";
     AuthService,
     LivesService,
     SocialService,
+    LiveService,
+    InsightsService,
     // Порядок важен: сначала лимит запросов, потом проверка источника запроса
     { provide: APP_GUARD, useClass: RateLimitGuard },
     { provide: APP_GUARD, useClass: RequestGuard },
