@@ -10,7 +10,7 @@ async function openEconomy(page: Page) {
   // После обновления страницы вкладки появляются только когда жизнь загрузилась: isVisible() не ждёт
   await expect(page.getByTestId("play-screen")).toBeVisible();
   await openTab(page, "people");
-  const dossier = page.getByTestId("dossier").locator("visible=true");
+  const dossier = page.getByTestId("dossier").locator("visible=true").first();
   await expect(dossier).toBeVisible();
   await dossier.getByTestId("dossier-tab-economy").click();
   const panel = dossier.getByTestId("dossier-economy");
@@ -144,7 +144,7 @@ test("вкладки досье доступны с клавиатуры, раз
   await page.getByTestId("create-submit").click();
   await expect(page.getByTestId("play-screen")).toBeVisible();
   await openTab(page, "people");
-  const tab = page.getByTestId("dossier").locator("visible=true").getByTestId("dossier-tab-economy");
+  const tab = page.getByTestId("dossier").locator("visible=true").first().getByTestId("dossier-tab-economy");
   await tab.focus();
   await page.keyboard.press("Enter");
   await expect(tab).toHaveAttribute("aria-selected", "true");

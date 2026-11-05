@@ -94,7 +94,7 @@ test("переключение языка", async ({ page }) => {
 async function openDossier(page: Page) {
   const tab = page.getByTestId("tab-people");
   if (await tab.isVisible()) await tab.click();
-  const dossier = page.getByTestId("dossier").locator("visible=true");
+  const dossier = page.getByTestId("dossier").locator("visible=true").first();
   await expect(dossier).toBeVisible();
   return dossier;
 }

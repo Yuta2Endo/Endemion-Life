@@ -36,7 +36,7 @@ async function liveToDeath(page: Page) {
 
 async function openLineage(page: Page) {
   await openTab(page, "people");
-  const dossier = page.getByTestId("dossier").locator("visible=true");
+  const dossier = page.getByTestId("dossier").locator("visible=true").first();
   await expect(dossier).toBeVisible();
   await dossier.getByTestId("dossier-tab-lineage").click();
   await expect(dossier.getByTestId("lineage-panel")).toBeVisible();

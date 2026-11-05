@@ -9,7 +9,7 @@ async function openTab(page: Page, tab: "event" | "character" | "people" | "time
 async function openAdventure(page: Page) {
   await expect(page.getByTestId("play-screen")).toBeVisible();
   await openTab(page, "people");
-  const dossier = page.getByTestId("dossier").locator("visible=true");
+  const dossier = page.getByTestId("dossier").locator("visible=true").first();
   await expect(dossier).toBeVisible();
   await dossier.getByTestId("dossier-tab-adventure").click();
   const panel = dossier.getByTestId("adventure");
