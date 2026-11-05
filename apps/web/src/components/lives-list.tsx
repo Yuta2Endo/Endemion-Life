@@ -4,6 +4,7 @@ import { getUniverse } from "@endemion/game-core";
 import type { LifeListItem } from "@endemion/shared";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Ornament } from "@endemion/ui";
 import { ageLabel } from "@/lib/format";
 import { cloudStore, detectStoreKind, localStore, LOCAL_ID_PREFIX } from "@/lib/store";
 import { useI18n } from "./locale-provider";
@@ -27,13 +28,14 @@ export function LivesList() {
     };
   }, []);
 
-  if (lives === null) return <div className="h-20 animate-pulse rounded-xl border border-line bg-ink-900/60" aria-busy="true" />;
-  if (lives.length === 0) return <p className="text-sm text-bone-500">{t("home.noLives")}</p>;
+  if (lives === null || lives.length === 0) return null;
 
   const ordered = [...lives].sort((a, b) => Number(b.status === "alive") - Number(a.status === "alive") || b.updatedAt.localeCompare(a.updatedAt));
   const shown = more ? ordered : ordered.slice(0, 9);
   return (
-    <>
+    <section className="mt-12">
+    <h2 className="font-display text-3xl text-bone-100">{t("home.continue")}</h2>
+    <Ornament className="my-5 max-w-xs" />
     <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="lives-list">
       {shown.map((life) => {
         const universe = getUniverse(life.universeId);
@@ -63,6 +65,6 @@ export function LivesList() {
         {t("home.moreLives")}
       </button>
     )}
-    </>
+    </section>
   );
 }

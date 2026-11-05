@@ -255,6 +255,35 @@ function Summary({ summary }: { summary: LifeSummaryView }) {
   );
 }
 
+function Epitaph({ name, age, title }: { name: string; age: number; title: string }) {
+  const { t } = useI18n();
+  const [copied, setCopied] = useState(false);
+  const text = t("summary.epitaph", { name, age, title });
+  return (
+    <p className="mt-4 text-center text-sm text-bone-300" data-testid="epitaph">
+      {text}{" "}
+      <button
+        type="button"
+        className="text-gold-200 underline decoration-gold-500/40"
+        data-testid="copy-epitaph"
+        onClick={() => {
+          const done = () => setCopied(true);
+          if (navigator.share) {
+            void navigator.share({ text }).then(done).catch((error: unknown) => {
+              if (error instanceof DOMException && error.name === "AbortError") return;
+              void navigator.clipboard.writeText(text).then(done);
+            });
+            return;
+          }
+          void navigator.clipboard.writeText(text).then(done);
+        }}
+      >
+        {copied ? t("summary.copied") : t("summary.copy")}
+      </button>
+    </p>
+  );
+}
+
 /**
  * Экран после смерти: итоги жизни, достижения, наследство по закону мира и выбор наследника.
  * Нет наследников — предложение начать новую жизнь; эта жизнь остаётся в списке
@@ -313,6 +342,7 @@ export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: b
             <p className="mt-2 text-xs text-bone-500">{t("summary.newLifeHint")}</p>
           </>
         )}
+        <Epitaph name={summary.name} age={summary.age} title={l(summary.title)} />
         <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
           <Link href={`/create/${life.universeId}`} className="rounded-md border border-gold-400/70 bg-gold-500/15 px-5 py-2.5 text-center text-gold-100 transition hover:border-gold-300" data-testid="new-life">
             {t("play.newLifeSame")}

@@ -440,13 +440,17 @@ export function Dossier({
     { id: "people", label: t("dossier.people") }
   ];
   const quest = life.profile.quest;
+  const openChance = life.pendingEvent?.choices.find((choice) => choice.available && choice.chance !== null)?.chance ?? null;
   return (
     <Panel className="space-y-4" data-testid="dossier">
+      <p className="text-sm text-bone-100 lg:hidden" data-testid="dossier-now">
+        {[ageLabel(life.life.age, locale), life.pendingEvent && l(life.pendingEvent.title), openChance != null && t("play.chance", { n: Math.round(openChance * 100) })].filter(Boolean).join(" · ")}
+      </p>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-2xl text-bone-100">{t("dossier.title")}</h2>
           <div
             ref={tabsRef}
-            className="flex flex-wrap rounded-md border border-line bg-ink-950/70 p-0.5"
+            className="flex max-w-full gap-0.5 overflow-x-auto rounded-md border border-line bg-ink-950/70 p-0.5"
             role="tablist"
             aria-label={t("dossier.title")}
             onKeyDown={(event) => {
@@ -471,7 +475,7 @@ export function Dossier({
               aria-selected={section === item.id}
               tabIndex={section === item.id ? 0 : -1}
               onClick={() => setSection(item.id)}
-              className={`rounded px-2.5 py-1 text-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${section === item.id ? "bg-gold-500/20 text-gold-100" : "text-bone-300 hover:text-bone-100"}`}
+              className={`shrink-0 whitespace-nowrap rounded px-2.5 py-1 text-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${section === item.id ? "bg-gold-500/20 text-gold-100" : "text-bone-300 hover:text-bone-100"}`}
               data-testid={`dossier-tab-${item.id}`}
             >
               {item.label}

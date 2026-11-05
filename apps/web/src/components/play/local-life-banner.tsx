@@ -36,7 +36,7 @@ export function LocalLifeBanner({ lifeId, disabled }: { lifeId: string; disabled
   return (
     <div className="relative mb-4 rounded-md border border-gold-500/40 bg-gold-500/5 px-3 py-3 text-sm text-gold-100" data-testid="local-banner">
       <p>{t("store.localLife")}</p>
-      <p className="mt-1 text-xs text-bone-400">{t("store.moveHint")}</p>
+      <p className="mt-1 hidden text-xs text-bone-400 sm:block">{t("store.moveHint")}</p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <Button variant="primary" onClick={() => void move()} disabled={moving || disabled} data-testid="move-to-cloud">
           {moving ? t("store.moving") : t("store.move")}

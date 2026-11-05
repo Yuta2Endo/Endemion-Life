@@ -105,9 +105,8 @@ export function SocialPanel() {
         </ul>
       </Panel>
 
-      <Panel>
+      {board && board.incoming.length > 0 && <Panel>
         <h2 className="font-display text-2xl text-bone-100">{t("social.incoming")}</h2>
-        {board && board.incoming.length === 0 && <p className="mt-2 text-xs text-bone-500">{t("social.empty")}</p>}
         <ul className="mt-3 space-y-2" data-testid="social-incoming">
           {board?.incoming.map((tie) => (
             <li key={tie.id} className="flex flex-wrap items-center justify-between gap-2">
@@ -123,11 +122,10 @@ export function SocialPanel() {
             </li>
           ))}
         </ul>
-      </Panel>
+      </Panel>}
 
-      <Panel>
+      {board && board.friends.length > 0 && <Panel>
         <h2 className="font-display text-2xl text-bone-100">{t("social.friends")}</h2>
-        {board && board.friends.length === 0 && <p className="mt-2 text-xs text-bone-500">{t("social.empty")}</p>}
         <ul className="mt-3 space-y-2" data-testid="social-friends">
           {board?.friends.map((tie) => (
             <li key={tie.id} className="flex items-center justify-between gap-2">
@@ -143,7 +141,7 @@ export function SocialPanel() {
             </li>
           ))}
         </ul>
-      </Panel>
+      </Panel>}
     </div>
   );
 }

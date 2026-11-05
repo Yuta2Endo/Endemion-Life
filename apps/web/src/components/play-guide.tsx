@@ -11,7 +11,7 @@ function storedHidden(): boolean {
 }
 
 /** Короткая справка. Закрытие помнится в браузере и не трогает сохранения */
-export function PlayGuide() {
+export function PlayGuide({ compact = false }: { compact?: boolean }) {
   const { t } = useI18n();
   const [hidden, setHidden] = useState(storedHidden);
 
@@ -34,6 +34,18 @@ export function PlayGuide() {
   }
 
   const items = [t("guide.year"), t("guide.event"), t("guide.dossier"), t("guide.saves")];
+  if (compact) {
+    return (
+      <details className="rounded-xl border border-line bg-ink-900/60 px-4 py-3" data-testid="play-guide">
+        <summary className="cursor-pointer text-sm text-gold-200">{t("guide.title")}</summary>
+        <ul className="mt-3 space-y-1.5">
+          {items.map((item) => (
+            <li key={item} className="text-sm text-bone-100">{item}</li>
+          ))}
+        </ul>
+      </details>
+    );
+  }
   return (
     <section className="rounded-xl border border-line bg-ink-900/60 p-5" data-testid="play-guide">
       <div className="flex items-baseline justify-between gap-3">

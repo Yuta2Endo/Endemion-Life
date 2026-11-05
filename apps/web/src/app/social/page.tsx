@@ -13,6 +13,7 @@ export default async function SocialPage() {
       <header className="text-center">
         <h1 className="font-display text-4xl text-gilded sm:text-5xl">{t("social.title")}</h1>
         <p className="mx-auto mt-4 max-w-xl text-bone-300">{t("social.lead")}</p>
+        <p className="mx-auto mt-2 max-w-xl text-sm text-bone-500">{t("social.closed")}</p>
         <Ornament className="mx-auto mt-8 max-w-sm" />
       </header>
       <div className="mt-10 space-y-8">

@@ -80,6 +80,10 @@ export function CreateForm({ universe, temperaments }: { universe: UniverseSumma
   const [seed, setSeed] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const origin = universe.origins.find((item) => item.id === originId) ?? null;
+  const stationId = originId ? universe.originClasses[originId] : undefined;
+  const station = universe.socialClasses.find((item) => item.id === stationId) ?? null;
+  const fork = universe.mechanics[0];
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -118,20 +122,39 @@ export function CreateForm({ universe, temperaments }: { universe: UniverseSumma
         </div>
       </header>
 
-      <Panel className="space-y-8">
-        <div className="grid gap-6 sm:grid-cols-[1fr_auto]">
-          <label className="block">
-            <span className="mb-2 block text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("create.name")}</span>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={NAME_MAX_LENGTH}
-              placeholder={t("create.namePlaceholder")}
-              autoComplete="off"
-              className="w-full rounded-md border border-line bg-ink-950/70 px-4 py-2.5 text-bone-100 placeholder:text-bone-500 focus:border-gold-400/70 focus:outline-none"
-              data-testid="name-input"
-            />
-          </label>
+      <aside className="rounded-xl border border-line bg-ink-900/70 px-5 py-4 text-sm" data-testid="birth-preview">
+        <p className="text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("create.preview")}</p>
+        <p className="mt-2 text-bone-100">{name.trim() || t("create.namePlaceholder")}</p>
+        <p className="mt-1 text-bone-300">
+          {station ? l(station.name) : t("create.previewRandom")} · {t("worlds.lifespan", { years: universe.lifespan })}
+        </p>
+        {origin && <p className="mt-1 text-xs text-bone-400">{l(origin.description)}</p>}
+        {fork && (
+          <p className="mt-3 text-bone-300">
+            {t("create.previewFork")}: {l(fork.name)}. {l(fork.description)}
+          </p>
+        )}
+        <Button type="submit" variant="primary" className="mt-4" disabled={busy}>
+          {busy ? t("create.submitting") : t("create.quick")}
+        </Button>
+        <p className="mt-2 text-xs text-bone-500">{t("create.quickHint")}</p>
+        <label className="mt-4 block">
+          <span className="mb-2 block text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("create.name")}</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={NAME_MAX_LENGTH}
+            placeholder={t("create.namePlaceholder")}
+            autoComplete="off"
+            className="w-full rounded-md border border-line bg-ink-950/70 px-4 py-2.5 text-bone-100 placeholder:text-bone-500 focus:border-gold-400/70 focus:outline-none"
+            data-testid="name-input"
+          />
+        </label>
+      </aside>
+
+      <details className="rounded-xl border border-line bg-ink-900/40 px-4 py-3">
+        <summary className="cursor-pointer text-sm text-gold-200">{t("create.choose")}</summary>
+      <Panel className="mt-4 space-y-8">
           <fieldset>
             <legend className="mb-2 text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("create.gender")}</legend>
             <div className="flex rounded-md border border-line bg-ink-950/70 p-1">
@@ -143,7 +166,6 @@ export function CreateForm({ universe, temperaments }: { universe: UniverseSumma
               ))}
             </div>
           </fieldset>
-        </div>
 
         {universe.races.length > 1 && <OptionGrid legend={t("create.race")} name="race" options={universe.races} value={raceId} onChange={setRaceId} />}
         <OptionGrid
@@ -172,6 +194,7 @@ export function CreateForm({ universe, temperaments }: { universe: UniverseSumma
           </label>
         </details>
       </Panel>
+      </details>
 
       <Ornament />
       <div className="flex flex-col items-center gap-3">

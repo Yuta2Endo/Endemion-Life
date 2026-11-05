@@ -444,9 +444,30 @@ export function AccountPanel() {
     }
   }
 
-  if (failed) return <Notice tone="error">{t("error.offline")}</Notice>;
+  if (failed) {
+    return (
+      <div className="mx-auto max-w-md space-y-4 text-center">
+        <Notice tone="error">{t("error.offline")}</Notice>
+        <a href={endemionIdLoginUrl("/worlds")} className={buttonClass({ variant: "primary" })} data-testid="id-sign-in">
+          {t("auth.idSignIn")}
+        </a>
+      </div>
+    );
+  }
   if (me === null || idConfig === null) {
-    return <div className="mx-auto h-40 max-w-md animate-pulse rounded-xl border border-line bg-ink-900/60" aria-busy="true" />;
+    return (
+      <div className="mx-auto max-w-md space-y-4 text-center" aria-busy="true">
+        <p className="text-sm text-bone-300">{t("auth.idLead")}</p>
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <a href={endemionIdLoginUrl("/worlds")} className={buttonClass({ variant: "primary" })} data-testid="id-sign-in-pending">
+            {t("auth.idSignIn")}
+          </a>
+          <a href={endemionIdLoginUrl("/worlds", true)} className={buttonClass()}>
+            {t("auth.idRegister")}
+          </a>
+        </div>
+      </div>
+    );
   }
   // Вход через Endemion ID включён на сервере: старая форма с почтой и паролем не показывается
   if (idConfig.endemionId.enabled) {

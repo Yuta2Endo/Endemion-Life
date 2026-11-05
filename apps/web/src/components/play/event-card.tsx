@@ -12,12 +12,19 @@ export function EventCard({ event, busy, onChoose }: { event: EventView; busy: b
   return (
     <Panel accent className="animate-rise" data-testid="event-card">
       <p className="text-[11px] uppercase tracking-[0.3em] text-gold-400">{ageLabel(event.age, locale)}</p>
-      <h2 className="mt-2 font-display text-3xl leading-tight text-gilded" data-testid="event-title">
+      <h2 className="mt-1 font-display text-2xl leading-tight text-gilded sm:mt-2 sm:text-3xl" data-testid="event-title">
         {l(event.title)}
       </h2>
-      <p className="mt-4 text-base leading-relaxed text-bone-100">{l(event.text)}</p>
+      <ul className="mt-3 flex flex-wrap gap-2 sm:hidden">
+        {event.choices.map((choice) => (
+          <li key={choice.id} className={`text-[11px] ${choice.available ? "text-jade-300" : "text-blood-300"}`}>
+            {choice.chance !== null ? t("play.chance", { n: Math.round(choice.chance * 100) }) : choice.locked.map(l).join(" · ") || t("play.locked")}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-base leading-relaxed text-bone-100">{l(event.text)}</p>
       <p className="mt-2 text-xs text-bone-400">{event.scheduled ? t("play.scheduled") : t("play.thisYear")}</p>
-      <Ornament className="my-6" />
+      <Ornament className="my-4 sm:my-6" />
       <h3 className="mb-3 text-[11px] uppercase tracking-[0.22em] text-bone-500">{t("play.choose")}</h3>
       <ul className="space-y-2.5">
         {event.choices.map((choice) => (
@@ -26,17 +33,21 @@ export function EventCard({ event, busy, onChoose }: { event: EventView; busy: b
               type="button"
               disabled={!choice.available || busy}
               onClick={() => onChoose(choice.id)}
-              className="group flex w-full items-start justify-between gap-4 rounded-lg border border-line bg-ink-950/60 px-4 py-3 text-left transition enabled:hover:border-gold-400/70 enabled:hover:bg-gold-500/5 focus-visible:outline-2 focus-visible:outline-gold-300 disabled:cursor-not-allowed disabled:opacity-50"
+              className={`group flex w-full items-start justify-between gap-4 rounded-lg border px-4 py-3 text-left transition focus-visible:outline-2 focus-visible:outline-gold-300 disabled:cursor-not-allowed ${
+                choice.available
+                  ? "border-line bg-ink-950/60 enabled:hover:border-gold-400/70 enabled:hover:bg-gold-500/5"
+                  : "border-line/80 bg-ink-950/40"
+              }`}
               data-testid="choice"
               data-choice={choice.id}
               data-available={choice.available}
             >
               <span>
-                <span className="block text-sm text-bone-100 transition group-enabled:group-hover:text-gold-100">{l(choice.text)}</span>
+                <span className={`block text-sm transition ${choice.available ? "text-bone-100 group-enabled:group-hover:text-gold-100" : "text-bone-300"}`}>{l(choice.text)}</span>
                 {choice.available && choice.touches.length > 0 && (
                   <span className="mt-1 block text-xs text-bone-400">{choice.touches.map((touch) => t(`play.touch.${touch}`)).join(" · ")}</span>
                 )}
-                {!choice.available && <span className="mt-1 block text-xs text-blood-300">{choice.locked.map(l).join(" · ")}</span>}
+                {!choice.available && <span className="mt-1 block text-xs font-medium text-blood-300">{choice.locked.map(l).join(" · ")}</span>}
               </span>
               {choice.chance !== null && (
                 <span

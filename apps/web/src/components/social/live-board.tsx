@@ -38,6 +38,7 @@ export function LiveBoard() {
   const [lifeId, setLifeId] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [ready, setReady] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -50,6 +51,8 @@ export function LiveBoard() {
       setLifeId((current) => current || alive[0]?.id || "");
     } catch (error) {
       setNotice(error instanceof ClientError ? error.message : t("error.generic"));
+    } finally {
+      setReady(true);
     }
   }, [t]);
 
@@ -72,6 +75,7 @@ export function LiveBoard() {
     }
   }
 
+  if (ready && windows.length === 0 && !notice) return null;
   return (
     <Panel>
       <h2 className="font-display text-2xl text-bone-100">{t("live.title")}</h2>

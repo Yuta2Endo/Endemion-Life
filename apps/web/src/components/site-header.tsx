@@ -22,9 +22,6 @@ export async function SiteHeader() {
           <NavLink href="/worlds" className={link}>
             {t("nav.worlds")}
           </NavLink>
-          <NavLink href="/social" className={link}>
-            {t("nav.people")}
-          </NavLink>
           <a href="https://endemion.online" className={`hidden sm:inline ${link}`}>
             Endemion
           </a>

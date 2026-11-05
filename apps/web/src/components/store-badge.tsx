@@ -11,12 +11,16 @@ import { useI18n } from "./locale-provider";
 export function StoreBadge() {
   const kind = useStoreKind();
   const { t } = useI18n();
-  const label = kind === "checking" ? t("store.checking") : kind === "cloud" ? t("store.cloud") : t("store.local");
-  const dot = kind === "cloud" ? "bg-jade-400" : kind === "local" ? "bg-gold-400" : "bg-bone-500 animate-pulse";
+  if (kind === "checking") {
+    return <span className="sr-only" data-testid="store-badge" data-kind="checking">{t("store.checking")}</span>;
+  }
+  const label = kind === "cloud" ? t("store.online") : t("store.offline");
+  const dot = kind === "cloud" ? "bg-jade-400" : "bg-gold-400";
   return (
     <span
       className={`inline-flex items-center gap-2 text-xs ${kind === "local" ? "text-gold-200" : "text-bone-300"}`}
       title={kind === "local" ? t("store.localHint") : label}
+      role="status"
       data-testid="store-badge"
       data-kind={kind}
     >

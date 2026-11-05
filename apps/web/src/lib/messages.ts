@@ -14,6 +14,10 @@ export function toLocale(value: string | undefined | null): Locale {
 
 export const M = {
   "brand.tagline": t("Проживите жизнь, которой не было", "Live a life that never was"),
+  "meta.description": t(
+    "Браузерный симулятор жизни: шесть миров, путь силы и род, который не кончается смертью.",
+    "A browser life simulator: six worlds, a path of power, and a family that does not end at death."
+  ),
   "nav.home": t("Главная", "Home"),
   "nav.worlds": t("Миры", "Worlds"),
   "nav.people": t("Игроки", "Players"),
@@ -23,6 +27,8 @@ export const M = {
   "store.cloud": t("Облачные сохранения", "Cloud saves"),
   "store.local": t("Локальное сохранение", "Local save"),
   "store.checking": t("Связь с сервером…", "Connecting…"),
+  "store.online": t("Сервер онлайн", "Server online"),
+  "store.offline": t("Сервер недоступен", "Server offline"),
   "store.localHint": t(
     "Сервер недоступен: жизнь хранится в этом браузере. Исходы считает браузер, это режим прототипа.",
     "The server is unavailable: this life is stored in this browser. Outcomes are computed in the browser — prototype mode."
@@ -53,11 +59,19 @@ export const M = {
     "Год за годом вы выбираете. Событие останавливает время. Смерть не стирает род: наследник продолжает.",
     "Year by year you choose. An event stops time. Death does not erase the line: an heir continues."
   ),
-  "home.start": t("Выбрать мир рождения", "Choose a world to be born in"),
-  "home.explore": t("Посмотреть миры", "Explore the worlds"),
+  "home.heir": t(
+    "Наследник забирает сословие, нити рода и славу. Та же история, другое лицо.",
+    "The heir takes the station, the family threads and the renown. The same story, another face."
+  ),
+  "home.start": t("Родиться", "Be born"),
+  "home.explore": t("Сравнить миры", "Compare worlds"),
   "home.continue": t("Продолжить жизнь", "Continue a life"),
   "home.moreLives": t("Ещё жизни", "More lives"),
-  "home.noLives": t("Здесь появятся ваши жизни.", "Your lives will appear here."),
+  "home.noLives": t("Жизней ещё нет. Выберите мир — первая начнётся сразу, без аккаунта.", "No lives yet. Choose a world — the first one starts at once, without an account."),
+  "home.firstLife": t("Начать первую жизнь", "Start the first life"),
+  "footer.studio": t("Студия", "Studio"),
+  "footer.privacy": t("Конфиденциальность", "Privacy"),
+  "footer.terms": t("Условия", "Terms"),
   "home.pillar1.title": t("Шесть вселенных", "Six universes"),
   "home.pillar1.text": t("У каждого мира свои расы, происхождения, события и путь силы.", "Each world has its own races, origins, events and path of power."),
   "home.pillar2.title": t("Выбор имеет цену", "Every choice has a price"),
@@ -65,6 +79,13 @@ export const M = {
   "home.pillar3.title": t("Судьба по зерну", "Fate from a seed"),
   "home.pillar3.text": t("Одно зерно судьбы и одни решения — одна и та же жизнь. Сервер не даёт её подделать.", "The same seed and the same choices yield the same life. The server keeps it honest."),
   "home.worldsTitle": t("Миры Endemion", "The worlds of Endemion"),
+  "home.demoTitle": t("Год остановился", "The year has stopped"),
+  "home.demoText": t("На дороге из Мглы выходит фигура в пепле. Шанс виден до выбора.", "A figure in ash steps out of the Mist. The chance is shown before you choose."),
+  "home.demoChoose": t("Отступить к огню", "Fall back to the fire"),
+  "home.demoLocked": t("Дать клятву Мгле", "Swear to the Mist"),
+  "home.demoNeed": t("Нужна клятва", "An oath is required"),
+  "home.demoResult": t("Вы отступили. Огонь собора закрыл дорогу. Год пошёл дальше.", "You fell back. The cathedral fire closed the road. The year moved on."),
+  "home.demoCta": t("Так начинается каждая жизнь", "Every life starts like this"),
   "home.shotEvent": t("Событие останавливает год. Шанс виден до выбора.", "An event stops the year. The chance is shown before you choose."),
   "home.shotEnding": t("Смерть открывает итог и наследника. Род на этом не кончается.", "Death opens the summary and the heir. The line does not end there."),
 
@@ -74,8 +95,10 @@ export const M = {
   "worlds.path": t("Путь силы", "Path of power"),
   "worlds.rules": t("Законы мира", "Laws of the world"),
   "worlds.lifespan": t("Обычный срок жизни: {years} лет", "Usual lifespan: {years} years"),
+  "worlds.years": t("Срок, лет", "Years"),
   "worlds.mechanics": t("Механики мира", "World mechanics"),
   "worlds.society": t("Общество", "Society"),
+  "worlds.more": t("Законы и механики", "Laws and mechanics"),
 
   "create.title": t("Рождение персонажа", "Character creation"),
   "create.lead": t("Выберите сами или доверьтесь судьбе: всё, что не выбрано, решит случай.", "Choose yourself or trust fate: anything left unchosen is decided by chance."),
@@ -92,6 +115,12 @@ export const M = {
   "create.seedHint": t("Одно зерно и одни решения — одна жизнь. Пусто — новое зерно.", "The same seed and choices give the same life. Empty — a new seed."),
   "create.advanced": t("Дополнительно", "Advanced"),
   "create.submit": t("Родиться", "Be born"),
+  "create.quick": t("Родиться сразу", "Be born now"),
+  "create.quickHint": t("Пустые поля решит случай.", "Empty fields are left to chance."),
+  "create.choose": t("Выбрать самому", "Choose yourself"),
+  "create.preview": t("Кто родится", "Who will be born"),
+  "create.previewRandom": t("сословие решит случай", "station left to chance"),
+  "create.previewFork": t("Первая развилка", "First fork"),
   "create.submitting": t("Судьба решается…", "Fate is being decided…"),
   "create.gold": t("{n} золота", "{n} gold"),
 
@@ -130,6 +159,7 @@ export const M = {
   "play.loadEarlier": t("Показать раньше", "Show earlier"),
   "play.decision": t("Решение", "Decision"),
   "play.conflict": t("Жизнь изменилась в другой вкладке. Загружаем свежее состояние.", "The life changed in another tab. Loading the latest state."),
+  "play.offlineKept": t("Ход не засчитан: нет связи. «Повторить» отправит тот же ход, год не потерян.", "The turn was not counted: no connection. Retry sends the same turn. The year is not lost."),
   "play.retry": t("Повторить", "Retry"),
   "play.saves": t("Сохранения", "Saves"),
   "play.savesTitle": t("Версии сохранения", "Save versions"),
@@ -143,6 +173,7 @@ export const M = {
   "play.deathLived": t("{name} прожил(а) {age}.", "{name} lived {age}."),
   "play.newLifeSame": t("Новая жизнь в этом мире", "A new life in this world"),
   "play.otherWorld": t("Другой мир", "Another world"),
+  "play.otherWorldHint": t("Эта жизнь останется в списке.", "This life stays in your list."),
 
   "sheet.level": t("Уровень {n}", "Level {n}"),
   "sheet.xp": t("Опыт", "Experience"),
@@ -336,7 +367,7 @@ export const M = {
     "If this address is registered, the email is on its way. The link is valid for 1 hour."
   ),
   "auth.back": t("Назад", "Back"),
-  "auth.transferred": t("В аккаунт перенесено жизней: {n}.", "Lives moved into your account: {n}."),
+  "auth.transferred": t("В аккаунт перенесено жизней: {n}. Копии в браузере больше не играют.", "Lives moved into your account: {n}. The browser copies can no longer be played."),
   "auth.verifyTitle": t("Подтвердите почту", "Confirm your email"),
   "auth.verifyLead": t("Мы отправили 6-значный код на {email}. Код действует 30 минут.", "We sent a 6-digit code to {email}. The code is valid for 30 minutes."),
   "auth.verifyNotSent": t(
@@ -519,6 +550,7 @@ export const M = {
 
   "social.title": t("Игроки", "Players"),
   "social.lead": t("Найдите игрока по имени, примите запрос или закройте связь.", "Find a player by name, accept a request or close a tie."),
+  "social.closed": t("Общей доски пока нет. Найти можно только того, кто уже играет.", "There is no public board yet. You can only find someone who is already playing."),
   "social.find": t("Поиск", "Search"),
   "social.name": t("Имя", "Name"),
   "social.search": t("Найти", "Find"),
@@ -580,6 +612,9 @@ export const M = {
   "error.generic": t("Что-то пошло не так. Попробуйте ещё раз.", "Something went wrong. Please try again."),
   "error.offline": t("Нет связи с сервером.", "No connection to the server."),
   "error.notFoundTitle": t("Такой страницы нет", "This page does not exist"),
+  "summary.epitaph": t("{name} умер в {age}. Итог: {title}. Род на этом не кончается. https://life.endemion.online", "{name} died at {age}. The end: {title}. The line does not stop there. https://life.endemion.online"),
+  "summary.copy": t("Поделиться", "Share"),
+  "summary.copied": t("Готово", "Done"),
   "error.toHome": t("На главную", "Back home"),
   "common.years": t("{n} лет", "{n} years")
 } satisfies Record<string, LocalizedText>;

@@ -1,10 +1,11 @@
 import { universeCatalog } from "@endemion/game-core";
 import { Ornament } from "@endemion/ui";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { LivesList } from "@/components/lives-list";
-import { PlayGuide } from "@/components/play-guide";
 import { WorldCard } from "@/components/world-card";
+import { YearDemo } from "@/components/year-demo";
 import { getServerI18n } from "@/lib/locale-server";
 
 const PILLARS = [
@@ -13,13 +14,22 @@ const PILLARS = [
   { title: "home.pillar3.title", text: "home.pillar3.text", mark: "III" }
 ] as const;
 
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getServerI18n();
+  return {
+    description: t("meta.description"),
+    alternates: { canonical: "https://life.endemion.online" },
+    openGraph: { url: "https://life.endemion.online" }
+  };
+}
+
 export default async function HomePage() {
   const { locale, t } = await getServerI18n();
   const universes = universeCatalog();
 
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6">
-      <section className="relative flex min-h-[72vh] flex-col items-center justify-center py-20 text-center">
+      <section className="relative flex flex-col items-center py-16 text-center sm:py-20">
         <div
           className="pointer-events-none absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-500/10 blur-[120px] animate-glow"
           aria-hidden="true"
@@ -30,7 +40,8 @@ export default async function HomePage() {
         </h1>
         <p className="relative mt-6 max-w-2xl animate-rise text-base leading-relaxed text-bone-300 sm:text-lg">{t("home.lead")}</p>
         <p className="relative mt-3 max-w-2xl text-sm leading-relaxed text-bone-400">{t("home.loop")}</p>
-        <div className="relative mt-10 flex animate-rise flex-col gap-3 sm:flex-row">
+        <p className="relative mt-2 max-w-2xl text-sm leading-relaxed text-bone-400">{t("home.heir")}</p>
+        <div className="relative mt-8 flex animate-rise flex-col gap-3 sm:flex-row">
           <Link
             href="/worlds"
             className="rounded-md border border-gold-400/70 bg-linear-to-b from-gold-400/25 to-gold-600/10 px-7 py-3 font-medium tracking-wide text-gold-100 shadow-[0_0_32px_-8px_var(--color-gold-400)] transition hover:border-gold-300 hover:from-gold-400/35"
@@ -38,13 +49,38 @@ export default async function HomePage() {
           >
             {t("home.start")}
           </Link>
-          <a href="#worlds" className="rounded-md border border-line bg-ink-900/60 px-7 py-3 text-bone-100 transition hover:border-gold-500/60 hover:text-gold-200">
+          <a href="/worlds#compare" className="rounded-md border border-line bg-ink-900/60 px-7 py-3 text-bone-100 transition hover:border-gold-500/60 hover:text-gold-200">
             {t("home.explore")}
           </a>
         </div>
+        <div className="relative mt-10 w-full max-w-xl text-left">
+          <YearDemo />
+        </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <LivesList />
+
+      <section id="worlds" className="mt-16 scroll-mt-20">
+        <h2 className="text-center font-display text-4xl text-gilded">{t("home.worldsTitle")}</h2>
+        <Ornament className="mx-auto my-6 max-w-sm" />
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {universes.map((universe) => (
+            <WorldCard key={universe.id} universe={universe} locale={locale} />
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-16 grid items-center gap-8 lg:grid-cols-2">
+        <div>
+          <h2 className="font-display text-4xl text-gilded">{t("home.shotEnding")}</h2>
+          <p className="mt-4 text-bone-300">{t("home.heir")}</p>
+        </div>
+        <figure className="overflow-hidden rounded-xl border border-line bg-ink-900/70">
+          <Image src="/shot-ending.png" alt={t("home.shotEnding")} width={880} height={720} sizes="(min-width: 1024px) 50vw, 100vw" className="h-auto w-full" />
+        </figure>
+      </section>
+
+      <section className="mt-16 grid gap-4 md:grid-cols-3">
         {PILLARS.map((pillar) => (
           <div key={pillar.mark} className="rounded-xl border border-line bg-ink-900/60 p-6">
             <span className="font-display text-sm tracking-[0.3em] text-gold-500">{pillar.mark}</span>
@@ -54,36 +90,6 @@ export default async function HomePage() {
         ))}
       </section>
 
-      <section className="mt-16 grid gap-5 lg:grid-cols-2">
-        <figure className="overflow-hidden rounded-xl border border-line bg-ink-900/70">
-          <Image src="/shot-event.png" alt={t("home.shotEvent")} width={880} height={520} className="h-auto w-full" />
-          <figcaption className="px-4 py-3 text-sm text-bone-300">{t("home.shotEvent")}</figcaption>
-        </figure>
-        <figure className="overflow-hidden rounded-xl border border-line bg-ink-900/70">
-          <Image src="/shot-ending.png" alt={t("home.shotEnding")} width={880} height={720} className="h-auto w-full" />
-          <figcaption className="px-4 py-3 text-sm text-bone-300">{t("home.shotEnding")}</figcaption>
-        </figure>
-      </section>
-
-      <section className="mt-16">
-        <PlayGuide />
-      </section>
-
-      <section className="mt-16">
-        <h2 className="font-display text-3xl text-bone-100">{t("home.continue")}</h2>
-        <Ornament className="my-5 max-w-xs" />
-        <LivesList />
-      </section>
-
-      <section id="worlds" className="mt-20 scroll-mt-20">
-        <h2 className="text-center font-display text-4xl text-gilded">{t("home.worldsTitle")}</h2>
-        <Ornament className="mx-auto my-6 max-w-sm" />
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {universes.map((universe) => (
-            <WorldCard key={universe.id} universe={universe} locale={locale} />
-          ))}
-        </div>
-      </section>
     </main>
   );
 }
