@@ -10,6 +10,7 @@ import { lifespanOf } from "../character/derived.js";
 import { ageOneYear } from "../life/aging.js";
 import { DEATH_CAUSES } from "../life/death.js";
 import { STAGE_INFO, stageForAge } from "../life/stages.js";
+import { milestoneAt, milestoneId } from "../life/milestones.js";
 import { abandonAdventure, beginAdventure, discoverYearly, newAdventure, venture } from "../adventure/adventure.js";
 import { masteryYearly, newMastery } from "../endgame/mastery.js";
 import { newEconomy } from "../economy/economy.js";
@@ -27,13 +28,15 @@ import { worldYearly, type Emit } from "../world/rules.js";
 import {
   INTERACTIONS,
   MAX_ADVANCE_YEARS,
+  AUTO_MODES,
   TRADE_SIDES,
   type ActionResult,
   type GameAction,
   type GameState,
   type HistoryEntry,
   type HistoryKind,
-  type MemoryEntry
+  type MemoryEntry,
+  type AutoMode
 } from "../types.js";
 import { checkAll } from "./conditions.js";
 import { checkChance } from "./checks.js";
@@ -49,6 +52,8 @@ import { applyEffects, isFatal, kill } from "./effects.js";
  * 7 — Stage 06: край этой жизни (region) — склад товаров, напряжение, благополучие;
  * 8 — Stage 10: освоение мира и мастерство навыков (mastery). Наград не даёт
  */
+// Stage 01 adds optional fields without invalidating the established save format.
+// Older saves are normalized at action/presentation boundaries, so schema 8 remains readable.
 export const SAVE_SCHEMA_VERSION = 8;
 export const SEED_MAX_LENGTH = 64;
 
@@ -142,7 +147,9 @@ export function newGame(input: NewGameInput): ActionResult {
     economy: newEconomy(),
     adventure: newAdventure(),
     region: newRegion(character.universeId),
-    mastery: newMastery()
+    mastery: newMastery(),
+    autoMode: "manual",
+    milestones: { triggered: [] }
   };
   // Семья, таланты и тайны — из отдельного потока: броски Stage 01 и дальнейшая жизнь от них не сдвигаются
   state.lineage.selfParents = bornInto({ state, rng: Rng.fromSeed(seed, "birth"), universe }, generatedName);
@@ -217,6 +224,16 @@ function advance(ctx: EngineContext, entries: HistoryEntry[], years: number): vo
     pushEntry(ctx, entries, "year", { title: ageText(age), text: named(ctx, text) });
     for (const item of deferred) pushEntry(ctx, entries, item.kind, { title: named(ctx, item.title), text: named(ctx, item.text) });
     if (!settle(ctx, entries)) return;
+
+    const milestone = state.autoMode === "milestones" ? milestoneAt(state) : undefined;
+    if (milestone) {
+      state.pending = { eventId: milestone.id, age };
+      state.milestones.triggered.push(milestoneId(age));
+      state.occurrences[milestone.id] = (state.occurrences[milestone.id] ?? 0) + 1;
+      state.lastSeen[milestone.id] = age;
+      rememberEvent(state, milestone.id);
+      return;
+    }
 
     const emit = emitter(ctx, entries);
     questYearly(ctx, emit);
@@ -321,11 +338,20 @@ export function restoreState(snapshot: GameState, currentVersion: number): Actio
 export function applyAction(current: GameState, action: GameAction): ActionResult {
   if (!current.life.alive) throw new GameRuleError("LIFE_ENDED", "Эта жизнь уже закончилась");
   const state = deepClone(current);
+  // Сохранения до Stage 01 не содержат новых полей. Нормализуем их на границе
+  // действия, чтобы любой следующий snapshot уже был самодостаточным.
+  state.autoMode ??= "manual";
+  state.milestones ??= { triggered: [] };
   const rng = new Rng(state.rngState);
   const ctx: EngineContext = { state, rng, universe: getUniverse(state.character.universeId), changes: [] };
   const entries: HistoryEntry[] = [];
 
   switch (action.type) {
+    case "setMode":
+      if (!AUTO_MODES.includes(action.mode)) throw new GameRuleError("INVALID_INPUT", "Неизвестный режим жизни");
+      state.autoMode = action.mode;
+      state.milestones ??= { triggered: [] };
+      break;
     case "advance": {
       if (state.pending) throw new GameRuleError("EVENT_PENDING", "Сначала ответьте на событие");
       const years = action.years ?? 1;

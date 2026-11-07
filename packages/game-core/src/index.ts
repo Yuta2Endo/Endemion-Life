@@ -54,6 +54,8 @@ export {
 export { effectiveStats, lifespanOf, maxResources, MAX_LEVEL, nextRankThreshold, xpForLevel } from "./character/derived.js";
 
 export { STAGE_INFO, stageForAge } from "./life/stages.js";
+export { DEFAULT_MILESTONE_AGES, isMilestoneEvent, milestoneAges, milestoneAt, milestoneEvent, milestoneId } from "./life/milestones.js";
+export { toLifeChronicle, type ChronicleCategory, type ChronicleImportance, type LifeChronicleEntry } from "./life/chronicle.js";
 export { naturalDeathChance } from "./life/death.js";
 
 export { checkChance, MAX_CHANCE, MIN_CHANCE } from "./engine/checks.js";

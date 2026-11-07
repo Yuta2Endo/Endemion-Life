@@ -402,6 +402,15 @@ export interface LifeState {
   deathCause: LocalizedText | null;
 }
 
+/** Режим продвижения жизни. Настройка хранится в сохранении, но сам цикл запускает интерфейс. */
+export const AUTO_MODES = ["manual", "auto", "milestones"] as const;
+export type AutoMode = (typeof AUTO_MODES)[number];
+
+export interface MilestoneState {
+  /** Стабильные id возрастных рубежей, уже предложенных игроку */
+  triggered: string[];
+}
+
 export interface PendingEvent {
   eventId: string;
   age: number;
@@ -516,6 +525,9 @@ export interface GameState {
   region: RegionState;
   /** Stage 10: освоенные цели и навыки этой жизни. Наград не даёт */
   mastery: MasteryState;
+  /** Stage 01: автоматическое продвижение и возрастные рубежи */
+  autoMode: AutoMode;
+  milestones: MilestoneState;
 }
 
 /** Stage 04: состояние хозяйства мира. Спад и подъём меняют заработок */
@@ -563,6 +575,7 @@ export type InteractionId = (typeof INTERACTIONS)[number];
  */
 export type GameAction =
   | { type: "advance"; years?: number }
+  | { type: "setMode"; mode: AutoMode }
   | { type: "choose"; choiceId: string }
   | { type: "interact"; npcId: string; interaction: InteractionId }
   /** Stage 04: купить или продать товар рынка. Цену и остаток считает сервер */

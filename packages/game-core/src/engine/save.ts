@@ -428,6 +428,8 @@ export function parseSave(raw: unknown): GameState {
   if (!isNullableString(c.professionId) || !isNullableString(c.educationId) || !isNullableString(c.specializationId)) fail("profession");
   if (!isRecord(life) || !isInt(life.age, 0) || !LIFE_STAGES.includes(life.stage as never) || typeof life.alive !== "boolean") fail("life");
   if (!isStringArray(save.flags)) fail("flags");
+  if (save.autoMode !== undefined && !["manual", "auto", "milestones"].includes(save.autoMode as string)) fail("autoMode");
+  if (save.milestones !== undefined && (!isRecord(save.milestones) || !isStringArray(save.milestones.triggered) || save.milestones.triggered.length > 100)) fail("milestones");
   if (!isCounter(save.occurrences) || !isCounter(save.lastSeen)) fail("occurrences");
   if (save.pending !== null && !(isRecord(save.pending) && typeof save.pending.eventId === "string" && isInt(save.pending.age, 0))) fail("pending");
   if (!Array.isArray(save.scheduled) || !save.scheduled.every((s) => isRecord(s) && typeof s.eventId === "string" && isInt(s.age, 0))) fail("scheduled");

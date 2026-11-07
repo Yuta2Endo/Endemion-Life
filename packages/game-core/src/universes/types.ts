@@ -234,6 +234,8 @@ export interface UniverseBase {
   track: TrackDefinition;
   abilities: AbilityDefinition[];
   events: EventDefinition[];
+  /** Возрастные рубежи мира. Если не задано, используется базовая конфигурация life/milestones.ts */
+  milestoneAges?: readonly number[];
 }
 
 /** Что мир получает в Stage 02: общество, механики, RPG-система, люди и последствия. Лежит в universes/<id>.world.ts */

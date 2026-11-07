@@ -11,6 +11,8 @@ import {
   summarizeCharacter,
   type CharacterState,
   type CharacterSummary,
+  type AutoMode,
+  type MilestoneState,
   type AdventureBoard,
   type EconomyView,
   type EventView,
@@ -63,6 +65,9 @@ export interface LifeView extends LifeMeta {
   region: RegionView;
   /** Stage 10: цели освоения и отметки навыков. Наград не показывает — их нет */
   mastery: MasteryView;
+  /** Stage 01: режим продвижения, сохраняемый вместе с жизнью */
+  autoMode: AutoMode;
+  milestones: MilestoneState;
 }
 
 export interface LifeListItem extends LifeMeta {
@@ -190,6 +195,8 @@ export function toLifeView(meta: LifeMeta, state: GameState): LifeView {
     adventure: presentAdventure(state),
     region: presentRegion(state),
     mastery: presentMastery(state)
+    ,autoMode: state.autoMode ?? "manual",
+    milestones: state.milestones ?? { triggered: [] }
   };
 }
 

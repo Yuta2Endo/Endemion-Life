@@ -21,6 +21,7 @@ import { LifeSummary } from "./life-summary";
 import { LocalLifeBanner } from "./local-life-banner";
 import { SavesDialog } from "./saves-dialog";
 import { Timeline } from "./timeline";
+import { AutoLifeControls } from "./auto-life-controls";
 
 type Tab = "event" | "character" | "people" | "timeline";
 
@@ -52,6 +53,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
   const [wide, setWide] = useState(false);
   const [dossierJump, setDossierJump] = useState<{ section: "adventure"; n: number } | null>(null);
   const [saves, setSaves] = useState<SaveView[] | null>(null);
+  const [selectedSeq, setSelectedSeq] = useState<number | null>(null);
   // actionId неотправленного или оборвавшегося действия: повтор того же действия идёт с тем же id и не применится дважды
   const pendingAction = useRef<{ key: string; actionId: string } | null>(null);
 
@@ -151,6 +153,21 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
       setBusy(false);
     }
   }
+
+  async function setAutoMode(mode: LifeView["autoMode"]) {
+    if (!life || busy || life.autoMode === mode) return;
+    await perform({ type: "setMode", mode });
+  }
+
+  // Автоматический режим остаётся server-authoritative: каждый год отправляется
+  // обычным действием advance и поэтому проходит тот же путь, что и ручная кнопка.
+  useEffect(() => {
+    if (!life || life.autoMode === "manual" || life.status === "dead" || life.pendingEvent || busy) return;
+    const timer = window.setTimeout(() => {
+      void perform({ type: "advance" });
+    }, 650);
+    return () => window.clearTimeout(timer);
+  }, [life, busy]);
 
   /** Продолжить род: сервер создаёт жизнь наследника, страница переходит к ней. Повтор после обрыва связи — с тем же actionId */
   async function continueAs(heirId: string) {
@@ -317,12 +334,13 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
       </div>
 
       {/* minmax(0,1fr) на телефоне: широкое древо прокручивается в своей рамке и не растягивает страницу */}
-      <div className="relative grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[300px_minmax(0,1fr)_340px]">
+       <div className="relative grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[300px_minmax(0,1fr)_340px]">
         <aside className={shown("character")}>
           <CharacterSheet life={life} />
         </aside>
 
-        <section className={`${shown("event")} space-y-5`}>
+          <section className={`${shown("event")} space-y-5`}>
+          <AutoLifeControls mode={life.autoMode} busy={busy} onMode={(mode) => void setAutoMode(mode)} />
           {life.life.age < 1 && !dead && (
             <div data-testid="born-as">
               <p className="text-sm text-bone-300">
@@ -422,7 +440,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
         </section>
 
         <aside className={shown("timeline")}>
-          <Timeline entries={entries} universeId={life.universeId} people={people} canLoadMore={nextBefore !== null} loadingMore={loadingMore} onLoadMore={() => void loadMore()} />
+           <Timeline entries={entries} universeId={life.universeId} people={people} canLoadMore={nextBefore !== null} loadingMore={loadingMore} onLoadMore={() => void loadMore()} selectedSeq={selectedSeq} onSelect={(seq) => setSelectedSeq((current) => (current === seq ? null : seq))} />
         </aside>
       </div>
 

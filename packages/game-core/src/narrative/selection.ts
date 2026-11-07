@@ -11,6 +11,7 @@ import { NPC_ROLES, UNIVERSE_IDS, type GameState, type LifeStage, type UniverseI
 import { getUniverse, listUniverses } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import { COMMON_EVENTS } from "./common.js";
+import { milestoneEvents, isMilestoneEvent } from "../life/milestones.js";
 import type { Condition, Effect, EventDefinition } from "./types.js";
 
 /** Вероятность, что год принесёт событие */
@@ -35,7 +36,7 @@ const byUniverse = new Map<string, Map<string, EventDefinition>>();
 export function eventIndex(universe: UniverseDefinition): Map<string, EventDefinition> {
   let index = byUniverse.get(universe.id);
   if (!index) {
-    index = new Map([...COMMON_EVENTS, ...universe.events].map((event) => [event.id, event]));
+    index = new Map([...COMMON_EVENTS, ...milestoneEvents(), ...universe.events].map((event) => [event.id, event]));
     byUniverse.set(universe.id, index);
   }
   return index;
@@ -94,7 +95,7 @@ export function selectEvent(ctx: EngineContext): EventDefinition | undefined {
   if (!ctx.rng.chance(EVENT_CHANCE[ctx.state.life.stage])) return undefined;
   const universeEvents = new Set(ctx.universe.events.map((event) => event.id));
   const recent = new Set(ctx.state.recentEvents ?? []);
-  const eligible = [...eventIndex(ctx.universe).values()].filter((event) => !event.scheduledOnly && isEligible(ctx.state, event));
+  const eligible = [...eventIndex(ctx.universe).values()].filter((event) => !isMilestoneEvent(event.id) && !event.scheduledOnly && isEligible(ctx.state, event));
   // Недавние события не повторяются подряд. Если подходят только они — год проходит без события
   const candidates = eligible.filter((event) => !recent.has(event.id));
   // Чем чаще событие уже было, тем реже оно приходит снова: вес делится на 1 + число повторов

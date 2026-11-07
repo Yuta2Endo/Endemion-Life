@@ -1,5 +1,5 @@
 // Схемы запросов к API. Сервер проверяет ими всё, что приходит от клиента; сайт — то, что отправляет
-import { CHANGE_KINDS, GENDERS, HISTORY_KINDS, INTERACTIONS, LOCALES, MAX_ADVANCE_YEARS, MAX_TRADE_QTY, NAME_MAX_LENGTH, SEED_MAX_LENGTH, TRADE_SIDES, UNIVERSE_IDS } from "@endemion/game-core";
+import { AUTO_MODES, CHANGE_KINDS, GENDERS, HISTORY_KINDS, INTERACTIONS, LOCALES, MAX_ADVANCE_YEARS, MAX_TRADE_QTY, NAME_MAX_LENGTH, SEED_MAX_LENGTH, TRADE_SIDES, UNIVERSE_IDS } from "@endemion/game-core";
 import { z } from "zod";
 
 /** id контента: буквы, цифры, дефис и точка (места и приключения — «мир.имя») */
@@ -20,6 +20,7 @@ export type CreateLifeRequest = z.infer<typeof createLifeSchema>;
 
 export const gameActionSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("advance"), years: z.int().min(1).max(MAX_ADVANCE_YEARS).optional() }),
+  z.strictObject({ type: z.literal("setMode"), mode: z.enum(AUTO_MODES) }),
   z.strictObject({ type: z.literal("choose"), choiceId: optionId }),
   /** Личное общение с NPC: id из профиля жизни (n1, n2…) */
   z.strictObject({ type: z.literal("interact"), npcId: z.string().regex(/^n[0-9]{1,6}$/, "Некорректный идентификатор"), interaction: z.enum(INTERACTIONS) }),

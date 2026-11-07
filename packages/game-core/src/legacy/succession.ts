@@ -359,6 +359,8 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
     region: deepClone(dead.region),
     // Освоение мира — личный опыт, как и приключение. Достижения рода остаются в lineage
     mastery: newMastery()
+    ,autoMode: "manual",
+    milestones: { triggered: [] }
   };
   return { state, record, deceasedId: "" };
 }
