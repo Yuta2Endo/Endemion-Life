@@ -17,6 +17,7 @@ export const XIANXIA: UniverseBase = {
   ],
   theme: { accent: "#8fb39a", glow: "rgba(143, 179, 154, 0.35)" },
   lifespan: 68,
+  milestoneAges: [1, 5, 12, 16, 18, 25, 35, 45, 60],
   manaName: t("Ци", "Qi"),
   races: [
     { id: "human", name: t("Человек", "Human"), description: t("Смертный, мечтающий о бессмертии.", "A mortal dreaming of immortality."), statMods: { willpower: 1, luck: 1 } },

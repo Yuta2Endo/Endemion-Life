@@ -169,6 +169,7 @@ export const M = {
   "play.loadEarlier": t("Показать раньше", "Show earlier"),
   "play.decision": t("Решение", "Decision"),
   "play.inspect": t("Открыть запись", "Inspect entry"),
+  "play.consequenceFrom": t("Последствие решения", "Consequence of decision"),
   "play.selected": t("Выбранная запись", "Selected entry"),
   "play.timelineEmpty": t("Хроника начнётся с рождения.", "The chronicle begins at birth."),
   "chronicle.category.birth": t("Рождение", "Birth"),
@@ -647,6 +648,9 @@ export const M = {
   "summary.currentAge": t("Прожито лет: {n}", "Years lived: {n}"),
   "summary.currentCareer": t("Текущий путь", "Current path"),
   "summary.currentPeople": t("Людей рядом: {n}", "People around you: {n}"),
+  "summary.currentLevel": t("Уровень: {n}", "Level: {n}"),
+  "summary.currentPending": t("Отложенных последствий: {n}", "Pending consequences: {n}"),
+  "summary.currentMilestones": t("Рубежи: {done}; следующий: {next}", "Milestones: {done}; next: {next}"),
   "error.toHome": t("На главную", "Back home"),
   "common.years": t("{n} лет", "{n} years")
 } satisfies Record<string, LocalizedText>;

@@ -151,6 +151,7 @@ export {
   type InheritanceView,
   type LawView,
   type LegacyBrief,
+  type CurrentLifeSummaryView,
   type LifeSummaryView,
   type LineageView,
   type TreeNodeView

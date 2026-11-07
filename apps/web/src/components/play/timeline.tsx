@@ -72,6 +72,11 @@ export function Timeline({
                   {entry.check && <span className={entry.check.success ? "text-jade-300" : "text-blood-300"}> · {entry.check.success ? t("play.success") : t("play.failure")}</span>}
                 </p>
               )}
+              {entry.kind === "consequence" && item.consequenceOf && (
+                <p className="mt-1 text-xs text-azure-300" data-testid="consequence-provenance">
+                  {t("play.consequenceFrom")}: {item.consequenceOf}
+                </p>
+              )}
               {changes.length > 0 && (
                 <div className="mt-2">
                   <ChangeChips changes={changes} universeId={universeId} people={people} />

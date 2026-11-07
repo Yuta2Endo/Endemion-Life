@@ -340,7 +340,8 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
         </aside>
 
           <section className={`${shown("event")} space-y-5`}>
-          <AutoLifeControls mode={life.autoMode} busy={busy} onMode={(mode) => void setAutoMode(mode)} />
+           <AutoLifeControls mode={life.autoMode} busy={busy} onMode={(mode) => void setAutoMode(mode)} />
+          {!dead && life.legacy.current && <LifeSummary life={life} busy={busy} onSucceed={(heirId) => void continueAs(heirId)} />}
           {life.life.age < 1 && !dead && (
             <div data-testid="born-as">
               <p className="text-sm text-bone-300">

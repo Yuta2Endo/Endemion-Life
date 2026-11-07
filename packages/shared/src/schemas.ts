@@ -87,6 +87,8 @@ const importEntrySchema = z.strictObject({
   choiceId: z.string().max(80).optional(),
   choice: textSchema.optional(),
   outcome: textSchema.optional(),
+  sourceEventId: z.string().max(80).optional(),
+  consequenceOf: z.string().max(80).optional(),
   check: z.strictObject({ chance: z.number().min(0).max(1), success: z.boolean() }).optional(),
   changes: z
     .array(

@@ -86,7 +86,16 @@ function named(ctx: EngineContext, text: LocalizedText): LocalizedText {
 }
 
 function pushEntry(ctx: EngineContext, entries: HistoryEntry[], kind: HistoryKind, fields: Omit<HistoryEntry, "seq" | "age" | "kind" | "changes">): void {
-  entries.push({ seq: ctx.state.nextSeq++, age: ctx.state.life.age, kind, ...fields, changes: ctx.changes });
+  const sourceEventId = fields.sourceEventId ?? (kind === "consequence" ? ctx.source : undefined);
+  entries.push({
+    seq: ctx.state.nextSeq++,
+    age: ctx.state.life.age,
+    kind,
+    ...fields,
+    ...(sourceEventId ? { sourceEventId } : {}),
+    ...(kind === "consequence" && sourceEventId ? { consequenceOf: fields.consequenceOf ?? sourceEventId } : {}),
+    changes: ctx.changes
+  });
   ctx.changes = [];
 }
 
@@ -176,7 +185,7 @@ export function newGame(input: NewGameInput): ActionResult {
 }
 
 function emitter(ctx: EngineContext, entries: HistoryEntry[]): Emit {
-  return (kind, title, text) => pushEntry(ctx, entries, kind, { title: named(ctx, title), text: named(ctx, text) });
+  return (kind, title, text, eventId) => pushEntry(ctx, entries, kind, { title: named(ctx, title), text: named(ctx, text), ...(eventId ? { eventId } : {}) });
 }
 
 /**
@@ -288,6 +297,7 @@ function choose(ctx: EngineContext, entries: HistoryEntry[], choiceId: string): 
     title: named(ctx, event.title),
     text: named(ctx, event.text),
     eventId: event.id,
+    sourceEventId: event.id,
     choiceId: choice.id,
     choice: named(ctx, choice.text),
     outcome: named(ctx, outcome.text)

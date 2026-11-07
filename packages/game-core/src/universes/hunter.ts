@@ -17,6 +17,7 @@ export const HUNTER: UniverseBase = {
   ],
   theme: { accent: "#7d6fd1", glow: "rgba(125, 111, 209, 0.35)" },
   lifespan: 80,
+  milestoneAges: [1, 5, 12, 16, 18, 25, 35, 45, 60, 75],
   manaName: t("Мана", "Mana"),
   races: [
     { id: "human", name: t("Человек", "Human"), description: t("Житель мегаполиса под открытыми Вратами.", "A city dweller beneath open Gates."), statMods: { intelligence: 1, luck: 1 } }

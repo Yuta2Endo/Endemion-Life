@@ -20,11 +20,11 @@ export function consequencesYearly(ctx: EngineContext, emit: Emit): void {
     const definition = ctx.universe.consequences.find((c) => c.id === item.id);
     if (!definition || !checkAll(state, definition.conditions)) continue;
     if (definition.chance !== undefined && !ctx.rng.chance(definition.chance)) continue;
-    ctx.source = item.id;
+    ctx.source = item.source || item.id;
     applyEffects(ctx, definition.effects);
-    ctx.source = undefined;
     const vars = { name: state.character.name };
-    emit("consequence", fillText(definition.title, vars), fillText(definition.text, vars));
+    emit("consequence", fillText(definition.title, vars), fillText(definition.text, vars), definition.id);
+    ctx.source = undefined;
     fired += 1;
   }
 }

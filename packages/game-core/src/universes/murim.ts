@@ -17,6 +17,7 @@ export const MURIM: UniverseBase = {
   ],
   theme: { accent: "#c0563f", glow: "rgba(192, 86, 63, 0.35)" },
   lifespan: 70,
+  milestoneAges: [1, 5, 12, 16, 18, 25, 35, 45, 60],
   manaName: t("Внутренняя сила", "Inner qi"),
   races: [
     { id: "human", name: t("Человек", "Human"), description: t("В Девяти Реках живут только люди — и легенды о них.", "Only humans live in the Nine Rivers — and legends about them."), statMods: { willpower: 1, agility: 1 } }

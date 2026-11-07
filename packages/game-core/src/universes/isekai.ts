@@ -17,6 +17,7 @@ export const ISEKAI: UniverseBase = {
   ],
   theme: { accent: "#6fa8c9", glow: "rgba(111, 168, 201, 0.35)" },
   lifespan: 75,
+  milestoneAges: [1, 5, 12, 16, 18, 25, 35, 45, 60, 75],
   manaName: t("Мана", "Mana"),
   races: [
     { id: "human", name: t("Человек", "Human"), description: t("Самый многочисленный народ Арденвейла.", "The most numerous folk of Ardenvale."), statMods: { luck: 1, charisma: 1 } },

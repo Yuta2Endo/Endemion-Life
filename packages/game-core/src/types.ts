@@ -478,6 +478,10 @@ export interface HistoryEntry {
   choice?: LocalizedText;
   outcome?: LocalizedText;
   check?: { chance: number; success: boolean };
+  /** Источник meaningful consequence или решения, вызвавшего запись */
+  sourceEventId?: string;
+  /** Для отложенного последствия — id исходного события/решения */
+  consequenceOf?: string;
   changes: HistoryChange[];
 }
 

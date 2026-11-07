@@ -1,6 +1,6 @@
 "use client";
 
-import type { HeirView, LifeSummaryView } from "@endemion/game-core";
+import type { CurrentLifeSummaryView, HeirView, LifeSummaryView } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
 import { Button, Meter, Ornament, Panel } from "@endemion/ui";
 import Link from "next/link";
@@ -255,6 +255,59 @@ function Summary({ summary }: { summary: LifeSummaryView }) {
   );
 }
 
+function CurrentSummary({ current }: { current: CurrentLifeSummaryView }) {
+  const { locale, l, t } = useI18n();
+  return (
+    <section className="space-y-5" data-testid="current-life-summary" aria-labelledby="current-life-title">
+      <div className="text-center">
+        <p className="text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("summary.currentTitle")}</p>
+        <h2 id="current-life-title" className="mt-1 font-display text-3xl text-gilded">{current.name}</h2>
+        <p className="mt-2 text-sm text-bone-300">{t("summary.currentLead")}</p>
+      </div>
+      <dl className="grid gap-3 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("summary.world")}</dt>
+          <dd className="text-bone-100">{l(current.world)}</dd>
+        </div>
+        <div>
+          <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("summary.currentAge")}</dt>
+          <dd className="text-bone-100">{ageLabel(current.age, locale)} <span className="text-xs text-bone-500">{t("summary.lifespan", { n: current.lifespan })}</span></dd>
+        </div>
+        <div>
+          <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("summary.currentCareer")}</dt>
+          <dd className="text-bone-100">{current.profession ? l(current.profession) : t("dossier.none")} · {l(current.stage)}</dd>
+        </div>
+        <div>
+          <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("summary.currentPeople", { n: current.peopleAlive })}</dt>
+          <dd className="text-xs text-bone-300">{t("summary.currentLevel", { n: current.level })} · {t("summary.currentPending", { n: current.pendingConsequences })}</dd>
+        </div>
+      </dl>
+      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+        <div className="rounded border border-line bg-ink-950/40 p-2"><span className="block text-bone-500">{t("sheet.wealth")}</span><span className="text-bone-100 tabular-nums">{current.wealth}</span></div>
+        <div className="rounded border border-line bg-ink-950/40 p-2"><span className="block text-bone-500">{t("sheet.reputation")}</span><Signed value={current.reputation} /></div>
+        <div className="rounded border border-line bg-ink-950/40 p-2"><span className="block text-bone-500">{t("sheet.karma")}</span><Signed value={current.karma} /></div>
+      </div>
+      <div>
+        <Heading>{t("summary.decisions")}</Heading>
+        {current.decisions.length === 0 ? <p className="text-xs text-bone-500">{t("summary.noDecisions")}</p> : (
+          <ol className="space-y-1.5 text-sm">
+            {current.decisions.slice(-4).reverse().map((decision, index) => (
+              <li key={`${decision.age}-${index}`} className="border-l border-line pl-3">
+                <span className="text-[10px] uppercase tracking-wider text-bone-500">{ageLabel(decision.age, locale)}</span>
+                <p className="text-bone-100">{l(decision.title)}</p>
+                <p className="text-xs text-gold-300">→ {l(decision.choice)}</p>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+      <p className="text-xs text-bone-500">
+        {t("summary.currentMilestones", { done: current.milestones.completed, next: current.milestones.nextAge ?? "—" })}
+      </p>
+    </section>
+  );
+}
+
 function Epitaph({ name, age, title }: { name: string; age: number; title: string }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
@@ -292,7 +345,7 @@ export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: b
   const { locale, l, t } = useI18n();
   const [confirm, setConfirm] = useState<HeirView | null>(null);
   const summary = life.legacy.summary;
-  if (!summary) return null;
+  if (!summary) return life.legacy.current ? <Panel accent className="animate-rise"><CurrentSummary current={life.legacy.current} /></Panel> : null;
   const heirs = summary.heirs;
   const available = heirs.filter((h) => h.available);
   return (

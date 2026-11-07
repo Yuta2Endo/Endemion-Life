@@ -17,6 +17,7 @@ export const DARK_FANTASY: UniverseBase = {
   ],
   theme: { accent: "#b8873b", glow: "rgba(184, 135, 59, 0.35)" },
   lifespan: 62,
+  milestoneAges: [1, 5, 12, 16, 18, 25, 35, 45, 60],
   manaName: t("Пепел", "Ash"),
   races: [
     { id: "human", name: t("Человек", "Human"), description: t("Упрямый народ, переживший Затмение.", "A stubborn folk who outlived the Eclipse."), statMods: { willpower: 1, luck: 1 } },

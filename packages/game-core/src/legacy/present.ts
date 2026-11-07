@@ -16,6 +16,8 @@ import { lawOf } from "./laws.js";
 import { findLineageConsequence, THREADS } from "./stories.js";
 import { heirCandidates } from "./succession.js";
 import { LIFE_TITLES, SCORE_PARTS, SCORE_PART_NAMES, scoreLife } from "./summary.js";
+import { milestoneAges } from "../life/milestones.js";
+import { STAGE_INFO } from "../life/stages.js";
 
 /** Сколько последних записей хроники рода приходит клиенту. Остальное — по счётчику archived */
 const CHRONICLE_VIEW_LIMIT = 300;
@@ -163,6 +165,25 @@ export interface LegacyBrief {
   inheritance: InheritanceView | null;
   /** Итоги жизни и наследники: только когда жизнь закончилась */
   summary: LifeSummaryView | null;
+  /** Текущее состояние незавершённой жизни */
+  current: CurrentLifeSummaryView | null;
+}
+
+export interface CurrentLifeSummaryView {
+  name: string;
+  world: LocalizedText;
+  age: number;
+  lifespan: number;
+  stage: LocalizedText;
+  profession: LocalizedText | null;
+  wealth: number;
+  reputation: number;
+  karma: number;
+  level: number;
+  peopleAlive: number;
+  decisions: DecisionView[];
+  pendingConsequences: number;
+  milestones: { completed: number; nextAge: number | null };
 }
 
 export interface ChronicleView {
@@ -348,6 +369,38 @@ function presentSummary(state: GameState): LifeSummaryView {
   };
 }
 
+function presentCurrent(state: GameState): CurrentLifeSummaryView {
+  const universe = getUniverse(state.character.universeId);
+  const c = state.character;
+  const vars = { name: c.name };
+  const decisions = [...state.memory]
+    .sort((a, b) => a.age - b.age)
+    .map((m): DecisionView | null => {
+      const event = findEvent(universe, m.eventId);
+      const choice = event?.choices.find((x) => x.id === m.choiceId);
+      return event && choice ? { age: m.age, title: fillText(event.title, vars), choice: fillText(choice.text, vars), success: m.success } : null;
+    })
+    .filter((item): item is DecisionView => item !== null);
+  const ages = milestoneAges(state.character.universeId, lifespanOf(c));
+  const completed = ages.filter((age) => state.milestones?.triggered.includes(`milestone.${age}`)).length;
+  return {
+    name: c.name,
+    world: universe.name,
+    age: state.life.age,
+    lifespan: lifespanOf(c),
+    stage: STAGE_INFO[state.life.stage].name,
+    profession: c.professionId ? findProfession(universe, c.professionId)?.name ?? null : null,
+    wealth: c.wealth,
+    reputation: c.reputation,
+    karma: c.karma,
+    level: c.level,
+    peopleAlive: state.npcs.filter((npc) => npc.alive).length,
+    decisions,
+    pendingConsequences: state.consequences.length,
+    milestones: { completed, nextAge: ages.find((age) => age > state.life.age && !state.milestones?.triggered.includes(`milestone.${age}`)) ?? null }
+  };
+}
+
 function presentInheritance(state: GameState): InheritanceView | null {
   const record = state.lineage.inheritance;
   if (!record) return null;
@@ -381,7 +434,8 @@ export function presentLegacy(state: GameState): LegacyBrief {
     achievements: state.lineage.achievements.length,
     continuedBy: state.lineage.continuedBy,
     inheritance: presentInheritance(state),
-    summary: state.life.alive ? null : presentSummary(state)
+    summary: state.life.alive ? null : presentSummary(state),
+    current: state.life.alive ? presentCurrent(state) : null
   };
 }
 

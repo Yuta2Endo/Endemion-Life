@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { applyAction, newGame, parseSave, toLifeChronicle } from "../src/index.js";
+import { applyAction, newGame, parseSave, presentEvent, toLifeChronicle, type UniverseId } from "../src/index.js";
 
-function life(seed = "stage01", universeId = "academy" as const) {
+function life(seed = "stage01", universeId: UniverseId = "academy") {
   return newGame({ seed, universeId, gender: "female" }).state;
 }
 
@@ -53,5 +53,27 @@ describe("Stage 01: life experience upgrade", () => {
     expect(chronicle.map((entry) => entry.source.seq)).toEqual(entries.map((entry) => entry.seq));
     expect(chronicle.every((entry) => entry.characterId === "self")).toBe(true);
     expect(chronicle.some((entry) => entry.category === "birth" || entry.category === "childhood")).toBe(true);
+  });
+
+  it("keeps the decision provenance when a delayed consequence arrives", () => {
+    let state = life("provenance-flow", "murim");
+    state.life = { ...state.life, age: 20, stage: "adult" };
+    for (const key of Object.keys(state.character.stats) as (keyof typeof state.character.stats)[]) state.character.stats[key] = 60;
+    state.pending = { eventId: "mu.bandits", age: 20 };
+    const chosen = applyAction(state, { type: "choose", choiceId: "save" });
+    expect(chosen.state.consequences.find((item) => item.id === "mu.c-saved-merchant")?.source).toBe("mu.bandits");
+    let next = chosen.state;
+    let entries = chosen.entries;
+    for (let i = 0; i < 6 && next.life.alive && next.consequences.some((item) => item.id === "mu.c-saved-merchant"); i += 1) {
+      const result = next.pending
+        ? applyAction(next, { type: "choose", choiceId: presentEvent(next)!.choices.find((choice) => choice.available)?.id ?? presentEvent(next)!.choices[0]!.id })
+        : applyAction(next, { type: "advance" });
+      next = result.state;
+      entries = [...entries, ...result.entries];
+    }
+    const consequence = entries.find((entry) => entry.kind === "consequence" && entry.eventId === "mu.c-saved-merchant");
+    expect(consequence?.sourceEventId).toBe("mu.bandits");
+    expect(consequence?.consequenceOf).toBe("mu.bandits");
+    expect(toLifeChronicle(entries, "murim", "self").find((entry) => entry.source.seq === consequence?.seq)?.consequenceOf).toBe("mu.bandits");
   });
 });

@@ -30,6 +30,10 @@ export interface LifeChronicleEntry {
   description: LocalizedText;
   decision: LocalizedText | null;
   consequence: LocalizedText | null;
+  /** Event id that caused this entry, when the engine can establish it. */
+  sourceEventId: string | null;
+  /** For a delayed consequence, the source decision/event id. */
+  consequenceOf: string | null;
   relatedCharacters: string[];
   importance: ChronicleImportance;
   timestamp: number;
@@ -76,6 +80,8 @@ export function toLifeChronicle(entries: readonly HistoryEntry[], worldId: Unive
       description: entry.text,
       decision: entry.choice ?? null,
       consequence: entry.outcome ?? null,
+      sourceEventId: entry.sourceEventId ?? null,
+      consequenceOf: entry.consequenceOf ?? (entry.kind === "consequence" ? entry.sourceEventId ?? null : null),
       relatedCharacters: entry.changes.filter((change) => change.kind === "relation" || change.kind === "npc").map((change) => String(change.value ?? change.key ?? "" )).filter(Boolean),
       importance: importance(entry),
       timestamp: entry.seq,

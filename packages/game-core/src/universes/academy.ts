@@ -17,6 +17,7 @@ export const ACADEMY: UniverseBase = {
   ],
   theme: { accent: "#c9a96e", glow: "rgba(201, 169, 110, 0.35)" },
   lifespan: 78,
+  milestoneAges: [1, 5, 12, 16, 18, 25, 35, 45, 60, 75],
   manaName: t("Мана", "Mana"),
   races: [
     { id: "human", name: t("Человек", "Human"), description: t("Подданный Империи.", "A subject of the Empire."), statMods: { charisma: 1, intelligence: 1 } },
