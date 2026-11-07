@@ -15,6 +15,7 @@ import {
   parseSave,
   presentEvent,
   presentProfile,
+  presentWorld,
   Rng,
   SAVE_SCHEMA_VERSION,
   STAT_KEYS,
@@ -134,6 +135,36 @@ describe("Character Engine: рождение", () => {
     const mid = values.filter((v) => v >= 4 && v <= 7).length;
     const edge = values.filter((v) => v <= 2 || v >= 9).length;
     expect(mid).toBeGreaterThan(edge * 2);
+  });
+});
+
+describe("Living World Engine", () => {
+  it("создаёт одинаковый мир для одинакового seed и решений", () => {
+    const a = playLife(start({ seed: "living-world-repeat", universeId: "hunter" }), 80, (n, i) => i % n).state;
+    const b = playLife(start({ seed: "living-world-repeat", universeId: "hunter" }), 80, (n, i) => i % n).state;
+    expect(a.world).toEqual(b.world);
+    expect(presentWorld(a).settlements).toHaveLength(3);
+  });
+
+  it.each(UNIVERSE_IDS)("%s: world tick updates bounded settlements and factions", (universeId) => {
+    const initial = newGame({ seed: `living-world-${universeId}`, universeId }).state;
+    const next = applyAction(initial, { type: "advance", years: 1 }).state;
+    expect(next.world?.tick).toBe(1);
+    expect(next.world?.settlements.length).toBeGreaterThan(0);
+    expect(next.world?.settlements.every((item) => item.population >= 100 && item.prosperity >= 0 && item.prosperity <= 100 && item.stability >= 0 && item.stability <= 100)).toBe(true);
+    expect(next.world?.factions.every((item) => item.power >= 0 && item.power <= 100 && item.influence >= -100 && item.influence <= 100)).toBe(true);
+    expect(next.world?.activities.length).toBeLessThanOrEqual(24);
+  });
+
+  it("normalizes old saves without changing their existing fields", () => {
+    const current = newGame({ seed: "living-world-legacy", universeId: "academy" }).state;
+    const legacy = deepClone(current) as GameState & { world?: unknown };
+    delete legacy.world;
+    const parsed = parseSave(JSON.parse(JSON.stringify(legacy)));
+    expect(parsed.world).toBeUndefined();
+    expect(parsed.character).toEqual(legacy.character);
+    const continued = applyAction(parsed, { type: "advance", years: 1 }).state;
+    expect(continued.world?.tick).toBe(1);
   });
 });
 

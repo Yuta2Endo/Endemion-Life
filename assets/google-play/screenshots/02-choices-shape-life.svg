@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#08070b"/><stop offset=".55" stop-color="#19131d"/><stop offset="1" stop-color="#08070b"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f2d995"/><stop offset="1" stop-color="#9d6f2f"/></linearGradient>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#bg)"/>
+  <text x="90" y="145" fill="url(#gold)" font-family="Georgia,serif" font-size="42" letter-spacing="7">ENDEMION LIFE</text>
+  <text x="90" y="225" fill="#f4eddd" font-family="Arial,sans-serif" font-size="58" font-weight="700">Every choice matters</text>
+  <text x="90" y="285" fill="#d8ccb5" font-family="Arial,sans-serif" font-size="28">Decisions become events, memories, and consequences.</text>
+  <rect x="80" y="410" width="920" height="470" rx="42" fill="#060608" stroke="#d8b56b" stroke-opacity=".38" stroke-width="3"/>
+  <image href="file:///C:/Users/sasha/Endemion-Life/apps/web/public/shot-event.png" x="105" y="435" width="870" height="420" preserveAspectRatio="xMidYMid meet"/>
+  <rect x="80" y="970" width="920" height="530" rx="42" fill="#060608" stroke="#d8b56b" stroke-opacity=".22" stroke-width="3"/>
+  <image href="file:///C:/Users/sasha/Endemion-Life/apps/web/public/shot-ending.png" x="105" y="995" width="870" height="480" preserveAspectRatio="xMidYMid meet"/>
+  <text x="90" y="1600" fill="#f4eddd" font-family="Arial,sans-serif" font-size="34" font-weight="700">Build your own path</text>
+  <text x="90" y="1660" fill="#d8ccb5" font-family="Arial,sans-serif" font-size="27">Relationships, skills, adventures, and a living chronicle.</text>
+  <path d="M90 1740 H420" stroke="url(#gold)" stroke-width="3"/>
+  <text x="90" y="1810" fill="#c9a25a" font-family="Arial,sans-serif" font-size="24" letter-spacing="3">YOUR LIFE · YOUR LEGACY</text>
+</svg>

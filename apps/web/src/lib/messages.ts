@@ -454,6 +454,15 @@ export const M = {
 
   // Stage 03: род, наследование, итоги жизни, достижения
   "dossier.lineage": t("Род", "Lineage"),
+  "dossier.world": t("Живой мир", "Living world"),
+  "dossier.settlements": t("Поселения", "Settlements"),
+  "dossier.population": t("Население {n}", "Population {n}"),
+  "dossier.prosperity": t("Достаток {n}", "Prosperity {n}"),
+  "dossier.stability": t("Порядок {n}", "Stability {n}"),
+  "dossier.factionPower": t("Сила фракций", "Faction power"),
+  "dossier.influence": t("Влияние {n}", "Influence {n}"),
+  "dossier.worldFeed": t("Последние вести", "Recent reports"),
+  "dossier.noWorldFeed": t("Мир пока тих. Первые вести появятся с ходом лет.", "The world is quiet for now. The first reports will arrive as years pass."),
   "lineage.loading": t("Загрузка рода…", "Loading the family…"),
   "lineage.error": t("Не удалось загрузить род.", "Could not load the family."),
   "lineage.generation": t("Поколение {n}", "Generation {n}"),

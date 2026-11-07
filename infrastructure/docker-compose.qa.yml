@@ -1,0 +1,35 @@
+# Изолированный QA stack. Не использует production-like local volume или стандартные порты.
+name: endemion-life-qa
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: qa_endemion
+      POSTGRES_PASSWORD: qa_local_only_password_2026
+      POSTGRES_DB: endemion_life
+    ports:
+      - "127.0.0.1:15432:5432"
+    volumes:
+      - qa-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qa_endemion -d endemion_life"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "127.0.0.1:16379:6379"
+    volumes:
+      - qa-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  qa-postgres-data:
+  qa-redis-data:

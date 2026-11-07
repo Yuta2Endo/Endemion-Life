@@ -23,8 +23,9 @@ import { AdventurePanel } from "./adventure-panel";
 import { MasteryPanel } from "./mastery-panel";
 import { EconomyPanel } from "./economy-panel";
 import { LineagePanel } from "./lineage";
+import { WorldPanel } from "./world-panel";
 
-type Section = "bio" | "family" | "lineage" | "economy" | "adventure" | "skills" | "people";
+type Section = "bio" | "family" | "lineage" | "world" | "economy" | "adventure" | "skills" | "people";
 
 function Signed({ value }: { value: number }) {
   const tone = value > 0 ? "text-jade-300" : value < 0 ? "text-blood-300" : "text-bone-300";
@@ -434,6 +435,7 @@ export function Dossier({
     { id: "bio", label: t("dossier.bio") },
     { id: "family", label: t("dossier.family") },
     { id: "lineage", label: t("dossier.lineage") },
+    { id: "world", label: t("dossier.world") },
     { id: "economy", label: t("dossier.economy") },
     { id: "adventure", label: t("dossier.adventure") },
     { id: "skills", label: t("dossier.skills") },
@@ -512,6 +514,7 @@ export function Dossier({
       {section === "bio" && <Biography life={life} />}
       {section === "family" && <FamilyTree life={life} />}
       {section === "lineage" && <LineagePanel life={life} store={store} />}
+      {section === "world" && <WorldPanel life={life} />}
       {section === "economy" && <EconomyPanel life={life} busy={busy} onTrade={onTrade} />}
       {section === "adventure" && (
         <>

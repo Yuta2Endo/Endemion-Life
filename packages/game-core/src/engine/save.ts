@@ -454,6 +454,7 @@ export function parseSave(raw: unknown): GameState {
   checkAdventure(save.adventure, c.universeId);
   checkRegion(save.region, c.universeId);
   checkMastery(save.mastery, c.universeId);
+  if (save.world !== undefined && (!isRecord(save.world) || !isInt(save.world.tick, 0) || !Array.isArray(save.world.settlements) || !Array.isArray(save.world.factions) || !Array.isArray(save.world.activities))) fail("world");
   // Родство: ни циклов, ни родителей младше детей, ни брака с умершим
   const problem = kinProblem(save as unknown as GameState);
   if (problem) fail(`родство: ${problem}`);

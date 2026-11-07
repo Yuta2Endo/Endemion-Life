@@ -485,6 +485,39 @@ export interface HistoryEntry {
   changes: HistoryChange[];
 }
 
+/** Состояние живого мира. Хранится в той же жизни, чтобы tick оставался воспроизводимым. */
+export interface WorldSettlementState {
+  id: string;
+  population: number;
+  prosperity: number;
+  stability: number;
+  dominantFactionId: string | null;
+}
+
+export interface WorldFactionState {
+  id: string;
+  power: number;
+  influence: number;
+  standing: number;
+}
+
+export interface WorldActivity {
+  id: string;
+  age: number;
+  kind: "settlement" | "faction" | "crisis" | "discovery";
+  title: LocalizedText;
+  text: LocalizedText;
+}
+
+export interface WorldState {
+  /** Номер последнего прожитого года, обработанного world tick */
+  tick: number;
+  settlements: WorldSettlementState[];
+  factions: WorldFactionState[];
+  /** Ограниченный журнал заметных изменений мира, новые записи добавляются сверху */
+  activities: WorldActivity[];
+}
+
 export interface GameState {
   /** Версия формата сохранения: старые сохранения переводятся в новый формат (save.ts) */
   schemaVersion: number;
@@ -532,6 +565,8 @@ export interface GameState {
   /** Stage 01: автоматическое продвижение и возрастные рубежи */
   autoMode: AutoMode;
   milestones: MilestoneState;
+  /** Additive Living World state. Old saves omit it and are normalized at action/presentation boundaries. */
+  world?: WorldState;
 }
 
 /** Stage 04: состояние хозяйства мира. Спад и подъём меняют заработок */

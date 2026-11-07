@@ -8,6 +8,7 @@ import {
   presentMarket,
   presentRegion,
   presentProfile,
+  presentWorld,
   summarizeCharacter,
   type CharacterState,
   type CharacterSummary,
@@ -29,7 +30,8 @@ import {
   type RegionView,
   type OptionView,
   type UniverseId,
-  type UniverseSummary
+  type UniverseSummary,
+  type WorldView
 } from "@endemion/game-core";
 
 export type LifeStatus = "alive" | "dead";
@@ -68,6 +70,8 @@ export interface LifeView extends LifeMeta {
   /** Stage 01: режим продвижения, сохраняемый вместе с жизнью */
   autoMode: AutoMode;
   milestones: MilestoneState;
+  /** Stage 02 Living World: settlements, faction drift and recent world activity */
+  world: WorldView;
 }
 
 export interface LifeListItem extends LifeMeta {
@@ -194,9 +198,10 @@ export function toLifeView(meta: LifeMeta, state: GameState): LifeView {
     market: presentMarket(state),
     adventure: presentAdventure(state),
     region: presentRegion(state),
-    mastery: presentMastery(state)
-    ,autoMode: state.autoMode ?? "manual",
-    milestones: state.milestones ?? { triggered: [] }
+    mastery: presentMastery(state),
+    autoMode: state.autoMode ?? "manual",
+    milestones: state.milestones ?? { triggered: [] },
+    world: presentWorld(state)
   };
 }
 

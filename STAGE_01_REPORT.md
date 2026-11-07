@@ -1,151 +1,337 @@
-# Endemion Life — отчёт Stage 01 (FOUNDATION)
+# Endemion Life — Stage 01 Report
 
-Дата: 2026-11-02. Устройство проекта описано в [docs/architecture.md](docs/architecture.md), запуск — в [README.md](README.md).
+**Статус:** реализовано и выложено в production  
+**Последнее обновление:** 2026-11-07  
+**Production:** <https://life.endemion.online>  
+**Текущий релиз:** `1c5bb41616cdeb4d916ee6349a9a16d3f1e34f28`  
+**Предыдущий релиз для rollback:** `4f3f91bf1c5b64e9851a8b57347b481909f34ce3`
 
-## 1. Реализованные функции
+## 1. Итог Stage 01
 
-### Основа проекта
-- Монорепозиторий pnpm: `apps/web`, `apps/api`, `packages/game-core`, `packages/shared`, `packages/database`, `packages/ui`, `infrastructure`, `docs`.
-- Единые версии инструментов через `catalog:` в `pnpm-workspace.yaml`. TypeScript в строгом режиме, ESLint 9 (flat config).
-- Общий `.env` в корне и образец `.env.example`. Настройки API проверяются схемой при запуске: без `DATABASE_URL` API не стартует.
+Stage 01 расширил базовую механику одной жизни до полноценного жизненного опыта:
 
-### Игровая логика (`packages/game-core`)
-- Шесть оригинальных вселенных: «Империя Лиреваль» (академия), «Пепельные Королевства» (тёмное фэнтези), «Нео-Сеул: Эпоха Врат» (охотники), «Арденвейл» (исекай), «Девять Рек» (мурим), «Небесный Предел» (сянься). У каждой есть свои расы, происхождения, система силы и события.
-- Восемь характеристик: сила, интеллект, ловкость, живучесть, мудрость, харизма, удача, воля (1–100, при рождении до 30). Кроме них есть производные показатели, богатство, репутация, опыт.
-- Генератор персонажа: имя, пол, раса, происхождение, темперамент, модификаторы характеристик.
-- Жизненный цикл: этапы жизни, взросление год за годом, доход, смерть от возраста и событий.
-- Повествование: события с условиями, выборами, проверками характеристик и эффектами (описаны на небольшом DSL).
-- Детерминированная случайность: генератор Mulberry32 с seed, состояние генератора хранится в сохранении.
-- Чистая функция `applyAction`: одно и то же состояние и действие всегда дают один результат.
-- Тексты на русском и английском (`LocalizedText`).
+- игрок может выбрать степень автоматизации продвижения жизни;
+- возрастные milestones используют существующий narrative engine;
+- история жизни представляется как хроника поверх существующего `HistoryEntry`;
+- отложенные consequences сохраняют связь с решением, которое их вызвало;
+- живая жизнь имеет current summary;
+- завершённая жизнь имеет расширенный final summary;
+- timeline показывает решения, последствия и provenance;
+- milestone ages настроены для всех шести миров;
+- сервер остаётся authoritative для облачной игры;
+- старые saves остаются совместимыми.
 
-### API (`apps/api`, NestJS)
-- `GET /api/health` — состояние API, базы и Redis.
-- `GET/POST /api/session` — гостевая сессия. Cookie `el_session` HttpOnly, в базе хранится только SHA-256 токена.
-- `GET /api/universes`, `GET /api/universes/:id` — каталог миров.
-- `POST /api/lives`, `GET /api/lives`, `GET /api/lives/:id` — создание и просмотр жизней.
-- `POST /api/lives/:id/actions` — действие игрока (`advance` или `choose`). Сервер считает результат сам.
-- `GET /api/lives/:id/history` — хроника с постраничной загрузкой.
-- `GET /api/lives/:id/saves`, `POST /api/lives/:id/restore` — сохранения по версиям и возврат к ним.
-- Действие выполняется целиком в одной транзакции. Строка жизни блокируется `SELECT … FOR UPDATE`.
-- Защита от повторного применения: уникальный `(lifeId, actionId)`, повторная отправка возвращает прежний результат.
-- Проверка версии: устаревший `expectedVersion` даёт `409 VERSION_CONFLICT`.
-- Хранятся последние 50 снимков каждой жизни.
-- Защита от подделки запросов: изменяющие запросы принимаются только как `application/json` и только с разрешённого `Origin`.
-- Ограничение частоты запросов через Redis. Если Redis недоступен, API работает без лимита.
-- Единый формат ошибок, Helmet, ограничение тела запроса 16 КБ.
+Отдельный второй event engine, отдельная база хроники или второй источник истины не создавались. Хроника строится projection-функцией `toLifeChronicle` из уже сохраняемой истории.
 
-### База данных (`packages/database`)
-- Prisma 7 (генератор `prisma-client`, драйвер `@prisma/adapter-pg`, настройки в `prisma.config.ts`).
-- Таблицы: `Player`, `Life`, `LifeSnapshot`, `HistoryEntry`, `GameAction`. Миграция `20261102144624_init`.
+## 2. Реализованные функции
 
-### Сайт (`apps/web`, Next.js)
-- Страницы: главная, выбор мира, создание персонажа (`/create/[universe]`), игровой экран (`/play/[id]`).
-- Игровой экран: лист персонажа, карточка события с выборами, хроника, окно сохранений.
-- Оформление Premium Dark Fantasy (графит и приглушённое золото), вёрстка для компьютера и телефона.
-- Переключение языка RU/EN (запоминается в cookie `el_locale`).
-- Два хранилища игры: облачное (через API) и локальное (localStorage) для работы без сервера.
-- Все запросы идут на собственный адрес сайта, `/api/*` проксируется. Cookie сессии остаётся first-party.
+### 2.1. Режимы продвижения жизни
 
-### Рабочая среда
-- Корневой `Dockerfile` с целями `api`, `web`, `migrate`. API — только рабочие зависимости, запуск от пользователя `node`. Сайт — автономная сборка Next.js.
-- `infrastructure/docker-compose.prod.yml`: PostgreSQL, Redis, миграции, API, сайт, Nginx. API ждёт успешных миграций, сайт ждёт здорового API.
-- `infrastructure/nginx/nginx.conf`: `/api/*` → API, остальное → сайт, долгий кэш для `/_next/static/`.
-- Новые настройки API: `COOKIE_SECURE` (пока нет HTTPS) и `TRUST_PROXY` (каким прокси верить в `X-Forwarded-For`).
+Добавлены три режима:
 
-## 2. Проверенные команды и результаты
-
-Все проверки выполнены 2026-11-02 на Windows, Node 26.13.0, pnpm 12.16.1, Docker 29.9.2.
-
-| Команда | Результат |
+| Режим | Поведение |
 | --- | --- |
-| `pnpm install` | Зависимости установлены |
-| `pnpm infra:up` | PostgreSQL 18 и Redis 8 запущены, оба healthy |
-| `pnpm db:migrate` | Миграция применена; повторный запуск: «No pending migrations to apply» |
-| `pnpm dev` | API на :4000 и сайт на :3000 отвечают 200; `/api/health` через сайт: database up, redis up |
-| `pnpm check` (lint + typecheck + test + build) | Успешно, код выхода 0 |
-| `pnpm test` | game-core 56, shared 4, web 4, api 7 тестов — все прошли |
-| `pnpm test:api` | 20 тестов API на тестовой базе — все прошли |
-| `pnpm test:e2e` | 22 браузерных теста (компьютер и Pixel 7) — все прошли |
-| `pnpm build` | Сборка всех пакетов и приложений успешна |
-| `docker compose -f infrastructure/docker-compose.prod.yml config` | Конфигурация корректна (проверено с тестовыми значениями) |
-| `docker compose -f infrastructure/docker-compose.prod.yml build` | Образы `api`, `web`, `migrate` собраны |
-| `docker compose … up -d --wait` (тестовый запуск на порту 8088) | Все сервисы healthy, миграции завершились с кодом 0 |
+| `manual` | обычное ручное продвижение; автоматические milestone-паузы не создаются |
+| `auto` | жизнь продвигается автоматически через обычный `advance`, milestones проходят без отдельной остановки |
+| `milestones` | жизнь останавливается на возрастных рубежах и ждёт выбора игрока |
 
-Проверки рабочей среды через Nginx (тестовый запуск, после него стенд и тома удалены):
-- `/api/health` → `status: ok`, database up, redis up;
-- `/`, `/worlds`, `/create/hunter` и статика `/_next/static/…` → 200;
-- создание жизни → версия 1, действие `advance` → 200, версия 2;
-- изменяющий запрос с чужим `Origin` → 403;
-- изменяющий запрос без JSON-тела → 415.
+Состояние режима хранится в `GameState`, передаётся через `LifeView` и сохраняется в cloud/local store.
 
-Требования приёмки Stage 01:
+UI-компонент: `apps/web/src/components/play/auto-life-controls.tsx`.
 
-| Требование | Статус |
-| --- | --- |
-| `pnpm install` работает | Да |
-| Docker запускает Postgres и Redis | Да |
-| Миграции Prisma выполняются | Да |
-| Next.js на :3000, NestJS на :4000 | Да |
-| `/api/health` отвечает OK | Да |
-| Персонажа можно создать во всех 6 мирах | Да (браузерные тесты для каждого мира) |
-| Возраст растёт, выбор меняет характеристики, история отображается | Да (браузерные тесты и тесты API) |
-| Тесты и рабочая сборка проходят | Да |
-| Нет критических ошибок TypeScript и ESLint | Да, ошибок нет |
+### 2.2. Age milestones
 
-## 3. Известные проблемы и ограничения
+Milestones интегрированы в существующий поток:
 
-1. **Локальный режим считает результат в браузере.** Хранилище localStorage вызывает `applyAction` на клиенте, поэтому там игрок может изменить исход. Это режим-прототип. Источник истины — только облачный режим через API.
-2. **Только гостевые сессии.** Регистрации и входа нет. Если удалить cookie, доступ к жизням теряется.
-3. **Нет HTTPS.** В рабочей среде `COOKIE_SECURE=false`, иначе браузер не сохранит cookie по HTTP. После настройки сертификата нужно вернуть `true`.
-4. **TypeScript закреплён на 6.0.3.** `typescript-eslint` 8.72 поддерживает только версии ниже 6.1.
-5. **Предупреждение Prisma о версии Node.** Под Node 26 Prisma CLI выводит предупреждение о неподдерживаемой версии. На работу оно не влияет. Docker-образы используют Node 24.
-6. **Каталог проекта — не git-репозиторий.** Истории изменений нет, коммиты не делались.
-7. **Рабочая среда проверена только локально.** Стенд поднимался на этом компьютере (порт 8088). На сервер life.endemion.online он не выкладывался.
-8. **Адрес прокси Next.js записывается при сборке.** `API_INTERNAL_URL` для `/api/*` фиксируется в момент `next build`. В рабочей среде `/api/*` обрабатывает Nginx, поэтому это запасной путь.
-9. **Без Redis нет лимита запросов.** Это сделано намеренно, чтобы игра не падала. Состояние Redis видно в `/api/health`.
-10. **Возврат к сохранению отбрасывает ветку.** Записи хроники и снимки после выбранной версии удаляются. Отменить такой возврат нельзя.
-11. **Объём событий небольшой.** Набора событий хватает для проверки механики, но длинные жизни начинают повторяться.
-
-## 4. Локальный запуск
-
-```bash
-cp .env.example .env
-pnpm install
-pnpm infra:up
-pnpm db:migrate
-pnpm dev
+```text
+advance → pending event → presentEvent → choose → applyAction
 ```
 
-Сайт: http://localhost:3000. API: http://localhost:4000/api/health.
+Каждый milestone:
 
-Тесты: `pnpm test`, `pnpm test:api`, `pnpm test:e2e`. Перед первым запуском браузерных тестов: `pnpm --filter @endemion/web exec playwright install chromium`.
+- имеет возраст и event id `milestone.<age>`;
+- создаёт обычное pending event;
+- предлагает выборы;
+- применяет обычные effects;
+- попадает в `HistoryEntry` и `memory`;
+- не создаётся повторно после прохождения;
+- фильтруется по lifespan персонажа.
 
-Рабочая среда: `docker compose -f infrastructure/docker-compose.prod.yml --env-file .env up -d --build`. В `.env` нужны `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `CORS_ORIGINS`.
+Для всех шести миров заданы явные milestone-конфигурации:
 
-## 5. Задачи Stage 02
+- academy;
+- dark-fantasy;
+- hunter;
+- isekai;
+- murim;
+- xianxia.
 
-### Инфраструктура и выкладка
-1. Создать git-репозиторий, сделать первый коммит, настроить защиту основной ветки.
-2. CI: lint, typecheck, unit-тесты, тесты API на сервисной базе, браузерные тесты, сборка Docker-образов.
-3. Выложить стенд на сервер под life.endemion.online (DNS, Docker Compose, переменные окружения в секретах).
-4. HTTPS: сертификат Let's Encrypt в Nginx, редирект с HTTP, HSTS. Затем `COOKIE_SECURE=true`.
-5. Резервные копии PostgreSQL по расписанию и проверка восстановления из копии.
-6. Журналы и наблюдение: структурированные логи API, оповещение при падении `/api/health`.
+Сами тексты milestone-событий остаются общими age-based narrative definitions, а доступные возраста задаются конфигурацией мира.
 
-### Аккаунты
-7. Регистрация и вход по почте (одноразовая ссылка или код).
-8. Перенос гостевых жизней в аккаунт при входе.
-9. Выход и управление сессиями: список устройств, завершение сессии.
+### 2.3. Life chronicle
 
-### Игра
-10. Расширить набор событий каждой вселенной, чтобы длинные жизни не повторялись.
-11. Цепочки событий и отложенные последствия решений.
-12. Отношения с персонажами: семья, друзья, соперники, наставники.
-13. Достижения и итоговая сводка прожитой жизни.
-14. Локальный режим: перенос локальных жизней на сервер, чтобы результат считал только сервер.
+Добавлена projection-модель `LifeChronicleEntry` в:
 
-### Качество
-15. Нагрузочный тест параллельных действий над одной жизнью и над многими жизнями.
-16. Проверка доступности интерфейса (клавиатура, контраст, подписи для экранных чтецов).
-17. Обновить TypeScript до 6.1+, когда его поддержит `typescript-eslint`.
+```text
+packages/game-core/src/life/chronicle.ts
+```
+
+Она предоставляет:
+
+- category;
+- importance;
+- decision;
+- consequence;
+- связанные изменения и персонажей;
+- `sourceEventId`;
+- `consequenceOf`;
+- ссылку на исходный `HistoryEntry`.
+
+Хроника не хранится отдельной таблицей. Источником остаётся PostgreSQL/localStorage history с существующей пагинацией и rollback-поведением.
+
+### 2.4. Provenance delayed consequences
+
+Для delayed consequence теперь сохраняется цепочка:
+
+```text
+решение игрока → ConsequenceState.source → HistoryEntry.sourceEventId → LifeChronicleEntry.consequenceOf
+```
+
+В timeline consequence показывает, каким решением он был вызван.
+
+Это сохраняет смысл долгосрочных последствий: игрок видит не только изменение ресурсов через несколько лет, но и связь с предыдущим выбором.
+
+### 2.5. Current-life summary
+
+Для живой жизни добавлено `CurrentLifeSummaryView`.
+
+Summary показывает:
+
+- имя и мир;
+- текущий возраст и lifespan;
+- жизненный этап;
+- профессию;
+- wealth, reputation и karma;
+- level;
+- количество живых людей рядом;
+- последние значимые решения;
+- число ожидающих delayed consequences;
+- прогресс milestones и следующий milestone.
+
+Projection строится сервером и локальным store одинаково через `presentLegacy`.
+
+### 2.6. Final summary
+
+Для завершённой жизни сохранён существующий final summary и расширена общая модель legacy view. Финальный экран продолжает показывать:
+
+- score и title;
+- прожитый возраст и причину смерти;
+- профессию и социальное положение;
+- семью и отношения;
+- ключевые решения;
+- влияние на мир;
+- achievements;
+- threads и наследников;
+- выбор продолжения рода.
+
+Current summary и final summary используют один компонент `LifeSummary`, но показываются в соответствующих состояниях жизни.
+
+### 2.7. Timeline UI
+
+Timeline поддерживает:
+
+- категории хроники;
+- age labels;
+- выбор записи;
+- detail/inspection state;
+- responsive layout;
+- загрузку более ранних записей;
+- отображение decisions и checks;
+- отображение provenance delayed consequences;
+- empty state;
+- RU/EN labels.
+
+Основные файлы:
+
+- `apps/web/src/components/play/timeline.tsx`;
+- `apps/web/src/components/play/life-summary.tsx`;
+- `apps/web/src/components/play/play-screen.tsx`;
+- `apps/web/src/lib/messages.ts`.
+
+## 3. Server/shared integration
+
+Сервер продолжает выполнять действия через существующий authoritative pipeline:
+
+```text
+API → LivesService → applyAction → persisted GameState + HistoryEntry
+```
+
+Изменения не требуют отдельной миграции базы:
+
+- новые поля `HistoryEntry` optional;
+- save schema остался `8`;
+- старые saves нормализуются на границе action/presentation;
+- существующие `HistoryEntry.data` остаются совместимыми;
+- API history сохраняет прежнюю pagination contract.
+
+Import schema расширен optional-полями provenance, чтобы старые локальные истории продолжали приниматься.
+
+## 4. Тесты и проверки
+
+### Game core
+
+Команда:
+
+```bash
+pnpm --filter @endemion/game-core test
+```
+
+Результат на последнем релизе:
+
+```text
+24 test files passed
+315 tests passed
+```
+
+Включая проверки:
+
+- persistence progression mode;
+- backward-compatible save parsing;
+- milestone pending event flow;
+- auto vs milestones behavior;
+- chronicle projection;
+- delayed consequence scheduling;
+- delayed consequence provenance;
+- lifespan filtering;
+- world content integrity.
+
+### TypeScript
+
+Команда:
+
+```bash
+pnpm -r typecheck
+```
+
+Результат: успешно для `game-core`, `shared`, `web`, `api`, `database` и `ui`.
+
+### Production build
+
+Проверены:
+
+```bash
+pnpm --filter @endemion/game-core build
+pnpm --filter @endemion/shared build
+pnpm --filter @endemion/web build
+```
+
+Также production Docker images собраны для:
+
+- `migrate`;
+- `api`;
+- `web`;
+- `nginx`.
+
+Каждый image проверен label:
+
+```text
+org.opencontainers.image.revision=1c5bb41616cdeb4d916ee6349a9a16d3f1e34f28
+```
+
+## 5. Production deployment
+
+Релиз опубликован через ограниченный SSH gateway.
+
+Перед deployment:
+
+- создан backup PostgreSQL;
+- новых миграций не было;
+- инфраструктурные compose-файлы не менялись;
+- загружены четыре image;
+- загружен git bundle с commit release.
+
+После deployment:
+
+- `migrate` завершился успешно;
+- `api` healthy;
+- `web` healthy;
+- `nginx` healthy;
+- `postgres` healthy;
+- `redis` healthy.
+
+Внешний health-check прошёл:
+
+```text
+OK /api/health status=ok
+OK /
+OK /worlds
+OK /api/universes
+```
+
+Production сейчас работает на commit `1c5bb41616cdeb4d916ee6349a9a16d3f1e34f28`.
+
+## 6. Изменённые ключевые файлы
+
+### Game core
+
+- `packages/game-core/src/types.ts`;
+- `packages/game-core/src/engine/game.ts`;
+- `packages/game-core/src/narrative/consequences.ts`;
+- `packages/game-core/src/life/chronicle.ts`;
+- `packages/game-core/src/life/milestones.ts`;
+- `packages/game-core/src/legacy/present.ts`;
+- `packages/game-core/src/world/rules.ts`;
+- milestone configurations in `packages/game-core/src/universes/*.ts`.
+
+### Shared/API contract
+
+- `packages/shared/src/schemas.ts`;
+- existing `LifeView`/history contract reused without a new persistence source.
+
+### Web
+
+- `apps/web/src/components/play/auto-life-controls.tsx`;
+- `apps/web/src/components/play/life-summary.tsx`;
+- `apps/web/src/components/play/play-screen.tsx`;
+- `apps/web/src/components/play/timeline.tsx`;
+- `apps/web/src/lib/messages.ts`.
+
+## 7. Commits
+
+### Foundation
+
+```text
+4f3f91bf1c5b64e9851a8b57347b481909f34ce3
+Add life progression modes and chronicle milestones
+```
+
+### Completion
+
+```text
+1c5bb41616cdeb4d916ee6349a9a16d3f1e34f28
+Complete life chronicle summaries and provenance
+```
+
+## 8. Оставшиеся follow-up задачи
+
+Stage 01 production scope завершён. Остались задачи качества и синхронизации:
+
+1. Добавить отдельные Playwright E2E-сценарии для новых UI-функций:
+   - переключение progression modes;
+   - milestone flow;
+   - current summary;
+   - timeline provenance;
+   - responsive timeline inspection.
+2. Синхронизировать два локальных Stage 01 commit с `origin/main`.
+3. Не включать в этот релиз пользовательские удаления stage-документов и untracked Android/asset-файлы.
+4. После E2E-проверок перейти к следующему согласованному этапу — улучшению lineage/legacy UX или Android-порту.
+
+## 9. Rollback
+
+Для возврата к предыдущему production-релизу сохранён:
+
+```text
+4f3f91bf1c5b64e9851a8b57347b481909f34ce3
+```
+
+Серверный deployment script автоматически создаёт backup и проверяет health после переключения релиза.

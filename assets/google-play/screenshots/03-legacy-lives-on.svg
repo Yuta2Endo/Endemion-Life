@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#08070b"/><stop offset=".55" stop-color="#19131d"/><stop offset="1" stop-color="#08070b"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f2d995"/><stop offset="1" stop-color="#9d6f2f"/></linearGradient>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#bg)"/>
+  <circle cx="860" cy="1090" r="330" fill="#9d6f2f" opacity=".11"/>
+  <text x="90" y="145" fill="url(#gold)" font-family="Georgia,serif" font-size="42" letter-spacing="7">ENDEMION LIFE</text>
+  <text x="90" y="225" fill="#f4eddd" font-family="Arial,sans-serif" font-size="58" font-weight="700">A life becomes a legacy</text>
+  <text x="90" y="285" fill="#d8ccb5" font-family="Arial,sans-serif" font-size="28">When one story ends, the next generation can begin.</text>
+  <rect x="80" y="390" width="920" height="700" rx="42" fill="#060608" stroke="#d8b56b" stroke-opacity=".38" stroke-width="3"/>
+  <image href="file:///C:/Users/sasha/Endemion-Life/apps/web/public/shot-ending.png" x="105" y="415" width="870" height="650" preserveAspectRatio="xMidYMid meet"/>
+  <path d="M540 1160 V1375" stroke="#d8b56b" stroke-opacity=".45" stroke-width="3"/>
+  <circle cx="540" cy="1160" r="14" fill="#f2d995"/>
+  <circle cx="540" cy="1375" r="14" fill="#f2d995"/>
+  <text x="90" y="1270" fill="#f4eddd" font-family="Arial,sans-serif" font-size="34" font-weight="700">Remembered in the chronicle</text>
+  <text x="90" y="1330" fill="#d8ccb5" font-family="Arial,sans-serif" font-size="27">Your choices shape the world and the future of your lineage.</text>
+  <text x="90" y="1510" fill="url(#gold)" font-family="Georgia,serif" font-size="55" letter-spacing="4">ONE UNIVERSE</text>
+  <text x="90" y="1585" fill="#f4eddd" font-family="Georgia,serif" font-size="55" letter-spacing="4">COUNTLESS STORIES</text>
+  <path d="M90 1680 H520" stroke="url(#gold)" stroke-width="3"/>
+  <text x="90" y="1750" fill="#c9a25a" font-family="Arial,sans-serif" font-size="24" letter-spacing="3">START YOUR LIFE IN ENDEMION</text>
+</svg>

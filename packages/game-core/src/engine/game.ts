@@ -25,6 +25,7 @@ import { hashSeed, Rng } from "../rng.js";
 import { getUniverse } from "../universes/registry.js";
 import { questYearly } from "../world/quests.js";
 import { worldYearly, type Emit } from "../world/rules.js";
+import { newWorldState, normalizeWorldState, worldTick } from "../world/state.js";
 import {
   INTERACTIONS,
   MAX_ADVANCE_YEARS,
@@ -35,8 +36,7 @@ import {
   type GameState,
   type HistoryEntry,
   type HistoryKind,
-  type MemoryEntry,
-  type AutoMode
+  type MemoryEntry
 } from "../types.js";
 import { checkAll } from "./conditions.js";
 import { checkChance } from "./checks.js";
@@ -158,7 +158,8 @@ export function newGame(input: NewGameInput): ActionResult {
     region: newRegion(character.universeId),
     mastery: newMastery(),
     autoMode: "manual",
-    milestones: { triggered: [] }
+    milestones: { triggered: [] },
+    world: newWorldState(universe)
   };
   // Семья, таланты и тайны — из отдельного потока: броски Stage 01 и дальнейшая жизнь от них не сдвигаются
   state.lineage.selfParents = bornInto({ state, rng: Rng.fromSeed(seed, "birth"), universe }, generatedName);
@@ -217,6 +218,7 @@ function advance(ctx: EngineContext, entries: HistoryEntry[], years: number): vo
     if (state.life.alive) {
       const defer: Emit = (kind, title, text) => deferred.push({ kind, title, text });
       worldYearly(ctx, defer);
+      worldTick(ctx);
       npcYearly(ctx, defer);
     }
     const grewSkill = ctx.changes.some((change) => change.kind === "skill");
@@ -352,6 +354,7 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
   // действия, чтобы любой следующий snapshot уже был самодостаточным.
   state.autoMode ??= "manual";
   state.milestones ??= { triggered: [] };
+  state.world = normalizeWorldState(state.world, getUniverse(state.character.universeId));
   const rng = new Rng(state.rngState);
   const ctx: EngineContext = { state, rng, universe: getUniverse(state.character.universeId), changes: [] };
   const entries: HistoryEntry[] = [];

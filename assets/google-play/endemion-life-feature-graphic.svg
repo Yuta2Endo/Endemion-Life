@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#08070b"/>
+      <stop offset=".52" stop-color="#17121b"/>
+      <stop offset="1" stop-color="#08070b"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="72%" cy="50%" r="48%">
+      <stop offset="0" stop-color="#6d5224" stop-opacity=".34"/>
+      <stop offset=".55" stop-color="#342719" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#060608" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f2d995"/>
+      <stop offset=".48" stop-color="#d8b56b"/>
+      <stop offset="1" stop-color="#9d6f2f"/>
+    </linearGradient>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="13"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <rect width="1024" height="500" fill="url(#halo)"/>
+  <path d="M0 418 C180 335 286 446 448 390 S738 304 1024 394" fill="none" stroke="#d8b56b" stroke-opacity=".12" stroke-width="2"/>
+  <path d="M0 444 C206 366 330 476 512 416 S794 335 1024 420" fill="none" stroke="#d8b56b" stroke-opacity=".08" stroke-width="2"/>
+  <g transform="translate(720 250)">
+    <circle r="214" fill="none" stroke="#c9a25a" stroke-opacity=".13" stroke-width="3"/>
+    <circle r="179" fill="none" stroke="#e0c07a" stroke-opacity=".08" stroke-width="2"/>
+    <path d="M0 -154 L108 0 L0 154 L-108 0 Z" fill="none" stroke="#c9a25a" stroke-opacity=".18" stroke-width="24" stroke-linejoin="round" filter="url(#soft)"/>
+    <path d="M0 -154 L108 0 L0 154 L-108 0 Z" fill="none" stroke="url(#gold)" stroke-width="12" stroke-linejoin="round"/>
+    <path d="M0 -114 L80 0 L0 114 L-80 0 Z" fill="none" stroke="#f0d28b" stroke-opacity=".42" stroke-width="3" stroke-linejoin="round"/>
+    <circle r="23" fill="#08070b" stroke="url(#gold)" stroke-width="8"/>
+    <circle r="7" fill="#f2d995"/>
+  </g>
+  <g fill="url(#gold)">
+    <text x="74" y="210" font-family="Georgia, 'Times New Roman', serif" font-size="64" letter-spacing="7">ENDEMION</text>
+    <text x="78" y="286" font-family="Georgia, 'Times New Roman', serif" font-size="73" letter-spacing="8">LIFE</text>
+  </g>
+  <text x="80" y="338" fill="#e8dcc0" fill-opacity=".82" font-family="Arial, sans-serif" font-size="19" letter-spacing="4">ONE UNIVERSE · COUNTLESS STORIES</text>
+  <rect x="80" y="371" width="190" height="2" fill="#d8b56b" fill-opacity=".62"/>
+</svg>

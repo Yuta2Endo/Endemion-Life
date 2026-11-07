@@ -23,6 +23,7 @@ import type { UniverseDefinition } from "../universes/types.js";
 import { newAdventure } from "../adventure/adventure.js";
 import { newMastery } from "../endgame/mastery.js";
 import { newEconomy } from "../economy/economy.js";
+import { normalizeWorldState } from "../world/state.js";
 import { lawOf, type InheritanceLaw } from "./laws.js";
 import { unlockAchievements } from "./achievements.js";
 import { lineageYear } from "./chronicle.js";
@@ -358,9 +359,11 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
     // Край переживает человека: наследник застаёт ту же землю, и след приключений предка уже учтён
     region: deepClone(dead.region),
     // Освоение мира — личный опыт, как и приключение. Достижения рода остаются в lineage
-    mastery: newMastery()
-    ,autoMode: "manual",
-    milestones: { triggered: [] }
+    mastery: newMastery(),
+    autoMode: "manual",
+    milestones: { triggered: [] },
+    // Состояние мира общее для рода: новый наследник продолжает жить в том же мире.
+    world: normalizeWorldState(dead.world, universe)
   };
   return { state, record, deceasedId: "" };
 }

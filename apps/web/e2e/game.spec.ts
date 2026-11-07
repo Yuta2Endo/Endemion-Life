@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 const WORLDS = ["dark-fantasy", "isekai", "murim", "xianxia", "hunter", "academy"] as const;
 
 /** На телефоне колонки игры — вкладки: открыть нужную */
-async function openTab(page: Page, tab: "event" | "character" | "timeline") {
+async function openTab(page: Page, tab: "event" | "character" | "people" | "timeline") {
   const button = page.getByTestId(`tab-${tab}`);
   if (await button.isVisible()) await button.click();
 }
@@ -164,4 +164,26 @@ test("досье переведено на английский", async ({ page 
   await expect(dossier.getByRole("heading", { name: "Dossier" })).toBeVisible();
   await expect(dossier.getByTestId("dossier-tab-family")).toHaveText("Family");
   await expect(dossier.getByTestId("world-meters")).toContainText("Gate threat");
+});
+
+test("режим рубежей останавливает жизнь и показывает current summary", async ({ page }) => {
+  await createLife(page, "academy", "Мира");
+  await page.getByTestId("mode-milestones").click();
+  await page.getByTestId("advance-10").click();
+  await expect(page.getByTestId("event-card")).toBeVisible();
+  await expect(page.getByTestId("play-screen")).toContainText("Возрастной рубеж");
+  await openTab(page, "character");
+  await expect(page.getByTestId("character-age")).toContainText("7");
+});
+
+test("живой мир доступен в досье и feed не ломает мобильную ширину", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await createLife(page, "hunter", "Юна");
+  await openTab(page, "people");
+  await page.getByTestId("dossier-tab-world").click();
+  await expect(page.getByTestId("world-panel")).toBeVisible();
+  await expect(page.getByTestId("world-settlement").first()).toBeVisible();
+  const bodyWidth = await page.locator("body").evaluate((element) => element.scrollWidth);
+  const viewportWidth = await page.evaluate(() => window.innerWidth);
+  expect(bodyWidth).toBeLessThanOrEqual(viewportWidth + 1);
 });
