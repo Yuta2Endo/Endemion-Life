@@ -62,7 +62,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               <a href="https://endemion.online/privacy" className="hover:text-gold-200">{t("footer.privacy")}</a>
               <a href="https://endemion.online/terms" className="hover:text-gold-200">{t("footer.terms")}</a>
               <a href="https://endemion.online/community" className="hover:text-gold-200">{t("nav.people")}</a>
-              <a href="mailto:hello@endemion.online" className="hover:text-gold-200">hello@endemion.online</a>
+              <a href="mailto:endemion@internet.ru" className="hover:text-gold-200">endemion@internet.ru</a>
             </nav>
           </footer>
         </LocaleProvider>
