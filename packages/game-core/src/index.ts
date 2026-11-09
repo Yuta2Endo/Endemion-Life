@@ -59,9 +59,36 @@ export { toLifeChronicle, type ChronicleCategory, type ChronicleImportance, type
 export { naturalDeathChance } from "./life/death.js";
 
 export { checkChance, MAX_CHANCE, MIN_CHANCE } from "./engine/checks.js";
-export { presentProfile, type InteractionView, type LifeProfile, type MeterView, type NpcView, type QuestView, type SecretView } from "./engine/profile.js";
+export {
+  presentProfile,
+  type InteractionView,
+  type LifeProfile,
+  type MeterView,
+  type NpcEventView,
+  type NpcStoryView,
+  type NpcView,
+  type QuestView,
+  type RelationshipView,
+  type SecretView
+} from "./engine/profile.js";
 export { AFFINITY_LIMIT, affinityLabel, FAMILY_ROLES, roleName } from "./character/npcs.js";
 export { GIFT_COST, INTERACTION_RULES, interactionBlock } from "./character/interactions.js";
+export {
+  MAX_RELATIONSHIPS,
+  MAX_STORY_RECORDS,
+  newSocialState,
+  normalizeSocialState,
+  npcLifeStage,
+  npcSettlementId,
+  npcSettlementName,
+  readSocialState,
+  relationshipBetween,
+  relationshipName,
+  relationshipsOf,
+  socialInfluence,
+  RELATIONSHIP_NAMES
+} from "./character/social.js";
+export { activeStoryOf, advanceStory, failStory, findStory, MAX_ACTIVE_STORIES, NPC_STORIES, storyTick } from "./character/stories.js";
 export { BOND_AT, BOND_FLAG, changeNpcAffinity } from "./engine/effects.js";
 export { COMMON_PROFESSIONS, COMMON_SKILLS, COMMON_TALENTS, COMMON_WEAKNESSES, NPC_TRAITS } from "./rpg/common.js";
 export { allProfessions, allSkills, educationTier, findEducation, findProfession, findSkill, pathSkill, SKILL_MAX } from "./rpg/skills.js";
@@ -70,6 +97,7 @@ export { DEFAULT_COOLDOWN, RECENT_LIMIT } from "./narrative/selection.js";
 export { PEOPLE_EVENTS, COMMON_CONSEQUENCES } from "./narrative/people.js";
 export { meterValue, worldTrackFactor } from "./world/rules.js";
 export { MAX_WORLD_ACTIVITIES, MAX_WORLD_SETTLEMENTS, newWorldState, normalizeWorldState, presentWorld, settlementSeeds, worldTick, type WorldView, type WorldViewFaction, type WorldViewSettlement } from "./world/state.js";
+export { worldMetrics, type WorldMetrics, type MetricRange, type SettlementMetrics, type FactionMetrics, type ActivityMetrics } from "./world/metrics.js";
 export { ADULT_AGE, CYCLE_FACTOR, HARDSHIP_PENALTY_YEARS, livingCost, MAX_ECONOMY_YEARS, newEconomy, presentEconomy, yearLines, type EconomyLineView, type EconomyView } from "./economy/economy.js";
 export { economyOf, WORLD_ECONOMIES, type WorldEconomy } from "./economy/worlds.js";
 export {
@@ -155,5 +183,6 @@ export {
   type CurrentLifeSummaryView,
   type LifeSummaryView,
   type LineageView,
-  type TreeNodeView
+  type TreeNodeView,
+  type DynastyView
 } from "./legacy/present.js";

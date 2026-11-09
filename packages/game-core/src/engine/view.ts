@@ -3,6 +3,7 @@
 import { effectiveStats, lifespanOf, maxResources, nextRankThreshold, xpForLevel } from "../character/derived.js";
 import { fillText, type LocalizedText } from "../i18n.js";
 import { findEvent } from "../narrative/selection.js";
+import { isMilestoneEvent } from "../life/milestones.js";
 import type { Resources, Stats } from "../stats.js";
 import type { GameState, LifeStage } from "../types.js";
 import { getUniverse } from "../universes/registry.js";
@@ -42,6 +43,8 @@ export interface EventView {
   choices: ChoiceView[];
   /** Событие пришло только как продолжение цепочки, не как случайный год */
   scheduled: boolean;
+  /** Возрастной рубеж: специальная веха жизни, на которой игра останавливается */
+  isMilestone: boolean;
 }
 
 export interface CharacterSummary {
@@ -68,6 +71,7 @@ export function presentEvent(state: GameState): EventView | null {
     title: fillText(event.title, vars),
     text: fillText(event.text, vars),
     scheduled: event.scheduledOnly === true,
+    isMilestone: isMilestoneEvent(event.id),
     choices: event.choices.map((choice) => {
       const failed = (choice.requires ?? []).filter((condition) => !checkCondition(state, condition));
       return {

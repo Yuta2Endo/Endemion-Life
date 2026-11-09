@@ -53,6 +53,57 @@ export type DeathCauseId = (typeof NPC_DEATH_CAUSES)[number];
 export const NPC_GOALS = ["family", "mastery", "rise", "knowledge", "wealth"] as const;
 export type NpcGoal = (typeof NPC_GOALS)[number];
 
+/** Stage 03: виды связей между людьми помимо родства */
+export const RELATIONSHIP_TYPES = ["family", "friend", "rival", "romantic", "mentor", "colleague", "enemy", "acquaintance"] as const;
+export type RelationshipType = (typeof RELATIONSHIP_TYPES)[number];
+
+/**
+ * Stage 03: устойчивая связь между двумя людьми (NPC–NPC). Связь персонажа с NPC выводится из роли и affinity,
+ * чтобы не держать два источника истины об одном и том же отношении
+ */
+export interface NpcRelationship {
+  id: number;
+  /** Кто завёл связь: id NPC */
+  a: string;
+  /** С кем: id NPC */
+  b: string;
+  type: RelationshipType;
+  /** Отношение от -100 (вражда) до 100 (близость) */
+  strength: number;
+  /** Доверие 0–100 */
+  trust: number;
+  /** Возраст персонажа, когда связь началась */
+  since: number;
+  /** Возраст персонажа, когда связь менялась в последний раз */
+  updatedAt: number;
+  /** Источник: id сюжета, события или "npc" */
+  source: string;
+}
+
+/** Stage 03: личный сюжет значимого NPC. Стадии идут по годам, решение игрока может ускорить или сорвать сюжет */
+export const NPC_STORY_STATUSES = ["active", "done", "failed", "abandoned"] as const;
+export type NpcStoryStatus = (typeof NPC_STORY_STATUSES)[number];
+
+export interface NpcStoryState {
+  id: string;
+  npcId: string;
+  storyId: string;
+  /** Индекс текущей стадии в описании сюжета */
+  stage: number;
+  status: NpcStoryStatus;
+  since: number;
+  updatedAt: number;
+  source: string;
+}
+
+/** Stage 03: социальная память жизни. Необязательна в старых сохранениях, нормализуется на границе действия */
+export interface SocialState {
+  relationships: NpcRelationship[];
+  stories: NpcStoryState[];
+  nextRelationshipId: number;
+  nextStoryId: number;
+}
+
 /** Что случилось в жизни NPC: короткий журнал для карточки человека */
 export const NPC_LOG_KINDS = [
   "education",
@@ -74,7 +125,9 @@ export const NPC_LOG_KINDS = [
   "retired",
   "goal",
   "estate",
-  "bond"
+  "bond",
+  "relationship",
+  "story"
 ] as const;
 export type NpcLogKind = (typeof NPC_LOG_KINDS)[number];
 
@@ -130,7 +183,25 @@ export interface CharacterState {
   specializationId: string | null;
   /** Отношение фракций мира: от -100 до 100 */
   factions: Record<string, number>;
+  /** Текущая личная цель персонажа (одна на жизнь) и прогресс 0–100 */
+  goal: string | null;
+  goalProgress: number;
+  /** Прогресс личных сюжетов персонажа: id сюжета → этап, выборы, завершение. Не передаётся наследнику. */
+  storyProgress?: Record<string, StoryProgress>;
 }
+
+/** Прогресс сюжетной цепочки: текущий этап, выборы по событиям и флаг завершения. */
+export interface StoryProgress {
+  /** Текущий этап сюжета, начиная с 0. */
+  stage: number;
+  /** Сюжет достиг конечного состояния: дальнейшее продвижение невозможно. */
+  completed: boolean;
+  /** Выбранный вариант для каждого события сюжета: id события → id варианта. */
+  choices: Record<string, string>;
+}
+
+/** Область действия сюжета: персонаж или род. */
+export type StoryScope = "character" | "lineage";
 
 /** Человек в жизни персонажа. Возрасты считаются от возраста персонажа: так NPC стареет вместе с ним */
 export interface NpcState {
@@ -248,7 +319,13 @@ export const CHRONICLE_KINDS = [
   "deed",
   "talent",
   "secret",
-  "story"
+  "story",
+  /** Stage 08: веха рода — важное достижение рода, закрепившееся за поколением */
+  "milestone",
+  /** Stage 08: изменение отношения рода к фракции мира в результате действия */
+  "faction",
+  /** Stage 04.3: получение реликвии рода */
+  "relic"
 ] as const;
 export type ChronicleKind = (typeof CHRONICLE_KINDS)[number];
 
@@ -301,6 +378,22 @@ export interface LineageThread {
   src: string;
 }
 
+/** Фамильная реликвия: именованный предмет рода, передающийся по наследству.
+ * Эффекты применяются один раз при получении, не повторяются. */
+export interface RelicState {
+  id: string;
+  /** Локализованное имя реликвии */
+  name: LocalizedText;
+  /** Локализованное описание реликвии */
+  description: LocalizedText;
+  /** Поколение рода, когда реликвияを獲得ана */
+  acquiredGen: number;
+  /** Возраст персонажа, когда реликвияを獲得ана */
+  acquiredAge: number;
+  /** Источник получения: id события или "inheritance" */
+  source: string;
+}
+
 /** Последствие для рода: наступит в год year, даже если персонаж, который его вызвал, уже умер */
 export interface LineagePending {
   id: string;
@@ -343,6 +436,8 @@ export interface InheritanceRecord {
   flags: string[];
   /** Нити рода, перешедшие к наследнику (только открытые игроку) */
   threads: string[];
+  /** Реликвии рода, перешедшие к наследнику */
+  relics: string[];
   /** Опека: наследник младше возраста, с которого закон мира отдаёт имущество в его руки */
   controlAge: number;
   guardianName: string | null;
@@ -351,6 +446,22 @@ export interface InheritanceRecord {
 }
 
 /** Род. Каждое поколение — отдельная жизнь (своё сохранение и откат), род переходит в неё целиком при наследовании */
+/** Вид сущности мира, на которую род имеет многолетнее влияние */
+export type WorldInfluenceKind = "settlement" | "faction";
+
+/** Многолетнее влияние рода на одну сущность мира. value ограничен ±MAX_WORLD_INFLUENCE */
+export interface WorldInfluenceEntry {
+  /** id поселения или фракции из каталога текущей вселенной */
+  id: string;
+  value: number;
+}
+
+/** Влияние рода на мир: закрытые категории вместо произвольного словаря */
+export interface WorldInfluenceState {
+  settlements: WorldInfluenceEntry[];
+  factions: WorldInfluenceEntry[];
+}
+
 export interface LineageState {
   name: string;
   /** Поколение текущего персонажа: 1 — основатель */
@@ -382,6 +493,12 @@ export interface LineageState {
   inheritance: InheritanceRecord | null;
   /** Имена людей, чьи карточки ушли в архив: записи истории и хроники по-прежнему показывают имя */
   names: Record<string, string>;
+  /** Фамильные реликвии рода: переходят к наследнику, каждая — один раз на род */
+  relics: RelicState[];
+  /** Прогресс фамильных сюжетов рода: id сюжета → этап, выборы, завершение. Переходит к наследнику. */
+  storyProgress?: Record<string, StoryProgress>;
+  /** Многолетнее влияние рода на поселения и фракции мира. Переходит к наследнику. */
+  worldInfluence: WorldInfluenceState;
 }
 
 /** Ключевое решение жизни: для итогов. Хранятся самые значимые */
@@ -504,7 +621,7 @@ export interface WorldFactionState {
 export interface WorldActivity {
   id: string;
   age: number;
-  kind: "settlement" | "faction" | "crisis" | "discovery";
+  kind: "settlement" | "faction" | "crisis" | "discovery" | "family";
   title: LocalizedText;
   text: LocalizedText;
 }
@@ -567,6 +684,8 @@ export interface GameState {
   milestones: MilestoneState;
   /** Additive Living World state. Old saves omit it and are normalized at action/presentation boundaries. */
   world?: WorldState;
+  /** Stage 03: связи людей между собой и личные сюжеты NPC. Additive: старые сохранения нормализуются */
+  social?: SocialState;
 }
 
 /** Stage 04: состояние хозяйства мира. Спад и подъём меняют заработок */
@@ -605,7 +724,7 @@ export interface EconomyState {
   goods: Record<string, number>;
 }
 
-export const INTERACTIONS = ["talk", "gift", "learn", "spar", "confront", "ask-help"] as const;
+export const INTERACTIONS = ["talk", "gift", "learn", "spar", "confront", "ask-help", "help", "invite", "court"] as const;
 export type InteractionId = (typeof INTERACTIONS)[number];
 
 /**

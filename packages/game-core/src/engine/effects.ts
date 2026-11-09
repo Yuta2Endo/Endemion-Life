@@ -2,14 +2,16 @@ import { isTrackReady, maxResources, MAX_LEVEL, nextRankThreshold, xpForLevel } 
 import { AFFINITY_LIMIT, canAddRole, createNpc, livingWith, shiftAffinity } from "../character/npcs.js";
 import { canParent, chronicle, logNpc, markDeath, returnHome, setMissing } from "../family/events.js";
 import { isKin, KinGraph, MIN_PARENT_AGE, selfSpouse } from "../family/kin.js";
-import type { LocalizedText } from "../i18n.js";
+import { t, type LocalizedText } from "../i18n.js";
 import { lineageYear } from "../legacy/chronicle.js";
 import type { Effect, NpcRef } from "../narrative/types.js";
 import { findEducation, findProfession, findSkill, SKILL_MAX } from "../rpg/skills.js";
 import { changeProsperity, changeStrain } from "../economy/region.js";
 import { findTalent, findWeakness } from "../rpg/talents.js";
+import { changeWorldInfluence, pushWorldActivity, newWorldState, settlementSeeds } from "../world/state.js";
+import { findRelic } from "../legacy/stories.js";
 import { clamp, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_MAX, STAT_MIN, WEALTH_MAX, type ResourceKey, type StatKey } from "../stats.js";
-import { SELF_ID, type DeathCauseId, type HiddenKey, type NpcRole, type NpcState } from "../types.js";
+import { SELF_ID, type DeathCauseId, type GameState, type HiddenKey, type NpcRole, type NpcState, type StoryProgress, type StoryScope } from "../types.js";
 import type { EngineContext } from "./context.js";
 import { record, recordDelta } from "./record.js";
 
@@ -22,6 +24,11 @@ const MAX_CONSEQUENCES = 12;
 const FACTION_LIMIT = 100;
 export const RENOWN_LIMIT = 100;
 const MAX_THREADS = 10;
+/** Штраф процветанию одного поселения от вражды рода */
+const DYNASTY_FEUD_PENALTY = 5;
+
+/** Нити рода, которые порождают запись об изменении отношения рода к фракции в хронике */
+const FACTION_THREADS: readonly string[] = ["old-enemy", "family-feud", "betrayal"];
 
 export function changeStat(ctx: EngineContext, stat: StatKey, delta: number): void {
   const stats = ctx.state.character.stats;
@@ -236,11 +243,56 @@ export function setThread(ctx: EngineContext, id: string, add: boolean): void {
   if (add && index === -1 && lineage.threads.length < MAX_THREADS) {
     lineage.threads.push({ id, year: lineageYear(ctx.state), gen: lineage.generation, src: ctx.source ?? "" });
     record(ctx, { kind: "thread", key: id, value: "added" });
+    // Негативная нить рода — веха в хронике рода (фиксируется один раз, при добавлении)
+    if (FACTION_THREADS.includes(id)) {
+      chronicle(ctx, "faction", [SELF_ID], { thread: id }, id);
+      // Stage 09: вражда рода ослабляет процветание одного поселения
+      const world = ctx.state.world ?? newWorldState(ctx.universe);
+      const settlement = world.settlements[0];
+      if (!settlement) return;
+      const before = settlement.prosperity;
+      settlement.prosperity = clamp(settlement.prosperity - DYNASTY_FEUD_PENALTY, 0, 100);
+      if (settlement.prosperity !== before) {
+        const seeds = settlementSeeds(ctx.universe);
+        const name = seeds.find((s) => s.id === settlement.id)?.name ?? { ru: settlement.id, en: settlement.id };
+        pushWorldActivity(
+          ctx,
+          "settlement",
+          `dynasty-feud.${settlement.id}`,
+          t("Вражда рода ослабляет поселение", "A family feud weakens a settlement"),
+          t(`${name.ru} теряет часть достатка из-за вражды рода.`, `${name.en} loses some prosperity due to the family feud.`)
+        );
+      }
+    }
   }
   if (!add && index !== -1) {
     lineage.threads.splice(index, 1);
     record(ctx, { kind: "thread", key: id, value: "closed" });
   }
+}
+
+/** Stage 04.5.1: изменение реального состояния поселения из сюжетного выбора. Неизвестное поселение — тихий no-op */
+export function changeSettlement(ctx: EngineContext, id: string, prosperity = 0, stability = 0): void {
+  const world = ctx.state.world ?? newWorldState(ctx.universe);
+  ctx.state.world = world;
+  const settlement = world.settlements.find((item) => item.id === id);
+  if (!settlement) return;
+  const beforeProsperity = settlement.prosperity;
+  const beforeStability = settlement.stability;
+  settlement.prosperity = clamp(settlement.prosperity + prosperity, 0, 100);
+  settlement.stability = clamp(settlement.stability + stability, 0, 100);
+  if (settlement.prosperity === beforeProsperity && settlement.stability === beforeStability) return;
+  const name = settlementSeeds(ctx.universe).find((item) => item.id === id)?.name ?? t(id, id);
+  const improved = settlement.prosperity >= beforeProsperity && settlement.stability >= beforeStability;
+  pushWorldActivity(
+    ctx,
+    "settlement",
+    `narrative.${id}`,
+    improved ? t("Поселение получает помощь", "A settlement receives aid") : t("Беды ослабляют поселение", "Hardship weakens a settlement"),
+    improved
+      ? t(`${name.ru} чувствует поддержку рода.`, `${name.en} feels the dynasty's support.`)
+      : t(`Дела в ${name.ru} идут хуже.`, `Affairs in ${name.en} grow worse.`)
+  );
 }
 
 /** Последствие для рода: живёт в роду, а не в жизни персонажа, и не пропадает с его смертью */
@@ -431,6 +483,12 @@ export function applyEffect(ctx: EngineContext, effect: Effect): void {
     case "prosperity":
       changeProsperity(ctx.state, effect.delta);
       return;
+    case "settlement":
+      changeSettlement(ctx, effect.id, effect.prosperity, effect.stability);
+      return;
+    case "influence":
+      changeWorldInfluence(ctx, effect.kind, effect.id, effect.delta);
+      return;
     case "faction":
       return changeFaction(ctx, effect.id, effect.delta);
     case "socialClass":
@@ -470,7 +528,80 @@ export function applyEffect(ctx: EngineContext, effect: Effect): void {
       return stepClass(ctx, effect.delta);
     case "adopt":
       return adoptChild(ctx);
+    case "relic":
+      return applyRelic(ctx, effect);
+    case "advanceStory":
+      return advanceStoryEffect(ctx, effect.id, effect.expectedStage, effect.nextStage, effect.scope);
+    case "recordStoryChoice":
+      return recordStoryChoiceEffect(ctx, effect.id, effect.eventId, effect.choiceId, effect.scope);
+    case "completeStory":
+      return completeStoryEffect(ctx, effect.id, effect.scope);
   }
+}
+
+export function applyRelic(ctx: EngineContext, effect: { type: "relic"; id: string }): void {
+  const lineage = ctx.state.lineage;
+  const relicDef = findRelic(effect.id);
+  if (!relicDef) return; // Unknown relic id: do not create malformed state
+  if (!lineage.relics) lineage.relics = [];
+  if (lineage.relics.some((r) => r.id === effect.id)) return; // Already owned: dedup
+  lineage.relics.push({
+    id: effect.id,
+    name: relicDef.name,
+    description: relicDef.description,
+    acquiredGen: lineage.generation,
+    acquiredAge: ctx.state.life.age,
+    source: ctx.source ?? effect.id
+  });
+  // Apply the relic's configured gameplay effect exactly once at acquisition
+  for (const eff of relicDef.effects) applyEffect(ctx, eff);
+  chronicle(ctx, "relic", [SELF_ID], { relic: effect.id }, effect.id);
+}
+
+/** Прогресс сюжета в области действия: отсутствующий сюжет начинается с этапа 0. */
+export function getStoryProgress(state: GameState, id: string, scope: StoryScope): StoryProgress {
+  const store = scope === "lineage" ? state.lineage.storyProgress : state.character.storyProgress;
+  const current = store?.[id];
+  if (current) return current;
+  return { stage: 0, completed: false, choices: {} };
+}
+
+/** Сохраняет прогресс сюжета в области действия. */
+function setStoryProgress(state: GameState, id: string, scope: StoryScope, progress: StoryProgress): void {
+  if (scope === "lineage") {
+    if (!state.lineage.storyProgress) state.lineage.storyProgress = {};
+    state.lineage.storyProgress[id] = progress;
+  } else {
+    if (!state.character.storyProgress) state.character.storyProgress = {};
+    state.character.storyProgress[id] = progress;
+  }
+}
+
+/** Страховый этап сюжета: продвигается только если не завершён, текущий этап равен ожидаемому и следующий этап позже текущего. */
+function advanceStoryEffect(ctx: EngineContext, id: string, expectedStage: number, nextStage: number, scope: StoryScope): void {
+  const progress = getStoryProgress(ctx.state, id, scope);
+  if (progress.completed) return;
+  if (progress.stage !== expectedStage) return;
+  if (nextStage <= progress.stage) return;
+  progress.stage = nextStage;
+  setStoryProgress(ctx.state, id, scope, progress);
+  chronicle(ctx, "story", [SELF_ID], { story: id, stage: String(nextStage), scope }, `story.${id}`, null);
+}
+
+/** Записывает выбор варианта в событии сюжета. */
+function recordStoryChoiceEffect(ctx: EngineContext, id: string, eventId: string, choiceId: string, scope: StoryScope): void {
+  const progress = getStoryProgress(ctx.state, id, scope);
+  progress.choices[eventId] = choiceId;
+  setStoryProgress(ctx.state, id, scope, progress);
+  chronicle(ctx, "story", [SELF_ID], { story: id, event: eventId, choice: choiceId, scope }, `story.${id}`, null);
+}
+
+/** Завершает сюжет: дальнейшее продвижение невозможно. */
+function completeStoryEffect(ctx: EngineContext, id: string, scope: StoryScope): void {
+  const progress = getStoryProgress(ctx.state, id, scope);
+  progress.completed = true;
+  setStoryProgress(ctx.state, id, scope, progress);
+  chronicle(ctx, "story", [SELF_ID], { story: id, completed: "1", scope }, `story.${id}`, null);
 }
 
 /**

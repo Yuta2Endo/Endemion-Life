@@ -57,4 +57,20 @@ describe("контракты API", () => {
     expect(view).not.toHaveProperty("seed");
     expect(view.summary.stats.strength).toBeGreaterThan(0);
   });
+
+  it("Stage 12: метрики мира производные, обновляются и безопасны без мира", () => {
+    const meta = { id: "id", createdAt: "", updatedAt: "" };
+    const { state } = newGame({ seed: "s12-metrics", universeId: "murim" });
+    const before = toLifeView(meta, state);
+    expect(before.metrics.hasWorld).toBe(true);
+    expect(before.metrics.settlements.count).toBe(state.world!.settlements.length);
+    state.world!.settlements[0]!.prosperity = 100;
+    const after = toLifeView(meta, state);
+    expect(after.metrics.settlements.prosperity.max).toBe(100);
+    delete state.world;
+    const empty = toLifeView(meta, state);
+    expect(empty.metrics.hasWorld).toBe(false);
+    expect(empty.metrics.settlements.count).toBe(0);
+    expect(Number.isNaN(empty.metrics.settlements.prosperity.mean)).toBe(false);
+  });
 });

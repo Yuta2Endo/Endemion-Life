@@ -307,6 +307,102 @@ function SkillsAndTalents({ life }: { life: LifeView }) {
   );
 }
 
+function Connections({ life }: { life: LifeView }) {
+  const { l, t } = useI18n();
+  const connections = life.profile.connections;
+  return (
+    <div className="rounded-md border border-line bg-ink-950/50 p-3" data-testid="connections">
+      <Heading>{t("dossier.connections")}</Heading>
+      {connections.length === 0 ? (
+        <p className="text-xs text-bone-500">{t("dossier.connectionsEmpty")}</p>
+      ) : (
+        <ul className="flex flex-wrap gap-1.5">
+          {connections.map((connection) => (
+            <li key={connection.id} className="rounded border border-line bg-ink-900/60 px-2 py-1 text-[11px] text-bone-300" data-connection={connection.npcId} title={t("dossier.trust", { n: connection.trust })}>
+              <span className="text-bone-100">{connection.name}</span>
+              <span className="ml-2 text-bone-500">{l(connection.type)}</span>
+              <span className="ml-2">
+                <Signed value={connection.strength} />
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {life.profile.recentChanges.length > 0 && (
+        <div className="mt-2 space-y-0.5" data-testid="recent-changes">
+          <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("dossier.recentChanges")}</p>
+          {life.profile.recentChanges.map((change, index) => (
+            <p key={`${change.npcId}-${index}`} className="text-[11px] text-bone-500">
+              <span className="text-bone-400">{change.npc}</span> · {l(change.text)}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StoryList({ npc }: { npc: NpcView }) {
+  const { l, t } = useI18n();
+  if (npc.stories.length === 0) return null;
+  return (
+    <div className="mt-2 space-y-1" data-testid="npc-story">
+      {npc.stories.map((story) => {
+        const statusKey: MessageKey = story.status === "done" ? "dossier.storyDone" : story.status === "failed" ? "dossier.storyFailed" : "dossier.storyAbandoned";
+        return (
+          <div key={story.id} className="rounded border border-gold-500/25 bg-gold-500/5 px-2 py-1.5">
+            <p className="text-[10px] uppercase tracking-wider text-gold-300">
+              {l(story.title)} · {t("dossier.storyStage", { n: story.stage, max: story.stages })}
+              {story.status !== "active" && ` · ${t(statusKey)}`}
+            </p>
+            {story.text.ru.trim() && <p className="text-[11px] text-bone-300">{l(story.text)}</p>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function NpcRelationships({ npc }: { npc: NpcView }) {
+  const { l, t } = useI18n();
+  return (
+    <div className="mt-2" data-testid="npc-relationships">
+      <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("dossier.relationships")}</p>
+      {npc.relationships.length === 0 ? (
+        <p className="text-[11px] text-bone-500">{t("dossier.noRelationships")}</p>
+      ) : (
+        <ul className="mt-1 flex flex-wrap gap-1.5">
+          {npc.relationships.slice(0, 6).map((relationship) => (
+            <li key={relationship.id} className="rounded border border-line px-2 py-0.5 text-[11px] text-bone-300" title={t("dossier.trust", { n: relationship.trust })}>
+              {relationship.name} <span className="text-bone-500">{l(relationship.type)}</span> <Signed value={relationship.strength} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function NpcEvents({ npc }: { npc: NpcView }) {
+  const { l, t } = useI18n();
+  return (
+    <div className="mt-2" data-testid="npc-events">
+      <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("dossier.events")}</p>
+      {npc.events.length === 0 ? (
+        <p className="text-[11px] text-bone-500">{t("dossier.noEvents")}</p>
+      ) : (
+        <ul className="mt-0.5 space-y-0.5">
+          {npc.events.slice(0, 5).map((event, index) => (
+            <li key={`${event.age}-${index}`} className="text-[11px] text-bone-500">
+              <span className="tabular-nums text-bone-400">{event.age}</span> · {l(event.text)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function People({ life, busy, onInteract }: { life: LifeView; busy: boolean; onInteract: (npcId: string, interaction: InteractionId) => void }) {
   const { l, t } = useI18n();
   const people = [...life.profile.npcs].sort((a, b) => Number(b.alive) - Number(a.alive) || b.affinity - a.affinity);
@@ -319,6 +415,7 @@ function People({ life, busy, onInteract }: { life: LifeView; busy: boolean; onI
   const dead = life.status === "dead";
   return (
     <div className="space-y-3" data-testid="dossier-people">
+      <Connections life={life} />
       {!dead && <p className="text-xs text-bone-500">{t("dossier.interactHint")}</p>}
       <ul className="space-y-3">
         {people.map((npc) => {
@@ -336,7 +433,20 @@ function People({ life, busy, onInteract }: { life: LifeView; busy: boolean; onI
               </div>
               <p className="mt-1 text-xs text-bone-300">{l(npc.bio)}</p>
               {npc.occupation.ru.trim() && <p className="mt-1 text-xs text-bone-400">{l(npc.occupation)}</p>}
+              <p className="mt-1 text-[11px] text-bone-500" data-testid="npc-stage">
+                {[
+                  `${t("dossier.stage")}: ${l(npc.stage)}`,
+                  `${t("dossier.socialClass")}: ${l(npc.socialClass)}`,
+                  npc.settlement ? `${t("dossier.settlement")}: ${l(npc.settlement)}` : null,
+                  npc.goal ? `${t("dossier.goal")}: ${l(npc.goal)}` : null
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
               <p className="mt-1 text-[11px] text-bone-500">{t("dossier.met", { age: npc.metAt })}</p>
+              <StoryList npc={npc} />
+              <NpcRelationships npc={npc} />
+              <NpcEvents npc={npc} />
               <div className="mt-2 flex items-center gap-2">
                 <div
                   className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-ink-950/80 ring-1 ring-line"

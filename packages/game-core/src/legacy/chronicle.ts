@@ -35,9 +35,12 @@ export function newLineage(name: string): LineageState {
     stories: {},
     continuedBy: null,
     archived: 0,
-    inheritance: null,
-    names: {}
-  };
+  inheritance: null,
+  names: {},
+  relics: [],
+  storyProgress: {},
+  worldInfluence: { settlements: [], factions: [] }
+};
 }
 
 function trim(lineage: LineageState): void {

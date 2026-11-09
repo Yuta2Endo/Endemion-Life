@@ -1,4 +1,4 @@
-// Economy Engine (Stage 04): доходы и расходы года. Заработок (ремесло, гильдия, сословие, доход мира),
+﻿// Economy Engine (Stage 04): доходы и расходы года. Заработок (ремесло, гильдия, сословие, доход мира),
 // мотовство, состояние хозяйства мира, налог мира и стоимость жизни по сословию.
 // Золото не уходит ниже нуля (нехватка копится в hardship) и не растёт выше WEALTH_MAX.
 // Состояние хозяйства бросается из отдельного потока: основной генератор новых чисел не тянет
@@ -113,7 +113,7 @@ export function economyYear(ctx: EngineContext): void {
   if (economy.hardship >= HARDSHIP_PENALTY_YEARS) applyEffect(ctx, { type: "reputation", delta: -1 });
 
   const income = lines.filter((l) => l.amount > 0).reduce((sum, l) => sum + l.amount, 0);
-  const expenses = -lines.filter((l) => l.amount < 0).reduce((sum, l) => sum + l.amount, 0);
+  const expenses = lines.filter((l) => l.amount < 0).reduce((sum, l) => sum - l.amount, 0);
   economy.last = { age: state.life.age, lines, shortfall };
   if (income > 0 || expenses > 0) economy.years = [...economy.years, { age: state.life.age, income, expenses, shortfall }].slice(-MAX_ECONOMY_YEARS);
 }
@@ -162,7 +162,7 @@ export function presentEconomy(state: GameState): EconomyView {
   const last = economy.last;
   const lines = last ? last.lines.map((line) => ({ id: line.id, name: name(line.id), amount: line.amount })) : [];
   const income = lines.filter((l) => l.amount > 0).reduce((sum, l) => sum + l.amount, 0);
-  const expenses = -lines.filter((l) => l.amount < 0).reduce((sum, l) => sum + l.amount, 0);
+  const expenses = lines.filter((l) => l.amount < 0).reduce((sum, l) => sum - l.amount, 0);
   return {
     cycle: economy.cycle,
     cycleName: world.cycles[economy.cycle].name,

@@ -1,6 +1,6 @@
 "use client";
 
-import { ACHIEVEMENT_CATEGORIES, NPC_STATUS_NAMES, type AchievementView, type InheritanceView, type LineageView, type TreeNodeView } from "@endemion/game-core";
+import { ACHIEVEMENT_CATEGORIES, NPC_STATUS_NAMES, type AchievementView, type DynastyView, type InheritanceView, type LineageView, type LocalizedText, type TreeNodeView } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
 import { Button, Meter } from "@endemion/ui";
 import { useEffect, useMemo, useState } from "react";
@@ -8,7 +8,7 @@ import type { GameStore } from "@/lib/store";
 import type { MessageKey } from "@/lib/messages";
 import { useI18n } from "../locale-provider";
 
-type Section = "tree" | "chronicle" | "achievements" | "inheritance";
+type Section = "tree" | "chronicle" | "achievements" | "inheritance" | "dynasty";
 
 function Heading({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-2 text-[11px] uppercase tracking-[0.22em] text-gold-400">{children}</h3>;
@@ -178,8 +178,8 @@ function FamilyTree({ lineage }: { lineage: LineageView }) {
                           {group.nodes.map((node) => (
                             <TreeNode key={node.id} node={node} zoom={zoom} selected={selected === node.id} related={related.has(node.id)} onSelect={(id) => setSelected((s) => (s === id ? null : id))} />
                           ))}
-                        </ul>
-                      </div>
+                          </ul>
+                        </div>
                     );
                   })}
                 </div>
@@ -202,7 +202,7 @@ function FamilyTree({ lineage }: { lineage: LineageView }) {
                   {t("dossier.age", { n: life.age })} · {life.score}/100
                 </span>
               </li>
-            ))}
+          ))}
           </ol>
         </div>
       )}
@@ -366,6 +366,122 @@ export function InheritanceDetails({ inheritance }: { inheritance: InheritanceVi
           {t("inherit.threads")}: {inheritance.threads.map(l).join(", ")}
         </p>
       )}
+      {inheritance.relics.length > 0 && (
+        <div>
+          <Heading>{t("inherit.relics")}</Heading>
+          <ul className="space-y-1 text-xs text-bone-300">
+            {inheritance.relics.map((relic, i) => (
+              <li key={i}>
+                <span className="text-bone-100">{l(relic.name)}</span>
+                <p className="mt-0.5 text-[10px] text-bone-400">{l(relic.description)}</p>
+              </li>
+            ))}
+            </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DynastyPanel({ dynasty, familyActivities }: { dynasty: DynastyView; familyActivities: readonly { title: LocalizedText; text: LocalizedText; age: number }[] }) {
+  const { l, t } = useI18n();
+  const influence = dynasty.renown >= 50 ? t("dynasty.influence.significant") : dynasty.renown >= 20 ? t("dynasty.influence.notable") : t("dynasty.influence.modest");
+  const recent = familyActivities.slice(0, 3);
+  return (
+    <div className="space-y-3" data-testid="dynasty-panel">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <p className="font-display text-lg text-bone-100">{t("dynasty.head")}</p>
+          <p className="text-sm text-bone-300">
+            {dynasty.head
+              ? dynasty.head.alive
+                ? t("dynasty.aliveHead", { n: dynasty.head.gen })
+                : t("dynasty.headHeir", { name: dynasty.head.name, n: dynasty.head.gen })
+              : t("dynasty.extinct")}
+          </p>
+        </div>
+        <div>
+          <p className="font-display text-lg text-bone-100">{t("dynasty.founder")}</p>
+          <p className="text-sm text-bone-300">
+            {dynasty.founder ? `${dynasty.founder.name} · ${t("lineage.generation", { n: dynasty.founder.gen })} · ${dynasty.founder.score}/100` : "—"}
+          </p>
+        </div>
+        <div>
+          <p className="font-display text-lg text-bone-100">{t("dynasty.worldInfluence")}</p>
+          <p className="text-sm text-bone-300">{influence}</p>
+        </div>
+      </div>
+      <div className="rounded-lg border border-line bg-ink-950/60 p-3">
+        <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("dynasty.identity")}</p>
+        <p className="text-sm text-bone-100">{l(dynasty.identity.label)}</p>
+        <p className="text-xs text-bone-500">{l(dynasty.identity.description)}</p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Meter label={t("dynasty.generations")} value={dynasty.generations} max={10} tone="gold" caption={String(dynasty.generations)} />
+        <Meter label={t("dynasty.members")} value={dynasty.members} max={20} tone="jade" caption={String(dynasty.members)} />
+        <Meter label={t("dynasty.branches")} value={dynasty.branches} max={6} tone="gold" caption={String(dynasty.branches)} />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border border-line bg-ink-950/60 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("dynasty.renown")}</p>
+          <p className="text-sm text-bone-100 tabular-nums">{dynasty.renown}</p>
+        </div>
+        <div className="rounded-lg border border-line bg-ink-950/60 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("dynasty.achievements")}</p>
+          <p className="text-sm text-bone-100 tabular-nums">{dynasty.achievements}</p>
+        </div>
+      </div>
+      {dynasty.factionRecognition.length > 0 && (
+        <div className="rounded-lg border border-line bg-ink-950/60 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("dynasty.factionRecognition")}</p>
+          <ul className="space-y-1 text-xs">
+            {dynasty.factionRecognition.map((f) => (
+              <li key={f.factionId} className="text-bone-300 flex justify-between">
+                <span>{l(f.name)}</span>
+                <span className={`tabular-nums ${f.standing >= 0 ? "text-jade-300" : "text-blood-300"}`}>{f.standing}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {dynasty.factionRelations.length > 0 && (
+        <div className="rounded-lg border border-line bg-ink-950/60 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("dynasty.factionRelations")}</p>
+          <ul className="space-y-1 text-xs">
+            {dynasty.factionRelations.map((f) => (
+              <li key={f.factionId} className="text-bone-300 flex justify-between">
+                <span>{l(f.name)}</span>
+                <span className={`tabular-nums ${f.standing >= 0 ? "text-jade-300" : "text-blood-300"}`}>{f.standing}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[10px] text-bone-400">{t("dynasty.factionRelationsBasis", { basis: dynasty.factionRelations.flatMap((f) => f.basis).join(", ") })}</p>
+        </div>
+      )}
+      {dynasty.relics.length > 0 && (
+        <div className="rounded-lg border border-line bg-ink-950/60 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("dynasty.relics")}</p>
+          <ul className="space-y-1 text-xs">
+            {dynasty.relics.map((relic) => (
+              <li key={relic.id} className="text-bone-300">
+                <span className="text-bone-100">{l(relic.name)}</span>
+                <p className="mt-0.5 text-[10px] text-bone-400">{l(relic.description)}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {dynasty.extinct && <p className="text-xs text-blood-300" data-testid="dynasty-extinct">{t("dynasty.extinct")}</p>}
+      <div className="rounded-lg border border-line bg-ink-950/60 p-3">
+        <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("dynasty.worldActivities")}</p>
+        <ul className="space-y-1.5 text-xs">
+          {recent.map((item, i) => (
+            <li key={i} className="text-bone-300 leading-relaxed">
+              <span className="text-bone-500">{item.age} ·</span> {l(item.title)}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -399,9 +515,11 @@ export function LineagePanel({ life, store }: { life: LifeView; store: GameStore
     { id: "tree", label: t("lineage.tabTree") },
     { id: "chronicle", label: t("lineage.tabChronicle") },
     { id: "achievements", label: t("lineage.tabAchievements") },
-    { id: "inheritance", label: t("lineage.tabInheritance") }
+    { id: "inheritance", label: t("lineage.tabInheritance") },
+    { id: "dynasty", label: t("lineage.tabDynasty") }
   ];
   const unlocked = lineage?.achievements.filter((a) => a.unlocked).length ?? 0;
+  const familyActivities = life.world.activities.filter((activity) => activity.kind === "family");
   return (
     <div className="space-y-4" data-testid="lineage-panel">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -437,6 +555,12 @@ export function LineagePanel({ life, store }: { life: LifeView; store: GameStore
           </div>
         ) : (
           <div className="h-24 animate-pulse rounded-lg border border-line bg-ink-950/50" aria-busy="true" aria-label={t("lineage.loading")} />
+        )
+      ) : section === "dynasty" ? (
+        lineage === null ? (
+          <div className="h-24 animate-pulse rounded-lg border border-line bg-ink-950/50" aria-busy="true" aria-label={t("lineage.loading")} />
+        ) : (
+          <DynastyPanel dynasty={lineage.dynasty} familyActivities={familyActivities} />
         )
       ) : section === "tree" ? (
         <FamilyTree lineage={lineage} />

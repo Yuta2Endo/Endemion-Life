@@ -306,6 +306,90 @@ export const DARK_FANTASY_WORLD: WorldDefinition = {
         { id: "ride", text: t("Скакать к Ордену", "Ride for the Order"), success: { text: t("Клятва громче кровли. Дома запомнят, кто уехал.", "The oath is louder than the roof. Home will remember who rode away."), effects: [fx.faction("order-of-ash", 12), fx.track(8), fx.affinity("parent", -12), fx.rep(4)] } },
         { id: "mist", text: t("Пойти во Мглу одному", "Walk into the Mist alone"), requires: [when.flag("mist-oath")], success: { text: t("Мгла расступается перед своим. Деревня видит тень и молится.", "The Mist parts for its own. The village sees a shadow and prays."), effects: [fx.meter("corruption", 8), fx.wealth(20), fx.karma(-6), fx.skill("hollow-hunting", 4)] } }
       ]
+    },
+    /** Stage 04.5.1: кризис поселения Пепельной столицы создаёт сюжетную возможность.
+     * Условие опирается на реальное состояние мира: worldTick считает кризисом стабильность ниже 35. */
+    {
+      id: "world.settlement-crisis.ash-capital",
+      kind: "legacy",
+      maxOccurrences: 1,
+      lineageMax: 1,
+      title: t("Поселение в беде", "A settlement in trouble"),
+      text: t("Пепельная столица переживает тяжёлый год: запасы тают, на улицах неспокойно. Гонцы просят род о помощи.", "Ashen Capital is having a hard year: stores are running low and the streets are restless. Messengers ask the dynasty for help."),
+      minAge: 16,
+      conditions: [when.settlement("ash-capital", undefined, { max: 34 })],
+      choices: [
+        { id: "aid", text: t("Выделить 20 золота на помощь", "Spend 20 gold on aid"), requires: [when.wealth(20)], success: { text: t("Обозы с хлебом входят в город. Пепельная столица начинает восстанавливаться.", "Wagons of bread enter the city. Ashen Capital begins to recover."), effects: [fx.wealth(-20), fx.settlement("ash-capital", { prosperity: 5, stability: 12 }), fx.influence("settlement", "ash-capital", 2), fx.rep(4), fx.karma(3), fx.advanceStory("story.ancestor-promise", 0, 1, "lineage"), fx.recordStoryChoice("story.ancestor-promise", "world.settlement-crisis.ash-capital", "aid", "lineage")] } },
+        { id: "influence", text: t("Попросить Орден Пепла о заступничестве", "Ask the Order of Ash to intercede"), requires: [when.renown(20)], success: { text: t("Орден присылает своих людей. Город успокаивается, а род запоминают как надёжного союзника.", "The Order sends its people. The city calms, and the dynasty is remembered as a reliable ally."), effects: [fx.faction("order-of-ash", 8), fx.settlement("ash-capital", { prosperity: 2, stability: 8 }), fx.influence("settlement", "ash-capital", 1), fx.influence("faction", "order-of-ash", 1), fx.renown(1)] } },
+        { id: "postpone", text: t("Пообещать помощь позже", "Promise aid later"), success: { text: t("Обещание записано в городской книге. Через три года о нём напомнят.", "The promise is written in the city book. In three years they will remind you."), effects: [fx.karma(-2), fx.schedule("world.settlement-crisis-followup.ash-capital", 3)] } },
+        { id: "ignore", text: t("Не вмешиваться", "Stay out of it"), success: { text: t("Род закрывает двери. В Пепельной столице это запомнят.", "The dynasty closes its doors. Ashen Capital will remember."), effects: [fx.karma(-5), fx.renown(-2), fx.influence("settlement", "ash-capital", -1)] } }
+      ]
+    },
+    {
+      id: "world.settlement-crisis-followup.ash-capital",
+      kind: "legacy",
+      scheduledOnly: true,
+      maxOccurrences: 1,
+      lineageMax: 1,
+      title: t("Долг Пепельной столицы", "Ashen Capital's debt"),
+      text: t("Три года назад род обещал помочь Пепельной столице. Город снова на грани, и люди помнят обещание.", "Three years ago the dynasty promised aid to Ashen Capital. The city is on the edge again, and the people remember."),
+      minAge: 19,
+      conditions: [when.settlement("ash-capital", undefined, { max: 40 })],
+      choices: [
+        { id: "pay", text: t("Сдержать слово (30 золота)", "Keep your word (30 gold)"), requires: [when.wealth(30)], success: { text: t("Долг уплачен. Пепельная столица оживает, а слово рода снова чего-то стоит.", "The debt is paid. Ashen Capital revives, and the dynasty's word means something again."), effects: [fx.wealth(-30), fx.settlement("ash-capital", { prosperity: 6, stability: 10 }), fx.influence("settlement", "ash-capital", 2), fx.rep(3), fx.renown(2)] } },
+        { id: "refuse", text: t("Отказаться от обещания", "Go back on the promise"), success: { text: t("Город больше не ждёт помощи. Молва о роде становится хуже.", "The city no longer waits for aid. The dynasty's reputation worsens."), effects: [fx.karma(-6), fx.renown(-3), fx.influence("settlement", "ash-capital", -2)] } }
+      ]
+    },
+    /** Stage 04.5.3: память рода о помощи Пепельной столице. Сюжет начат выбором aid в кризисе
+     * и хранится в lineage.storyProgress, поэтому его встречает уже следующее поколение. */
+    {
+      id: "world.ancestor-promise.ash-capital",
+      kind: "legacy",
+      maxOccurrences: 1,
+      lineageMax: 1,
+      title: t("Память Пепельной столицы", "Ashen Capital remembers"),
+      text: t("Пепельная столица помнит, как предок рода помог ей в тяжёлый год. Старейшины зовут наследника подтвердить давнее обещание.", "Ashen Capital remembers how an ancestor helped it in a hard year. The elders invite the heir to renew an old promise."),
+      minAge: 16,
+      conditions: [when.generation(2), when.storyStage("story.ancestor-promise", 1, "lineage")],
+      choices: [
+        { id: "renew", text: t("Подтвердить обещание (15 золота)", "Renew the promise (15 gold)"), requires: [when.wealth(15)], success: { text: t("Город снова чувствует опору рода. Память предка становится живым союзом.", "The city feels the dynasty's support again. The ancestor's memory becomes a living alliance."), effects: [fx.wealth(-15), fx.settlement("ash-capital", { prosperity: 5, stability: 8 }), fx.influence("settlement", "ash-capital", 1), fx.rep(3), fx.renown(2), fx.advanceStory("story.ancestor-promise", 1, 2, "lineage"), fx.completeStory("story.ancestor-promise", "lineage")] } },
+        { id: "honour", text: t("Поблагодарить и идти дальше", "Thank them and move on"), success: { text: t("Старейшины принимают благодарность. Память остаётся, но обещание не возобновляется.", "The elders accept the thanks. The memory remains, but the promise is not renewed."), effects: [fx.karma(2), fx.renown(1), fx.advanceStory("story.ancestor-promise", 1, 2, "lineage"), fx.completeStory("story.ancestor-promise", "lineage")] } }
+      ]
+    },
+    /** Stage 04.5.4: обратная связь мира. Событие реагирует на фактическое восстановление
+     * Пепельной столицы, а не на сам факт прошлого выбора: worldTick считает восстановлением
+     * стабильность ≥ 70, поэтому условие использует то же реальное состояние мира.
+     * Связь с решением предка задаёт машинный id выбора aid в родовом сюжете. */
+    {
+      id: "world.settlement-recovery.ash-capital",
+      kind: "legacy",
+      maxOccurrences: 1,
+      lineageMax: 1,
+      title: t("Пепельная столица возродилась", "Ashen Capital revived"),
+      text: t("Город, которому род помог в тяжёлый год, снова стоит на ногах: улицы полны, стены держат. Старейшины приглашают род разделить благодарность.", "The city the dynasty aided in its hard year stands on its feet again: the streets are full, the walls hold. The elders invite the dynasty to share in its gratitude."),
+      minAge: 16,
+      conditions: [when.settlement("ash-capital", undefined, { min: 70 }), when.storyChoice("story.ancestor-promise", "world.settlement-crisis.ash-capital", "aid", "lineage")],
+      choices: [
+        { id: "accept", text: t("Принять благодарность города", "Accept the city's gratitude"), success: { text: t("Город называет род своим покровителем. Это не золото, но имя рода теперь звучит за стенами.", "The city names the dynasty its patron. No gold changes hands, but the dynasty's name now carries beyond the walls."), effects: [fx.renown(2), fx.rep(2), fx.karma(2), fx.influence("settlement", "ash-capital", 1)] } },
+        { id: "levy", text: t("Попросить город о подати", "Ask the city for a levy"), success: { text: t("Старейшины платят, но их взгляды холодеют. Город запомнит и это.", "The elders pay, but their looks grow cold. The city will remember this too."), effects: [fx.wealth(20), fx.renown(1), fx.karma(-3), fx.rep(-1)] } }
+      ]
+    },
+    /** Stage 04.5.1: рост влияния фракции в мире создаёт возможность для диалога с родом.
+     * Порог grounded: worldTick пересчитывает влияние фракции из отношения персонажа к ней. */
+    {
+      id: "world.faction-invitation.order-of-ash",
+      kind: "legacy",
+      maxOccurrences: 1,
+      lineageMax: 1,
+      title: t("Приглашение Ордена Пепла", "The Order's invitation"),
+      text: t("Орден Пепла набирает вес при дворе и зовёт род на совет. Отказ могут понять как пренебрежение.", "The Order of Ash is gaining influence at court and invites the dynasty to its council. A refusal may be read as contempt."),
+      minAge: 16,
+      conditions: [when.worldFaction("order-of-ash", undefined, { min: 10 })],
+      choices: [
+        { id: "accept", text: t("Принять приглашение", "Accept the invitation"), success: { text: t("Совет встречает род с почётом. Связи с Орденом крепнут.", "The council receives the dynasty with honour. Ties with the Order grow stronger."), effects: [fx.faction("order-of-ash", 10), fx.influence("faction", "order-of-ash", 2), fx.rep(4), fx.renown(2)] } },
+        { id: "negotiate", text: t("Торговаться об условиях", "Negotiate the terms"), check: check(["charisma", "wisdom"], 13, 0, { skill: "persuasion" }), success: { text: t("Орден уступает: род получает плату за поддержку.", "The Order concedes: the dynasty is paid for its support."), effects: [fx.faction("order-of-ash", 6), fx.wealth(15), fx.rep(2), fx.influence("faction", "order-of-ash", 1)] }, failure: { text: t("Орден оскорблён торгом. Двери совета закрываются.", "The Order is offended by the haggling. The council's doors close."), effects: [fx.faction("order-of-ash", -8), fx.renown(-2), fx.influence("faction", "order-of-ash", -1)] } },
+        { id: "decline", text: t("Вежливо отказаться", "Politely decline"), success: { text: t("Отказ принят холодно. В городе об этом ещё поговорят.", "The refusal is received coldly. The city will talk about it."), effects: [fx.faction("order-of-ash", -6), fx.karma(2), fx.renown(-1), fx.influence("faction", "order-of-ash", -1)] } }
+      ]
     }
   ]
 };

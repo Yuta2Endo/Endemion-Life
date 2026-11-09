@@ -1,6 +1,6 @@
 import type { LocalizedText } from "../i18n.js";
 import type { ResourceKey, StatKey } from "../stats.js";
-import type { EconomyCycle, HiddenKey, LifeStage, NpcRole, UniverseId } from "../types.js";
+import type { EconomyCycle, HiddenKey, LifeStage, NpcRole, StoryScope, UniverseId, WorldInfluenceKind } from "../types.js";
 
 /** Роль NPC, любой из родителей или вся семья (родители, бабушки и дедушки, братья и сёстры, супруг, дети) */
 export type NpcRef = NpcRole | "parent" | "family";
@@ -76,7 +76,21 @@ export type Condition =
   /** Кто-то из родни пропал без вести */
   | { type: "missingKin"; has: boolean }
   /** Персонаж сейчас в браке (супруг жив) */
-  | { type: "married"; has: boolean };
+  | { type: "married"; has: boolean }
+  /** Состояние конкретного поселения мира (процветание/стабильность) */
+  | { type: "settlement"; id: string; prosperity?: { min?: number; max?: number }; stability?: { min?: number; max?: number } }
+  /** Состояние фракции мира (власть/влияние/отношение) */
+  | { type: "worldFaction"; id: string; power?: { min?: number; max?: number }; influence?: { min?: number; max?: number }; standing?: { min?: number; max?: number } }
+  /** Активная личная цель игрока */
+  | { type: "goal"; id: string }
+  /** Фамильная реликвия в наличии */
+  | { type: "relic"; id: string }
+  /** Этап личного или фамильного сюжета: точный номер этапа и область действия */
+  | { type: "storyStage"; id: string; stage: number; scope: StoryScope }
+  /** Выбор, сделанный в событии сюжета: id сюжета, id события, id варианта и область действия */
+  | { type: "storyChoice"; id: string; eventId: string; choiceId: string; scope: StoryScope }
+  /** Сюжет завершён: дальнейшее продвижение невозможно */
+  | { type: "storyCompleted"; id: string; scope: StoryScope };
 
 /** Последствие выбора */
 export type Effect =
@@ -139,7 +153,19 @@ export type Effect =
   /** Stage 06: напряжение края */
   | { type: "strain"; delta: number }
   /** Stage 06: благополучие края */
-  | { type: "prosperity"; delta: number };
+  | { type: "prosperity"; delta: number }
+  /** Stage 04.5.1: изменение состояния поселения мира. Значения — дельты, зажимаются в 0–100 */
+  | { type: "settlement"; id: string; prosperity?: number; stability?: number }
+  /** Stage 04.5.2: многолетнее влияние рода на поселение или фракцию. Складывается, зажимается ±5 */
+  | { type: "influence"; kind: WorldInfluenceKind; id: string; delta: number }
+  /** Получение реликвия рода */
+  | { type: "relic"; id: string }
+  /** Страховой этап сюжета: продвигается только при совпадении текущего этапа с ожидаемым */
+  | { type: "advanceStory"; id: string; expectedStage: number; nextStage: number; scope: StoryScope }
+  /** Запись выбора в событии сюжета: id сюжета, id события, id варианта и область действия */
+  | { type: "recordStoryChoice"; id: string; eventId: string; choiceId: string; scope: StoryScope }
+  /** Завершение сюжета: дальнейшее продвижение невозможно */
+  | { type: "completeStory"; id: string; scope: StoryScope };
 
 export interface StatCheck {
   /** Берётся среднее по этим характеристикам (с бонусом ранга) */

@@ -173,7 +173,7 @@ test("режим рубежей останавливает жизнь и пок�
   await expect(page.getByTestId("event-card")).toBeVisible();
   await expect(page.getByTestId("play-screen")).toContainText("Возрастной рубеж");
   await openTab(page, "character");
-  await expect(page.getByTestId("character-age")).toContainText("7");
+  await expect(page.getByTestId("character-age")).toContainText("1");
 });
 
 test("живой мир доступен в досье и feed не ломает мобильную ширину", async ({ page }) => {
@@ -182,6 +182,8 @@ test("живой мир доступен в досье и feed не ломает
   await openTab(page, "people");
   await page.getByTestId("dossier-tab-world").click();
   await expect(page.getByTestId("world-panel")).toBeVisible();
+  await expect(page.getByTestId("world-summary")).toBeVisible();
+  await expect(page.getByTestId("world-summary-settlements")).toBeVisible();
   await expect(page.getByTestId("world-settlement").first()).toBeVisible();
   const bodyWidth = await page.locator("body").evaluate((element) => element.scrollWidth);
   const viewportWidth = await page.evaluate(() => window.innerWidth);

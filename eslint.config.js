@@ -11,6 +11,7 @@ export default tseslint.config(
       "**/.next/**",
       "**/coverage/**",
       "apps/web/**",
+      "android/**/build/**",
       "packages/database/src/generated/**",
       "**/*.config.{js,mjs,ts}",
       "**/vitest.config.*.ts",

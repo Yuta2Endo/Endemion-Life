@@ -17,6 +17,8 @@ import { MAX_ECONOMY_YEARS, newEconomy } from "../economy/economy.js";
 import { MAX_REGION_LOG, newRegion, REGION_LOG_KINDS, STOCK_MAX } from "../economy/region.js";
 import { findGood, goodsOf, MAX_STOCK } from "../economy/market.js";
 import { RESOURCE_KEYS, STAT_KEYS, WEALTH_MAX } from "../stats.js";
+import { MAX_WORLD_INFLUENCE, MAX_WORLD_INFLUENCE_ENTRIES, settlementSeeds } from "../world/state.js";
+import type { UniverseDefinition } from "../universes/types.js";
 import {
   CHRONICLE_KINDS,
   ECONOMY_CYCLES,
@@ -28,6 +30,8 @@ import {
   NPC_LOG_KINDS,
   NPC_ROLES,
   NPC_STATUSES,
+  NPC_STORY_STATUSES,
+  RELATIONSHIP_TYPES,
   SELF_ID,
   type GameState,
   type NpcRole,
@@ -307,8 +311,22 @@ function isValues(value: unknown): value is Record<string, string | number> {
   return isRecord(value) && Object.values(value).every((v) => typeof v === "string" || (typeof v === "number" && Number.isFinite(v)));
 }
 
+/** Многолетнее влияние рода: закрытые категории, известные id, целые значения в допустимых пределах */
+function checkInfluenceEntries(value: unknown, kind: "settlement" | "faction", universe: UniverseDefinition): void {
+  if (!Array.isArray(value) || value.length > MAX_WORLD_INFLUENCE_ENTRIES) fail("lineage.worldInfluence");
+  const ids = new Set<string>();
+  for (const entry of value) {
+    if (!isRecord(entry) || typeof entry.id !== "string" || !isInt(entry.value, -MAX_WORLD_INFLUENCE, MAX_WORLD_INFLUENCE)) fail("lineage.worldInfluence");
+    const known = kind === "settlement"
+      ? settlementSeeds(universe).some((item) => item.id === entry.id)
+      : universe.factions.some((item) => item.id === entry.id);
+    if (!known || ids.has(entry.id)) fail("lineage.worldInfluence");
+    ids.add(entry.id);
+  }
+}
+
 /** Род формата 3: структура, лимиты и ссылки */
-function checkLineage(lineage: unknown): void {
+function checkLineage(lineage: unknown, universe: UniverseDefinition): void {
   if (!isRecord(lineage)) fail("lineage");
   if (typeof lineage.name !== "string" || !isInt(lineage.generation, 1, 1000) || !isInt(lineage.epoch)) fail("lineage.generation");
   if (!Array.isArray(lineage.selfParents) || lineage.selfParents.length > 2 || !lineage.selfParents.every((id) => typeof id === "string" && NPC_ID.test(id)) || typeof lineage.selfAdopted !== "boolean") fail("lineage.parents");
@@ -330,6 +348,35 @@ function checkLineage(lineage: unknown): void {
   if (!isRecord(lineage.names) || !Object.values(lineage.names).every((n) => typeof n === "string")) fail("lineage.names");
   const inheritance = lineage.inheritance;
   if (inheritance !== null && !(isRecord(inheritance) && isInt(inheritance.fromGen, 1) && typeof inheritance.fromName === "string" && isInt(inheritance.wealth, 0) && isInt(inheritance.held, 0) && isInt(inheritance.controlAge, 0) && Array.isArray(inheritance.shares) && isStringArray(inheritance.talents) && isStringArray(inheritance.weaknesses) && isStringArray(inheritance.threads) && isStringArray(inheritance.flags))) fail("lineage.inheritance");
+  const relics = lineage.relics as unknown[];
+  if (Array.isArray(relics)) {
+    if (!relics.every((r: unknown) => isRecord(r) && typeof r.id === "string" && isText(r.name) && isText(r.description) && isInt(r.acquiredGen, 0) && isInt(r.acquiredAge, 0) && typeof r.source === "string")) {
+      fail("lineage.relics");
+    }
+    if (new Set(relics.map((r: unknown) => (r as { id: string }).id)).size !== relics.length) {
+      fail("lineage.relics");
+    }
+  }
+  const storyProgress = lineage.storyProgress;
+  if (storyProgress !== undefined && !isRecord(storyProgress)) fail("lineage.storyProgress");
+  if (isRecord(storyProgress)) {
+    for (const [, value] of Object.entries(storyProgress)) {
+      if (!isRecord(value)) fail("lineage.storyProgress");
+      const progress = value as { stage: number; completed: boolean; choices: Record<string, string> };
+      if (!isInt(progress.stage, 0)) fail("lineage.storyProgress");
+      if (typeof progress.completed !== "boolean") fail("lineage.storyProgress");
+      if (!isRecord(progress.choices)) fail("lineage.storyProgress");
+      for (const choiceValue of Object.values(progress.choices)) {
+        if (typeof choiceValue !== "string") fail("lineage.storyProgress");
+      }
+    }
+  }
+  const influence = lineage.worldInfluence;
+  if (influence !== undefined) {
+    if (!isRecord(influence)) fail("lineage.worldInfluence");
+    checkInfluenceEntries(influence.settlements, "settlement", universe);
+    checkInfluenceEntries(influence.factions, "faction", universe);
+  }
 }
 
 /** Хозяйство формата 4: цикл, нехватка, статьи последнего года и итоги лет — с лимитами */
@@ -382,6 +429,36 @@ function checkMastery(mastery: unknown, universeId: UniverseId): void {
   if (new Set(mastery.skills).size !== mastery.skills.length) fail("mastery.skills");
 }
 
+/** Stage 03: социальная память необязательна, но если она есть — ссылки, типы и границы должны быть валидны. */
+function checkSocial(social: unknown, ids: ReadonlySet<string>): void {
+  if (!isRecord(social)) fail("social");
+  const relationships = social.relationships;
+  if (!Array.isArray(relationships) || relationships.length > 400) fail("social.relationships");
+  const pairs = new Set<string>();
+  for (const item of relationships) {
+    if (!isRecord(item) || !isInt(item.id, 1)) fail("social.relationship");
+    if (!isPersonId(item.a) || !isPersonId(item.b) || item.a === item.b || !ids.has(item.a) || !ids.has(item.b)) fail("social.relationship.ids");
+    const pair = item.a < item.b ? `${item.a}|${item.b}` : `${item.b}|${item.a}`;
+    if (pairs.has(pair)) fail("social.relationship.pair");
+    pairs.add(pair);
+    if (!oneOf(RELATIONSHIP_TYPES, item.type) || !isInt(item.strength, -100, 100) || !isInt(item.trust, 0, 100)) fail("social.relationship.value");
+    if (!isInt(item.since, 0) || !isInt(item.updatedAt, 0) || typeof item.source !== "string") fail("social.relationship.meta");
+  }
+  const stories = social.stories;
+  if (!Array.isArray(stories) || stories.length > 200) fail("social.stories");
+  const seen = new Set<string>();
+  for (const item of stories) {
+    if (!isRecord(item) || typeof item.id !== "string" || item.id.length === 0) fail("social.story.id");
+    if (!isPersonId(item.npcId) || !ids.has(item.npcId) || typeof item.storyId !== "string" || item.storyId.length === 0) fail("social.story.npc");
+    const key = `${item.npcId}::${item.storyId}`;
+    if (seen.has(key)) fail("social.story.duplicate");
+    seen.add(key);
+    if (!oneOf(NPC_STORY_STATUSES, item.status) || !isInt(item.stage, 0, 32)) fail("social.story.status");
+    if (!isInt(item.since, 0) || !isInt(item.updatedAt, 0) || typeof item.source !== "string") fail("social.story.meta");
+  }
+  if (!isInt(social.nextRelationshipId, 1) || !isInt(social.nextStoryId, 1)) fail("social.next");
+}
+
 function checkRegion(region: unknown, universeId: UniverseId): void {
   if (!isRecord(region)) fail("region");
   const goods = new Set(goodsOf(universeId).map((item) => item.id));
@@ -430,6 +507,20 @@ export function parseSave(raw: unknown): GameState {
   if (!isStringArray(save.flags)) fail("flags");
   if (save.autoMode !== undefined && !["manual", "auto", "milestones"].includes(save.autoMode as string)) fail("autoMode");
   if (save.milestones !== undefined && (!isRecord(save.milestones) || !isStringArray(save.milestones.triggered) || save.milestones.triggered.length > 100)) fail("milestones");
+  const characterStoryProgress = c.storyProgress;
+  if (characterStoryProgress !== undefined && !isRecord(characterStoryProgress)) fail("character.storyProgress");
+  if (isRecord(characterStoryProgress)) {
+    for (const [, value] of Object.entries(characterStoryProgress)) {
+      if (!isRecord(value)) fail("character.storyProgress");
+      const progress = value as { stage: number; completed: boolean; choices: Record<string, string> };
+      if (!isInt(progress.stage, 0)) fail("character.storyProgress");
+      if (typeof progress.completed !== "boolean") fail("character.storyProgress");
+      if (!isRecord(progress.choices)) fail("character.storyProgress");
+      for (const choiceValue of Object.values(progress.choices)) {
+        if (typeof choiceValue !== "string") fail("character.storyProgress");
+      }
+    }
+  }
   if (!isCounter(save.occurrences) || !isCounter(save.lastSeen)) fail("occurrences");
   if (save.pending !== null && !(isRecord(save.pending) && typeof save.pending.eventId === "string" && isInt(save.pending.age, 0))) fail("pending");
   if (!Array.isArray(save.scheduled) || !save.scheduled.every((s) => isRecord(s) && typeof s.eventId === "string" && isInt(s.age, 0))) fail("scheduled");
@@ -448,13 +539,17 @@ export function parseSave(raw: unknown): GameState {
   if (!Array.isArray(save.consequences) || !save.consequences.every((x) => isRecord(x) && typeof x.id === "string" && isInt(x.age, 0) && typeof x.source === "string")) fail("consequences");
   if (save.quest !== null && !(isRecord(save.quest) && typeof save.quest.id === "string" && isInt(save.quest.since, 0))) fail("quest");
   if (!isStringArray(save.questsDone) || !isStringArray(save.recentEvents)) fail("questsDone");
-  checkLineage(save.lineage);
+  checkLineage(save.lineage, universe);
   if (!Array.isArray(save.memory) || save.memory.length > 50 || !save.memory.every((m) => isRecord(m) && isInt(m.age, 0) && typeof m.eventId === "string" && typeof m.choiceId === "string" && (m.success === null || typeof m.success === "boolean") && isInt(m.weight, 0))) fail("memory");
   checkEconomy(save.economy, c.universeId);
   checkAdventure(save.adventure, c.universeId);
   checkRegion(save.region, c.universeId);
   checkMastery(save.mastery, c.universeId);
   if (save.world !== undefined && (!isRecord(save.world) || !isInt(save.world.tick, 0) || !Array.isArray(save.world.settlements) || !Array.isArray(save.world.factions) || !Array.isArray(save.world.activities))) fail("world");
+  if (save.social !== undefined) {
+    const ids = new Set<string>([SELF_ID, ...(save.npcs as { id: string }[]).map((npc) => npc.id)]);
+    checkSocial(save.social, ids);
+  }
   // Родство: ни циклов, ни родителей младше детей, ни брака с умершим
   const problem = kinProblem(save as unknown as GameState);
   if (problem) fail(`родство: ${problem}`);

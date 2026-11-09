@@ -2,7 +2,15 @@ import { hashSeed, Rng } from "../rng.js";
 import { clamp } from "../stats.js";
 import { t, type LocalizedText } from "../i18n.js";
 import type { EngineContext } from "../engine/context.js";
-import type { GameState, WorldActivity, WorldFactionState, WorldSettlementState, WorldState } from "../types.js";
+import type {
+  GameState,
+  WorldActivity,
+  WorldFactionState,
+  WorldInfluenceKind,
+  WorldInfluenceState,
+  WorldSettlementState,
+  WorldState
+} from "../types.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import { getUniverse } from "../universes/registry.js";
 
@@ -49,6 +57,61 @@ const SETTLEMENTS: Readonly<Record<string, readonly SettlementSeed[]>> = {
 
 export function settlementSeeds(universe: UniverseDefinition): readonly SettlementSeed[] {
   return SETTLEMENTS[universe.id] ?? [];
+}
+
+/** Наибольшее по модулю многолетнее влияние рода на одну сущность мира */
+export const MAX_WORLD_INFLUENCE = 5;
+/** Сколько поселений и сколько фракций род может держать под своим влиянием */
+export const MAX_WORLD_INFLUENCE_ENTRIES = 8;
+
+export function emptyWorldInfluence(): WorldInfluenceState {
+  return { settlements: [], factions: [] };
+}
+
+/** Значение многолетнего влияния рода на сущность; отсутствующая запись — 0 */
+export function worldInfluenceValue(influence: WorldInfluenceState | undefined, kind: WorldInfluenceKind, id: string): number {
+  const list = kind === "settlement" ? influence?.settlements : influence?.factions;
+  return list?.find((entry) => entry.id === id)?.value ?? 0;
+}
+
+/**
+ * Годовой сдвиг процветания поселения от многолетнего влияния рода. Ограничен −2…+2,
+ * чтобы даже максимальное влияние не заменяло остальную экономику мира.
+ */
+export function settlementInfluenceDrift(value: number): number {
+  if (value >= 3) return 2;
+  if (value >= 1) return 1;
+  if (value <= -3) return -2;
+  if (value <= -1) return -1;
+  return 0;
+}
+
+/** Надбавка к производному отношению фракции: влияние рода усиливает или ослабляет фракцию на ±10 */
+export function factionInfluenceBonus(value: number): number {
+  return clamp(value, -MAX_WORLD_INFLUENCE, MAX_WORLD_INFLUENCE) * 2;
+}
+
+/**
+ * Меняет многолетнее влияние рода на поселение или фракцию. Неизвестная сущность — тихий no-op,
+ * значение зажимается ±MAX_WORLD_INFLUENCE, нулевые записи удаляются, число записей ограничено.
+ */
+export function changeWorldInfluence(ctx: EngineContext, kind: WorldInfluenceKind, id: string, delta: number): void {
+  const known = kind === "settlement"
+    ? settlementSeeds(ctx.universe).some((item) => item.id === id)
+    : ctx.universe.factions.some((item) => item.id === id);
+  if (!known || !Number.isFinite(delta) || delta === 0) return;
+  const lineage = ctx.state.lineage;
+  lineage.worldInfluence ??= emptyWorldInfluence();
+  const list = kind === "settlement" ? lineage.worldInfluence.settlements : lineage.worldInfluence.factions;
+  const entry = list.find((item) => item.id === id);
+  if (!entry) {
+    if (list.length >= MAX_WORLD_INFLUENCE_ENTRIES) return;
+    const value = clamp(Math.trunc(delta), -MAX_WORLD_INFLUENCE, MAX_WORLD_INFLUENCE);
+    if (value !== 0) list.push({ id, value });
+    return;
+  }
+  entry.value = clamp(entry.value + Math.trunc(delta), -MAX_WORLD_INFLUENCE, MAX_WORLD_INFLUENCE);
+  if (entry.value === 0) list.splice(list.indexOf(entry), 1);
 }
 
 export function newWorldState(universe: UniverseDefinition): WorldState {
@@ -121,15 +184,48 @@ function activity(ctx: EngineContext, kind: WorldActivity["kind"], id: string, t
 }
 
 /** Один deterministic world tick; вызывается только из существующего yearly pipeline. */
+export function pushWorldActivity(ctx: EngineContext, kind: WorldActivity["kind"], id: string, title: LocalizedText, text: LocalizedText): void {
+  activity(ctx, kind, id, title, text);
+}
+
+/** Славу рода, при которой dynastie начинает заметно влиять на процветание поселений */
+export const DYNASTY_PROSPERITY_RENOWN = 30;
+/** Славу рода, при которой мир начинает узнавать род позитивно */
+export const DYNASTY_RENOWN_RECOGNIZED = 50;
+/** Славу рода, при которой мир начинает узнавать род негативно */
+export const DYNASTY_RENOWN_DISGRACED = -50;
+
 export function worldTick(ctx: EngineContext): void {
   const state = ctx.state.world ?? newWorldState(ctx.universe);
   ctx.state.world = state;
   const rng = new Rng(hashSeed(`${ctx.state.seed}::world::${ctx.state.life.age}::${ctx.rng.state}`));
   state.tick = ctx.state.life.age;
+
+  // Влияние рода на мир: процветающий дом поднимает поселения, которые он опекает.
+  const renown = ctx.state.lineage.renown;
+  const dynastyName = ctx.state.lineage.name;
+  const seeds = settlementSeeds(ctx.universe);
+  const settlementName = (id: string) => seeds.find((item) => item.id === id)?.name ?? t(id, id);
+  if (renown >= DYNASTY_PROSPERITY_RENOWN && state.settlements.length > 0) {
+    for (const settlement of state.settlements) {
+      const before = settlement.prosperity;
+      settlement.prosperity = clamp(settlement.prosperity + 1, 0, 100);
+      if (settlement.prosperity !== before) {
+        activity(
+          ctx,
+          "settlement",
+          `dynasty-prosperity.${settlement.id}`,
+          t("Влияние рода на поселение", "The dynasty strengthens a settlement"),
+          t(`${settlementName(settlement.id).ru} процветает благодаря роду ${dynastyName}.`, `${settlementName(settlement.id).en} prospers through the ${dynastyName} dynasty.`)
+        );
+      }
+    }
+  }
   for (const settlement of state.settlements) {
     const beforeStability = settlement.stability;
     const cycleDrift = ctx.state.economy.cycle === "boom" ? 2 : ctx.state.economy.cycle === "slump" ? -2 : 0;
-    settlement.prosperity = clamp(settlement.prosperity + cycleDrift + rng.int(-1, 1), 0, 100);
+    const influenceDrift = settlementInfluenceDrift(worldInfluenceValue(ctx.state.lineage.worldInfluence, "settlement", settlement.id));
+    settlement.prosperity = clamp(settlement.prosperity + cycleDrift + influenceDrift + rng.int(-1, 1), 0, 100);
     settlement.stability = clamp(settlement.stability + (settlement.prosperity >= 60 ? 1 : settlement.prosperity <= 25 ? -2 : 0) + rng.int(-1, 1), 0, 100);
     settlement.population = clamp(Math.round(settlement.population * (1 + (settlement.prosperity - 45) / 5000)), 100, 1_000_000);
     if (beforeStability >= 35 && settlement.stability < 35) {
@@ -142,7 +238,8 @@ export function worldTick(ctx: EngineContext): void {
     const characterStanding = ctx.state.character.factions[faction.id] ?? 0;
     faction.influence = clamp(Math.round((faction.influence * 3 + characterStanding) / 4), -100, 100);
     faction.power = clamp(faction.power + (faction.influence > 30 ? 1 : faction.influence < -30 ? -1 : 0) + rng.int(-1, 1), 0, 100);
-    faction.standing = clamp(Math.round((faction.power - 50) * 0.8 + faction.influence * 0.2), -100, 100);
+    const influenceBonus = factionInfluenceBonus(worldInfluenceValue(ctx.state.lineage.worldInfluence, "faction", faction.id));
+    faction.standing = clamp(Math.round((faction.power - 50) * 0.8 + faction.influence * 0.2) + influenceBonus, -100, 100);
   }
   if (rng.chance(0.12) && state.settlements.length > 0) {
     const settlement = rng.pick(state.settlements);

@@ -56,7 +56,7 @@ describe("Stage 01: life experience upgrade", () => {
   });
 
   it("keeps the decision provenance when a delayed consequence arrives", () => {
-    let state = life("provenance-flow", "murim");
+    const state = life("provenance-flow", "murim");
     state.life = { ...state.life, age: 20, stage: "adult" };
     for (const key of Object.keys(state.character.stats) as (keyof typeof state.character.stats)[]) state.character.stats[key] = 60;
     state.pending = { eventId: "mu.bandits", age: 20 };

@@ -1,6 +1,7 @@
 // Что игрок видит о роде: итоги жизни, наследники, наследство, хроника рода, семейное древо, достижения.
 // Скрытое (seed, потенциал и судьба наследника, спящие таланты) сюда не попадает
 import { lifespanOf } from "../character/derived.js";
+import { clamp } from "../stats.js";
 import { affinityLabel, roleName } from "../character/npcs.js";
 import { isKin, KinGraph, type KinRelation } from "../family/kin.js";
 import { fillText, t, type LocalizedText } from "../i18n.js";
@@ -8,16 +9,17 @@ import { findAdventure } from "../adventure/content.js";
 import { findEvent } from "../narrative/selection.js";
 import { findProfession } from "../rpg/skills.js";
 import { findTalent, findWeakness } from "../rpg/talents.js";
-import { SELF_ID, type ChronicleEntry, type DeathCauseId, type GameState, type NpcState, type NpcStatus } from "../types.js";
+import { SELF_ID, type ChronicleEntry, type DeathCauseId, type GameState, type LineageState, type NpcState, type NpcStatus, type UniverseId } from "../types.js";
 import { getUniverse } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import { ACHIEVEMENTS, type AchievementCategory } from "./achievements.js";
 import { lawOf } from "./laws.js";
-import { findLineageConsequence, THREADS } from "./stories.js";
+import { findLineageConsequence, findRelic, THREADS } from "./stories.js";
 import { heirCandidates } from "./succession.js";
 import { LIFE_TITLES, SCORE_PARTS, SCORE_PART_NAMES, scoreLife } from "./summary.js";
 import { milestoneAges } from "../life/milestones.js";
 import { STAGE_INFO } from "../life/stages.js";
+import { DYNASTY_RENOWN_DISGRACED, DYNASTY_RENOWN_RECOGNIZED } from "../world/state.js";
 
 /** Сколько последних записей хроники рода приходит клиенту. Остальное — по счётчику archived */
 const CHRONICLE_VIEW_LIMIT = 300;
@@ -153,6 +155,7 @@ export interface InheritanceView {
   dormant: number;
   flags: string[];
   threads: LocalizedText[];
+  relics: { id: string; name: LocalizedText; description: LocalizedText }[];
   guardianName: string | null;
 }
 
@@ -237,7 +240,89 @@ export interface LineageView {
   traits: { talents: { name: LocalizedText; gens: number }[]; weaknesses: { name: LocalizedText; gens: number }[] };
   threads: { name: LocalizedText; description: LocalizedText; gen: number }[];
   tree: TreeNodeView[];
+  /** Легковесная династия, выводимая из рода: основатель, глава, состав и вымирание */
+  dynasty: DynastyView;
 }
+
+/** Легковесная династия, выводимая из рода: основатель, глава, состав и вымирание */
+export interface DynastyView {
+  founder: { name: string; gen: number; age: number; score: number } | null;
+  head: { name: string; gen: number; alive: boolean } | null;
+  generations: number;
+  members: number;
+  branches: number;
+  renown: number;
+  achievements: number;
+  extinct: boolean;
+  /** Выводимая идентичность рода: основана на реальных достижениях и чертах рода, не на броске */
+  identity: DynastyIdentity;
+  /** Узнаваемость рода у фракций мира: выводимая из славы рода, не дублирует личную репутацию персонажа */
+  factionRecognition: FactionRecognition[];
+  /** Отношение рода к фракциям мира: выводимое из реальных действий рода (достижений и нитей) */
+  factionRelations: FactionRelation[];
+  /** Фамильные реликвии рода, перешедшие к текущему персонажу */
+  relics: { id: string; name: LocalizedText; description: LocalizedText }[];
+}
+
+/** Идентичность рода: производство из реальной истории рода, а не случайная метка */
+export interface DynastyIdentity {
+  /** Краткая метка: например «Влиятельный дом», «Хранители знания», «Скромный дом» */
+  label: LocalizedText;
+  description: LocalizedText;
+  /** Какие факты рода легли в основу: id достижений, черт и нитей */
+  basis: string[];
+}
+
+/** Узнаваемость рода у одной фракции: выводимая, не дублирует личную репутацию персонажа */
+export interface FactionRecognition {
+  factionId: string;
+  name: LocalizedText;
+  standing: number;
+}
+
+/** Отношение рода к одной фракции: выводимое из реальных действий рода (достижений и нитей),
+ * не дублирует личную репутацию персонажа */
+export interface FactionRelation {
+  factionId: string;
+  name: LocalizedText;
+  standing: number;
+  /** Чей вклад: достижения рода и нити, повлиявшие на отношение */
+  basis: string[];
+}
+
+/** Воздействие одного действия рода на отношение к фракции */
+interface FactionAction {
+  achievement?: { id: string; bonus: number };
+  thread?: { id: string; penalty: number };
+}
+type FactionActions = Readonly<Record<string, FactionAction>>;
+
+/** Воздействие действий рода на отношение к фракции одного мира.
+ * Ключ — id фракции вселенной; значение — бонусы за достижения рода и штрафы за нити.
+ * Фракции вселенной, не указанные здесь, получают только базу от славы рода. */
+export const FACTION_ACTIONS: Readonly<Record<UniverseId, FactionActions>> = {
+  "dark-fantasy": {
+    "order-of-ash": { achievement: { id: "great-house", bonus: 5 } },
+    "crown": { achievement: { id: "great-house", bonus: 3 } }
+  },
+  isekai: {
+    "merchant-league": { achievement: { id: "dynasty", bonus: 3 } }
+  },
+  murim: {
+    "orthodox-alliance": { thread: { id: "old-enemy", penalty: 8 } }
+  },
+  hunter: {
+    "association": { achievement: { id: "dynasty", bonus: 3 } },
+    "hanseong-corp": { achievement: { id: "great-house", bonus: 5 } }
+  },
+  academy: {
+    "imperial-court": { achievement: { id: "great-house", bonus: 5 } },
+    "magic-tower": { achievement: { id: "keepers", bonus: 3 } }
+  },
+  xianxia: {
+    "cloud-peak": { achievement: { id: "keepers", bonus: 3 } }
+  },
+};
 
 function className(universe: UniverseDefinition, id: string): LocalizedText {
   return universe.socialClasses.find((c) => c.id === id)?.name ?? t("—", "—");
@@ -421,6 +506,10 @@ function presentInheritance(state: GameState): InheritanceView | null {
     dormant: record.dormant,
     flags: record.flags,
     threads: record.threads.map((id) => THREADS[id]?.name).filter((x): x is LocalizedText => x !== undefined),
+    relics: (record.relics || []).map((id) => {
+      const relic = findRelic(id);
+      return relic ? { id: relic.id, name: relic.name, description: relic.description } : { id, name: t(id, id), description: t("", "") };
+    }),
     guardianName: record.guardianName
   };
 }
@@ -661,6 +750,19 @@ function names(universe: UniverseDefinition, entry: ChronicleEntry): LocalizedTe
       if (consequence) return fillText(t(`${consequence.title.ru}. ${consequence.text.ru}`, `${consequence.title.en}. ${consequence.text.en}`), { name: n0 });
       return t(n0, n0);
     }
+    case "milestone": {
+      const achievement = ACHIEVEMENTS.find((a) => a.id === v.achievement);
+      return achievement ? t(`${n0}: достижение «${achievement.name.ru}».`, `${n0}: family achievement "${achievement.name.en}".`) : t(n0, n0);
+    }
+    case "faction": {
+      const faction = universe.factions.find((f) => f.id === v.faction);
+      return faction ? t(`${n0}: отношение к ${faction.name.ru} изменилось на ${String(v.delta)}.`, `${n0}: standing with ${faction.name.en} changed by ${String(v.delta)}.`) : t(n0, n0);
+    }
+    case "relic": {
+      const relic = findRelic(String(v.relic));
+      const name = relic ? relic.name : t(String(v.relic), String(v.relic));
+      return t(`${n0} обрёл реликвию: ${name.ru}.`, `${n0} acquired a relic: ${name.en}.`);
+    }
     case "talent":
     case "secret":
       return t(n0, n0);
@@ -672,11 +774,127 @@ export function renderChronicle(state: GameState, entry: ChronicleEntry): Chroni
   return { id: entry.id, year: entry.year, gen: entry.gen, kind: entry.kind, text: names(universe, entry), who: entry.who, src: entry.src, link: entry.link };
 }
 
+/** Максимальное узнаваемость рода у одной фракции */
+const DYNASTY_FACTION_STANDING_CAP = 30;
+
+/** Выводимая идентичность рода: основана на реальных достижениях, чертах и славе рода */
+function dynastyIdentity(lineage: LineageState): DynastyIdentity {
+  const unlocked = new Set(lineage.achievements.map((a) => a.id));
+  const traits = Object.entries(lineage.traits.talents)
+    .filter(([, gens]) => gens >= 2)
+    .map(([id]) => id);
+  const threads = lineage.threads.map((x) => x.id);
+  let basis: string[] = [];
+  let label: LocalizedText;
+  let description: LocalizedText;
+
+  if (lineage.renown >= DYNASTY_RENOWN_RECOGNIZED) {
+    label = t("Влиятельный дом", "Influential house");
+    description = t("Род известен за пределами поселений: его дела помнят и другие семьи.", "The house is known beyond the settlements: other families remember its deeds.");
+    basis.push("renown-high");
+  } else if (lineage.renown <= DYNASTY_RENOWN_DISGRACED) {
+    label = t("Позорный дом", "Disgraced house");
+    description = t("Имя рода несёт тень старых ошибок: с ним предпочитают не иметь дела.", "The family name carries the shadow of old mistakes: people prefer not to deal with it.");
+    basis.push("renown-low");
+  } else if (unlocked.has("great-house")) {
+    label = t("Влиятельный дом", "Influential house");
+    description = t("Род прославился своими делами.", "The house has become famous through its deeds.");
+    basis.push("great-house");
+  } else if (unlocked.has("family-gift")) {
+    label = t("Дарованный дом", "Gifted house");
+    description = t("Talents have shown again in the family: the blood remembers its own.", "Talents have shown again in the family: the blood remembers its own.");
+    basis.push("family-gift");
+  } else if (unlocked.has("keepers")) {
+    label = t("Хранители знания", "Keepers of knowledge");
+    description = t("The house passes ancient knowledge to the next generations.", "The house passes ancient knowledge to the next generations.");
+    basis.push("keepers");
+  } else if (traits.length > 0 || threads.length > 0) {
+    label = t("Скромный дом", "Modest house");
+    description = t("The house lives its quiet life, known to its nearest neighbours.", "The house lives its quiet life, known to its nearest neighbours.");
+    basis = [...traits, ...threads];
+  } else {
+    label = t("Новый дом", "New house");
+    description = t("The family history is only beginning: there are no deeds yet to speak of.", "The family history is only beginning: there are no deeds yet to speak of.");
+    basis.push("new");
+  }
+  return { label, description, basis };
+}
+
+/** Узнаваемость рода у фракций мира: выводимая из славы рода, не дублирует личную репутацию персонажа */
+function factionRecognition(lineage: LineageState, universe: UniverseDefinition): FactionRecognition[] {
+  return universe.factions.map((faction) => {
+    const offset = faction.id.charCodeAt(0) % 7 - 3;
+    const standing = clamp(Math.round(lineage.renown * 0.4) + offset, -DYNASTY_FACTION_STANDING_CAP, DYNASTY_FACTION_STANDING_CAP);
+    return { factionId: faction.id, name: faction.name, standing };
+  });
+}
+
+/** Отношение рода к фракциям мира: выводимое из реальных действий рода
+ * (разблокированные достижения и нити рода) плюс базовая слава рода.
+ * Ограничено, детерминировано, не дублирует личную репутацию персонажа,
+ * хранится не отдельно — пересчитывается из lineage при показе. */
+export function dynastyFactionRelations(lineage: LineageState, universe: UniverseDefinition): FactionRelation[] {
+  return universe.factions.map((faction) => {
+    const actions = FACTION_ACTIONS[universe.id]?.[faction.id];
+    let standing = Math.round(lineage.renown * 0.4);
+    const basis: string[] = [];
+    for (const achievement of lineage.achievements) {
+      const rule = actions?.achievement;
+      if (rule && rule.id === achievement.id) {
+        standing += rule.bonus;
+        basis.push(rule.id);
+      }
+    }
+    for (const thread of lineage.threads) {
+      const rule = actions?.thread;
+      if (rule && rule.id === thread.id) {
+        standing -= rule.penalty;
+        basis.push(rule.id);
+      }
+    }
+    return {
+      factionId: faction.id,
+      name: faction.name ?? { ru: faction.id, en: faction.id },
+      standing: clamp(standing, -DYNASTY_FACTION_STANDING_CAP, DYNASTY_FACTION_STANDING_CAP),
+      basis
+    };
+  });
+}
+
 /** Род целиком: хроника, древо, достижения, фамильные черты. Отдаётся отдельным запросом: в ответы на действия не входит */
 export function presentLineage(state: GameState): LineageView {
   const universe = getUniverse(state.character.universeId);
   const lineage = state.lineage;
   const chronicle = lineage.chronicle.slice(-CHRONICLE_VIEW_LIMIT);
+  const currentGen = lineage.lives.find((life) => life.gen === lineage.generation);
+  const availableHeirs = lineage.continuedBy === null ? presentHeirs(state) : [];
+  const dynasty: DynastyView = {
+    founder: (() => {
+      const first = lineage.lives[0];
+      if (first) return { name: first.name, gen: first.gen, age: first.age, score: first.score };
+      return { name: state.character.name, gen: lineage.generation, age: state.life.age, score: scoreLife(state).total };
+    })(),
+    head: state.life.alive
+      ? { name: state.character.name, gen: lineage.generation, alive: true }
+      : currentGen && currentGen.heirName
+        ? { name: currentGen.heirName, gen: lineage.generation, alive: false }
+        : null,
+    generations: lineage.generation,
+    members: lineage.lives.length + (state.life.alive ? 1 : 0),
+    branches: state.life.alive
+      ? state.npcs.filter((npc) => npc.parents.includes(SELF_ID)).length
+      : availableHeirs.filter((h) => h.available).length,
+    renown: lineage.renown,
+    achievements: lineage.achievements.filter((a) => a.gen <= lineage.generation).length,
+    extinct: !state.life.alive && lineage.continuedBy === null && availableHeirs.filter((h) => h.available).length === 0,
+    identity: dynastyIdentity(lineage),
+    factionRecognition: factionRecognition(lineage, universe),
+    factionRelations: dynastyFactionRelations(lineage, universe),
+    relics: lineage.relics.map((r) => {
+      const relic = findRelic(r.id);
+      return relic ? { id: relic.id, name: relic.name, description: relic.description } : { id: r.id, name: t(r.id, r.id), description: t("", "") };
+    }),
+  };
   return {
     name: lineage.name,
     generation: lineage.generation,
@@ -705,6 +923,7 @@ export function presentLineage(state: GameState): LineageView {
         .map(([id, gens]) => ({ name: findWeakness(universe, id)?.name ?? t(id, id), gens }))
     },
     threads: lineage.threads.map((x) => ({ name: THREADS[x.id]?.name ?? t(x.id, x.id), description: THREADS[x.id]?.description ?? t("", ""), gen: x.gen })),
-    tree: presentTree(state)
+    tree: presentTree(state),
+    dynasty
   };
 }

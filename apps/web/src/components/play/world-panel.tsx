@@ -4,14 +4,62 @@ import type { LifeView } from "@endemion/shared";
 import { Meter, Panel } from "@endemion/ui";
 import { useI18n } from "../locale-provider";
 
+function Stat({ label, value, caption, testId }: { label: string; value: string; caption?: string; testId: string }) {
+  return (
+    <div className="rounded-md border border-line bg-ink-950/40 p-2 text-center" data-testid={testId}>
+      <dt className="text-[10px] uppercase tracking-wider text-bone-500">{label}</dt>
+      <dd className="font-display text-lg tabular-nums text-bone-100" data-value={value}>{value}</dd>
+      {caption && <dd className="text-[10px] tabular-nums text-bone-500">{caption}</dd>}
+    </div>
+  );
+}
+
 export function WorldPanel({ life }: { life: LifeView }) {
   const { l, t } = useI18n();
   const world = life.world;
+  const metrics = life.metrics;
+  const empty = !metrics.hasWorld || metrics.settlements.count === 0;
+  const relationValue = metrics.factions.count === 0 ? "—" : String(Math.round(metrics.factions.relation.mean));
   return (
     <Panel data-testid="world-panel" className="space-y-5">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-display text-xl text-bone-100">{t("dossier.world")}</h2>
         <span className="text-[10px] uppercase tracking-wider text-bone-500">{world.tick > 0 ? `${t("play.current")} · ${world.tick}` : t("play.current")}</span>
+      </div>
+      <div className="rounded-md border border-line bg-ink-950/50 p-3" data-testid="world-summary">
+        <h3 className="mb-2 text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("world.summary")}</h3>
+        {empty ? (
+          <p className="text-xs text-bone-500">{t("world.empty")}</p>
+        ) : (
+          <>
+            <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Stat label={t("world.settlements")} value={String(metrics.settlements.count)} testId="world-summary-settlements" />
+              <Stat
+                label={t("world.avgProsperity")}
+                value={String(Math.round(metrics.settlements.prosperity.mean))}
+                caption={t("world.range", { min: metrics.settlements.prosperity.min, max: metrics.settlements.prosperity.max })}
+                testId="world-summary-prosperity"
+              />
+              <Stat
+                label={t("world.avgStability")}
+                value={String(Math.round(metrics.settlements.stability.mean))}
+                caption={t("world.range", { min: metrics.settlements.stability.min, max: metrics.settlements.stability.max })}
+                testId="world-summary-stability"
+              />
+              <Stat
+                label={t("world.relations")}
+                value={relationValue}
+                caption={metrics.factions.count === 0 ? undefined : t("world.range", { min: metrics.factions.relation.min, max: metrics.factions.relation.max })}
+                testId="world-summary-relations"
+              />
+            </dl>
+            <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-bone-500">
+              <span>{t("world.renown")}: <span className="tabular-nums text-bone-200" data-testid="world-summary-renown">{metrics.dynastyRenown}</span></span>
+              <span>{t("world.threads")}: <span className="tabular-nums text-bone-200" data-testid="world-summary-threads">{metrics.activeThreads}</span></span>
+              <span>{t("world.activities")}: <span className="tabular-nums text-bone-200" data-testid="world-summary-activities">{metrics.activities.count}</span></span>
+            </p>
+          </>
+        )}
       </div>
       <div>
         <h3 className="mb-2 text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("dossier.settlements")}</h3>

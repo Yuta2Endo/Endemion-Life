@@ -1,7 +1,7 @@
 // Короткие конструкторы для описания контента: события вселенных читаются как сценарий, а не как JSON
 import type { LocalizedText } from "../i18n.js";
 import type { ResourceKey, StatKey } from "../stats.js";
-import type { EconomyCycle, HiddenKey, NpcRole, UniverseId } from "../types.js";
+import type { EconomyCycle, HiddenKey, NpcRole, StoryScope, UniverseId, WorldInfluenceKind } from "../types.js";
 import type { Condition, Effect, NpcRef, StatCheck } from "./types.js";
 
 export const fx = {
@@ -45,7 +45,19 @@ export const fx = {
   classStep: (delta: 1 | -1): Effect => ({ type: "classStep", delta }),
   adopt: (): Effect => ({ type: "adopt" }),
   strain: (delta: number): Effect => ({ type: "strain", delta }),
-  prosperity: (delta: number): Effect => ({ type: "prosperity", delta })
+  prosperity: (delta: number): Effect => ({ type: "prosperity", delta }),
+  /** Stage 04.5.1: изменить процветание и/или стабильность поселения мира */
+  settlement: (id: string, delta: { prosperity?: number; stability?: number }): Effect => ({ type: "settlement", id, ...delta }),
+  /** Stage 04.5.2: многолетнее влияние рода на поселение или фракцию */
+  influence: (kind: WorldInfluenceKind, id: string, delta: number): Effect => ({ type: "influence", kind, id, delta }),
+  /** Получить реликвию рода */
+  relic: (id: string): Effect => ({ type: "relic", id }),
+  /** Страховой этап сюжета: продвигается только при совпадении текущего этапа с ожидаемым */
+  advanceStory: (id: string, expectedStage: number, nextStage: number, scope: StoryScope): Effect => ({ type: "advanceStory", id, expectedStage, nextStage, scope }),
+  /** Запись выбора в событии сюжета */
+  recordStoryChoice: (id: string, eventId: string, choiceId: string, scope: StoryScope): Effect => ({ type: "recordStoryChoice", id, eventId, choiceId, scope }),
+  /** Завершение сюжета */
+  completeStory: (id: string, scope: StoryScope): Effect => ({ type: "completeStory", id, scope }),
 };
 
 export const when = {
@@ -97,6 +109,20 @@ export const when = {
   missingKin: (has = true): Condition => ({ type: "missingKin", has }),
   married: (has = true): Condition => ({ type: "married", has }),
   affinity: (role: NpcRef, min: number): Condition => ({ type: "affinity", role, min }),
+  /** Состояние конкретного поселения мира (процветание/стабильность) */
+  settlement: (id: string, prosperity?: { min?: number; max?: number }, stability?: { min?: number; max?: number }): Condition => ({ type: "settlement", id, prosperity, stability }),
+  /** Состояние фракции мира (власть/влияние/отношение) */
+  worldFaction: (id: string, power?: { min?: number; max?: number }, influence?: { min?: number; max?: number }, standing?: { min?: number; max?: number }): Condition => ({ type: "worldFaction", id, power, influence, standing }),
+  /** Личная цель игрока активна */
+  goal: (id: string): Condition => ({ type: "goal", id }),
+  /** Реликвия рода в наличии */
+  relic: (id: string): Condition => ({ type: "relic", id }),
+  /** Этап сюжета: точное совпадение номера этапа в области действия */
+  storyStage: (id: string, stage: number, scope: StoryScope): Condition => ({ type: "storyStage", id, stage, scope }),
+  /** Выбор в событии сюжета: совпадение id события и id варианта в области действия */
+  storyChoice: (id: string, eventId: string, choiceId: string, scope: StoryScope): Condition => ({ type: "storyChoice", id, eventId, choiceId, scope }),
+  /** Сюжет завершён в области действия */
+  storyCompleted: (id: string, scope: StoryScope): Condition => ({ type: "storyCompleted", id, scope }),
   affinityAtMost: (role: NpcRef, max: number): Condition => ({ type: "affinity", role, max }),
   meter: (id: string, min: number): Condition => ({ type: "meter", id, min }),
   meterAtMost: (id: string, max: number): Condition => ({ type: "meter", id, max }),

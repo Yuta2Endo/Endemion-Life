@@ -11,6 +11,11 @@ export function EventCard({ event, busy, onChoose }: { event: EventView; busy: b
   const { locale, l, t } = useI18n();
   return (
     <Panel accent className="animate-rise" data-testid="event-card">
+      {event.isMilestone && (
+        <p className="text-[11px] uppercase tracking-[0.3em] text-gold-400" data-testid="event-kind">
+          {t("play.milestone")}
+        </p>
+      )}
       <p className="text-[11px] uppercase tracking-[0.3em] text-gold-400">{ageLabel(event.age, locale)}</p>
       <h2 className="mt-1 font-display text-2xl leading-tight text-gilded sm:mt-2 sm:text-3xl" data-testid="event-title">
         {l(event.title)}

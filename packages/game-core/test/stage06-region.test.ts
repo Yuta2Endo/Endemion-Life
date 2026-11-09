@@ -197,4 +197,49 @@ describe("Stage 06: край", () => {
   });
 });
 
+describe("Stage 04.2: условия поселения и фракции мира", () => {
+  it("условие поселения читает процветание и стабильность во всех мирах", () => {
+    for (const universeId of UNIVERSE_IDS) {
+      const state = newGame({ seed: "s42-sett", universeId }).state;
+      const s = state.world!.settlements[0]!;
+      // Без порогов — любое существующее поселение совпадает
+      expect(checkCondition(state, { type: "settlement", id: s.id })).toBe(true);
+      // Процветание ниже порога — не совпадает
+      state.world!.settlements[0]!.prosperity = 10;
+      expect(checkCondition(state, { type: "settlement", id: s.id, prosperity: { min: 50 } })).toBe(false);
+      expect(checkCondition(state, { type: "settlement", id: s.id, prosperity: { max: 20 } })).toBe(true);
+      // Процветание и стабильность вместе
+      state.world!.settlements[0]!.prosperity = 90;
+      state.world!.settlements[0]!.stability = 90;
+      expect(checkCondition(state, { type: "settlement", id: s.id, prosperity: { min: 50 }, stability: { min: 50 } })).toBe(true);
+      // Несуществующее поселение — не совпадает
+      expect(checkCondition(state, { type: "settlement", id: "no-such" })).toBe(false);
+    }
+  });
+
+  it("условие фракции мира читает власть, влияние и отношение во всех мирах", () => {
+    for (const universeId of UNIVERSE_IDS) {
+      const state = newGame({ seed: "s42-fact", universeId }).state;
+      const f = state.world!.factions[0]!;
+      expect(checkCondition(state, { type: "worldFaction", id: f.id })).toBe(true);
+      state.world!.factions[0]!.standing = 50;
+      expect(checkCondition(state, { type: "worldFaction", id: f.id, standing: { min: 40 } })).toBe(true);
+      expect(checkCondition(state, { type: "worldFaction", id: f.id, standing: { max: 40 } })).toBe(false);
+      state.world!.factions[0]!.power = 80;
+      state.world!.factions[0]!.influence = -20;
+      expect(
+        checkCondition(state, {
+          type: "worldFaction",
+          id: f.id,
+          power: { min: 70 },
+          influence: { max: 0 },
+          standing: { min: 10 },
+        })
+      ).toBe(true);
+      // Несуществующая фракция — не совпадает
+      expect(checkCondition(state, { type: "worldFaction", id: "no-such" })).toBe(false);
+    }
+  });
+});
+
 

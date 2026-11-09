@@ -1,7 +1,7 @@
 // Локальное сохранение прототипа: вся жизнь в localStorage, правила — тот же game-core, что и на сервере.
 // Это запасной режим без сервера: браузеру можно не доверять, поэтому рейтинги и награды на нём строить нельзя
 import { applyAction, GameRuleError, newGame, parseSave, presentLineage, restoreState, succeed, type GameAction, type GameState, type HistoryEntry } from "@endemion/game-core";
-import { createLifeSchema, toLifeListItem, toLifeView, type LifeMeta, type SaveReason, type SaveView } from "@endemion/shared";
+import { createLifeSchema, toLifeListItem, toLifeView, type LifeMeta, type SaveReason, type SaveView, type SuccessionResponse } from "@endemion/shared";
 import { ClientError } from "../api";
 import { newUuid } from "../uuid";
 import { LOCAL_ID_PREFIX, type GameStore } from "./types";
@@ -30,6 +30,10 @@ interface LocalRecord {
   importId?: string;
   /** Stage 04: id жизни на сервере после переноса. Копия в браузере остаётся, но ходов больше не принимает */
   movedTo?: string;
+  /** Stage 04: последний завершённый переход к наследнику на этой жизни. Повтор с тем же actionId возвращает тот же результат, а не создаёт вторую жизнь */
+  succeedActionId?: string;
+  /** Результат последнего succeed для повтора (только ключевые представления, без полного состояния) */
+  succeedResult?: SuccessionResponse;
 }
 
 /** Stage 04: что отправляется на сервер при переносе */
@@ -214,16 +218,18 @@ export const localStore: GameStore = {
     return { life: toLifeView(meta(updated), state), entries, replayed: false };
   },
 
-  async succeed(id, expectedVersion, heirId) {
+  async succeed(id, expectedVersion, heirId, actionId) {
     const record = read(id);
     writable(record);
     if (record.state.version !== expectedVersion) throw new ClientError(409, "VERSION_CONFLICT", "Состояние жизни изменилось");
+    if (actionId && record.succeedActionId === actionId && record.succeedResult) return record.succeedResult;
     const result = rules(() => succeed(record.state, heirId, crypto.randomUUID()));
     const now = new Date().toISOString();
     const previous: LocalRecord = {
       ...record,
       updatedAt: now,
       state: result.previous,
+      succeedActionId: actionId ?? null,
       snapshots: keepSnapshots([...record.snapshots, snapshot(result.previous, "action")])
     };
     const created: LocalRecord = {
@@ -238,7 +244,14 @@ export const localStore: GameStore = {
     // а лишняя запись новой жизни видна в списке и не теряет прошлую
     write(created);
     write(previous);
-    return { previous: toLifeView(meta(previous), result.previous), life: toLifeView(meta(created), result.state), entries: result.entries, replayed: false };
+    const out: SuccessionResponse = {
+      previous: toLifeView(meta(previous), result.previous),
+      life: toLifeView(meta(created), result.state),
+      entries: result.entries,
+      replayed: false
+    };
+    if (actionId) write({ ...previous, succeedResult: out });
+    return out;
   },
 
   async lineage(id) {

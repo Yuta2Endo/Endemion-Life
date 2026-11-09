@@ -8,6 +8,8 @@ import { GameRuleError } from "../errors.js";
 import { t, type LocalizedText } from "../i18n.js";
 import type { StatKey } from "../stats.js";
 import type { InteractionId, NpcState } from "../types.js";
+import { activeStoryOf, advanceStory, failStory } from "./stories.js";
+import { logRelationship } from "./social.js";
 import { isFamily, roleName } from "./npcs.js";
 
 export const GIFT_COST = 10;
@@ -27,6 +29,11 @@ interface InteractionRule {
 
 const adultNpc = (ctx: EngineContext, npc: NpcState) => ctx.state.life.age - npc.bornAt >= 14;
 
+function withStory(base: LocalizedText, extra: LocalizedText | null): LocalizedText {
+  if (!extra) return base;
+  return t(`${base.ru} ${extra.ru}`, `${base.en} ${extra.en}`);
+}
+
 export const INTERACTION_RULES: Readonly<Record<InteractionId, InteractionRule>> = {
   talk: {
     name: t("Поговорить по душам", "Have a heart-to-heart"),
@@ -34,7 +41,9 @@ export const INTERACTION_RULES: Readonly<Record<InteractionId, InteractionRule>>
     stats: ["charisma", "wisdom"],
     difficulty: 8,
     success: (ctx, npc) => {
-      changeNpcAffinity(ctx, npc.id, ctx.rng.int(4, 8));
+      const gain = ctx.rng.int(4, 8);
+      changeNpcAffinity(ctx, npc.id, gain);
+      logRelationship(ctx, npc, "friend", gain);
       return t(`Разговор с ${npc.name} затягивается до ночи.`, `The talk with ${npc.name} runs late into the night.`);
     },
     failure: (ctx, npc) => {
@@ -49,7 +58,9 @@ export const INTERACTION_RULES: Readonly<Record<InteractionId, InteractionRule>>
     difficulty: 6,
     success: (ctx, npc) => {
       applyEffect(ctx, { type: "wealth", delta: -GIFT_COST });
-      changeNpcAffinity(ctx, npc.id, ctx.rng.int(8, 14));
+      const gain = ctx.rng.int(8, 14);
+      changeNpcAffinity(ctx, npc.id, gain);
+      logRelationship(ctx, npc, "friend", gain);
       return t("Подарок попадает в самое сердце.", "The gift touches the heart.");
     },
     failure: (ctx, npc) => {
@@ -98,7 +109,9 @@ export const INTERACTION_RULES: Readonly<Record<InteractionId, InteractionRule>>
     stats: ["charisma", "willpower"],
     difficulty: 12,
     success: (ctx, npc) => {
-      changeNpcAffinity(ctx, npc.id, ctx.rng.int(10, 20));
+      const gain = ctx.rng.int(10, 20);
+      changeNpcAffinity(ctx, npc.id, gain);
+      logRelationship(ctx, npc, "rival", gain);
       return t("Старая обида высказана и отпущена.", "The old grudge is spoken and released.");
     },
     failure: (ctx, npc) => {
@@ -122,6 +135,53 @@ export const INTERACTION_RULES: Readonly<Record<InteractionId, InteractionRule>>
     failure: (ctx, npc) => {
       changeNpcAffinity(ctx, npc.id, -6);
       return t("Отказ. Видимо, просьба была не ко времени.", "A refusal. Apparently it was the wrong time to ask.");
+    }
+  },
+  help: {
+    name: t("Помочь в делах", "Help with their affairs"),
+    allowed: (ctx, npc) => ctx.state.life.age >= 12 && adultNpc(ctx, npc) && (npc.affinity >= 10 || activeStoryOf(ctx.state, npc.id) !== undefined),
+    stats: ["charisma", "wisdom"],
+    difficulty: 8,
+    success: (ctx, npc) => {
+      changeNpcAffinity(ctx, npc.id, 6);
+      logRelationship(ctx, npc, "friend", 6);
+      return withStory(t(`${npc.name} благодарен за помощь: дела сдвинулись с места.`, `${npc.name} is grateful: their affairs move forward.`), advanceStory(ctx, npc));
+    },
+    failure: (ctx, npc) => {
+      changeNpcAffinity(ctx, npc.id, -2);
+      logRelationship(ctx, npc, "friend", -2);
+      return withStory(t("Помощь вышла неловкой: {npc} делает вид, что всё в порядке.", "The help feels clumsy: {npc} pretends all is well."), activeStoryOf(ctx.state, npc.id) ? failStory(ctx, npc) : null);
+    }
+  },
+  invite: {
+    name: t("Пригласить к себе", "Invite them over"),
+    allowed: (ctx, npc) => ctx.state.life.age >= 10 && adultNpc(ctx, npc) && npc.affinity >= 25,
+    stats: ["charisma", "luck"],
+    difficulty: 7,
+    success: (ctx, npc) => {
+      changeNpcAffinity(ctx, npc.id, 8);
+      logRelationship(ctx, npc, "friend", 8);
+      return withStory(t(`Вечер с ${npc.name} проходит тепло. Дом словно становится больше.`, `An evening with ${npc.name} is warm. The house feels larger.`), advanceStory(ctx, npc));
+    },
+    failure: (ctx, npc) => {
+      changeNpcAffinity(ctx, npc.id, -2);
+      return withStory(t(`${npc.name} вежливо отказывается: сейчас не время.`, `${npc.name} politely declines: not now.`), activeStoryOf(ctx.state, npc.id) ? failStory(ctx, npc) : null);
+    }
+  },
+  court: {
+    name: t("Ухаживать", "Court them"),
+    allowed: (ctx, npc) => ctx.state.life.age >= 16 && adultNpc(ctx, npc) && !isFamily(npc) && npc.spouseId === null && npc.role !== "partner" && npc.affinity >= 35,
+    stats: ["charisma", "agility"],
+    difficulty: 10,
+    success: (ctx, npc) => {
+      changeNpcAffinity(ctx, npc.id, 12);
+      logRelationship(ctx, npc, "romantic", 12);
+      return withStory(t(`Между вами и ${npc.name} возникает то, что не называют вслух.`, `Something unspoken grows between you and ${npc.name}.`), advanceStory(ctx, npc));
+    },
+    failure: (ctx, npc) => {
+      changeNpcAffinity(ctx, npc.id, -4);
+      logRelationship(ctx, npc, "romantic", -4);
+      return withStory(t(`${npc.name} мягко переводит разговор на другое.`, `${npc.name} gently changes the subject.`), activeStoryOf(ctx.state, npc.id) ? failStory(ctx, npc) : null);
     }
   }
 };

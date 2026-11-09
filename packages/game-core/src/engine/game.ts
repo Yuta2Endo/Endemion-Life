@@ -3,6 +3,7 @@ import { bornInto } from "../character/birth.js";
 import { generateCharacter, type CharacterInput } from "../character/generator.js";
 import { interact } from "../character/interactions.js";
 import { npcYearly } from "../character/npc-life.js";
+import { newSocialState, normalizeSocialState } from "../character/social.js";
 import { deepClone } from "../clone.js";
 import { GameRuleError } from "../errors.js";
 import { ageText, fillText, t, type LocalizedText } from "../i18n.js";
@@ -18,6 +19,7 @@ import { newRegion } from "../economy/region.js";
 import { trade } from "../economy/market.js";
 import { newLineage } from "../legacy/chronicle.js";
 import { checkAchievements, finishLife, foundLineage, lineageYearly, recordStory } from "../legacy/lineage.js";
+import { findGoal } from "../character/goals.js";
 import { consequencesYearly } from "../narrative/consequences.js";
 import { findEvent, rememberEvent, selectEvent } from "../narrative/selection.js";
 import type { OutcomeDefinition } from "../narrative/types.js";
@@ -25,7 +27,7 @@ import { hashSeed, Rng } from "../rng.js";
 import { getUniverse } from "../universes/registry.js";
 import { questYearly } from "../world/quests.js";
 import { worldYearly, type Emit } from "../world/rules.js";
-import { newWorldState, normalizeWorldState, worldTick } from "../world/state.js";
+import { emptyWorldInfluence, newWorldState, normalizeWorldState, worldTick } from "../world/state.js";
 import {
   INTERACTIONS,
   MAX_ADVANCE_YEARS,
@@ -159,7 +161,8 @@ export function newGame(input: NewGameInput): ActionResult {
     mastery: newMastery(),
     autoMode: "manual",
     milestones: { triggered: [] },
-    world: newWorldState(universe)
+    world: newWorldState(universe),
+    social: newSocialState()
   };
   // Семья, таланты и тайны — из отдельного потока: броски Stage 01 и дальнейшая жизнь от них не сдвигаются
   state.lineage.selfParents = bornInto({ state, rng: Rng.fromSeed(seed, "birth"), universe }, generatedName);
@@ -234,6 +237,25 @@ function advance(ctx: EngineContext, entries: HistoryEntry[], years: number): vo
     const text = summary.stageChanged ? STAGE_INFO[state.life.stage].begins : quiet;
     pushEntry(ctx, entries, "year", { title: ageText(age), text: named(ctx, text) });
     for (const item of deferred) pushEntry(ctx, entries, item.kind, { title: named(ctx, item.title), text: named(ctx, item.text) });
+    if (summary.goalOutcome) {
+      const definition = findGoal(summary.goalOutcome.goalId);
+      if (definition) {
+        const kindRu = summary.goalOutcome.kind === "complete" ? "достигнута" : "провалена";
+        const kindEn = summary.goalOutcome.kind === "complete" ? "achieved" : "failed";
+        pushEntry(ctx, entries, "event", {
+          title: {
+            ru: `Цель «${definition.name.ru}» ${kindRu}.`,
+            en: `Goal «${definition.name.en}» ${kindEn}.`,
+          },
+          text: {
+            ru: definition.description.ru,
+            en: definition.description.en,
+          },
+          eventId: `goal.${summary.goalOutcome.goalId}`,
+          choiceId: summary.goalOutcome.kind,
+        });
+      }
+    }
     if (!settle(ctx, entries)) return;
 
     const milestone = state.autoMode === "milestones" ? milestoneAt(state) : undefined;
@@ -354,7 +376,13 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
   // действия, чтобы любой следующий snapshot уже был самодостаточным.
   state.autoMode ??= "manual";
   state.milestones ??= { triggered: [] };
+  state.character.goal ??= null;
+  state.character.goalProgress ??= 0;
+  state.character.storyProgress ??= {};
+  state.lineage.storyProgress ??= {};
+  state.lineage.worldInfluence ??= emptyWorldInfluence();
   state.world = normalizeWorldState(state.world, getUniverse(state.character.universeId));
+  normalizeSocialState(state);
   const rng = new Rng(state.rngState);
   const ctx: EngineContext = { state, rng, universe: getUniverse(state.character.universeId), changes: [] };
   const entries: HistoryEntry[] = [];

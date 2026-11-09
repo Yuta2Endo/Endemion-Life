@@ -172,7 +172,7 @@ describe("Stage 03.1: основной поток генератора и жиз
 });
 
 describe("Stage 03.1: сюжеты рода", () => {
-  it("16 сюжетов поколений и 4 последствия для рода — все с уникальными id и lineageMax", () => {
+  it("19 сюжетов поколений и 4 последствия для рода — все с уникальными id и lineageMax", () => {
     const stories = LEGACY_EVENTS.map((e) => e.id);
     const consequences = LINEAGE_CONSEQUENCES.map((c) => c.id);
     expect(new Set([...stories, ...consequences]).size).toBe(stories.length + consequences.length);
@@ -194,7 +194,10 @@ describe("Stage 03.1: сюжеты рода", () => {
         "legacy.rise",
         "legacy.fall",
         "legacy.adopt-heir",
-        "legacy.ancient-knowledge"
+        "legacy.ancient-knowledge",
+        "story.broken-oath.1",
+        "story.broken-oath.2",
+        "story.broken-oath.3"
       ].sort()
     );
     expect(consequences.sort()).toEqual(["legacy.c-enemy-returns", "legacy.c-knowledge", "legacy.c-lost-found", "legacy.c-rite-blessing"]);

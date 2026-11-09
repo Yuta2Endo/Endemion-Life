@@ -118,7 +118,9 @@ export function generateCharacter(input: CharacterInput, rng: Rng): GeneratedCha
     professionId: null,
     educationId: null,
     specializationId: null,
-    factions: { ...(universe.originProfiles[origin.id]?.factions ?? {}) }
+    factions: { ...(universe.originProfiles[origin.id]?.factions ?? {}) },
+    goal: null,
+    goalProgress: 0
   };
   character.resources = maxResources(character);
   return { character, flags: [...(origin.flags ?? [])], generatedName: !input.name };

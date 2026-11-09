@@ -56,5 +56,21 @@ export const TEMPERAMENTS: readonly TemperamentDefinition[] = [
     description: t("Не может пройти мимо тайны.", "Cannot walk past a mystery."),
     statMods: { intelligence: 2, luck: 2, vitality: -1 },
     growth: ["intelligence", "agility", "luck"]
+  },
+  {
+    id: "disciplined",
+    name: t("Собранный", "Disciplined"),
+    description: t("Доводит начатое до конца, независимо от обстоятельств.", "Finishes what they start, no matter the circumstances."),
+    statMods: { willpower: 2, intelligence: 1, vitality: 1 },
+    growth: ["willpower", "intelligence", "vitality"],
+    karma: 2
+  },
+  {
+    id: "loyal",
+    name: t("Преданный", "Loyal"),
+    description: t("Стоит за своими и не бросает людей в беде.", "Stands by their own and never abandons people in trouble."),
+    statMods: { charisma: 2, willpower: 1, strength: 1 },
+    growth: ["charisma", "willpower", "strength"],
+    karma: 3
   }
 ];

@@ -14,6 +14,8 @@ import type { UniverseDefinition } from "../universes/types.js";
 import type { Emit } from "../world/rules.js";
 import { regionFactor } from "../economy/region.js";
 import { canAddRole, createNpc, isFamily, npcAge, npcLifespan, rollProfession, roleName, shiftAffinity } from "./npcs.js";
+import { ensureSocialTies, logRelationship, noteNpcActivity, setRelationship, settlementFactor, socialInfluence } from "./social.js";
+import { storyTick } from "./stories.js";
 
 /** За столько лет до конца срока NPC начинает рисковать умереть от старости */
 const NPC_RISK_WINDOW = 10;
@@ -182,7 +184,8 @@ const BEHAVIOURS: readonly Behaviour[] = [
       const { npc } = turn;
       if (since(turn, "job", "promotion", "job-change") < 5) return 0;
       const ease = regionFactor("promotion", turn.ctx.state.region.strain, turn.ctx.state.region.prosperity);
-      return (npc.goal === "mastery" ? 2 : 1) * (npc.talentId ? 1.4 : 1) * (npc.weaknessId ? 0.7 : 1) * (npc.educationTier >= 2 ? 1.3 : 1) * ease;
+      const ties = socialInfluence(turn.ctx.state, npc.id);
+      return (npc.goal === "mastery" ? 2 : 1) * (npc.talentId ? 1.4 : 1) * (npc.weaknessId ? 0.7 : 1) * (npc.educationTier >= 2 ? 1.3 : 1) * ease * settlementFactor(turn.ctx.state, npc.id, "promotion") * (1 + ties.support * 0.08);
     },
     run: (turn) => {
       const { npc, ctx, rng } = turn;
@@ -190,6 +193,8 @@ const BEHAVIOURS: readonly Behaviour[] = [
       npc.power = clamp(npc.power + rng.int(2, 5), 1, 100);
       npc.wealth += 10 * npc.careerRank;
       logNpc(ctx, npc, "promotion", String(npc.careerRank));
+      logRelationship(ctx, npc, "colleague", 2);
+      if (isClose(npc)) noteNpcActivity(ctx, npc, "settlement", t(`Новое назначение: ${npc.name}`, `A new appointment: ${npc.name}`), t(`${npc.name} получает повышение. В городе это замечают.`, `${npc.name} is promoted. The town takes note.`));
       if (npc.careerRank === 3 && npc.goal === "mastery") logNpc(ctx, npc, "goal", "mastery");
       if (npc.careerRank === 3 && isKin(npc)) chronicle(ctx, "career", [npc.id], { profession: npc.professionId ?? "" });
     }
@@ -212,7 +217,8 @@ const BEHAVIOURS: readonly Behaviour[] = [
     weight: (turn) => {
       if (since(turn, "job", "job-change", "job-loss") < 6) return 0;
       const pressure = regionFactor("job-loss", turn.ctx.state.region.strain, turn.ctx.state.region.prosperity);
-      return 0.15 * (hasTrait(turn.npc, "drinker") ? 3 : 1) * (turn.npc.weaknessId ? 1.5 : 1) * (turn.ctx.universe.id === "hunter" ? 1.3 : 1) * pressure;
+      const ties = socialInfluence(turn.ctx.state, turn.npc.id);
+      return 0.15 * (hasTrait(turn.npc, "drinker") ? 3 : 1) * (turn.npc.weaknessId ? 1.5 : 1) * (turn.ctx.universe.id === "hunter" ? 1.3 : 1) * pressure * settlementFactor(turn.ctx.state, turn.npc.id, "job-loss") * (1 + ties.friction * 0.12);
     },
     run: (turn) => {
       const { npc, ctx } = turn;
@@ -239,13 +245,15 @@ const BEHAVIOURS: readonly Behaviour[] = [
     weight: (turn) => {
       const { npc, ctx } = turn;
       if (since(turn, "class-up", "class-down") < 10) return 0;
-      return 0.3 * (npc.goal === "rise" ? 2.5 : 1) * (ctx.universe.id === "academy" ? 1.5 : 1) * (npc.talentId ? 1.2 : 1) * (npc.wealth >= 60 ? 1.5 : 1);
+      const ties = socialInfluence(turn.ctx.state, npc.id);
+      return 0.3 * (npc.goal === "rise" ? 2.5 : 1) * (ctx.universe.id === "academy" ? 1.5 : 1) * (npc.talentId ? 1.2 : 1) * (npc.wealth >= 60 ? 1.5 : 1) * settlementFactor(turn.ctx.state, npc.id, "class-up") * (1 + ties.support * 0.06);
     },
     run: ({ npc, ctx }) => {
       const next = classAt(ctx.universe, standing(ctx.universe, npc.socialClassId) + 1);
       if (!next) return;
       npc.socialClassId = next;
       logNpc(ctx, npc, "class-up", next);
+      if (isClose(npc)) noteNpcActivity(ctx, npc, "discovery", t(`Высокое положение: ${npc.name}`, `A rise in standing: ${npc.name}`), t(`${npc.name} поднимается выше. Об этом говорят в его поселении.`, `${npc.name} rises in standing. Their settlement talks of it.`));
       if (npc.goal === "rise") logNpc(ctx, npc, "goal", "rise");
       if (isKin(npc)) chronicle(ctx, "class", [npc.id], { cls: next, dir: 1 });
     }
@@ -253,12 +261,13 @@ const BEHAVIOURS: readonly Behaviour[] = [
   {
     id: "class-down",
     when: ({ npc, age, ctx }) => age >= 20 && npc.wealth < 5 && standing(ctx.universe, npc.socialClassId) > 0,
-    weight: (turn) => (since(turn, "class-up", "class-down") < 10 ? 0 : 0.15 * (hasTrait(turn.npc, "drinker") ? 2 : 1)),
+    weight: (turn) => (since(turn, "class-up", "class-down") < 10 ? 0 : 0.15 * (hasTrait(turn.npc, "drinker") ? 2 : 1) * settlementFactor(turn.ctx.state, turn.npc.id, "class-down")),
     run: ({ npc, ctx }) => {
       const next = classAt(ctx.universe, standing(ctx.universe, npc.socialClassId) - 1);
       if (!next) return;
       npc.socialClassId = next;
       logNpc(ctx, npc, "class-down", next);
+      if (isClose(npc)) noteNpcActivity(ctx, npc, "crisis", t(`Падение: ${npc.name}`, `A fall: ${npc.name}`), t(`${npc.name} теряет положение. В поселении это обсуждают.`, `${npc.name} loses standing. The settlement whispers.`));
       if (isKin(npc)) chronicle(ctx, "class", [npc.id], { cls: next, dir: -1 });
     }
   },
@@ -282,6 +291,8 @@ const BEHAVIOURS: readonly Behaviour[] = [
         socialClassId: rng.chance(0.75) ? npc.socialClassId : (classAt(ctx.universe, standing(ctx.universe, npc.socialClassId) + rng.pick([-1, 1])) ?? npc.socialClassId)
       });
       marry(ctx, npc, spouse.id);
+      setRelationship(ctx, npc.id, spouse.id, "family", 60, 70, "marriage");
+      logRelationship(ctx, npc, "romantic", 8);
       if (isClose(npc)) turn.say(t(`Свадьба: ${npc.name} и ${spouse.name}`, `A wedding: ${npc.name} and ${spouse.name}`), t(`${roleName(npc.role, npc.gender).ru} вступает в брак. Семья становится больше.`, `${roleName(npc.role, npc.gender).en} marries. The family grows.`));
     }
   },
@@ -346,12 +357,20 @@ const BEHAVIOURS: readonly Behaviour[] = [
     id: "divorce",
     when: (turn) => spouseOf(turn) !== undefined,
     weight: (turn) => (since(turn, "married") < 3 ? 0 : 0.06 * (hasTrait(turn.npc, "hot-tempered", "drinker") ? 3 : 1)),
-    run: (turn) => divorce(turn.ctx, turn.npc, spouseOf(turn)!)
+    run: (turn) => {
+      const spouse = spouseOf(turn)!;
+      divorce(turn.ctx, turn.npc, spouse);
+      setRelationship(turn.ctx, turn.npc.id, spouse.id, "acquaintance", -20, 15, "divorce");
+      logRelationship(turn.ctx, turn.npc, "romantic", -10);
+    }
   },
   {
     id: "illness",
     when: ({ age }) => age >= 1,
-    weight: ({ npc, age, ctx }) => 0.25 * (age > 50 ? 2 : age < 6 ? 1.5 : 1) * (npc.weaknessId === "frail" ? 2 : 1) * (npc.health < 60 ? 1.5 : 1) * regionFactor("illness", ctx.state.region.strain, ctx.state.region.prosperity),
+    weight: ({ npc, age, ctx }) => {
+      const ties = socialInfluence(ctx.state, npc.id);
+      return 0.25 * (age > 50 ? 2 : age < 6 ? 1.5 : 1) * (npc.weaknessId === "frail" ? 2 : 1) * (npc.health < 60 ? 1.5 : 1) * regionFactor("illness", ctx.state.region.strain, ctx.state.region.prosperity) * settlementFactor(ctx.state, npc.id, "illness") * (1 + ties.friction * 0.05);
+    },
     run: (turn) => {
       const { npc, rng, ctx } = turn;
       npc.health -= rng.int(15, 45);
@@ -397,7 +416,10 @@ const BEHAVIOURS: readonly Behaviour[] = [
     weight: ({ npc }) => 0.03 * (npc.professionId === "wanderer" ? 4 : 1) * (hasTrait(npc, "secretive", "dreamer") ? 1.5 : 1),
     run: (turn) => {
       setMissing(turn.ctx, turn.npc);
-      if (isClose(turn.npc)) turn.say(t(`Пропал(а) без вести: ${turn.npc.name}`, `${turn.npc.name} has gone missing`), t("Ни письма, ни вести. Только пустое место за столом.", "No letter, no word. Only an empty place at the table."));
+      if (isClose(turn.npc)) {
+        noteNpcActivity(turn.ctx, turn.npc, "crisis", t(`Пропал(а): ${turn.npc.name}`, `Missing: ${turn.npc.name}`), t(`${turn.npc.name} исчезает. Близкие ищут ответов.`, `${turn.npc.name} vanishes. Those close to them seek answers.`));
+        turn.say(t(`Пропал(а) без вести: ${turn.npc.name}`, `${turn.npc.name} has gone missing`), t("Ни письма, ни слова. Только пустое место за столом.", "No letter, no word. Only an empty place at the table."));
+      }
     }
   },
   {
@@ -472,8 +494,15 @@ export function npcYearly(ctx: EngineContext, emit: Emit): void {
   for (const npc of state.npcs) {
     if (npc.alive && npc.status === "missing" && rng.chance(0.08)) {
       returnHome(ctx, npc);
-      if (isClose(npc)) say(t(`Вернулся(лась): ${npc.name}`, `${npc.name} has returned`), t("На пороге стоит тот, кого уже не ждали.", "On the doorstep stands someone no one expected anymore."));
+      if (isClose(npc)) {
+        noteNpcActivity(ctx, npc, "settlement", t(`Возвращение: ${npc.name}`, `A return: ${npc.name}`), t(`${npc.name} возвращается после долгого отсутствия.`, `${npc.name} comes back after a long absence.`));
+        say(t(`Вернулся(лась): ${npc.name}`, `${npc.name} has returned`), t("На пороге стоит тот, кого уже не ждали.", "On the doorstep stands someone no one expected anymore."));
+      }
     }
   }
+  // Stage 03: связи и личные сюжеты идут после поступков года, чтобы действие игрока в этом же году
+  // уже могло повлиять на линию NPC, а старые сохранения получали связи без миграции.
+  ensureSocialTies(ctx);
+  storyTick(ctx, emit);
   archiveForgotten(ctx, MAX_NPCS);
 }

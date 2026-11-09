@@ -17,7 +17,7 @@ import { hashSeed, Rng } from "../rng.js";
 import { allTalents, allWeaknesses, findTalent, findWeakness } from "../rpg/talents.js";
 import { findProfession, pathSkill } from "../rpg/skills.js";
 import { BIRTH_STAT_MAX, clamp, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_MAX, STAT_MIN, WEALTH_MAX, type StatKey } from "../stats.js";
-import { SELF_ID, type GameState, type HistoryChange, type HistoryEntry, type InheritanceRecord, type NpcState } from "../types.js";
+import { SELF_ID, type GameState, type HistoryChange, type HistoryEntry, type InheritanceRecord, type NpcState, type WorldActivity } from "../types.js";
 import { getUniverse } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import { newAdventure } from "../adventure/adventure.js";
@@ -27,6 +27,7 @@ import { normalizeWorldState } from "../world/state.js";
 import { lawOf, type InheritanceLaw } from "./laws.js";
 import { unlockAchievements } from "./achievements.js";
 import { lineageYear } from "./chronicle.js";
+import { MAX_WORLD_ACTIVITIES } from "../world/state.js";
 
 /** Род не продолжается дальше: защита от бесконечного наследования */
 export const MAX_GENERATIONS = 1000;
@@ -301,6 +302,7 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
     dormant: dormant.length,
     flags: bloodFlags,
     threads: threads.map((x) => x.id),
+    relics: (dead.lineage.relics || []).map((r) => r.id),
     controlAge: law.controlAge,
     guardianName: guardian?.name ?? null,
     held: regency ? candidate.wealth : 0
@@ -363,7 +365,22 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
     autoMode: "manual",
     milestones: { triggered: [] },
     // Состояние мира общее для рода: новый наследник продолжает жить в том же мире.
-    world: normalizeWorldState(dead.world, universe)
+    world: (() => {
+      const world = normalizeWorldState(dead.world, universe);
+      const generation = dead.lineage.generation + 1;
+      const entry: WorldActivity = {
+        id: `succession.${heir.id}`,
+        age: candidate.age,
+        kind: "family",
+        title: t("Род продолжается", "The dynasty continues"),
+        text: t(
+          `${heir.name} становится главой рода ${dead.lineage.name} в ${generation}-м поколении.`,
+          `${heir.name} becomes head of the ${dead.lineage.name} dynasty in generation ${generation}.`
+        ),
+      };
+      world.activities = [entry, ...world.activities].slice(0, MAX_WORLD_ACTIVITIES);
+      return world;
+    })(),
   };
   return { state, record, deceasedId: "" };
 }

@@ -8,6 +8,7 @@ import { findProfession, findSkill } from "../rpg/skills.js";
 import { allTalents, allWeaknesses } from "../rpg/talents.js";
 import { STAT_KEYS } from "../stats.js";
 import { NPC_ROLES, UNIVERSE_IDS, type GameState, type LifeStage, type UniverseId } from "../types.js";
+import { settlementSeeds } from "../world/state.js";
 import { getUniverse, listUniverses } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import { COMMON_EVENTS } from "./common.js";
@@ -190,6 +191,14 @@ function brokenEffect(universe: UniverseDefinition, effect: Effect, events: Read
       return consequences.has(effect.id) ? "" : `последствие ${effect.id}`;
     case "thread":
       return effect.id in THREADS ? "" : `нить ${effect.id}`;
+    case "settlement":
+      return settlementSeeds(universe).some((item) => item.id === effect.id) ? "" : `поселение ${effect.id}`;
+    case "influence": {
+      const known = effect.kind === "settlement"
+        ? settlementSeeds(universe).some((item) => item.id === effect.id)
+        : universe.factions.some((item) => item.id === effect.id);
+      return known ? "" : `${effect.kind === "settlement" ? "поселение" : "фракция"} ${effect.id}`;
+    }
     case "stat":
       return (STAT_KEYS as readonly string[]).includes(effect.stat) ? "" : `характеристика ${effect.stat}`;
     default:

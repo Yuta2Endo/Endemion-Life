@@ -9,6 +9,9 @@ import { findTalent, findWeakness } from "../rpg/talents.js";
 import { STAT_INFO } from "../stats.js";
 import { getUniverse } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
+import { settlementSeeds } from "../world/state.js";
+import { findRelic } from "../legacy/stories.js";
+import { getStoryProgress } from "./effects.js";
 import type { GameState } from "../types.js";
 
 function inRange(value: number, min?: number, max?: number): boolean {
@@ -117,6 +120,32 @@ export function checkCondition(state: GameState, condition: Condition): boolean 
       return state.npcs.some((npc) => npc.alive && npc.status === "missing" && isKin(npc)) === condition.has;
     case "married":
       return (selfSpouse(state) !== undefined) === condition.has;
+    case "goal":
+      return state.character.goal === condition.id;
+    case "relic":
+      return (state.lineage.relics ?? []).some((r) => r.id === condition.id);
+    case "storyStage": {
+      const progress = getStoryProgress(state, condition.id, condition.scope);
+      return progress.stage === condition.stage;
+    }
+    case "storyChoice": {
+      const progress = getStoryProgress(state, condition.id, condition.scope);
+      return progress.choices[condition.eventId] === condition.choiceId;
+    }
+    case "storyCompleted": {
+      const progress = getStoryProgress(state, condition.id, condition.scope);
+      return progress.completed;
+    }
+    case "settlement": {
+      const settlement = state.world?.settlements.find((s) => s.id === condition.id);
+      if (!settlement) return false;
+      return inRange(settlement.prosperity, condition.prosperity?.min, condition.prosperity?.max) && inRange(settlement.stability, condition.stability?.min, condition.stability?.max);
+    }
+    case "worldFaction": {
+      const faction = state.world?.factions.find((f) => f.id === condition.id);
+      if (!faction) return false;
+      return inRange(faction.power, condition.power?.min, condition.power?.max) && inRange(faction.influence, condition.influence?.min, condition.influence?.max) && inRange(faction.standing, condition.standing?.min, condition.standing?.max);
+    }
   }
 }
 
@@ -265,5 +294,34 @@ export function describeCondition(condition: Condition, universe: UniverseDefini
       return condition.has ? t("Нужен пропавший родственник", "Requires a missing relative") : t("Кто-то из родни пропал", "A relative is missing");
     case "married":
       return condition.has ? t("Нужно быть в браке", "Requires being married") : t("Уже в браке", "Already married");
+    case "goal":
+      return t("Цель: ${condition.id}", "Goal: ${condition.id}");
+    case "relic": {
+      const relic = findRelic(condition.id);
+      if (!relic) return t(`Нет реликвии: ${condition.id}`, `No relic: ${condition.id}`);
+      return t(`Реликвия: ${relic.name.ru}`, `Relic: ${relic.name.en}`);
+    }
+    case "storyStage":
+      return condition.scope === "lineage"
+        ? t(`Этап сюжета ${condition.id}: ${condition.stage}`, `Story ${condition.id} stage: ${condition.stage}`)
+        : t(`Личный этап сюжета ${condition.id}: ${condition.stage}`, `Personal story ${condition.id} stage: ${condition.stage}`);
+    case "storyChoice":
+      return t(`Выбор в сюжете ${condition.id}: событие ${condition.eventId} → ${condition.choiceId}`, `Story ${condition.id} choice: event ${condition.eventId} → ${condition.choiceId}`);
+    case "storyCompleted":
+      return condition.scope === "lineage"
+        ? t(`Сюжет ${condition.id} завершён`, `Story ${condition.id} completed`)
+        : t(`Личный сюжет ${condition.id} завершён`, `Personal story ${condition.id} completed`);
+    case "settlement": {
+      const settlement = settlementSeeds(universe).find((s) => s.id === condition.id);
+      const name = settlement ? settlement.name : t(condition.id, condition.id);
+      const prosperity = condition.prosperity ? ` [${rangeText(condition.prosperity.min, condition.prosperity.max).ru}]` : "";
+      const stability = condition.stability ? ` [${rangeText(condition.stability.min, condition.stability.max).ru}]` : "";
+      return t(`Поселение ${name.ru}${prosperity}${stability}`, `Settlement ${name.en}${prosperity}${stability}`);
+    }
+    case "worldFaction": {
+      const faction = universe.factions.find((f) => f.id === condition.id);
+      const name = faction ? faction.name : t(condition.id, condition.id);
+      return t(`Фракция ${name.ru}`, `Faction ${name.en}`);
+    }
   }
 }

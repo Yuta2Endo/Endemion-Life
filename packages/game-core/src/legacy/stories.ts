@@ -3,7 +3,7 @@
 // Сюжет записывается в хронику рода; сколько раз он случился в роду — lineage.stories
 import { t, type LocalizedText } from "../i18n.js";
 import { check, fx, when } from "../narrative/dsl.js";
-import type { ConsequenceDefinition, EventDefinition } from "../narrative/types.js";
+import type { ConsequenceDefinition, Effect, EventDefinition } from "../narrative/types.js";
 
 /** Нити рода: что переходит к потомкам вместе с родом */
 export const THREADS: Readonly<Record<string, { name: LocalizedText; description: LocalizedText }>> = {
@@ -13,6 +13,52 @@ export const THREADS: Readonly<Record<string, { name: LocalizedText; description
   "buried-secret": { name: t("Запечатанная тайна", "A sealed secret"), description: t("Письмо предка так и не прочитали. Оно ждёт.", "An ancestor's letter was never read. It waits.") },
   betrayal: { name: t("Память о предательстве", "The memory of betrayal"), description: t("Род не забывает, кто его предал.", "The family does not forget who betrayed it.") }
 };
+
+/** Фамильные реликвии: именованные предметы рода, переходящие к потомкам.
+ * Каждая реликвия применяет свой эффект один раз при получении. */
+export const RELICS: Readonly<Record<string, { id: string; name: LocalizedText; description: LocalizedText; effects: Effect[] }>> = {
+  "ancestral-blade": {
+    id: "ancestral-blade",
+    name: t("Предковый клинок", "Ancestral Blade"),
+    description: t("Клинок, который носили основатели рода. Дарит немного славы.", "An ancestral blade carried by the founders of the line. Brings a little renown."),
+    effects: [fx.renown(2)]
+  },
+  "system-crystal": {
+    id: "system-crystal",
+    name: t("Кристалл Системы", "System Crystal"),
+    description: t("Осколок Системы, наполненный незнакомой энергией.", "A shard of the System, filled with unfamiliar energy."),
+    effects: [fx.xp(20)]
+  },
+  "clan-scroll": {
+    id: "clan-scroll",
+    name: t("Свиток клана", "Clan Scroll"),
+    description: t("Записи клановых учений, усиливающие волю.", "Records of clan teachings, strengthening the will."),
+    effects: [fx.stat("willpower", 1)]
+  },
+  "spirit-root-amulet": {
+    id: "spirit-root-amulet",
+    name: t("Амулет духовного корня", "Spirit Root Amulet"),
+    description: t("Оберег для тех, чья душа откликается на Дао.", "A talisman for those whose soul answers to the Dao."),
+    effects: [fx.karma(3)]
+  },
+  "gate-hunter-badge": {
+    id: "gate-hunter-badge",
+    name: t("Знак охотника Врат", "Gate Hunter Badge"),
+    description: t("Знак тех, кто stood на страже Врат.", "Badge of those who stand guard at the Gates."),
+    effects: [fx.faction("association", 2)]
+  },
+  "noble-signet": {
+    id: "noble-signet",
+    name: t("Знак знати", "Noble Signet"),
+    description: t("Печать знатного рода, открывающая двери.", "The signet of a noble house, opening doors."),
+    effects: [fx.wealth(15)]
+  }
+};
+
+/** Найти реликвию по id. Возвращает undefined, если реликвия неизвестна. */
+export function findRelic(id: string): { id: string; name: LocalizedText; description: LocalizedText; effects: Effect[] } | undefined {
+  return RELICS[id];
+}
 
 /** Сюжет рода: по умолчанию один раз за жизнь и один раз за род (lineageMax) */
 const legacy = (event: Omit<EventDefinition, "kind">): EventDefinition => ({ kind: "legacy", maxOccurrences: 1, lineageMax: 1, ...event });
@@ -227,6 +273,89 @@ export const LEGACY_EVENTS: readonly EventDefinition[] = [
       { id: "teach", text: t("Учить самому, год за годом", "Teach them yourself, year after year"), success: { text: t("Знание живёт в руках и памяти детей.", "The knowledge lives in the children's hands and memory."), effects: [fx.thread("ancient-knowledge"), fx.affinity("child", 10), fx.xp(30)] } },
       { id: "write", text: t("Записать всё в книгу рода", "Write it all in the family book"), success: { text: t("Книга будет ждать того, кто её откроет.", "The book will wait for whoever opens it."), effects: [fx.thread("ancient-knowledge"), fx.skill("lore", 5)] } },
       { id: "keep", text: t("Унести знание с собой", "Take the knowledge to the grave"), success: { text: t("Некоторым знаниям лучше умереть.", "Some knowledge is better left to die."), effects: [fx.stat("wisdom", 1), fx.thread("ancient-knowledge", false)] } }
+    ]
+  }),
+  /** Демонстрационная сюжетная цепочка Stage 04.4: фамильный сюжет с этапами, выборами и ветвящимися концами. */
+  legacy({
+    id: "story.broken-oath.1",
+    title: t("Семейная скрипта", "The family crypt"),
+    text: t("В подвале родового дома {name} находит запертую ларём скрипту. На крышке выгравировано имя предка и дата, которой нет в летописи рода.", "In the basement of the family home {name} finds a chest locked with an old lidded jar. The lid is engraved with an ancestor's name and a date not found in the family chronicle."),
+    minAge: 16,
+    maxOccurrences: 1,
+    lineageMax: 1,
+    choices: [
+      {
+        id: "enter",
+        text: t("Вскрыть ларь и прочитать скрипту", "Break the seal and read the letter"),
+        success: {
+          text: t("Слово предка пробуждает вопросы, на которые предок не успел ответить.", "The ancestor's word awakens questions the ancestor never had time to answer."),
+          effects: [fx.advanceStory("story.broken-oath", 0, 1, "lineage"), fx.recordStoryChoice("story.broken-oath", "story.broken-oath.1", "enter", "lineage"), fx.schedule("story.broken-oath.2", 5)]
+        }
+      },
+      {
+        id: "leave",
+        text: t("Оставить скрипту нетронутой", "Leave the letter untouched"),
+        success: {
+          text: t("Тайна остаётся запечатанной, как и велели предки.", "The secret remains sealed, as the ancestors commanded."),
+          effects: [fx.completeStory("story.broken-oath", "lineage")]
+        }
+      }
+    ]
+  }),
+  legacy({
+    id: "story.broken-oath.2",
+    scheduledOnly: true,
+    maxOccurrences: 1,
+    lineageMax: 1,
+    title: t("Дневник клятвопренебрежца", "The oathbreaker's journal"),
+    text: t("Пять лет спустя {name} находит в потайном ящике стола дневник того samego предка. Страницы пусты до середины, а затем начинаются записи о клятве, которую предок нарушил.", "Five years later {name} finds a secret drawer in the desk containing the journal of that same ancestor. Its pages are blank until the middle, where entries begin about an oath the ancestor broke."),
+    minAge: 21,
+    conditions: [when.storyStage("story.broken-oath", 1, "lineage")],
+    choices: [
+      {
+        id: "read",
+        text: t("Прочитать записи до конца", "Read the entries to the end"),
+        success: {
+          text: t("Клятва нарушена ради спасения рода. Предок просит потомка решить, что делать с этим знанием.", "The oath was broken to save the line. The ancestor asks the descendant to decide what to do with this knowledge."),
+          effects: [fx.advanceStory("story.broken-oath", 1, 2, "lineage"), fx.recordStoryChoice("story.broken-oath", "story.broken-oath.2", "read", "lineage"), fx.schedule("story.broken-oath.3", 8)]
+        }
+      },
+      {
+        id: "hide",
+        text: t("Спрятать дневник обратно", "Hide the journal back"),
+        success: {
+          text: t("Предковые тайны должны оставаться предковыми.", "Ancestral secrets must remain ancestral."),
+          effects: [fx.completeStory("story.broken-oath", "lineage")]
+        }
+      }
+    ]
+  }),
+  legacy({
+    id: "story.broken-oath.3",
+    scheduledOnly: true,
+    maxOccurrences: 1,
+    lineageMax: 1,
+    title: t("Суд предка", "The ancestor's judgment"),
+    text: t("Восемь лет спустя {name} стоит перед семейным порогом и чувствует, как выбор предка переносится на его плечи. Принять клятву или отвергнуть её?", "Eight years later {name} stands at the family threshold and feels the ancestor's choice transferred to their shoulders. Accept the oath or reject it?"),
+    minAge: 29,
+    conditions: [when.storyStage("story.broken-oath", 2, "lineage"), when.storyChoice("story.broken-oath", "story.broken-oath.2", "read", "lineage")],
+    choices: [
+      {
+        id: "accept",
+        text: t("Принять клятву и продолжить дело", "Accept the oath and continue the cause"),
+        success: {
+          text: t("Род обретает новую цель. Предок был бы доволен.", "The line gains a new purpose. The ancestor would be pleased."),
+          effects: [fx.completeStory("story.broken-oath", "lineage"), fx.renown(5)]
+        }
+      },
+      {
+        id: "reject",
+        text: t("Отвергнуть клятву и идти своей дорогой", "Reject the oath and walk your own road"),
+        success: {
+          text: t("Род теряет направление, но обретает свободу выбора.", "The line loses its direction but gains freedom of choice."),
+          effects: [fx.completeStory("story.broken-oath", "lineage"), fx.renown(-5)]
+        }
+      }
     ]
   })
 ];

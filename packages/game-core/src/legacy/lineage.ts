@@ -10,13 +10,22 @@ import type { LocalizedText } from "../i18n.js";
 import { WEALTH_MAX } from "../stats.js";
 import { SELF_ID, type HistoryKind } from "../types.js";
 import type { Emit } from "../world/rules.js";
+import { applyEffect } from "../engine/effects.js";
 import { unlockAchievements } from "./achievements.js";
 import { lineageYear } from "./chronicle.js";
 import { findLineageConsequence } from "./stories.js";
 import { scoreLife } from "./summary.js";
+import { pushWorldActivity, DYNASTY_RENOWN_RECOGNIZED, DYNASTY_RENOWN_DISGRACED } from "../world/state.js";
+import { FACTION_ACTIONS } from "./present.js";
 
 /** Сколько последствий для рода наступает за год */
 const LINEAGE_PER_YEAR = 1;
+
+/** Достижения рода,值得 показать в вселенской ленте событий: вехи рода, а не личные награды */
+const DYNASTY_FEED_IDS: readonly string[] = ["heir", "dynasty", "great-house", "family-gift", "keepers"];
+
+/** Достижения рода, которые записываются как веха рода в хронике (однажды, при разблокировке) */
+export const DYNASTY_MILESTONE_IDS: readonly string[] = ["great-house", "dynasty"];
 
 /** Запись об основании рода: первая в хронике первого поколения */
 export function foundLineage(ctx: EngineContext): void {
@@ -75,6 +84,58 @@ export function checkAchievements(ctx: EngineContext, push: (kind: HistoryKind, 
     record(ctx, { kind: "achievement", value: achievement.id });
     chronicle(ctx, "achievement", [SELF_ID], { achievement: achievement.id }, "achievement");
     push("legacy", t(`Достижение: ${achievement.name.ru}`, `Achievement: ${achievement.name.en}`), achievement.description);
+    if (DYNASTY_FEED_IDS.includes(achievement.id)) {
+      const title = t(`Достижение рода: ${achievement.name.ru}`, `Family achievement: ${achievement.name.en}`);
+      pushWorldActivity(ctx, "family", `dynasty.${achievement.id}`, title, achievement.description);
+    }
+    // Stage 09: важное достижение рода укрепляет отношения с соответствующими фракциями мира
+    const factionActions = FACTION_ACTIONS[ctx.universe.id];
+    if (factionActions) {
+      for (const [factionId, rule] of Object.entries(factionActions)) {
+        if (rule.achievement && rule.achievement.id === achievement.id) {
+          applyEffect(ctx, { type: "faction", id: factionId, delta: rule.achievement.bonus });
+          const faction = ctx.universe.factions.find((f) => f.id === factionId);
+          pushWorldActivity(
+            ctx,
+            "family",
+            `dynasty-favor.${achievement.id}.${factionId}`,
+            t("Род укрепляет связи с фракцией", "The dynasty strengthens ties with a faction"),
+            t(`Отношения рода ${ctx.state.lineage.name} с ${faction?.name?.ru ?? factionId} становятся теплее.`, `The ${ctx.state.lineage.name} dynasty's ties with ${faction?.name?.ru ?? factionId} grow warmer.`)
+          );
+        }
+      }
+    }
+    // Хроника рода: важное достижение рода записывается как веха рода (дедупликация — достижение разблокируется один раз)
+    if (DYNASTY_MILESTONE_IDS.includes(achievement.id) && !ctx.state.lineage.chronicle.some((e) => e.kind === "milestone" && e.v.achievement === achievement.id)) {
+      chronicle(ctx, "milestone", [SELF_ID], { achievement: achievement.id, gen: ctx.state.lineage.generation }, achievement.id);
+    }
+  }
+
+  // Признание рода миром при пороговой славе: фиксируется один раз за порог, не дублируется
+  const world = ctx.state.world;
+  if (world && world.activities) {
+    const renown = ctx.state.lineage.renown;
+    const gen = ctx.state.lineage.generation;
+    const alreadyRecognized = world.activities.some((a) => a.id.startsWith("dynasty-recognized."));
+    const alreadyDisgraced = world.activities.some((a) => a.id.startsWith("dynasty-disgraced."));
+    if (renown >= DYNASTY_RENOWN_RECOGNIZED && !alreadyRecognized) {
+      pushWorldActivity(
+        ctx,
+        "family",
+        `dynasty-recognized.${gen}`,
+        t("Род стал известен", "The house becomes known"),
+        t(`О роде ${ctx.state.lineage.name} уже говорят в поселениях.`, `People in the settlements already speak of the ${ctx.state.lineage.name} house.`)
+      );
+    }
+    if (renown <= DYNASTY_RENOWN_DISGRACED && !alreadyDisgraced) {
+      pushWorldActivity(
+        ctx,
+        "family",
+        `dynasty-disgraced.${gen}`,
+        t("Род в позоре", "The house is disgraced"),
+        t(`Имя рода ${ctx.state.lineage.name} вызывает насторожённость.`, "The name of the ${ctx.state.lineage.name} house raises wariness.")
+      );
+    }
   }
 }
 

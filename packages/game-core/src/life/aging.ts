@@ -2,6 +2,7 @@
 import { effectiveStats, lifespanOf, maxResources, meanStat } from "../character/derived.js";
 import { TEMPERAMENTS } from "../character/temperaments.js";
 import { changeResource, changeSkill, changeStat, gainTrack, gainXp, isTrackOpen, kill } from "../engine/effects.js";
+import { evaluateGoal, goalForTemperament, type GoalOutcome } from "../character/goals.js";
 import type { EngineContext } from "../engine/context.js";
 import { findProfession, pathSkill } from "../rpg/skills.js";
 import { healingFactor, talentGrowth, talentSkills, talentTrackFactor } from "../rpg/talents.js";
@@ -30,6 +31,8 @@ export interface YearSummary {
   previousStage: LifeStage;
   stageChanged: boolean;
   diedOfAge: boolean;
+  /** Завершение или истечение личной цели в этом году (если цель была активна) */
+  goalOutcome: GoalOutcome | null;
 }
 
 /** Потенциал 1–10 сдвигает рост: 5 — как в Stage 01, 10 — на треть быстрее */
@@ -101,6 +104,12 @@ export function ageOneYear(ctx: EngineContext): YearSummary {
   life.age += 1;
   life.stage = stageForAge(life.age, lifespanOf(c));
 
+  // Взрослый без цели получает цель, подходящую его характеру (один раз на жизнь)
+  if (previousStage !== life.stage && life.stage === "adult" && !c.goal) {
+    c.goal = goalForTemperament(c.temperamentId);
+    c.goalProgress = 0;
+  }
+
   growStats(ctx, life.stage);
   growSkills(ctx);
   trainTrack(ctx);
@@ -118,5 +127,11 @@ export function ageOneYear(ctx: EngineContext): YearSummary {
     kill(ctx, DEATH_CAUSES.oldAge);
     diedOfAge = true;
   }
-  return { previousStage, stageChanged: previousStage !== life.stage, diedOfAge };
+  const goalOutcome = evaluateGoal(ctx);
+  return {
+    previousStage,
+    stageChanged: previousStage !== life.stage,
+    diedOfAge,
+    goalOutcome,
+  };
 }
