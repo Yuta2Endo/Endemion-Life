@@ -6,7 +6,8 @@
 **HEAD:** `1bcf224`  
 **Save schema:** `SAVE_SCHEMA_VERSION = 8` (unchanged)  
 **Implementation date:** 10.11.2026  
-**Final status:** **COMPLETED WITH KNOWN BLOCKERS** (all blockers pre-existing and unrelated)
+**Final status:** **COMPLETED WITH KNOWN BLOCKERS** (all blockers pre-existing and unrelated)  
+**Post-report release:** at the owner's explicit request, the whole working tree was committed as `ca72b8b` and deployed to production on 10.11.2026 — see §21.
 
 ---
 
@@ -24,7 +25,7 @@ Stage 04.5.4 closes the loop **player decision → world change → measurable o
 
 **No new persistent data, no new condition, no new effect, no new event queue, no second influence store, no second chronicle, and no save schema change.** The feature reuses `state.world.settlements`, `lineage.storyProgress`, `lineage.stories`, `lineage.worldInfluence`, `when.settlement`, `when.storyChoice`, `fx.settlement`, `fx.influence`, and the existing legacy-event repetition rules.
 
-No commit, push, deployment, or production change.
+At stage completion no commit, push, or deployment had occurred. After the owner's explicit “deploy to production” request, a release commit `ca72b8b` was created and deployed (details in §21); production is live on that release.
 
 ---
 
@@ -203,7 +204,7 @@ No new memory entry, no duplicate reward path, and no consumable event in a queu
 | `packages/game-core/test/stage04-5-4-world-feedback.test.ts` | **New**: 22 focused tests. |
 | `STAGE_04_5_4_IMPLEMENTATION_REPORT.md` | **New**: this report. |
 
-No engine, save, type, shared-contract, web, API, or Android file was modified.
+No engine, save, type, shared-contract, web, API, or Android file was modified for the mechanic itself. **Deployment note:** to make the production build possible, one accidental character in the pre-existing uncommitted `apps/web/src/components/play/lineage.tsx` was repaired (a closing `</div>` had been replaced by `)}`); the original file was backed up to the temp directory and the fix is part of release commit `ca72b8b`.
 
 ---
 
@@ -254,7 +255,8 @@ The single failure is the known pre-existing `stage01-life-upgrade.test.ts > kee
 - ESLint on `dark-fantasy.world.ts` and the new test file → **exit 0** (`ESLINT_OK`).
 - Shared tests run; no shared contract modified.
 - Root `pnpm lint` was **not** run; historically red for unrelated pre-existing reasons.
-- Web/API test suites were not run; no web/API file was touched.
+- Web/API production build preflight (`pnpm build:packages`, API build, `next build`) passed (`BUILD_OK`); `pnpm --filter @endemion/web typecheck` exits 0.
+- Web/API e2e tests were not run. One web source file was repaired for the deployment build (see §11).
 
 ---
 
@@ -312,7 +314,7 @@ The single failure is the known pre-existing `stage01-life-upgrade.test.ts > kee
 | Blocker | Origin | Impact |
 |---|---|---|
 | `stage01-life-upgrade.test.ts` delayed-consequence provenance fails | Pre-existing, documented since the Stage 04.5 audit | None; unrelated source path |
-| JSX errors in `apps/web/src/components/play/lineage.tsx` block web typecheck/build | Pre-existing uncommitted web work | None; file untouched |
+| JSX errors in `apps/web/src/components/play/lineage.tsx` blocked web typecheck/build | Pre-existing uncommitted web work (a `</div>` replaced by `)}`) | Resolved for the deployment build by restoring the closing tag; typecheck and `next build` then passed |
 | Root `pnpm lint` historically fails | Pre-existing Android/test issues | None; changed-file lint clean |
 | Reaction may occur in the same life as the `aid` decision if the city recovers that quickly | Intentional: 04.5.4 reacts to a world outcome, not a generation; still one-time and bounded | None |
 
@@ -326,17 +328,24 @@ No new failures were introduced.
 - Final inventory before this report: **38 modified, 63 untracked** (only the new test file added).
 - All previously modified files remain modified; no pre-existing untracked file was deleted.
 - No `git reset`, `git clean`, `git restore`, `git checkout`, or destructive branch operation was used.
-- HEAD remains `1bcf224`.
+- Stage-completion HEAD was `1bcf224`; the later release commit is `ca72b8b` (fast-forward on `main`).
 - No existing test was deleted or weakened.
 
 ---
 
-## 21. Confirmation that No Commit, Push, or Deployment Occurred
+## 21. Deployment (owner-requested, post-stage)
 
-- No `git commit`;
-- no `git push`;
-- no deployment;
-- production at `https://life.endemion.online` was neither touched nor verified.
+At the owner's explicit request the working tree was committed and deployed:
+
+- Release commit: **`ca72b8b70d0d1a657832d67ad6322312cd85a4b4`** (`main`, fast-forward from `1bcf224`).
+- 102 files committed (the Stage 04.5.4 changes plus the pre-existing uncommitted stage work and reports).
+- Deployment path: direct SSH gateway (`upload-images`, `upload-bundle`, `deploy`) to `root@185.175.156.196`; no GitHub Actions run was used because `gh` was not authenticated.
+- No new migrations and no infrastructure changes, so no `--allow-migrations`/`--allow-infra` flags were needed.
+- Result: `migrate`, `api`, `web`, `nginx` all healthy; HTTPS checks for `/`, `/api/health`, `/worlds`, `/api/universes` passed.
+- Previous release for rollback: `1bcf224`.
+- `origin/main` was **not** pushed; it remains at `c7951d0` and is behind local `main`.
+
+Production `https://life.endemion.online` is now verified live on `ca72b8b`.
 
 ---
 
@@ -359,6 +368,6 @@ Acceptance criteria:
 11. ✅ New tests pass (22/22).
 12. ✅ Existing failures documented accurately.
 13. ✅ All pre-existing work preserved.
-14. ✅ No commit, push, or deployment.
+14. ✅ Stage completion preserved all work; post-stage deployment was performed at the owner's explicit request (release `ca72b8b`).
 
 **Stop here. Awaiting approval before the next stage.**
