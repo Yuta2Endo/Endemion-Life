@@ -1,14 +1,14 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-14 (STAGE 05 locally complete; STAGE 04 deployed)<br>
+**Обновлено:** 2026-11-14 (STAGE 05 deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `0feb6d9` (Stage 03 docs); Stage 05 не закоммичен<br>
-**Production:** STAGE 04, save schema **14**; общий мир season 1, deployed 2026-11-13 21:59 UTC<br>
-**Production code:** `cf7d098` (docs HEAD `9a06aad`)<br>
-**Rollback:** `6e2da77`/`7989731` (Stage 03) безопасен — миграция Stage 04 additive, таблицы можно оставить. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
-**Рабочее дерево:** Stage 05 (presence/SSE, contribution, export/delete, reports, web UI, migration) + незакоммиченная portal-интеграция (`.env.example`, `app.module.ts`, `config.ts`, `apps/api/src/portal/`); untracked Stage 11 reports/docx.
+**HEAD:** `9daaec2` (Stage 05)<br>
+**Production:** STAGE 05, save schema **14**; общий мир season 1, deployed 2026-11-13 23:04 UTC<br>
+**Production code:** `9daaec2`; DB migrations **12**<br>
+**Rollback:** `cf7d098` (Stage 04) безопасен — миграция Stage 05 additive. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
+**Рабочее дерево:** только незакоммиченная portal-интеграция (`.env.example`, `app.module.ts`, `config.ts`, `apps/api/src/portal/`) и untracked Stage 11 reports/docx.
 
-**Stage 05 (2026-11-14, локально):** account boundary, Redis presence, SSE, идемпотентный вклад в общий мир, export/delete аккаунта, reports, web-панель и Nginx SSE реализованы и проверены локально. **Не закоммичен, не запушен, не развёрнут.** Production остаётся Stage 04. См. `docs/stage-05/STAGE_05_REPORT.md` и `docs/stage-05/RELEASE_RECORD.md`.
+**Stage 05 (2026-11-14):** account boundary, Redis presence, SSE, идемпотентный вклад в общий мир, export/delete аккаунта, reports, web-панель и Nginx SSE реализованы, проверены, закоммичены (`b6db176` → `9daaec2`) и развёрнуты. Production работает на `9daaec2`, 12 миграций. См. `docs/stage-05/STAGE_05_REPORT.md` и `docs/stage-05/RELEASE_RECORD.md`.
 
 **Stage 04 (2026-11-14):** backend shared-world, детерминированный сезонный tick, replay/checksum, семь таблиц и web-панель `/worlds` реализованы, проверены, закоммичены (`cf7d098`) и развёрнуты. См. `docs/stage-04/RELEASE_RECORD.md`.
 
@@ -16,7 +16,7 @@
 
 ## Текущий статус
 
-STAGE 00 (аудит), STAGE 01 (стабилизация), STAGE 02 (Advanced Life Simulation), STAGE 03 (Dynasty & Legacy) и STAGE 04 (Living Worlds) завершены и развёрнуты. STAGE 05 (Multiplayer Foundation) реализован и проверен локально, но ещё не закоммичен и не развёрнут. Production работает на `cf7d098`, save schema **14**, общий мир season 1.
+STAGE 00 (аудит), STAGE 01 (стабилизация), STAGE 02 (Advanced Life Simulation), STAGE 03 (Dynasty & Legacy), STAGE 04 (Living Worlds) и STAGE 05 (Multiplayer Foundation) завершены и развёрнуты. Production работает на `9daaec2`, save schema **14**, 12 миграций, общий мир season 1.
 
 Production проверен 2026-11-13 после деплоя Stage 04:
 
@@ -38,11 +38,11 @@ Production проверен 2026-11-13 после деплоя Stage 04:
 | STAGE 02 (Advanced Life Simulation) | Health, education/career, household/property/business, travel, creation agency, balance/soak | **COMPLETE; deployed, schema 13 → 14** — см. `docs/stage-02/RELEASE_RECORD.md` |
 | STAGE 03 (Dynasty & Legacy) | Relics, continuity, heir agency, six laws, long-run soak | **COMPLETE; deployed, schema 14** — см. `docs/stage-03/STAGE_03_REPORT.md` |
 | STAGE 04 (Living Worlds) | Shared world, deterministic season tick, replay, web panel | **COMPLETE; deployed, schema 14, migration 11** — см. `docs/stage-04/RELEASE_RECORD.md` |
-| STAGE 05 (Multiplayer Foundation) | Account gate, presence/SSE, contributions, export/delete, reports | **IMPLEMENTED & VERIFIED LOCALLY; not committed/deployed** — см. `docs/stage-05/STAGE_05_REPORT.md` |
+| STAGE 05 (Multiplayer Foundation) | Account gate, presence/SSE, contributions, export/delete, reports | **COMPLETE; deployed, schema 14, migration 12** — см. `docs/stage-05/STAGE_05_REPORT.md` |
 
-## STAGE 05 — Multiplayer Foundation (локально, не развёрнут)
+## STAGE 05 - Multiplayer Foundation (deployed, 2026-11-14)
 
-STAGE 05 добавляет account boundary для общих систем: гости продолжают одиночную игру, аккаунты получают presence, SSE, вклад в общий мир, export/delete и reports. Общий мир остаётся отдельной проекцией; `SAVE_SCHEMA_VERSION` остаётся **14**, миграция `20261114130000_stage05_multiplayer` аддитивная (12-я локально).
+STAGE 05 добавляет account boundary для общих систем: гости продолжают одиночную игру, аккаунты получают presence, SSE, вклад в общий мир, export/delete и reports. Общий мир остаётся отдельной проекцией; `SAVE_SCHEMA_VERSION` остаётся **14**, миграция `20261114130000_stage05_multiplayer` аддитивная и применена в production (12 миграций).
 
 - API: `POST /api/presence/heartbeat`, `GET /api/presence/online`, `GET /api/presence/stream` (SSE), `POST /api/world/:universeId/contribute`, `GET /api/auth/export`, `DELETE /api/auth/account`, `POST /api/social/reports`.
 - Contribution: advisory lock, unique `(playerId, actionId)`, one per season, expectedSeason, server-computed effect, command/audit/projection в одной транзакции, SSE после commit.
@@ -50,7 +50,8 @@ STAGE 05 добавляет account boundary для общих систем: г�
 - Nginx: exact-match `/api/presence/stream` с отключённым buffering/cache/gzip.
 - Проверки: game-core 775/775, shared 18/18, API unit 74/74, API e2e 132/132, web 25/25; typecheck/lint/build pass.
 - Ограничения: SSE fan-out только в пределах одного API-процесса; нет replay/`Last-Event-ID`, лимита SSE-соединений, очереди модерации и load-теста. См. `docs/stage-05/PRESENCE_AND_SSE.md` и `SECURITY_AND_MODERATION.md`.
-- Release: требуется отдельное одобрение, backup, portal-free commit, CI/Security и deploy с миграцией. Portal остаётся вне релиза.
+- Release: закоммичен (`b6db176` → `9daaec2`), CI/Security success, развёрнут с миграцией 2026-11-13 23:04 UTC; backup `endemion_life-manual-20261113T224407Z.dump` проверен trial restore. Portal остаётся вне релиза.
+- Production smoke: `/api/health` 200, `/api/world` 200, SSE route returns 401 without account, 12 migrations. Полный двухаккаунтный smoke не выполнен: production password registration отключён (`410 USE_ENDEMION_ID`), нужен Endemion ID тест-аккаунт.
 
 ## STAGE 04 — Living Worlds (deployed, 2026-11-14)
 
@@ -115,7 +116,7 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 - Production `SAVE_SCHEMA_VERSION = 14`. Совместимость форматов 1–14 сохраняется через аддитивные миграции.
 - API: порт 4000; web: 3000. Локальный режим остаётся запасным для web, но **не создаёт новые жизни в Android-оболочке при недоступном API**.
 - Импорт проверяет schema через `SAVE_SCHEMA_VERSION`, а не через захардкоженное значение.
-- DB migrations: 11 в production (Stage 04); 12 локально/в тестах после аддитивной Stage 05. Schema 14 — это формат JSON-сохранения, а не новая DB-миграция.
+- DB migrations: **12** в production после Stage 05. Schema 14 — это формат JSON-сохранения, а не новая DB-миграция.
 - Production backup перед деплоем Stage 04: `endemion_life-manual-20261113T215227Z.dump` (10 MB), полный trial restore прошёл: 18 players, 45 lives, 1,716 snapshots, 8,344 history, 5,610 actions.
 - Rollback: `0feb6d9`/`c280c16` безопасен (schema 13), пока нет schema-14 записей. После первой schema-14 записи откат требует восстановления БД из backup. `ca72b8b` не читает schema >8.
 - GitHub: 2 moderate Dependabot alerts.
@@ -143,7 +144,7 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 
 ## Открытые блокеры
 
-- Stage 05 не закоммичен и не развёрнут; требуется отдельное одобрение релиза и portal-free commit.
+- Production smoke Stage 05: публичные health/world проверены, SSE без аккаунта корректно возвращает 401; полный двухаккаунтный presence/SSE smoke требует Endemion ID тест-аккаунта (password registration в production отключён, `410 USE_ENDEMION_ID`).
 - Portal integration: решение владельца, код вне релиза.
 - Android: release signing, Play Console listing, data-safety/account-deletion compliance.
 - 2 moderate Dependabot alerts.

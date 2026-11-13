@@ -1,10 +1,10 @@
 # Stage 05 — Multiplayer Foundation Report
 
-**Status:** **IMPLEMENTED AND VERIFIED LOCALLY; NOT COMMITTED, PUSHED, OR DEPLOYED**
+**Status:** **COMPLETE; COMMITTED, PUSHED, AND DEPLOYED**
 **Date:** 2026-11-14
-**Code baseline:** `0feb6d9` (Stage 03 docs HEAD); production Stage 04 `cf7d098`
+**Release code:** `9daaec2`; previous `cf7d098` (Stage 04)
 **Save schema:** 14 (unchanged)
-**DB migrations local:** 12 (Stage 05 additive migration applied locally only)
+**DB migrations:** 12 (Stage 05 additive migration applied in production)
 
 ## 1. Executive summary
 
@@ -111,9 +111,9 @@ No changes to `Life`, `GameState`, snapshots, history, or save schema.
 | 05-09 | Load test with latency/error budget | **NOT DONE** | No Stage 05 load test; current production is low traffic |
 | 05-10 | No client-supplied canonical rewards/seed | **PASS** | Contribution body has no reward/seed/delta fields; server computes effect |
 
-Stage status: **LOCALLY COMPLETE WITH VERIFICATION GAPS**. It must not be described as
-fully complete until 05-02/05-06 reconnect behavior and 05-09 load behavior are
-verified and the release is deployed.
+Stage status: **DEPLOYED WITH VERIFICATION GAPS**. It must not be described as fully
+complete until 05-02/05-06 reconnect behavior, 05-09 load behavior, and the authenticated
+production SSE/presence smoke are verified.
 
 ## 6. Testing evidence
 
@@ -150,19 +150,23 @@ no CSRF token (existing mitigation unchanged), contribution replay returns curre
 world, and no rate-limit test for contribution volume. Details:
 `docs/stage-05/SECURITY_AND_MODERATION.md`.
 
-## 8. Production readiness
+## 8. Production status
 
-Not released. Required before release:
+Released and deployed on 2026-11-13:
 
-1. Owner approval for Stage 05 deployment.
-2. Fresh backup and trial restore.
+1. Owner approval: received.
+2. Fresh backup and full trial restore: passed.
 3. Portal-free commit; portal files and Stage 11 reports excluded.
-4. CI and Security green.
-5. Deploy with the additive migration.
-6. Two-account production smoke test for presence, SSE, contribution, export, delete.
-7. Verify Nginx/Caddy streaming behavior through the public domain.
+4. CI run 43522651518 and Security run 43522651419: success.
+5. Deploy run 43523555168 with additive migration: success.
+6. Production HEAD `9daaec2`, 12 migrations, all containers healthy,
+   `/api/health` 200, `/api/world` 200, SSE route returns 401 without an account.
+7. Full two-account authenticated smoke was **not executed**: production password
+   registration is disabled (`410 USE_ENDEMION_ID`), so it requires a disposable
+   Endemion ID account. Nginx/Caddy SSE streaming through an authenticated session is
+   therefore still unverified in production.
 
-Production remains Stage 04 `cf7d098`/`9a06aad`, schema 14, 11 migrations.
+Rollback target: `cf7d098` (Stage 04, schema 14); Stage 05 migration is additive.
 
 ## 9. Limitations / not built
 
@@ -178,15 +182,16 @@ Production remains Stage 04 `cf7d098`/`9a06aad`, schema 14, 11 migrations.
 
 ## 10. Recommended next step
 
-Commit and release Stage 05 only after explicit approval. Then proceed to **Stage 06 —
-Social & Economic Systems** with a narrow first slice: player-to-player trade or
-guild/organization foundation, designed on top of the now-existing account boundary,
-server authority, audit trail, and idempotency pattern. Do not start Stage 06 before
-Stage 05 is committed and its release decision is recorded.
+Stage 05 is deployed. Before Stage 06, close the remaining verification gaps:
+authenticated production presence/SSE with a disposable Endemion ID account, reconnect
+behavior, and a bounded load test. Then proceed to **Stage 06 — Social & Economic
+Systems** with a narrow first slice: player-to-player trade or guild/organization
+foundation, built on the account boundary, server authority, audit trail, and
+idempotency pattern.
 
 ## 11. Verification boundary
 
 This report is based on local source inspection, targeted and full test runs, local
-PostgreSQL/Redis, and typecheck/lint/build. It does **not** claim production deployment,
-production data migration, real-device Android behavior, multi-replica behavior, or
-load capacity.
+PostgreSQL/Redis, typecheck/lint/build, production deployment logs, production health
+and public route checks. It does **not** claim an authenticated production SSE/contribution
+smoke, real-device Android behavior, multi-replica behavior, or load capacity.

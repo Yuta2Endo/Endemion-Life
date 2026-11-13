@@ -1,6 +1,7 @@
 # Stage 05 — Presence and Server-Sent Events
 
-**Status:** implemented locally, verified by API e2e, not committed or deployed.
+**Status:** implemented and deployed in Stage 05 (`9daaec2`), verified by API e2e;
+authenticated production SSE smoke remains pending.
 **Scope:** account presence, online roster, SSE notifications for shared-world changes.
 **Out of scope:** chat, direct messages, player trading, cross-realm presence, horizontal pub/sub.
 

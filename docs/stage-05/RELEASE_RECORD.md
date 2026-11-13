@@ -1,12 +1,13 @@
 # Stage 05 — Release Record
 
 **Stage:** 05 — Multiplayer Foundation
-**Status:** **COMPLETE LOCALLY; NOT COMMITTED, NOT PUSHED, NOT DEPLOYED**
+**Status:** **COMPLETE; COMMITTED, PUSHED, DEPLOYED**
 **Date:** 2026-11-14
 **Repository:** `G:\III\endemion-life`
 **Branch:** `main`
-**HEAD at verification:** `0feb6d9` (Stage 03 docs commit)
-**Production:** Stage 04, code `cf7d098`, docs HEAD `9a06aad`, save schema 14
+**Release code:** `9daaec2`
+**Previous release:** `cf7d098` (Stage 04)
+**Production:** `9daaec2`, 12 migrations, save schema 14
 
 ## 1. What Stage 05 adds
 
@@ -110,34 +111,43 @@ No unexpected failures, no unhandled rejections attributed to Stage 05.
   - adds unique/index constraints;
   - widens `world_commands.actor` and `world_audits.actor` to `VARCHAR(64)`;
   - no `DROP`, `DELETE`, `TRUNCATE`, or data rewrite.
-- Production remains at 11 migrations and schema 14 until an approved deploy.
+- Production now has **12** applied migrations after the Stage 05 deploy.
 
-## 5. Production deployment plan (not executed)
+## 5. Production deployment (executed)
 
-1. Obtain explicit owner approval for Stage 05 deployment.
-2. Take a fresh manual backup and perform a trial restore; record counts and checksum.
-3. Verify disk free space is above the deploy threshold (7048 MB).
-4. Commit Stage 05 with a **portal-free** `app.module.ts`:
-   - exclude `.env.example`, `apps/api/src/config.ts`, `apps/api/src/portal/`;
-   - preserve them in the working tree afterwards;
-   - exclude 74 Stage 11 reports and the blueprint docx.
-5. Push `main`; wait for CI and Security success.
-6. Run the deploy workflow with `allow_migrations=true`; if automatic deploy lacks the
-   migration flag, cancel and use the approved manual migration path.
-7. Verify:
-   - production HEAD and clean checkout;
-   - 12 migrations;
+1. Owner approved Stage 05 deployment.
+2. Fresh backup `endemion_life-manual-20261113T224407Z.dump` (10 MB) passed checksum,
+   table-of-contents verification, and a full trial restore: 11 migrations, 18 players,
+   45 lives, 1,716 snapshots, 8,344 history, 5,610 actions. Uploaded externally.
+3. Disk free space was 9.2 GB, above the 7048 MB threshold.
+4. Stage 05 was committed with a portal-free `app.module.ts`; portal-only files and the
+   74 Stage 11 reports/blueprint docx stayed out.
+5. Commits pushed:
+   - `b6db176` — `stage-05: add multiplayer foundation`;
+   - `40b5fa5` — first actor schema alignment;
+   - `9daaec2` — final audit actor schema alignment (release SHA).
+6. CI run **43522651518: success**; Security run **43522651419: success**.
+7. Manual Deploy run **43523555168: success**, dispatched with
+   `allow_migrations=true`; duplicate auto Deploy run 43523418592 cancelled.
+8. Production verification:
+   - `/opt/endemion-life` HEAD `9daaec2b763fb093f67a947d936eb8f33d51cee6`, clean;
+   - deploy history `23:03:37Z deploy-start 9daaec2 from cf7d098` →
+     `23:04:05Z deploy 9daaec2 ok`;
+   - PostgreSQL **12 migrations**; `world_contributions` and `player_reports` exist;
    - all seven containers healthy;
-   - `/api/health` 200 with DB/Redis up;
-   - `/worlds` 200 and SSE route stays open;
-   - two disposable accounts see presence and receive a contribution event;
-   - export omits secrets; deletion cascades a disposable account;
-   - no `INVALID_SAVE`, migration, or unhandled errors in API logs.
-8. Record deployment history and rollback target.
+   - public `/api/health` 200 with DB/Redis up;
+   - `/api/world` 200;
+   - `/api/presence/stream` returns 401 without an account (route exists, not 404);
+   - no `INVALID_SAVE`, migration, or unhandled errors in post-deploy logs.
 
-Rollback target before any Stage 05 DB writes: `cf7d098`/`9a06aad` (schema 14). The
-Stage 05 migration is additive, so an application rollback can generally leave the
-tables in place; confirm with the release owner before rollback.
+Password registration is disabled in production (`410 USE_ENDEMION_ID`), so the
+two-account authenticated presence/SSE smoke was **not executed**; it requires a
+disposable Endemion ID account. Public route, auth gate, migration, and health checks
+passed.
+
+Rollback target: `cf7d098` (Stage 04, schema 14). The Stage 05 migration is additive,
+so an application rollback can leave the tables in place; confirm with the release
+owner before rollback. Rollback to schema 13 requires a database restore.
 
 ## 6. Risks and limitations
 
@@ -161,13 +171,14 @@ tables in place; confirm with the release owner before rollback.
 - No save schema change; schema remains 14.
 - Portal files remain untouched and uncommitted.
 - 74 Stage 11 reports and the blueprint docx remain untracked.
-- No production access, deployment, or migration was performed in Stage 05.
-- No commit or push was performed.
+- Production was backed up, migrated, and deployed; verification is recorded in §5.
+- Stage 05 commits were pushed; release SHA `9daaec2`.
 
 ## 8. Current worktree
 
-HEAD `0feb6d9`. Stage 05 source, tests, migration, docs, and web/infrastructure changes
-are uncommitted. Pre-existing portal modifications:
+HEAD `9daaec2`. Stage 05 source, tests, migration, docs, and web/infrastructure changes
+are committed and deployed. Remaining working-tree changes are the pre-existing portal
+integration:
 
 - `.env.example`
 - `apps/api/src/app.module.ts`
@@ -177,4 +188,4 @@ are uncommitted. Pre-existing portal modifications:
 plus 74 untracked `STAGE_11_*` reports and
 `docs/Endemion_Life_Development_Blueprint_RU.docx`.
 
-The Stage 05 commit must not include any portal-only file or configuration.
+The Stage 05 release commit did not include any portal-only file or configuration.

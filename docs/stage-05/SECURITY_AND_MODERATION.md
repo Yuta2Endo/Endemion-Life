@@ -1,6 +1,7 @@
 # Stage 05 — Security and Moderation
 
-**Status:** implemented locally, not committed or deployed.
+**Status:** implemented and deployed in Stage 05 (`9daaec2`), not yet exercised with an
+authenticated production account.
 **Scope:** account gate for shared systems, contribution integrity, account export and
 deletion, player reports, abuse boundaries.
 **Production:** unchanged at Stage 04 (`cf7d098`, save schema 14).
