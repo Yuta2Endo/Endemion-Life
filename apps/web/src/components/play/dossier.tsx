@@ -118,6 +118,7 @@ function Biography({ life }: { life: LifeView }) {
   const origin = universe.origins.find((o) => o.id === c.originId);
   const temperament = TEMPERAMENTS.find((x) => x.id === c.temperamentId);
   const socialClass = universe.socialClasses.find((s) => s.id === c.socialClassId);
+  const upbringing = life.profile.upbringing;
   return (
     <div className="space-y-5" data-testid="dossier-bio">
       <div className="space-y-3 text-sm leading-relaxed text-bone-300">
@@ -155,6 +156,23 @@ function Biography({ life }: { life: LifeView }) {
           <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("create.temperament")}</dt>
           <dd className="text-bone-100">{temperament ? l(temperament.name) : "—"}</dd>
         </div>
+        {upbringing && (
+          <div data-testid="dossier-upbringing">
+            <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("dossier.upbringing")}</dt>
+            <dd className="text-bone-100">{l(upbringing.name)}</dd>
+            <dd className="text-xs text-bone-500">{l(upbringing.description)}</dd>
+            {upbringing.skills.length > 0 && (
+              <dd className="mt-1 text-[11px] text-bone-400">
+                {t("create.skills")}: {upbringing.skills.map((skill) => `${l(skill.name)} +${skill.amount}`).join(" · ")}
+              </dd>
+            )}
+            {upbringing.talent && (
+              <dd className="text-[11px] text-gold-300">
+                {t("create.talent")}: {l(upbringing.talent.name)}
+              </dd>
+            )}
+          </div>
+        )}
       </dl>
       {p.familyHistory.ru && (
         <div>

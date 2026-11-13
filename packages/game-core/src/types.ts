@@ -2,7 +2,7 @@ import type { AdventureState } from "./adventure/types.js";
 import type { MasteryState } from "./endgame/mastery.js";
 import type { RegionState } from "./economy/region.js";
 import type { LocalizedText } from "./i18n.js";
-import type { Resources, Stats } from "./stats.js";
+import type { Resources, StatPointAllocation, Stats } from "./stats.js";
 
 export const UNIVERSE_IDS = ["dark-fantasy", "isekai", "murim", "xianxia", "hunter", "academy"] as const;
 export type UniverseId = (typeof UNIVERSE_IDS)[number];
@@ -153,6 +153,17 @@ export interface TrackState {
   rank: number;
 }
 
+/**
+ * Stage 02.5: выбор игрока при рождении сверх имени, пола, расы, происхождения и характера.
+ * Поле необязательное: старые сохранения его не содержат и остаются читаемыми.
+ */
+export interface CharacterCreationState {
+  /** id уклада детства из character/upbringing.ts. Нет — уклад не выбран (случайное рождение) */
+  upbringingId?: string;
+  /** Распределённые очки характеристик. Нет — очки не распределялись */
+  statPoints?: StatPointAllocation;
+}
+
 export interface CharacterState {
   name: string;
   gender: Gender;
@@ -188,6 +199,8 @@ export interface CharacterState {
   goalProgress: number;
   /** Прогресс личных сюжетов персонажа: id сюжета → этап, выборы, завершение. Не передаётся наследнику. */
   storyProgress?: Record<string, StoryProgress>;
+  /** Stage 02.5: уклад детства и очки, выбранные при рождении. Additive: старые сохранения поля не имеют */
+  creation?: CharacterCreationState;
 }
 
 /** Прогресс сюжетной цепочки: текущий этап, выборы по событиям и флаг завершения. */

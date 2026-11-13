@@ -26,14 +26,14 @@ function adult(): GameState {
 
 describe("Stage 10: освоение", () => {
   it("новая жизнь пуста, сохранение формата 7 получает пустое мастерство и ничего не теряет", () => {
-    expect(SAVE_SCHEMA_VERSION).toBe(12);
+    expect(SAVE_SCHEMA_VERSION).toBe(13);
     const fresh = newGame({ seed: "mastery-new", universeId: "isekai" }).state;
     expect(fresh.mastery).toEqual({ objectives: [], skills: [] });
     const old = deepClone(fresh) as unknown as Record<string, unknown>;
     old.schemaVersion = 7;
     delete old.mastery;
     const restored = parseSave(old);
-    expect(restored.schemaVersion).toBe(12);
+    expect(restored.schemaVersion).toBe(13);
     expect(restored.mastery.objectives).toEqual([]);
     expect(restored.character.name).toBe(fresh.character.name);
     expect(restored.rngState).toBe(fresh.rngState);

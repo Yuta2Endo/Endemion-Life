@@ -123,6 +123,23 @@ export const M = {
   "create.previewFork": t("Первая развилка", "First fork"),
   "create.submitting": t("Судьба решается…", "Fate is being decided…"),
   "create.gold": t("{n} золота", "{n} gold"),
+  "create.upbringing": t("Уклад детства", "Upbringing"),
+  "create.upbringingHint": t(
+    "Чем было наполнено детство: характеристики, навыки и талант, который проявится сразу.",
+    "What filled the childhood years: attributes, skills and a talent that shows at once."
+  ),
+  "create.upbringingRandom": t("Без особого уклада: только случай и происхождение.", "No special upbringing: only chance and origin."),
+  "create.skills": t("Навыки", "Skills"),
+  "create.talent": t("Талант", "Talent"),
+  "create.focus": t("Очки развития", "Development points"),
+  "create.focusHint": t(
+    "Распределите до {n} очков. В одну характеристику — не больше {per}.",
+    "Spend up to {n} points. No more than {per} in one attribute."
+  ),
+  "create.pointsLeft": t("Осталось очков: {n} из {total}", "{n} of {total} points left"),
+  "create.pointsPreview": t("Очки: {n} из {total}", "Points: {n} of {total}"),
+  "create.addPoint": t("Добавить очко: {name}", "Add a point to {name}"),
+  "create.removePoint": t("Убрать очко: {name}", "Remove a point from {name}"),
 
   "play.loading": t("Загрузка жизни…", "Loading the life…"),
   "play.pageTitle": t("Жизнь", "Life"),
@@ -216,6 +233,7 @@ export const M = {
   "sheet.trackMax": t("Высший ранг", "Highest rank"),
   "sheet.rankBonus": t("+{n} от ранга", "+{n} from rank"),
   "sheet.class": t("Сословие", "Station"),
+  "sheet.upbringing": t("Уклад", "Upbringing"),
   "sheet.world": t("Законы мира", "World forces"),
 
   "play.tabPeople": t("Жизнь", "Life"),
@@ -311,6 +329,7 @@ export const M = {
   "society.renown": t("Слава рода", "Family renown"),
   "dossier.people": t("Люди", "People"),
   "dossier.origin": t("Происхождение", "Origin"),
+  "dossier.upbringing": t("Уклад детства", "Upbringing"),
   "dossier.birthplace": t("Место рождения", "Birthplace"),
   "dossier.omen": t("Знамение", "Omen"),
   "dossier.familyHistory": t("История рода", "Family history"),

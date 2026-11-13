@@ -4,6 +4,8 @@ export const STAT_KEYS = ["strength", "intelligence", "agility", "vitality", "wi
 export type StatKey = (typeof STAT_KEYS)[number];
 export type Stats = Record<StatKey, number>;
 export type StatMods = Partial<Stats>;
+/** Stage 02.5: ограниченное распределение очков при рождении */
+export type StatPointAllocation = Partial<Record<StatKey, number>>;
 
 export const STAT_MIN = 1;
 export const STAT_MAX = 100;

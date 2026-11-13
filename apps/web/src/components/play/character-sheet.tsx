@@ -23,6 +23,7 @@ export function CharacterSheet({ life }: { life: LifeView }) {
   const origin = universe.origins.find((o) => o.id === c.originId);
   const temperament = TEMPERAMENTS.find((x) => x.id === c.temperamentId);
   const socialClass = universe.socialClasses.find((x) => x.id === c.socialClassId);
+  const upbringing = life.profile.upbringing;
   const ranks = universe.track.ranks;
   const currentThreshold = ranks[c.track.rank]?.threshold ?? 0;
   const deathCause = life.health.deathCause ?? life.life.deathCause;
@@ -46,6 +47,12 @@ export function CharacterSheet({ life }: { life: LifeView }) {
       {temperament && (
         <p className="text-xs text-bone-400" data-testid="sheet-bent">
           {l(temperament.description)}
+        </p>
+      )}
+      {upbringing && (
+        <p className="-mt-3 text-xs text-gold-300" data-testid="sheet-upbringing">
+          {t("sheet.upbringing")}: {l(upbringing.name)}
+          {upbringing.talent && <span className="text-bone-400"> · {l(upbringing.talent.name)}</span>}
         </p>
       )}
       {socialClass && (

@@ -9,6 +9,8 @@ import { newLineage } from "../legacy/chronicle.js";
 import { finishLife, foundLineage } from "../legacy/lineage.js";
 import { Rng } from "../rng.js";
 import { findEducation, findProfession, findSkill } from "../rpg/skills.js";
+import { findTalent } from "../rpg/talents.js";
+import { findUpbringing, statPointsProblem } from "../character/upbringing.js";
 import { findObjective, newMastery } from "../endgame/mastery.js";
 import { newAdventure } from "../adventure/adventure.js";
 import { adventuresOf, placesOf } from "../adventure/content.js";
@@ -293,6 +295,14 @@ function migrateV11(save: Record<string, unknown>): Record<string, unknown> {
   return { ...save, location: newLocationState(universe, age, preferred?.id) };
 }
 
+/**
+ * Формат 12 → 13 (Stage 02.5): уклад детства и очки характеристик. Поле character.creation
+ * необязательное: старые жизни остаются без уклада, seed и rngState не меняются
+ */
+function migrateV12(save: Record<string, unknown>): Record<string, unknown> {
+  return save;
+}
+
 /** Переходы между версиями формата: ключ — версия, из которой переводим. Новая версия формата добавляет сюда шаг */
 const MIGRATIONS: Readonly<Record<number, Migration>> = {
   1: migrateV1,
@@ -305,7 +315,8 @@ const MIGRATIONS: Readonly<Record<number, Migration>> = {
   8: migrateV8,
   9: migrateV9,
   10: migrateV10,
-  11: migrateV11
+  11: migrateV11,
+  12: migrateV12
 };
 
 function fail(reason: string): never {
@@ -363,6 +374,29 @@ function isPersonId(value: unknown): value is string {
 
 function oneOf<T extends string>(list: readonly T[], value: unknown): value is T {
   return typeof value === "string" && (list as readonly string[]).includes(value);
+}
+
+/**
+ * Stage 02.5: выбор при рождении необязателен. Если он записан, уклад должен существовать
+ * в мире, его навыки и талант — быть в каталоге, а очки не выходить за бюджет.
+ */
+function checkCreation(character: Record<string, unknown>, universe: UniverseDefinition): void {
+  const creation = character.creation;
+  if (creation === undefined) return;
+  if (!isRecord(creation)) fail("character.creation");
+  if (creation.upbringingId !== undefined) {
+    if (typeof creation.upbringingId !== "string") fail("character.creation.upbringingId");
+    const upbringing = findUpbringing(universe, creation.upbringingId);
+    if (!upbringing) fail("character.creation.upbringingId");
+    for (const skillId of Object.keys(upbringing.skills)) {
+      if (!findSkill(universe, skillId)) fail("character.creation.skill");
+    }
+    if (!findTalent(universe, upbringing.talentId)) fail("character.creation.talent");
+  }
+  if (creation.statPoints !== undefined) {
+    const problem = statPointsProblem(creation.statPoints);
+    if (problem) fail(problem);
+  }
 }
 
 /** NPC формата 3. diedAt и записи журнала могут быть меньше нуля: предки умирали до рождения текущего персонажа */
@@ -697,6 +731,7 @@ export function parseSave(raw: unknown): GameState {
   if (typeof c.professionId === "string" && !findProfession(universe, c.professionId)) fail("profession.id");
   if (typeof c.educationId === "string" && !findEducation(universe, c.educationId)) fail("education.id");
   if (typeof c.specializationId === "string" && !universe.specializations.some((item) => item.id === c.specializationId)) fail("specialization.id");
+  checkCreation(c, universe);
   if (!isRecord(life) || !isInt(life.age, 0) || !LIFE_STAGES.includes(life.stage as never) || typeof life.alive !== "boolean") fail("life");
   checkHealth(save.health);
   checkEducation(save.education, c, universe, life.age);

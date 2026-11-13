@@ -8,6 +8,7 @@ import type { FamilyKind, TalentDefinition, UniverseDefinition } from "../univer
 import { NAME_POOLS } from "./names.js";
 import { MIN_PARENT_AGE } from "../family/kin.js";
 import { createNpc, roleName, type NpcContext } from "./npcs.js";
+import { findUpbringing } from "./upbringing.js";
 
 export interface BirthContext {
   state: GameState;
@@ -37,13 +38,17 @@ function pickTalent(ctx: BirthContext, exclude: readonly string[]): TalentDefini
   return ctx.rng.weighted(pool, (talent) => (talent.weight ?? 1) * (favoured.includes(talent.id) ? 3 : 1));
 }
 
-/** Таланты: один-два при рождении, больше при высоком потенциале. Часть проявится только позже */
-function rollTalents(ctx: BirthContext, potential: number): { known: string[]; dormant: string[] } {
-  const count = 1 + (ctx.rng.chance(0.25 + potential * 0.05) ? 1 : 0) + (potential >= 9 ? 1 : 0);
+/**
+ * Таланты: один-два при рождении, больше при высоком потенциале. Часть проявится только позже.
+ * fixed — талант уклада: он уже проявлен и не может выпасть второй раз.
+ */
+function rollTalents(ctx: BirthContext, potential: number, fixed: readonly string[]): { known: string[]; dormant: string[] } {
+  // Талант уклада занимает место одного случайного дара: уклад меняет билд, но не число талантов
+  const count = Math.max(0, 1 + (ctx.rng.chance(0.25 + potential * 0.05) ? 1 : 0) + (potential >= 9 ? 1 : 0) - fixed.length);
   const known: string[] = [];
   const dormant: string[] = [];
   for (let i = 0; i < count; i++) {
-    const talent = pickTalent(ctx, [...known, ...dormant]);
+    const talent = pickTalent(ctx, [...fixed, ...known, ...dormant]);
     if (!talent) break;
     // Первый талант виден сразу в половине жизней, остальные спят до своего часа
     if (i === 0 && ctx.rng.chance(0.5)) known.push(talent.id);
@@ -157,13 +162,16 @@ export function bornInto(ctx: BirthContext, generatedName: boolean): string[] {
   const birthplace = universe.birthplaces.length > 0 ? rng.pick(universe.birthplaces) : t("Неизвестное место", "An unknown place");
   const omens = universe.omens.filter((omen) => (omen.minDestiny ?? 0) <= destiny);
   const omen = omens.length > 0 ? rng.pick(omens).text : t("Ночь была тихой.", "The night was quiet.");
-  const talents = rollTalents(ctx, potential);
-  const weaknesses = rollWeaknesses(ctx, [...talents.known, ...talents.dormant]);
+  // Талант уклада уже проявлен: случайные дары не могут его повторить, а слабость с ним не конфликтует
+  const fixed = [...c.talents];
+  const talents = rollTalents(ctx, potential, fixed);
+  const known = [...new Set([...fixed, ...talents.known])];
+  const weaknesses = rollWeaknesses(ctx, [...known, ...talents.dormant]);
   const secretId = rollSecret(ctx);
 
   const hidden: HiddenState = { potential, destiny, dormantTalents: talents.dormant, familySecret: secretId, revealed: [] };
   state.hidden = hidden;
-  c.talents = talents.known;
+  c.talents = known;
   c.weaknesses = weaknesses;
   state.meters = Object.fromEntries(universe.meters.map((meter) => [meter.id, profile?.meters?.[meter.id] ?? meter.initial]));
 
@@ -174,11 +182,20 @@ export function bornInto(ctx: BirthContext, generatedName: boolean): string[] {
   const born = t(`${c.name} ${verb(state, "родился", "родилась")}: ${birthplace.ru}.`, `${c.name} was born: ${birthplace.en}.`);
   const paragraphs: LocalizedText[] = [t(`${born.ru} ${omen.ru}`, `${born.en} ${omen.en}`)];
   if (profile?.history) paragraphs.push(profile.history);
+  const upbringing = c.creation?.upbringingId ? findUpbringing(universe, c.creation.upbringingId) : undefined;
+  if (upbringing) {
+    paragraphs.push(
+      t(
+        `Детство пройдёт в укладе «${upbringing.name.ru}»: ${upbringing.description.ru}`,
+        `Childhood will pass in the upbringing "${upbringing.name.en}": ${upbringing.description.en}`
+      )
+    );
+  }
   paragraphs.push(familyParagraph(state, family, kind));
   const secret = universe.familySecrets.find((s) => s.id === secretId);
   if (secret) paragraphs.push(secret.hint);
-  if (talents.known.length > 0) {
-    const talent = allTalents(universe).find((x) => x.id === talents.known[0]);
+  if (known.length > 0) {
+    const talent = allTalents(universe).find((x) => x.id === known[0]);
     if (talent) paragraphs.push(t(`С первых дней заметно: ${talent.description.ru.charAt(0).toLowerCase()}${talent.description.ru.slice(1)}`, `It shows from the first days: ${talent.description.en.charAt(0).toLowerCase()}${talent.description.en.slice(1)}`));
   }
   if (talents.dormant.length > 0 && potential >= 7) paragraphs.push(t("Старая повитуха долго смотрит на ребёнка и говорит, что в нём спит что-то большее.", "The old midwife studies the child for a long time and says something greater sleeps within."));

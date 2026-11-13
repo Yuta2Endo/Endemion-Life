@@ -1,10 +1,46 @@
 // Схемы запросов к API. Сервер проверяет ими всё, что приходит от клиента; сайт — то, что отправляет
-import { AUTO_MODES, CHANGE_KINDS, GENDERS, HISTORY_KINDS, INTERACTIONS, LOCALES, MAX_ADVANCE_YEARS, MAX_TRADE_QTY, NAME_MAX_LENGTH, SEED_MAX_LENGTH, TRADE_SIDES, UNIVERSE_IDS } from "@endemion/game-core";
+import {
+  AUTO_MODES,
+  CHANGE_KINDS,
+  GENDERS,
+  HISTORY_KINDS,
+  INTERACTIONS,
+  LOCALES,
+  MAX_ADVANCE_YEARS,
+  MAX_TRADE_QTY,
+  NAME_MAX_LENGTH,
+  POINT_BUY_PER_STAT,
+  POINT_BUY_TOTAL,
+  SEED_MAX_LENGTH,
+  STAT_KEYS,
+  TRADE_SIDES,
+  UNIVERSE_IDS
+} from "@endemion/game-core";
 import { z } from "zod";
 
 /** id контента: буквы, цифры, дефис и точка (места и приключения — «мир.имя») */
 const optionId = z.string().regex(/^[a-z0-9-]{1,40}$/, "Некорректный идентификатор");
 const contentId = z.string().regex(/^[a-z0-9.-]{1,40}$/, "Некорректный идентификатор");
+
+/**
+ * Stage 02.5: ограниченное распределение очков. Клиент присылает только намерение:
+ * итоговые характеристики по-прежнему считает game-core, а не клиент
+ */
+const statPointSchema = z.int().min(0).max(POINT_BUY_PER_STAT);
+export const statPointsSchema = z
+  .strictObject({
+    strength: statPointSchema.optional(),
+    intelligence: statPointSchema.optional(),
+    agility: statPointSchema.optional(),
+    vitality: statPointSchema.optional(),
+    wisdom: statPointSchema.optional(),
+    charisma: statPointSchema.optional(),
+    luck: statPointSchema.optional(),
+    willpower: statPointSchema.optional()
+  })
+  .refine((points) => STAT_KEYS.reduce((sum, key) => sum + (points[key] ?? 0), 0) <= POINT_BUY_TOTAL, {
+    message: `Можно распределить не больше ${POINT_BUY_TOTAL} очков`
+  });
 
 export const createLifeSchema = z.strictObject({
   universeId: z.enum(UNIVERSE_IDS),
@@ -13,6 +49,10 @@ export const createLifeSchema = z.strictObject({
   raceId: optionId.optional(),
   originId: optionId.optional(),
   temperamentId: optionId.optional(),
+  /** Stage 02.5: уклад детства. id проверяется по миру в game-core */
+  upbringingId: optionId.optional(),
+  /** Stage 02.5: очки характеристик, не больше POINT_BUY_TOTAL */
+  statPoints: statPointsSchema.optional(),
   /** Свой seed для воспроизводимой жизни. Без него сервер выбирает случайный */
   seed: z.string().min(1).max(SEED_MAX_LENGTH).optional()
 });

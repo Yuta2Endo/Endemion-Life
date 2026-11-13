@@ -14,6 +14,29 @@ describe("контракты API", () => {
     expect(createLifeSchema.safeParse({ universeId: "murim", age: 50 }).success).toBe(false);
   });
 
+  it("Stage 02.5: уклад и очки принимаются, поддельные итоговые характеристики — нет", () => {
+    expect(createLifeSchema.safeParse({ universeId: "academy", upbringingId: "ac-salon-upbringing", statPoints: { charisma: 2, wisdom: 1 } }).success).toBe(true);
+    expect(createLifeSchema.safeParse({ universeId: "academy" }).success).toBe(true);
+    // Больше бюджета, больше двух очков в одну характеристику и отрицательные значения отклоняются
+    expect(createLifeSchema.safeParse({ universeId: "academy", statPoints: { strength: 2, agility: 2 } }).success).toBe(false);
+    expect(createLifeSchema.safeParse({ universeId: "academy", statPoints: { strength: 3 } }).success).toBe(false);
+    expect(createLifeSchema.safeParse({ universeId: "academy", statPoints: { strength: -1 } }).success).toBe(false);
+    expect(createLifeSchema.safeParse({ universeId: "academy", statPoints: { mana: 1 } }).success).toBe(false);
+    // Клиент не может прислать готовые характеристики вместо выбора
+    expect(createLifeSchema.safeParse({ universeId: "academy", stats: { strength: 100 } }).success).toBe(false);
+    expect(createLifeSchema.safeParse({ universeId: "academy", finalStats: { strength: 100 } }).success).toBe(false);
+    expect(createLifeSchema.safeParse({ universeId: "academy", upbringingId: "not a package" }).success).toBe(false);
+  });
+
+  it("Stage 02.5: представление жизни показывает уклад детства", () => {
+    const { state } = newGame({ seed: "creation-view", universeId: "academy", upbringingId: "ac-salon-upbringing", statPoints: { charisma: 2 } });
+    const view = toLifeView({ id: "id", createdAt: "", updatedAt: "" }, state);
+    expect(view.character.creation).toEqual({ upbringingId: "ac-salon-upbringing", statPoints: { charisma: 2 } });
+    expect(view.profile.upbringing?.id).toBe("ac-salon-upbringing");
+    expect(view.profile.upbringing?.talent?.name.en).toBe("Courtly grace");
+    expect(JSON.stringify(view)).not.toMatch(/"(seed|rngState)"/);
+  });
+
   it("действие: только advance и choose, с actionId и версией", () => {
     expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "advance" } }).success).toBe(true);
     expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "choose", choiceId: "fight" } }).success).toBe(true);

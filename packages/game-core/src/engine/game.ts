@@ -62,9 +62,10 @@ import { applyEffects, isFatal, kill } from "./effects.js";
  * 9 — Stage 02.1: длительное здоровье, болезни и раны (health);
  * 10 — Stage 02.2: обучение (education) и карьера (career);
  * 11 — Stage 02.3: жильё, дом и своё дело (household, business);
- * 12 — Stage 02.4: текущее поселение и переезды (location)
+ * 12 — Stage 02.4: текущее поселение и переезды (location);
+ * 13 — Stage 02.5: уклад детства и очки характеристик при рождении (character.creation). Поле необязательное
  */
-export const SAVE_SCHEMA_VERSION = 12;
+export const SAVE_SCHEMA_VERSION = 13;
 export const SEED_MAX_LENGTH = 64;
 
 const YEAR_TEXTS: readonly LocalizedText[] = [

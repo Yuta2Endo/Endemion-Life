@@ -1,12 +1,24 @@
 "use client";
 
-import { NAME_MAX_LENGTH, SEED_MAX_LENGTH, STAT_INFO, entriesOf, type OptionView, type StatMods, type UniverseSummary } from "@endemion/game-core";
+import {
+  NAME_MAX_LENGTH,
+  SEED_MAX_LENGTH,
+  STAT_INFO,
+  entriesOf,
+  pointBuyTotal,
+  type OptionView,
+  type StatKey,
+  type StatMods,
+  type StatPointAllocation,
+  type UniverseSummary
+} from "@endemion/game-core";
 import type { CreateLifeRequest } from "@endemion/shared";
 import { Button, Ornament, Panel } from "@endemion/ui";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ClientError } from "@/lib/api";
 import { storeForNewLife } from "@/lib/store";
+import { CreationChoices } from "./creation-choices";
 import { useI18n } from "./locale-provider";
 import { WorldEmblem } from "./world-emblem";
 
@@ -70,20 +82,38 @@ function OptionGrid({
 }
 
 export function CreateForm({ universe, temperaments }: { universe: UniverseSummary; temperaments: OptionView[] }) {
-  const { l, t } = useI18n();
+  const { locale, l, t } = useI18n();
   const router = useRouter();
   const [name, setName] = useState("");
   const [gender, setGender] = useState<Choice>(null);
   const [raceId, setRaceId] = useState<Choice>(universe.races.length === 1 ? universe.races[0]!.id : null);
   const [originId, setOriginId] = useState<Choice>(null);
   const [temperamentId, setTemperamentId] = useState<Choice>(null);
+  const [upbringingId, setUpbringingId] = useState<Choice>(null);
+  const [points, setPoints] = useState<StatPointAllocation>({});
   const [seed, setSeed] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const origin = universe.origins.find((item) => item.id === originId) ?? null;
+  const upbringing = universe.upbringings.find((item) => item.id === upbringingId) ?? null;
   const stationId = originId ? universe.originClasses[originId] : undefined;
   const station = universe.socialClasses.find((item) => item.id === stationId) ?? null;
   const fork = universe.mechanics[0];
+  const spentPoints = pointBuyTotal(points);
+  const previewMods: StatMods = { ...(upbringing?.statMods ?? {}) };
+  for (const [key, value] of entriesOf(points)) previewMods[key] = (previewMods[key] ?? 0) + value;
+
+  function changePoint(key: StatKey, delta: 1 | -1): void {
+    setPoints((current) => {
+      const value = (current[key] ?? 0) + delta;
+      if (value < 0 || value > universe.pointBuy.perStat) return current;
+      const next: StatPointAllocation = { ...current };
+      if (value === 0) delete next[key];
+      else next[key] = value;
+      // Бюджет проверяется и здесь, и на сервере: кнопка «+» не должна обходить лимит
+      return pointBuyTotal(next) > universe.pointBuy.total ? current : next;
+    });
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -95,6 +125,8 @@ export function CreateForm({ universe, temperaments }: { universe: UniverseSumma
     if (raceId) input.raceId = raceId;
     if (originId) input.originId = originId;
     if (temperamentId) input.temperamentId = temperamentId;
+    if (upbringingId) input.upbringingId = upbringingId;
+    if (spentPoints > 0) input.statPoints = points;
     if (seed.trim()) input.seed = seed.trim();
     try {
       const life = await (await storeForNewLife()).create(input);
@@ -129,6 +161,24 @@ export function CreateForm({ universe, temperaments }: { universe: UniverseSumma
           {station ? l(station.name) : t("create.previewRandom")} · {t("worlds.lifespan", { years: universe.lifespan })}
         </p>
         {origin && <p className="mt-1 text-xs text-bone-400">{l(origin.description)}</p>}
+        {upbringing && (
+          <p className="mt-2 text-xs text-gold-300" data-testid="create-upbringing-preview">
+            {t("create.upbringing")}: {l(upbringing.name)}
+            {entriesOf(previewMods).filter(([, delta]) => delta !== 0).length > 0 && (
+              <span className="ml-1 tabular-nums text-bone-400">
+                {entriesOf(previewMods)
+                  .filter(([, delta]) => delta !== 0)
+                  .map(([key, delta]) => `${STAT_INFO[key].short[locale]} ${delta > 0 ? "+" : ""}${delta}`)
+                  .join(" · ")}
+              </span>
+            )}
+          </p>
+        )}
+        {spentPoints > 0 && (
+          <p className="mt-1 text-xs text-bone-400" data-testid="create-points-preview">
+            {t("create.pointsPreview", { n: spentPoints, total: universe.pointBuy.total })}
+          </p>
+        )}
         {fork && (
           <p className="mt-3 text-bone-300">
             {t("create.previewFork")}: {l(fork.name)}. {l(fork.description)}
@@ -177,6 +227,16 @@ export function CreateForm({ universe, temperaments }: { universe: UniverseSumma
           extra={(o) => (o.wealth ? t("create.gold", { n: o.wealth }) : null)}
         />
         <OptionGrid legend={t("create.temperament")} name="temperament" options={temperaments} value={temperamentId} onChange={setTemperamentId} />
+
+        <CreationChoices
+          upbringings={universe.upbringings}
+          upbringingId={upbringingId}
+          onUpbringing={setUpbringingId}
+          points={points}
+          onPoint={changePoint}
+          total={universe.pointBuy.total}
+          perStat={universe.pointBuy.perStat}
+        />
 
         <details className="group">
           <summary className="cursor-pointer text-sm text-bone-300 transition hover:text-gold-200" data-testid="create-advanced">{t("create.advanced")}</summary>

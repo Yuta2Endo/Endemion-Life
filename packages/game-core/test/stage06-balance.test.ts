@@ -202,7 +202,7 @@ describe("Save/load integrity", () => {
     const { state } = succeed(ticked, heir.npc.id, "save1-succ");
 
     const round = roundTrip(state);
-    expect(round.schemaVersion).toBe(12);
+    expect(round.schemaVersion).toBe(13);
     expect(round.world!.tick).toBe(state.world!.tick);
     expect(round.world!.settlements.length).toBe(state.world!.settlements.length);
     expect(round.world!.activities.some((a) => a.id.startsWith("succession."))).toBe(true);
@@ -222,12 +222,12 @@ describe("Save/load integrity", () => {
     expect(continued.world!.tick).toBe(1);
   });
 
-  it("старая версия схемы 6 нормализуется до 12", () => {
+  it("старая версия схемы 6 нормализуется до 13", () => {
     const fresh = newGame({ seed: "schema-v6", universeId: "murim" }).state;
     const old = deepClone(fresh) as unknown as Record<string, unknown>;
     old.schemaVersion = 6;
     const restored = parseSave(old);
-    expect(restored.schemaVersion).toBe(12);
+    expect(restored.schemaVersion).toBe(13);
     expect(restored.character.name).toBe(fresh.character.name);
     expect(restored.rngState).toBe(fresh.rngState);
   });

@@ -166,13 +166,13 @@ describe("Stage 05: приключения", () => {
   });
 
   it("сохранение формата 5 получает пустое приключение и ничего не теряет", () => {
-    expect(SAVE_SCHEMA_VERSION).toBe(12);
+    expect(SAVE_SCHEMA_VERSION).toBe(13);
     const fresh = newGame({ seed: "fmt", universeId: "murim" }).state;
-    expect(fresh.schemaVersion).toBe(12);
+    expect(fresh.schemaVersion).toBe(13);
     expect(fresh.adventure.discovered).toEqual([]);
     for (const old of Object.values(SAVES_V4) as Record<string, unknown>[]) {
       const save = parseSave(old);
-      expect(save.schemaVersion).toBe(12);
+      expect(save.schemaVersion).toBe(13);
       expect(save.adventure).toEqual({ discovered: [], active: null, done: [], failed: [], log: [] });
       expect(save.character.name).toBe((old.character as { name: string }).name);
       expect(save.rngState).toBe(old.rngState);

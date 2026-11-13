@@ -2,13 +2,14 @@
 // Здесь броски Stage 01 (пол, раса, происхождение, характер, имя, характеристики). Семья, таланты и тайны — в birth.ts
 import { GameRuleError } from "../errors.js";
 import type { Rng } from "../rng.js";
-import { BIRTH_STAT_MAX, clamp, entriesOf, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_MIN, type Stats, type StatMods } from "../stats.js";
+import { BIRTH_STAT_MAX, clamp, entriesOf, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_MIN, type StatMods, type StatPointAllocation, type Stats } from "../stats.js";
 import { GENDERS, type CharacterState, type Gender, type UniverseId } from "../types.js";
 import { getUniverse, isUniverseId } from "../universes/registry.js";
 import type { OriginDefinition, RaceDefinition } from "../universes/types.js";
 import { maxResources } from "./derived.js";
 import { fullName } from "./names.js";
 import { TEMPERAMENTS, type TemperamentDefinition } from "./temperaments.js";
+import { applyCreationChoices, validateCreationChoices } from "./upbringing.js";
 
 export const NAME_MIN_LENGTH = 2;
 export const NAME_MAX_LENGTH = 40;
@@ -23,6 +24,10 @@ export interface CharacterInput {
   raceId?: string;
   originId?: string;
   temperamentId?: string;
+  /** Stage 02.5: уклад детства. Не выбран — бонусов нет, случайное рождение работает как раньше */
+  upbringingId?: string;
+  /** Stage 02.5: ограниченное распределение очков характеристик (не больше POINT_BUY_TOTAL) */
+  statPoints?: StatPointAllocation;
 }
 
 export interface GeneratedCharacter {
@@ -64,6 +69,7 @@ export function validateCharacterInput(input: CharacterInput): void {
   if (input.originId !== undefined) findOrThrow(universe.origins, input.originId, "происхождение");
   if (input.temperamentId !== undefined) findOrThrow(TEMPERAMENTS, input.temperamentId, "характер");
   if (input.name !== undefined) validateName(input.name);
+  validateCreationChoices(universe, input);
 }
 
 export function generateCharacter(input: CharacterInput, rng: Rng): GeneratedCharacter {
@@ -93,7 +99,6 @@ export function generateCharacter(input: CharacterInput, rng: Rng): GeneratedCha
   addMods(stats, race.statMods);
   addMods(stats, origin.statMods);
   addMods(stats, temperament.statMods);
-  for (const key of STAT_KEYS) stats[key] = clamp(stats[key], STAT_MIN, BIRTH_STAT_MAX);
 
   const character: CharacterState = {
     name,
@@ -122,6 +127,9 @@ export function generateCharacter(input: CharacterInput, rng: Rng): GeneratedCha
     goal: null,
     goalProgress: 0
   };
+  // Stage 02.5: уклад и очки добавляются после случайных бросков и не тратят ни одного числа из Rng
+  applyCreationChoices(character, universe, input);
+  for (const key of STAT_KEYS) character.stats[key] = clamp(character.stats[key], STAT_MIN, BIRTH_STAT_MAX);
   character.resources = maxResources(character);
   return { character, flags: [...(origin.flags ?? [])], generatedName: !input.name };
 }

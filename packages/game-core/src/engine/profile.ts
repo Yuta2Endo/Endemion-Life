@@ -2,6 +2,7 @@
 // Скрытое (спящие таланты, потенциал, судьба, тайна рода) попадает сюда только после раскрытия: клиенту его не отдаём
 import { interactionAvailable, interactionBlock, interactionChance, INTERACTION_RULES } from "../character/interactions.js";
 import { affinityLabel, isFamily, npcAge, roleName } from "../character/npcs.js";
+import { creationUpbringing, type UpbringingView } from "../catalog.js";
 import { npcLifeStage, npcSettlementName, otherSide, readSocialState, relationshipName } from "../character/social.js";
 import { findStory, storiesOf } from "../character/stories.js";
 import { TEMPERAMENTS } from "../character/temperaments.js";
@@ -119,6 +120,8 @@ export interface LifeProfile {
   omen: LocalizedText;
   familyHistory: LocalizedText;
   biography: LocalizedText[];
+  /** Stage 02.5: уклад детства, выбранный при рождении. null — случайное рождение */
+  upbringing: UpbringingView | null;
   npcs: NpcView[];
   /** Stage 03: важные связи персонажа и последние изменения отношений */
   connections: RelationshipView[];
@@ -302,6 +305,7 @@ export function presentProfile(state: GameState): LifeProfile {
     omen: state.background.omen,
     familyHistory: state.background.familyHistory,
     biography: state.background.biography,
+    upbringing: creationUpbringing(universe, state.character),
     npcs: state.npcs.map((npc) => ({
       id: npc.id,
       role: npc.role,

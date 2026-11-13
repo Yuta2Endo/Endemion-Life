@@ -42,6 +42,20 @@ export {
 
 export { TEMPERAMENTS, type TemperamentDefinition } from "./character/temperaments.js";
 export {
+  applyCreationChoices,
+  BIRTH_SKILL_MAX,
+  findUpbringing,
+  normalizeStatPoints,
+  POINT_BUY_PER_STAT,
+  POINT_BUY_TOTAL,
+  pointBuyTotal,
+  statPointsProblem,
+  UPBRINGINGS,
+  upbringingsFor,
+  validateCreationChoices,
+  type UpbringingDefinition
+} from "./character/upbringing.js";
+export {
   generateCharacter,
   normalizeName,
   validateCharacterInput,

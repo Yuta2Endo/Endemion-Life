@@ -182,14 +182,14 @@ describe("Save/load integrity", () => {
     checkAchievements(ctx, () => {});
     const before = state.character.factions["order-of-ash"] ?? 0;
     const round = roundTrip(state);
-    expect(round.schemaVersion).toBe(12);
+    expect(round.schemaVersion).toBe(13);
     expect(round.character.factions["order-of-ash"] ?? 0).toBe(before);
   });
 
   it("loading old save without faction changes is safe", () => {
     const current = newGame({ seed: "s9-legacy", universeId: "academy" }).state;
     const parsed = parseSave(JSON.parse(JSON.stringify(current)));
-    expect(parsed.schemaVersion).toBe(12);
+    expect(parsed.schemaVersion).toBe(13);
     const view = presentLineage(parsed);
     expect(view.dynasty.factionRelations.length).toBeGreaterThan(0);
     for (const f of view.dynasty.factionRelations) {

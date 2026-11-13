@@ -3,9 +3,10 @@ import { TEMPERAMENTS } from "./character/temperaments.js";
 import type { LocalizedText } from "./i18n.js";
 import type { StatMods } from "./stats.js";
 import type { UniverseId } from "./types.js";
-import { allProfessions, allSkills } from "./rpg/skills.js";
-import { allTalents, allWeaknesses } from "./rpg/talents.js";
+import { allProfessions, allSkills, findSkill } from "./rpg/skills.js";
+import { allTalents, allWeaknesses, findTalent } from "./rpg/talents.js";
 import { listUniverses } from "./universes/registry.js";
+import { POINT_BUY_PER_STAT, POINT_BUY_TOTAL, upbringingsFor } from "./character/upbringing.js";
 import type { AbilityCategory, SkillCategory, UniverseDefinition } from "./universes/types.js";
 
 export interface NamedView {
@@ -19,6 +20,29 @@ export interface OptionView {
   name: LocalizedText;
   description: LocalizedText;
   statMods: StatMods;
+}
+
+export interface UpbringingSkillView {
+  id: string;
+  name: LocalizedText;
+  amount: number;
+}
+
+export interface UpbringingTalentView {
+  id: string;
+  name: LocalizedText;
+  description: LocalizedText;
+}
+
+/** Stage 02.5: уклад детства в том виде, в каком его видит форма создания */
+export interface UpbringingView extends OptionView {
+  skills: UpbringingSkillView[];
+  talent: UpbringingTalentView | null;
+}
+
+export interface PointBuyView {
+  total: number;
+  perStat: number;
 }
 
 export interface UniverseSummary {
@@ -48,10 +72,27 @@ export interface UniverseSummary {
   specializations: NamedView[];
   /** Сословие при рождении для каждого происхождения */
   originClasses: Record<string, string>;
+  /** Stage 02.5: доступные в этом мире уклады детства */
+  upbringings: UpbringingView[];
+  /** Stage 02.5: бюджет очков характеристик при рождении */
+  pointBuy: PointBuyView;
 }
 
 function named(item: { id: string; name: LocalizedText; description: LocalizedText }): NamedView {
   return { id: item.id, name: item.name, description: item.description };
+}
+
+/** Уклады мира с уже разрешёнными названиями навыков и таланта: клиенту не нужно знать каталог целиком */
+function upbringingViews(universe: UniverseDefinition): UpbringingView[] {
+  return upbringingsFor(universe).flatMap((item) => {
+    const talent = findTalent(universe, item.talentId);
+    if (!talent) return [];
+    const skills = Object.entries(item.skills).flatMap(([id, amount]) => {
+      const skill = findSkill(universe, id);
+      return skill ? [{ id, name: skill.name, amount }] : [];
+    });
+    return [{ id: item.id, name: item.name, description: item.description, statMods: item.statMods, skills, talent: { id: talent.id, name: talent.name, description: talent.description } }];
+  });
 }
 
 export function summarizeUniverse(u: UniverseDefinition): UniverseSummary {
@@ -84,8 +125,17 @@ export function summarizeUniverse(u: UniverseDefinition): UniverseSummary {
     professions: allProfessions(u).map(named),
     education: u.education.map((e) => ({ ...named(e), tier: e.tier })),
     specializations: u.specializations.map(named),
-    originClasses: Object.fromEntries(Object.entries(u.originProfiles).map(([id, profile]) => [id, profile.socialClassId]))
+    originClasses: Object.fromEntries(Object.entries(u.originProfiles).map(([id, profile]) => [id, profile.socialClassId])),
+    upbringings: upbringingViews(u),
+    pointBuy: { total: POINT_BUY_TOTAL, perStat: POINT_BUY_PER_STAT }
   };
+}
+
+/** Уклад текущей жизни: null — случайное рождение без выбранного уклада */
+export function creationUpbringing(universe: UniverseDefinition, character: { creation?: { upbringingId?: string } }): UpbringingView | null {
+  const id = character.creation?.upbringingId;
+  if (!id) return null;
+  return upbringingViews(universe).find((view) => view.id === id) ?? null;
 }
 
 export function universeCatalog(): UniverseSummary[] {
