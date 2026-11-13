@@ -193,9 +193,10 @@ export class EndemionIdService {
   async refresh(session: SessionTokens, endemionSub: string | null): Promise<RefreshResult> {
     const now = Date.now();
     if (session.refreshedAt && now - session.refreshedAt.getTime() < REFRESH_MS) return "ok";
+    const claimedAt = new Date(now);
     const claimed = await this.db.session.updateMany({
       where: { id: session.id, refreshedAt: session.refreshedAt, revokedAt: null },
-      data: { refreshedAt: new Date(now) }
+      data: { refreshedAt: claimedAt }
     });
     if (claimed.count === 0) return "ok";
 
@@ -221,7 +222,16 @@ export class EndemionIdService {
       // Провайдер недоступен: сессия работает, пока не кончится запас OFFLINE_GRACE_MS
       this.logger.warn({ msg: "Сверка с Endemion ID не удалась", error: error instanceof Error ? error.message : String(error) });
       const lastOk = (session.lastOkAt ?? session.createdAt).getTime();
-      return now - lastOk < OFFLINE_GRACE_MS ? "ok" : "ended";
+      if (now - lastOk >= OFFLINE_GRACE_MS) {
+        // Истёкший запас нельзя продлевать следующим запросом: отзываем навсегда
+        await this.db.session.updateMany({ where: { id: session.id, revokedAt: null }, data: { revokedAt: new Date(now) } });
+        this.logger.log({ msg: "Сессия Endemion ID завершена по истечении offline grace", sessionId: session.id });
+        return "ended";
+      }
+      // Неудачная сверка не считается успешной: возвращаем прежнюю отметку,
+      // чтобы следующий запрос снова попробовал провайдера, а не ждал REFRESH_MS
+      await this.db.session.updateMany({ where: { id: session.id, refreshedAt: claimedAt, revokedAt: null }, data: { refreshedAt: session.refreshedAt } });
+      return "ok";
     }
   }
 

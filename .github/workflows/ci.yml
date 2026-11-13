@@ -47,6 +47,36 @@ jobs:
       - name: Production build
         run: pnpm build
 
+  android:
+    name: Android debug APK (clean checkout)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm android:sync
+      - name: Gradle debug build
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v7
+        with:
+          name: endemion-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+
   api:
     name: API tests and migrations (PostgreSQL, Redis)
     runs-on: ubuntu-latest

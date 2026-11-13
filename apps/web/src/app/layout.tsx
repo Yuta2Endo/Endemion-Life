@@ -43,14 +43,17 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export const viewport: Viewport = {
   themeColor: "#060608",
-  colorScheme: "dark"
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover"
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const { locale, t } = await getServerI18n();
   return (
     <html lang={locale} className={`${display.variable} ${sans.variable}`}>
-      <body className="relative">
+      <body className="relative overflow-x-clip">
         <LocaleProvider locale={locale}>
           <SiteHeader />
           {/* Выше подвала: фиксированная панель вкладок на телефоне не должна уходить под него */}

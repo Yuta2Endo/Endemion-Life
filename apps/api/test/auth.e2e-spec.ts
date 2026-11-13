@@ -184,6 +184,29 @@ describe("вход и перенос гостевых жизней", () => {
     const historyBefore = await t.prisma.client.historyEntry.count({ where: { lifeId: life.id } });
     const snapshotsBefore = await t.prisma.client.lifeSnapshot.count({ where: { lifeId: life.id } });
     const actionsBefore = await t.prisma.client.gameAction.count({ where: { lifeId: life.id } });
+    const claimedAt = new Date("2026-11-01T12:00:00.000Z");
+    const liveWindow = await t.prisma.client.liveWindow.create({
+      data: {
+        templateId: "auth-merge",
+        titleRu: "Проверка переноса",
+        titleEn: "Transfer check",
+        textRu: "Тест",
+        textEn: "Test",
+        status: "completed",
+        worlds: "hunter",
+        minAge: 0,
+        goal: 1,
+        perLife: 1,
+        gold: 25,
+        flag: "live.auth-merge",
+        progress: 1,
+        startsAt: new Date("2026-10-01T00:00:00.000Z"),
+        endsAt: new Date("2026-10-02T00:00:00.000Z")
+      }
+    });
+    await t.prisma.client.livePart.create({
+      data: { windowId: liveWindow.id, lifeId: life.id, playerId: guestSession.playerId, count: 1, lastAge: life.life.age, claimedAt }
+    });
 
     const res = await post(guest, "/api/auth/login", { email: "owner@example.com", password: PASSWORD }).expect(200);
     expect(res.body.transferredLives).toBe(1);
@@ -195,6 +218,11 @@ describe("вход и перенос гостевых жизней", () => {
     expect(await t.prisma.client.historyEntry.count({ where: { lifeId: life.id } })).toBe(historyBefore);
     expect(await t.prisma.client.lifeSnapshot.count({ where: { lifeId: life.id } })).toBe(snapshotsBefore);
     expect(await t.prisma.client.gameAction.count({ where: { lifeId: life.id, playerId: account.playerId } })).toBe(actionsBefore);
+    // Вклад в живое окно не теряется при удалении гостевого игрока (каскад live_parts)
+    const movedPart = await t.prisma.client.livePart.findUniqueOrThrow({ where: { windowId_lifeId: { windowId: liveWindow.id, lifeId: life.id } } });
+    expect(movedPart.playerId).toBe(account.playerId);
+    expect(movedPart.count).toBe(1);
+    expect(movedPart.claimedAt?.toISOString()).toBe(claimedAt.toISOString());
     // Сессия гостя удалена вместе с пустым игроком-гостем
     expect(await t.prisma.client.session.findUnique({ where: { id: guestSession.id } })).toBeNull();
 

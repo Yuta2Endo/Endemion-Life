@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ClientError } from "../api";
 import { cloudStore, importToCloud } from "./cloud";
 import { importPayload, localStore, markMoved, movedTarget } from "./local";
 import { LOCAL_ID_PREFIX, type GameStore, type StoreKind } from "./types";
@@ -30,8 +31,17 @@ export function detectStoreKind(): Promise<StoreKind> {
  * Где создать новую жизнь. Если связи нет, проверка повторяется ещё раз перед тем, как согласиться на браузер:
  * случайный сбой не должен превращать жизнь в локальную
  */
+export function isAndroidShell(): boolean {
+  return typeof navigator !== "undefined" && navigator.userAgent.includes("EndemionLifeAndroid");
+}
+
 export async function storeForNewLife(): Promise<GameStore> {
   const kind = (await detectStoreKind()) === "cloud" ? "cloud" : await detectStoreKind();
+  // Android-оболочка не должна создавать локально авторитетную жизнь: при недоступном API
+  // показываем блокирующую ошибку, а не молчаливое расхождение с облаком
+  if (kind === "local" && isAndroidShell()) {
+    throw new ClientError(0, "NETWORK", "Нет связи с сервером. В приложении новая жизнь не может быть создана без интернета.");
+  }
   return storeOf(kind);
 }
 

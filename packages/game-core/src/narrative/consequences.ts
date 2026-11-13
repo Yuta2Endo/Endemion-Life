@@ -23,7 +23,7 @@ export function consequencesYearly(ctx: EngineContext, emit: Emit): void {
     ctx.source = item.source || item.id;
     applyEffects(ctx, definition.effects);
     const vars = { name: state.character.name };
-    emit("consequence", fillText(definition.title, vars), fillText(definition.text, vars), definition.id);
+    emit("consequence", fillText(definition.title, vars), fillText(definition.text, vars), definition.id, item.source || item.id);
     ctx.source = undefined;
     fired += 1;
   }

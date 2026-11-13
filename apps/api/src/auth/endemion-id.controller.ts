@@ -68,7 +68,7 @@ export class EndemionIdController {
       await this.auth.signInWithEndemionId(request, response, exchanged.claims, exchanged.refreshToken);
     } catch (error) {
       if (error instanceof ApiError && error.code === "INVALID_TOKEN") return fail("unverified");
-      if (error instanceof ApiError && error.code === "EMAIL_TAKEN") return fail("linked");
+      if (error instanceof ApiError && (error.code === "EMAIL_TAKEN" || error.code === "IDENTITY_CONFLICT")) return fail("linked");
       throw error;
     }
     response.redirect(302, `${this.config.publicUrl}${login.returnTo}`);

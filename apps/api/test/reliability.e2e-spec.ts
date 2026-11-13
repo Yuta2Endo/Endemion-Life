@@ -97,16 +97,33 @@ describe("сбой посреди транзакции", () => {
     const client = agent();
     const life = await createLife(client);
     const before = await t.prisma.client.life.findUniqueOrThrow({ where: { id: life.id } });
-    const nextSeq = (before.state as { nextSeq: number }).nextSeq;
-    // Чужая запись с тем же номером: вставка истории действия нарушит уникальность (life_id, seq)
-    // уже ПОСЛЕ обновления строки жизни — проверяем, что обновление тоже откатится
-    const blocker = await t.prisma.client.historyEntry.create({ data: { lifeId: life.id, seq: nextSeq, age: 0, kind: "test", data: {} } });
+    // Внедряем сбой именно на вставке истории: проверяем, что обновление жизни
+    // и снимок откатываются вместе с записью действия.
+    const marker = randomUUID().replaceAll("-", "");
+    const fn = `test_fail_history_${marker}`;
+    const trigger = `test_fail_history_${marker}`;
+    await t.prisma.client.$executeRawUnsafe(`
+      CREATE FUNCTION ${fn}() RETURNS trigger AS $$
+      BEGIN
+        IF NEW.life_id = '${life.id}'::uuid THEN
+          RAISE EXCEPTION 'injected history failure';
+        END IF;
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql
+    `);
+    await t.prisma.client.$executeRawUnsafe(`CREATE TRIGGER ${trigger} BEFORE INSERT ON history_entries FOR EACH ROW EXECUTE FUNCTION ${fn}()`);
 
     const actionId = randomUUID();
-    const failed = await act(client, life, actionId);
-    expect(failed.status).toBe(500);
-    expect(failed.body.error.code).toBe("INTERNAL");
-    expect(JSON.stringify(failed.body)).not.toMatch(/prisma|unique|constraint|history_entries/i);
+    try {
+      const failed = await act(client, life, actionId);
+      expect(failed.status).toBe(500);
+      expect(failed.body.error.code).toBe("INTERNAL");
+      expect(JSON.stringify(failed.body)).not.toMatch(/prisma|unique|constraint|history_entries|injected/i);
+    } finally {
+      await t.prisma.client.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${trigger} ON history_entries`);
+      await t.prisma.client.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${fn}()`);
+    }
 
     const after = await t.prisma.client.life.findUniqueOrThrow({ where: { id: life.id } });
     expect(after.version).toBe(before.version);
@@ -115,7 +132,6 @@ describe("сбой посреди транзакции", () => {
     expect(await t.prisma.client.gameAction.count({ where: { lifeId: life.id } })).toBe(0);
     expect(await t.prisma.client.lifeSnapshot.count({ where: { lifeId: life.id, version: { gt: before.version } } })).toBe(0);
 
-    await t.prisma.client.historyEntry.delete({ where: { id: blocker.id } });
     const retried = await act(client, life, actionId);
     expect(retried.status).toBe(200);
     expect((retried.body as ActionResponse).replayed).toBe(false);
@@ -155,22 +171,12 @@ describe("Redis недоступен", () => {
     await offline?.app.close();
   });
 
-  it("health сообщает degraded, игра работает, общий лимит отключён", async () => {
-    const health = await request(offline.app.getHttpServer()).get("/api/health").expect(200);
+  it("health degraded, игровые маршруты fail-closed", async () => {
+    const health = await request(offline.app.getHttpServer()).get("/api/health").expect(503);
     expect(health.body).toMatchObject({ status: "degraded", services: { database: "up", redis: "down" } });
 
-    const client = request.agent(offline.app.getHttpServer());
-    const res = await client.post("/api/lives").set("Origin", ORIGIN).send({ universeId: "murim" }).expect(201);
-    let life = (res.body as { life: LifeView }).life;
-    // Больше 5 запросов (общий лимит) проходят: без Redis общий лимит не действует
-    for (let i = 0; i < 6; i++) {
-      const step = await client
-        .post(`/api/lives/${life.id}/actions`)
-        .set("Origin", ORIGIN)
-        .send({ actionId: randomUUID(), expectedVersion: life.version, action: life.pendingEvent ? { type: "choose", choiceId: life.pendingEvent.choices.find((c) => c.available)!.id } : { type: "advance" } })
-        .expect(200);
-      life = (step.body as ActionResponse).life;
-    }
+    const res = await request(offline.app.getHttpServer()).post("/api/lives").set("Origin", ORIGIN).send({ universeId: "murim" }).expect(503);
+    expect((res.body as { error: { code: string } }).error.code).toBe("UNAVAILABLE");
   });
 
   it("лимит входа без Redis продолжает действовать (счётчик в памяти)", async () => {

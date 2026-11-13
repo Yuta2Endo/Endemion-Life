@@ -60,6 +60,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await resetDatabase(t.prisma);
   id.accounts.clear();
+  id.state.outage = false;
 });
 
 afterAll(async () => {
@@ -172,6 +173,71 @@ describe("Вход через Endemion ID", () => {
     expect((await me(client)).player).toBeNull();
     const sessions = await t.prisma.client.session.findMany({ where: { refreshToken: { not: null } } });
     expect(sessions.every((session) => session.revokedAt !== null)).toBe(true);
+  });
+
+  it("сбой провайдера дольше offline grace отзывает сессию окончательно", async () => {
+    const account = newAccount();
+    id.accounts.set(account.sub, account);
+    const client = agent();
+    await signIn(client, idBrowser(id.issuer), account.sub);
+    expect((await me(client)).player).not.toBeNull();
+
+    await forceRefresh();
+    const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    await t.prisma.client.session.updateMany({ where: { refreshToken: { not: null } }, data: { lastOkAt: old, createdAt: old } });
+
+    id.state.outage = true;
+    expect((await me(client)).player).toBeNull();
+    const revoked = await t.prisma.client.session.findFirstOrThrow({ where: { refreshToken: { not: null } } });
+    expect(revoked.revokedAt).not.toBeNull();
+
+    // Провайдер снова доступен, но отозванная сессия не оживает
+    id.state.outage = false;
+    expect((await me(client)).player).toBeNull();
+  });
+
+  it("короткий сбой провайдера не продлевает сессию и не отзывает её до истечения grace", async () => {
+    const account = newAccount();
+    id.accounts.set(account.sub, account);
+    const client = agent();
+    await signIn(client, idBrowser(id.issuer), account.sub);
+
+    await forceRefresh();
+    await t.prisma.client.session.updateMany({ where: { refreshToken: { not: null } }, data: { lastOkAt: new Date(), createdAt: new Date() } });
+    const before = await t.prisma.client.session.findFirstOrThrow({ where: { refreshToken: { not: null } } });
+
+    id.state.outage = true;
+    expect((await me(client)).player).not.toBeNull();
+    const afterFailure = await t.prisma.client.session.findUniqueOrThrow({ where: { id: before.id } });
+    expect(afterFailure.revokedAt).toBeNull();
+    // Неудачная попытка не считается успешной сверкой: следующий запрос снова идёт к провайдеру
+    expect(afterFailure.refreshedAt?.getTime()).toBe(new Date(0).getTime());
+
+    id.state.outage = false;
+    expect((await me(client)).player).not.toBeNull();
+  });
+
+  it("второй Endemion ID с той же подтверждённой почтой не перехватывает аккаунт", async () => {
+    const first = newAccount({ email: "shared@example.com", emailVerified: true });
+    const second = newAccount({ email: "shared@example.com", emailVerified: true });
+    id.accounts.set(first.sub, first);
+    id.accounts.set(second.sub, second);
+
+    // Старый аккаунт Life, который связывается по подтверждённой почте
+    const ownerPlayer = await t.prisma.client.player.create({ data: {} });
+    await t.prisma.client.account.create({ data: { playerId: ownerPlayer.id, email: "shared@example.com", passwordHash: "scrypt$1$1$1$AA$AA" } });
+
+    const owner = agent();
+    await signIn(owner, idBrowser(id.issuer), first.sub);
+    const ownerMe = await me(owner);
+
+    const intruder = agent();
+    const secondLogin = await signIn(intruder, idBrowser(id.issuer), second.sub);
+    expect(secondLogin.res.headers.location).toBe(`${ORIGIN}/account?idError=linked`);
+    expect((await me(intruder)).player).toBeNull();
+
+    const stored = await t.prisma.client.player.findUniqueOrThrow({ where: { id: ownerMe.player!.id } });
+    expect(stored.endemionSub).toBe(first.sub);
   });
 
   it("ответ провайдера нельзя использовать второй раз и в другом браузере", async () => {

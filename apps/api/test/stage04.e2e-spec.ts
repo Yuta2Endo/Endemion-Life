@@ -159,6 +159,35 @@ describe("Stage 04: перенос жизни из браузера", () => {
     expect(await t.prisma.client.life.count()).toBe(0);
   });
 
+  it("границы импорта: возраст, имя, размер состояния и отсутствующая история дают 400, а не 500", async () => {
+    const client = agent();
+    const local = browserLife("api-import-bounds");
+
+    const old = body(local);
+    (old.state as { life: { age: number } }).life.age = 201;
+    expect((await importLife(client, old).expect(400)).body.error.code).toBe("INVALID_SAVE");
+
+    const longName = body(local);
+    (longName.state as { character: { name: string } }).character.name = "x".repeat(65);
+    expect((await importLife(client, longName).expect(400)).body.error.code).toBe("INVALID_SAVE");
+
+    const huge = body(local);
+    (huge.state as { character: { specialization: string } }).character.specialization = "x".repeat(600_000);
+    expect((await importLife(client, huge).expect(400)).body.error.code).toBe("INVALID_SAVE");
+
+    const missingHistory = { importId: randomUUID(), state: local.state };
+    expect((await importLife(client, missingHistory).expect(400)).body.error.code).toBe("VALIDATION");
+
+    const tooManyChanges = body(local);
+    const changes = Array.from({ length: 100 }, () => ({ kind: "wealth" as const, delta: 1 }));
+    (tooManyChanges.history as HistoryEntry[]).forEach((entry) => { entry.changes = changes; });
+    if ((tooManyChanges.history as HistoryEntry[]).length * changes.length > 20_000) {
+      expect((await importLife(client, tooManyChanges).expect(400)).body.error.code).toBe("INVALID_SAVE");
+    }
+
+    expect(await t.prisma.client.life.count()).toBe(0);
+  });
+
   it("лимиты размера: большая жизнь принимается на маршруте переноса, а действия по-прежнему ограничены 16 КБ", async () => {
     const client = agent();
     const local = browserLife("api-import-size", 300);

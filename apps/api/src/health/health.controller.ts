@@ -22,7 +22,7 @@ export class HealthController {
   @Header("Cache-Control", "no-store")
   async check(@Res({ passthrough: true }) response: Response): Promise<HealthResponse> {
     const [database, redis] = await Promise.all([this.prisma.isUp(), this.redis.isUp()]);
-    if (!database) response.status(503);
+    if (!database || !redis) response.status(503);
     return {
       status: database && redis ? "ok" : "degraded",
       version: APP_VERSION,

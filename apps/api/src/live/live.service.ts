@@ -197,7 +197,8 @@ export class LiveService {
       if (status !== "active") throw new ApiError(409, "FORBIDDEN", "Окно сейчас закрыто");
       const life = await this.ownLife(tx, playerId, lifeId);
       const part = await tx.livePart.findUnique({ where: { windowId_lifeId: { windowId, lifeId } } });
-      if (part?.lastAge === life.life.age) {
+      // Вклад необратим: откат сохранения не должен позволять вложиться повторно на том же или более раннем возрасте
+      if (part && part.lastAge !== null && life.life.age <= part.lastAge) {
         return { progress: row.progress, count: part.count, counted: false, world: "", age: 0, level: 0 };
       }
       const block = joinBlock(

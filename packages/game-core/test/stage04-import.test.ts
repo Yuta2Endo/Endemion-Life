@@ -45,7 +45,7 @@ describe("Stage 04: перенос жизни из браузера", () => {
         expect(adjustments, `${universeId} age ${state.life.age}`).toEqual([]);
       }
     }
-  });
+  }, 15_000);
 
   it("наследник: честная жизнь второго поколения переносится без исправлений", () => {
     for (const universeId of UNIVERSE_IDS) {

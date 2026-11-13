@@ -436,7 +436,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
         </section>
 
         {/* На телефоне досье — отдельная вкладка */}
-        <section className={tab === "people" ? "block lg:hidden" : "max-lg:hidden"}>
+        <section className={tab === "people" ? "block lg:hidden" : "hidden"}>
           <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} />
         </section>
 
@@ -446,7 +446,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
       </div>
 
       {/* Вкладки для телефона: на большом экране все три колонки видны сразу */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-ink-950/95 backdrop-blur-md lg:hidden" aria-label={t("play.sections")}>
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-ink-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden" aria-label={t("play.sections")}>
         {tabs.map((item) => (
           <button
             key={item.id}

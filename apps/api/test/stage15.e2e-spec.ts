@@ -112,7 +112,7 @@ describe("Stage 15: живые окна", () => {
     expect(snap).not.toBeNull();
   });
 
-  it("откат до награды возвращает право забрать её снова", async () => {
+  it("откат не возвращает награду и не разрешает повторный вклад", async () => {
     const client = agent();
     await guest(client);
     const life = await lifeOf(client, "Откат");
@@ -123,10 +123,39 @@ describe("Stage 15: живые окна", () => {
     await client.post(`/api/live/${id}/claim`).set("Origin", ORIGIN).send({ lifeId: life.id }).expect(200);
     const claimed = await t.prisma.client.life.findUniqueOrThrow({ where: { id: life.id } });
     await client.post(`/api/lives/${life.id}/restore`).set("Origin", ORIGIN).send({ version: 1, expectedVersion: claimed.version }).expect(200);
+    const restoredRow = await t.prisma.client.life.findUniqueOrThrow({ where: { id: life.id } });
+    const restoredState = restoredRow.state as { flags: string[]; character: { wealth: number } };
     const part = await t.prisma.client.livePart.findUniqueOrThrow({ where: { windowId_lifeId: { windowId: id, lifeId: life.id } } });
-    expect(part.claimedAt).toBeNull();
+    expect(part.claimedAt).not.toBeNull();
+    expect(restoredState.flags.some((flag) => flag.startsWith("live."))).toBe(true);
     const again = await client.post(`/api/live/${id}/claim`).set("Origin", ORIGIN).send({ lifeId: life.id }).expect(200);
-    expect(again.body.replayed).toBe(false);
+    expect(again.body.replayed).toBe(true);
+    const reContribute = await client.post(`/api/live/${id}/contribute`).set("Origin", ORIGIN).send({ lifeId: life.id }).expect(200);
+    expect(reContribute.body.counted).toBe(false);
+    expect(reContribute.body.count).toBe(1);
+  });
+
+  it("одновременные запросы награды выдают золото один раз", async () => {
+    const client = agent();
+    await guest(client);
+    const life = await lifeOf(client, "Гонка");
+    const created = await client.post("/api/live/manage").set("Origin", ORIGIN).set("x-live-ops", TOKEN).send(windowBody()).expect(201);
+    const id = created.body.id as string;
+    await client.post(`/api/live/manage/${id}`).set("Origin", ORIGIN).set("x-live-ops", TOKEN).send({ to: "scheduled" }).expect(200);
+    await client.post(`/api/live/${id}/contribute`).set("Origin", ORIGIN).send({ lifeId: life.id }).expect(200);
+
+    const before = (await t.prisma.client.life.findUniqueOrThrow({ where: { id: life.id } })).state as { character: { wealth: number }; version: number };
+    const results = await Promise.all([
+      client.post(`/api/live/${id}/claim`).set("Origin", ORIGIN).send({ lifeId: life.id }),
+      client.post(`/api/live/${id}/claim`).set("Origin", ORIGIN).send({ lifeId: life.id })
+    ]);
+    expect(results.map((res) => res.status)).toEqual([200, 200]);
+    expect(results.filter((res) => res.body.replayed === false)).toHaveLength(1);
+    expect(results.filter((res) => res.body.replayed === true)).toHaveLength(1);
+
+    const after = (await t.prisma.client.life.findUniqueOrThrow({ where: { id: life.id } })).state as { character: { wealth: number }; version: number };
+    expect(after.character.wealth).toBe(before.character.wealth + 25);
+    expect(after.version).toBe(before.version + 1);
   });
 
   it("два вклада в одну цель не теряют единицу", async () => {

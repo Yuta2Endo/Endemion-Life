@@ -173,6 +173,38 @@ describe("жизни", () => {
     expect(await prisma.client.historyEntry.count({ where: { lifeId: life.id, kind: "year" } })).toBe(1);
   });
 
+  it("лимит живых жизней не превышается при одновременном создании", async () => {
+    const client = agent();
+    await createLife(client);
+    const results = await Promise.all(
+      Array.from({ length: 24 }, (_, i) =>
+        client.post("/api/lives").set("Origin", ORIGIN).send({ universeId: "hunter", seed: `cap-${i}-${randomUUID()}` })
+      )
+    );
+    const created = results.filter((r) => r.status === 201).length;
+    const limited = results.filter((r) => r.status === 409 && r.body.error.code === "LIMIT_REACHED").length;
+    expect(created).toBe(19);
+    expect(limited).toBe(5);
+    expect(await prisma.client.life.count({ where: { status: "alive" } })).toBe(20);
+  });
+
+  it("устаревший nextSeq в сохранении не ломает историю", async () => {
+    const client = agent();
+    const life = await createLife(client);
+    await act(client, life, { type: "advance" }).expect(200);
+    const row = await prisma.client.life.findUniqueOrThrow({ where: { id: life.id } });
+    const state = row.state as { nextSeq: number };
+    const beforeMax = (await prisma.client.historyEntry.aggregate({ where: { lifeId: life.id }, _max: { seq: true } }))._max.seq!;
+    await prisma.client.life.update({ where: { id: life.id }, data: { state: { ...state, nextSeq: 1 } } });
+    const current = (await client.get(`/api/lives/${life.id}`).expect(200)).body.life as LifeView;
+    const choice = current.pendingEvent?.choices.find((item) => item.available);
+    const res = await act(client, current, choice ? { type: "choose", choiceId: choice.id } : { type: "advance" });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    const afterMax = (await prisma.client.historyEntry.aggregate({ where: { lifeId: life.id }, _max: { seq: true } }))._max.seq!;
+    expect(afterMax).toBeGreaterThan(beforeMax);
+    expect((res.body as ActionResponse).life.version).toBe(current.version + 1);
+  });
+
   it("устаревшая версия отклоняется", async () => {
     const client = agent();
     const life = await createLife(client);

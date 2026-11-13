@@ -22,7 +22,7 @@ export interface IdAccount {
  */
 export async function startIdProvider(lifeOrigin: string) {
   const accounts = new Map<string, IdAccount>();
-  const state: { loginAs: string | null } = { loginAs: null };
+  const state: { loginAs: string | null; outage: boolean } = { loginAs: null, outage: false };
   const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
   const port = await freePort();
   const issuer = `http://127.0.0.1:${port}`;
@@ -65,6 +65,13 @@ export async function startIdProvider(lifeOrigin: string) {
 
   // Вместо формы входа: вход сразу за loginAs, согласие выдаётся автоматически, как в Endemion ID
   provider.use(async (ctx: ProviderContext, next) => {
+    if (state.outage && ctx.path === "/token" && ctx.method === "POST") {
+      const response = ctx as unknown as { status: number; type: string; body: string };
+      response.status = 503;
+      response.type = "text/plain";
+      response.body = "Endemion ID temporarily unavailable";
+      return;
+    }
     const match = /^\/interaction\/([^/]+)$/.exec(ctx.path);
     if (!match || ctx.method !== "GET") return next();
     const details = await provider.interactionDetails(ctx.req, ctx.res);

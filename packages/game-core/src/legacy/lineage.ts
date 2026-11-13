@@ -58,12 +58,13 @@ export function lineageYearly(ctx: EngineContext, emit: Emit): void {
     const definition = findLineageConsequence(item.id);
     if (!definition || !checkAll(state, definition.conditions)) continue;
     if (definition.chance !== undefined && !ctx.rng.chance(definition.chance)) continue;
-    ctx.source = item.id;
+    const source = item.src || item.id;
+    ctx.source = source;
     applyEffects(ctx, definition.effects);
-    ctx.source = undefined;
-    chronicle(ctx, "story", [SELF_ID], { story: item.id }, item.src || item.id, item.entry);
+    chronicle(ctx, "story", [SELF_ID], { story: item.id }, source, item.entry);
     const vars = { name: state.character.name };
-    emit("consequence", fillText(definition.title, vars), fillText(definition.text, vars));
+    emit("consequence", fillText(definition.title, vars), fillText(definition.text, vars), definition.id, source);
+    ctx.source = undefined;
     fired += 1;
   }
 }

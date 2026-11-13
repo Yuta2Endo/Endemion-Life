@@ -20,6 +20,8 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
       ...init,
       credentials: "same-origin",
       cache: "no-store",
+      // Зависший запрос не должен оставлять экран в вечном loading
+      signal: init.signal ?? AbortSignal.timeout(15_000),
       headers: { Accept: "application/json", ...(init.body ? { "Content-Type": "application/json" } : {}), ...init.headers }
     });
   } catch {

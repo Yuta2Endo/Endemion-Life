@@ -1,5 +1,7 @@
 # Развёртывание на сервере
 
+> **STAGE 01 (2026-11-13):** current production is `ca72b8b`, save schema **8**, **10 migrations**; the notes below are historical (2026-11-04, schema 5, six migrations) and remain useful only where not contradicted. Release is blocked on committing/pushing the audited tree and owner approval; see `docs/stage-01/RELEASE_READINESS.md`.
+
 Состояние на 2026-11-04 (вечер): развёрнуты Stage 03 и Stage 04 (`26af6f0`), формат сохранения 5, миграций 6; откат — образы `:pre-stage04` (подробно — `STAGE_04_REPORT.md`, раздел 14). Ранее 2026-11-04: Stage 02 (`66602fb`). На 2026-11-03: **развёрнуто** на 185.175.156.196 в `/opt/endemion-life`, режим behind-proxy. Блок `life.{$SITE_DOMAIN}` добавлен в Caddyfile репозитория Endemion (коммит `7db87cf`). Образы собраны на компьютере разработки и перенесены `docker save | ssh … docker load`: на сервере 2 ГБ памяти, и сборка мешала бы основному сайту. Ниже — общий порядок. Весь порядок ниже проверен на локальном стеке `docker-compose.prod.yml` (Docker Desktop), но не на сервере. Шаги, которые зависят от владельца, отмечены «владелец».
 
 ## Что поднимается

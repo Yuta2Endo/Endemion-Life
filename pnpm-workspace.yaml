@@ -39,3 +39,6 @@ minimumReleaseAgeExclude:
   - "@next/swc-win32-x64-msvc@16.4.4"
   - eslint-config-next@16.4.4
   - next@16.4.4
+  - "@capacitor/android@8.6.2"
+  - "@capacitor/cli@8.6.2"
+  - "@capacitor/core@8.6.2"

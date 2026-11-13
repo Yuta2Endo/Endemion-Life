@@ -9,7 +9,7 @@ import type { GameState, HistoryKind, UniverseId } from "../types.js";
 import { getUniverse } from "../universes/registry.js";
 
 /** Запись в хронику от правил мира: отдельная строка после итогов года */
-export type Emit = (kind: HistoryKind, title: LocalizedText, text: LocalizedText, eventId?: string) => void;
+export type Emit = (kind: HistoryKind, title: LocalizedText, text: LocalizedText, eventId?: string, sourceEventId?: string) => void;
 
 interface WorldRules {
   yearly: (ctx: EngineContext, emit: Emit) => void;

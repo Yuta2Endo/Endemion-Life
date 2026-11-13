@@ -1,5 +1,7 @@
 # HTTPS для life.endemion.online
 
+> **STAGE 01 (2026-11-13):** production now sends `Strict-Transport-Security: max-age=63072000; includeSubDomains` at the edge. The sentence below about HSTS being disabled describes the 2026-11-03 state and is retained as history.
+
 Состояние на 2026-11-03: **HTTPS работает**. DNS: `life A 185.175.156.196` (spaceweb.ru). Режим behind-proxy: сертификат Let's Encrypt (выпущен 2026-11-03, до 2027-02-01) получает и продлевает Caddy основного сайта. Блок `life.{$SITE_DOMAIN}` лежит в Caddyfile репозитория Endemion. `check-https.sh https://life.endemion.online` — все проверки OK. HSTS пока выключен (`HSTS_MAX_AGE=0`).
 
 ## Два режима

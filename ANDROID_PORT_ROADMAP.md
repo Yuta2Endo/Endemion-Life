@@ -180,3 +180,7 @@ Only if Stage 06 shows a real problem.
 - Turn off `COOKIE_SECURE`, CSRF origin checks, or TLS verification.
 - Generate a fake `android/` tree in Stage 01.
 - Start Stage 02 without an explicit request.
+
+## STAGE 01 reconciliation (2026-11-13)
+
+Capacitor **8.6.2** is now pinned in the root manifest/lockfile; the native project exists and `cap sync android` is reproducible. Build with **JDK 21** (`C:\Program Files\Microsoft\jdk-21.0.13.21-hotspot`); Android Studio's bundled Java 25 fails AGP with class-file major 69. SDK path: `E:\ASGG`; compile/target SDK 36, minSdk 24. `gradlew assembleDebug` built a 5,800,876-byte APK and `bundleRelease` built a 4,342,869-byte **unsigned** AAB in STAGE 01. Signing, Play Console listing, data-safety/account-deletion compliance, device/emulator installation, deep links, push and offline cache remain blockers.

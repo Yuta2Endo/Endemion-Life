@@ -87,6 +87,29 @@ describe("Stage 07: связи игроков", () => {
     await a.post("/api/social/requests").set("Origin", ORIGIN).send({ playerId: bId }).expect(403);
     // Автор блока профиль видит
     await b.get(`/api/social/players/${aId}`).expect(200);
+
+    // Обратный блок не перезаписывает автора и не открывает профиль
+    await a.post("/api/social/block").set("Origin", ORIGIN).send({ playerId: bId }).expect(403);
+    const tie = await t.prisma.client.tie.findFirstOrThrow({ where: { OR: [{ playerAId: aId, playerBId: bId }, { playerAId: bId, playerBId: aId }] } });
+    expect(tie.status).toBe("blocked");
+    expect(tie.askedById).toBe(bId);
+    await a.get(`/api/social/players/${bId}`).expect(404);
+  });
+
+  it("встречные блокировки не перезаписывают автора", async () => {
+    const a = agent();
+    const b = agent();
+    const aId = await named(a, "Ирина");
+    const bId = await named(b, "Кирилл");
+    const results = await Promise.all([
+      a.post("/api/social/block").set("Origin", ORIGIN).send({ playerId: bId }),
+      b.post("/api/social/block").set("Origin", ORIGIN).send({ playerId: aId })
+    ]);
+    expect(results.map((res) => res.status).sort()).toEqual([200, 403]);
+    const winner = results[0].status === 200 ? aId : bId;
+    const tie = await t.prisma.client.tie.findFirstOrThrow({ where: { status: "blocked" } });
+    expect(tie.askedById).toBe(winner);
+    expect(await t.prisma.client.tie.count()).toBe(1);
   });
 
   it("без имени, без сессии и на себя — отказ", async () => {

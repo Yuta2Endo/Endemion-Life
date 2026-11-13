@@ -5,7 +5,7 @@
 
 Стек: Next.js 16, React 19, TypeScript, Tailwind CSS 4, NestJS 12, PostgreSQL 18 + Prisma 7, Redis 8, pnpm workspaces, Vitest, Playwright, Docker Compose, Nginx.
 
-Устройство проекта: [docs/architecture.md](docs/architecture.md). Состояние этапа: [STAGE_01_REPORT.md](STAGE_01_REPORT.md).
+Устройство проекта: [docs/architecture.md](docs/architecture.md). Текущий статус: [PROJECT_STATUS.md](PROJECT_STATUS.md); стабилизация STAGE 01: [docs/stage-01/STAGE_01_REPORT.md](docs/stage-01/STAGE_01_REPORT.md).
 
 ## Требования
 
@@ -65,4 +65,4 @@ docker compose -f infrastructure/docker-compose.prod.yml --env-file .env up -d -
 | [docs/LOAD_TEST_REPORT.md](docs/LOAD_TEST_REPORT.md) | Нагрузочный тест и тесты надёжности |
 | [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md) | Git, ветки, CI |
 
-Состояние подготовки к запуску: [STAGE_01_5_REPORT.md](STAGE_01_5_REPORT.md).
+Состояние подготовки к запуску: [docs/stage-01/RELEASE_READINESS.md](docs/stage-01/RELEASE_READINESS.md).

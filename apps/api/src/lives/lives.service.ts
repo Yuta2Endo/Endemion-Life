@@ -112,12 +112,16 @@ export class LivesService {
     this.db = prisma.client;
   }
 
-  /** Откат снял флаг награды окна — отметку выдачи тоже снимаем, иначе золото пропадёт навсегда */
-  private async releaseUndoneClaims(tx: Tx, lifeId: string, state: GameState): Promise<void> {
+  /**
+   * Живые награды необратимы: откат сохранения не возвращает уже полученное золото
+   * и не позволяет получить его второй раз. Возвращаем в состояние флаги всех
+   * когда-либо полученных наград, даже если снимок был сделан до выдачи
+   */
+  private async preserveClaims(tx: Tx, lifeId: string, state: GameState): Promise<void> {
     const parts = await tx.livePart.findMany({ where: { lifeId, claimedAt: { not: null } }, include: { window: { select: { flag: true } } } });
-    const undo = parts.filter((part) => !state.flags.includes(part.window.flag)).map((part) => part.id);
-    if (undo.length === 0) return;
-    await tx.livePart.updateMany({ where: { id: { in: undo } }, data: { claimedAt: null } });
+    for (const part of parts) {
+      if (!state.flags.includes(part.window.flag)) state.flags.push(part.window.flag);
+    }
   }
 
   private async writeEntries(tx: Tx, lifeId: string, entries: HistoryEntry[]): Promise<void> {
@@ -127,9 +131,21 @@ export class LivesService {
     });
   }
 
+  /** Не даёт действию писать историю поверх уже сохранённой: nextSeq из старого снимка может отставать. */
+  private async alignHistoryHead(tx: Tx, lifeId: string, state: GameState): Promise<void> {
+    const head = await tx.historyEntry.aggregate({ where: { lifeId }, _max: { seq: true } });
+    const next = (head._max.seq ?? 0) + 1;
+    if (state.nextSeq < next) state.nextSeq = next;
+  }
+
   private async writeSnapshot(tx: Tx, lifeId: string, state: GameState, reason: SaveReason): Promise<void> {
     await tx.lifeSnapshot.create({ data: { lifeId, version: state.version, age: state.life.age, reason, state: json(state) } });
     await tx.lifeSnapshot.deleteMany({ where: { lifeId, version: { lte: state.version - MAX_SNAPSHOTS } } });
+  }
+
+  /** Сериализует создание жизней одного игрока: лимит проверяется и занимается в одной транзакции */
+  private async lockPlayer(tx: Tx, playerId: string): Promise<void> {
+    await tx.$queryRaw`SELECT id FROM players WHERE id = ${playerId}::uuid FOR UPDATE`;
   }
 
   /** Блокирует строку жизни до конца транзакции. Второе действие той же жизни ждёт, пока первое не запишется */
@@ -148,12 +164,13 @@ export class LivesService {
   }
 
   async create(playerId: string, input: CreateLifeRequest): Promise<{ life: LifeView; entries: HistoryEntry[] }> {
-    const alive = await this.db.life.count({ where: { playerId, status: "alive" } });
-    if (alive >= MAX_ALIVE_LIVES) throw new ApiError(409, "LIMIT_REACHED", `Одновременно можно вести не больше ${MAX_ALIVE_LIVES} жизней`);
-
     const { seed, ...character } = input;
     const { state, entries } = newGame({ ...character, seed: seed ?? randomUUID() });
     const row = await this.db.$transaction(async (tx) => {
+      // Лимит и вставка — под одной блокировкой игрока: параллельные создания не обойдут предел
+      await this.lockPlayer(tx, playerId);
+      const alive = await tx.life.count({ where: { playerId, status: "alive" } });
+      if (alive >= MAX_ALIVE_LIVES) throw new ApiError(409, "LIMIT_REACHED", `Одновременно можно вести не больше ${MAX_ALIVE_LIVES} жизней`);
       const life = await tx.life.create({
         data: { playerId, universeId: state.character.universeId, seed: state.seed, ...lifeColumns(state) }
       });
@@ -192,8 +209,11 @@ export class LivesService {
 
         this.checkVersion(row, request.expectedVersion);
         const before = stateOf(row);
+        // Старые/восстановленные сохранения могли хранить nextSeq позади фактической истории.
+        // Выравниваем по базе до применения действия, иначе вставка истории упадёт на уникальном (lifeId, seq).
+        await this.alignHistoryHead(tx, lifeId, before);
         const { state, entries } = applyAction(before, request.action);
-      const updated = await tx.life.update({ where: { id: lifeId }, data: lifeColumns(state) });
+        const updated = await tx.life.update({ where: { id: lifeId }, data: lifeColumns(state) });
         await this.writeEntries(tx, lifeId, entries);
         await this.writeSnapshot(tx, lifeId, state, "action");
         await tx.gameAction.create({
@@ -228,6 +248,7 @@ export class LivesService {
    */
   async succeed(playerId: string, lifeId: string, request: SuccessionRequest): Promise<SuccessionResponse> {
     return this.db.$transaction(async (tx) => {
+      await this.lockPlayer(tx, playerId);
       const row = await this.lockLife(tx, playerId, lifeId);
 
       const previous = await tx.gameAction.findUnique({ where: { lifeId_actionId: { lifeId, actionId: request.actionId } } });
@@ -289,9 +310,39 @@ export class LivesService {
    * История из браузера — только текст хронологии; номера записей должны идти по порядку и до записи о переносе.
    * Повтор с тем же importId (обрыв связи, вторая вкладка) возвращает ту же жизнь: уникальный (player_id, import_id)
    */
+  /** Границы внешнего сохранения: форма проверена zod, содержимое — здесь до parseSave */
+  private checkImportBounds(request: ImportLifeRequest): void {
+    let size = 0;
+    try {
+      size = Buffer.byteLength(JSON.stringify(request.state), "utf8");
+    } catch {
+      throw new ApiError(400, "INVALID_SAVE", "Сохранение не сериализуется");
+    }
+    if (size > 512 * 1024) throw new ApiError(400, "INVALID_SAVE", "Сохранение больше 512 КБ");
+    const state = request.state as { character?: { name?: unknown }; life?: { age?: unknown }; schemaVersion?: unknown };
+    const name = state.character?.name;
+    if (typeof name !== "string" || name.trim().length < 1 || name.length > 64) {
+      throw new ApiError(400, "INVALID_SAVE", "Имя персонажа: от 1 до 64 символов");
+    }
+    const age = state.life?.age;
+    if (!Number.isInteger(age) || (age as number) < 0 || (age as number) > 200) {
+      throw new ApiError(400, "INVALID_SAVE", "Возраст персонажа: целое число от 0 до 200");
+    }
+    const version = state.schemaVersion;
+    if (!Number.isInteger(version) || (version as number) < 1 || (version as number) > 8) {
+      throw new ApiError(400, "INVALID_SAVE", "Неподдерживаемая версия сохранения");
+    }
+    if (request.history.length > 2000) throw new ApiError(400, "INVALID_SAVE", "История больше 2000 записей");
+    const changes = request.history.reduce((sum, entry) => sum + entry.changes.length, 0);
+    if (changes > 20_000 || size + changes * 200 > 2 * 1024 * 1024) {
+      throw new ApiError(400, "INVALID_SAVE", "Слишком большой объём истории");
+    }
+  }
+
   async importLife(playerId: string, request: ImportLifeRequest): Promise<ImportResponse> {
     const existing = await this.findImported(playerId, request.importId);
     if (existing) return existing;
+    this.checkImportBounds(request);
 
     // Соль сервера: будущие броски нельзя вычислить ни из присланного seed, ни из состояния генератора.
     // Повреждённое сохранение здесь — ошибка запроса (400), а не сбой сервера, как для строки из базы
@@ -299,8 +350,12 @@ export class LivesService {
     try {
       prepared = prepareImport(request.state, randomUUID());
     } catch (error) {
-      if (error instanceof GameRuleError && error.code === "INVALID_SAVE") throw new ApiError(400, "INVALID_SAVE", error.message);
-      throw error;
+      if (error instanceof ApiError) throw error;
+      if (error instanceof GameRuleError) {
+        if (error.code === "LINEAGE_CONTINUED") throw new ApiError(409, "LINEAGE_CONTINUED", error.message);
+        throw new ApiError(400, "INVALID_SAVE", error.message);
+      }
+      throw new ApiError(400, "INVALID_SAVE", "Сохранение повреждено");
     }
     const { state, entry, adjustments } = prepared;
     let last = 0;
@@ -312,6 +367,7 @@ export class LivesService {
     try {
       const row = await this.db.$transaction(async (tx) => {
         if (state.life.alive) {
+          await this.lockPlayer(tx, playerId);
           const alive = await tx.life.count({ where: { playerId, status: "alive" } });
           if (alive >= MAX_ALIVE_LIVES) throw new ApiError(409, "LIMIT_REACHED", `Одновременно можно вести не больше ${MAX_ALIVE_LIVES} жизней`);
         }
@@ -409,7 +465,7 @@ export class LivesService {
 
       const target = parseSave(snapshot.state);
       const { state, entries } = restoreState(target, row.version);
-      await this.releaseUndoneClaims(tx, lifeId, state);
+      await this.preserveClaims(tx, lifeId, state);
       await tx.historyEntry.deleteMany({ where: { lifeId, seq: { gte: target.nextSeq } } });
       await tx.lifeSnapshot.deleteMany({ where: { lifeId, version: { gt: request.version } } });
       const updated = await tx.life.update({ where: { id: lifeId }, data: lifeColumns(state) });

@@ -170,7 +170,10 @@ export type ApiErrorCode =
   | "INVALID_CREDENTIALS"
   | "INVALID_CODE"
   | "INVALID_TOKEN"
+  | "TOKEN_EXPIRED"
+  | "NO_LIFE_PROFILE"
   | "ALREADY_SIGNED_IN"
+  | "IDENTITY_CONFLICT"
   | "USE_ENDEMION_ID"
   | "UNAVAILABLE"
   | "INTERNAL";
@@ -180,6 +183,16 @@ export const MAX_ALIVE_LIVES = 20;
 
 export interface ApiErrorBody {
   error: { code: ApiErrorCode; message: string; details?: unknown };
+}
+
+/**
+ * Stage 11.2: минимальный ответ /api/portal/profile. Внутренний playerId и GameState
+ * не раскрываются — только факт привязки, отображаемое имя и число жизней.
+ */
+export interface PortalProfileView {
+  exists: true;
+  displayName: string | null;
+  lives: { total: number; alive: number };
 }
 
 export function lifeStatus(state: GameState): LifeStatus {

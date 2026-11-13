@@ -47,6 +47,14 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Маркер для web-слоя: в Android-оболочке нельзя создавать локальную жизнь при сбое API
+        if (bridge != null && bridge.getWebView() != null) {
+            String userAgent = bridge.getWebView().getSettings().getUserAgentString();
+            if (!userAgent.contains("EndemionLifeAndroid")) {
+                bridge.getWebView().getSettings().setUserAgentString(userAgent + " EndemionLifeAndroid/1.0");
+            }
+        }
+
         Window window = getWindow();
         window.setStatusBarColor(SHELL_BACKGROUND);
         window.setNavigationBarColor(SHELL_BACKGROUND);

@@ -26,7 +26,7 @@ export function AccountLink() {
 
   if (state === "offline") return null;
   return (
-    <Link href="/account" className="text-sm text-bone-300 transition hover:text-gold-200" data-testid="account-link" data-state={state}>
+    <Link href="/account" className="whitespace-nowrap text-xs text-bone-300 transition hover:text-gold-200 sm:text-sm" data-testid="account-link" data-state={state}>
       {state === "account" ? t("nav.account") : t("nav.signIn")}
     </Link>
   );

@@ -17,16 +17,23 @@ export class RateLimitGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const limit = this.config.rateLimitPerMinute;
     const request = context.switchToHttp().getRequest<Request>();
-    if (limit === 0 || request.path === "/api/health" || !this.redis.ready) return true;
+    if (limit === 0 || request.path === "/api/health") return true;
 
     const window = Math.floor(Date.now() / (WINDOW_SECONDS * 1000));
     const key = `rl:${request.ip ?? "unknown"}:${window}`;
     let count: number;
+    if (!this.redis.ready) {
+      // Fail-closed для игровых маршрутов. Вход/регистрация остаются доступны:
+      // у AuthThrottle есть отдельный счётчик в памяти, иначе сбой Redis закрыл бы вход
+      if (request.path.startsWith("/api/auth/")) return true;
+      throw new ApiError(503, "UNAVAILABLE", "Ограничитель запросов недоступен. Повторите позже");
+    }
     try {
       const result = await this.redis.client.multi().incr(key).expire(key, WINDOW_SECONDS + 1).exec();
       count = Number(result?.[0]?.[1] ?? 0);
     } catch {
-      return true;
+      if (request.path.startsWith("/api/auth/")) return true;
+      throw new ApiError(503, "UNAVAILABLE", "Ограничитель запросов недоступен. Повторите позже");
     }
     if (count > limit) throw new ApiError(429, "RATE_LIMITED", "Слишком много запросов. Подождите минуту");
     return true;

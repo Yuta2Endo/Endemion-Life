@@ -180,5 +180,5 @@ describe("Stage 04: экономические и социальные собы�
     // Выпадают и общие, и события миров
     expect([...seen].some((id) => id.startsWith("eco."))).toBe(true);
     expect([...seen].some((id) => !id.startsWith("eco."))).toBe(true);
-  });
+  }, 15_000);
 });

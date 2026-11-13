@@ -189,7 +189,13 @@ export function newGame(input: NewGameInput): ActionResult {
 }
 
 function emitter(ctx: EngineContext, entries: HistoryEntry[]): Emit {
-  return (kind, title, text, eventId) => pushEntry(ctx, entries, kind, { title: named(ctx, title), text: named(ctx, text), ...(eventId ? { eventId } : {}) });
+  return (kind, title, text, eventId, sourceEventId) =>
+    pushEntry(ctx, entries, kind, {
+      title: named(ctx, title),
+      text: named(ctx, text),
+      ...(eventId ? { eventId } : {}),
+      ...(sourceEventId ? { sourceEventId } : {})
+    });
 }
 
 /**

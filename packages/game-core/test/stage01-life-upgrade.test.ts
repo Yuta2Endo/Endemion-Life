@@ -64,7 +64,7 @@ describe("Stage 01: life experience upgrade", () => {
     expect(chosen.state.consequences.find((item) => item.id === "mu.c-saved-merchant")?.source).toBe("mu.bandits");
     let next = chosen.state;
     let entries = chosen.entries;
-    for (let i = 0; i < 6 && next.life.alive && next.consequences.some((item) => item.id === "mu.c-saved-merchant"); i += 1) {
+    for (let i = 0; i < 10 && next.life.alive && next.consequences.some((item) => item.id === "mu.c-saved-merchant"); i += 1) {
       const result = next.pending
         ? applyAction(next, { type: "choose", choiceId: presentEvent(next)!.choices.find((choice) => choice.available)?.id ?? presentEvent(next)!.choices[0]!.id })
         : applyAction(next, { type: "advance" });

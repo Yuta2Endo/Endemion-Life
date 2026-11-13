@@ -145,12 +145,22 @@ export class SocialService {
     const other = await this.prisma.client.player.findUnique({ where: { id: otherId }, select: { id: true } });
     if (!other) throw new ApiError(404, "NOT_FOUND", "Игрок не найден");
     const [playerAId, playerBId] = ordered(playerId, otherId);
-    const row = await this.prisma.client.tie.upsert({
-      where: { playerAId_playerBId: { playerAId, playerBId } },
-      create: { playerAId, playerBId, status: "blocked", askedById: playerId },
-      update: { status: "blocked", askedById: playerId }
+    const tieId = await this.prisma.client.$transaction(async (tx) => {
+      // Обе строки игроков блокируются в одном порядке: встречные запросы
+      // не могут одновременно переписать автора блока
+      await tx.$queryRaw`SELECT id FROM players WHERE id = ${playerAId}::uuid OR id = ${playerBId}::uuid ORDER BY id FOR UPDATE`;
+      const existing = await tx.tie.findUnique({ where: { playerAId_playerBId: { playerAId, playerBId } } });
+      if (existing?.status === "blocked" && existing.askedById !== playerId) {
+        throw new ApiError(403, "FORBIDDEN", "Блок уже поставил другой игрок");
+      }
+      if (existing) {
+        const row = await tx.tie.update({ where: { id: existing.id }, data: { status: "blocked", askedById: playerId } });
+        return row.id;
+      }
+      const row = await tx.tie.create({ data: { playerAId, playerBId, status: "blocked", askedById: playerId } });
+      return row.id;
     });
-    return this.one(playerId, row.id);
+    return this.one(playerId, tieId);
   }
 
   /** Поиск по точному имени. Кусок имени не ищет — так не перебрать всех */

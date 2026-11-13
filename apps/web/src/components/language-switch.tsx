@@ -18,7 +18,7 @@ export function LanguageSwitch() {
   }
 
   return (
-    <div className="flex items-center rounded-md border border-line bg-ink-900/70 p-0.5 text-xs" role="group" aria-label={t("nav.language")}>
+    <div className="flex shrink-0 items-center rounded-md border border-line bg-ink-900/70 p-0.5 text-[10px] sm:text-xs" role="group" aria-label={t("nav.language")}>
       {LOCALES.map((code) => (
         <button
           key={code}
@@ -27,7 +27,7 @@ export function LanguageSwitch() {
           disabled={pending}
           aria-pressed={code === locale}
           aria-current={code === locale ? "true" : undefined}
-          className={`rounded px-2 py-1 uppercase tracking-widest transition ${code === locale ? "bg-gold-500/20 text-gold-100 ring-1 ring-gold-400/70" : "text-bone-500 hover:text-bone-100"}`}
+          className={`rounded px-1 py-1 uppercase tracking-widest transition sm:px-2 ${code === locale ? "bg-gold-500/20 text-gold-100 ring-1 ring-gold-400/70" : "text-bone-500 hover:text-bone-100"}`}
         >
           {code}
         </button>

@@ -14,14 +14,6 @@ const config: CapacitorConfig = {
     androidScheme: "https",
     allowNavigation: ["life.endemion.online", "auth.endemion.online"],
     errorPath: "offline.html"
-  },
-  plugins: {
-    SystemBars: {
-      insetsHandling: "native",
-      statusBarColor: "#060608",
-      navigationBarColor: "#060608",
-      style: "DARK"
-    }
   }
 };
 

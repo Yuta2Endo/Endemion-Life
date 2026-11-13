@@ -29,7 +29,7 @@ export default async function HomePage() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6">
-      <section className="relative flex flex-col items-center py-16 text-center sm:py-20">
+      <section className="relative flex flex-col items-center overflow-hidden py-16 text-center sm:py-20">
         <div
           className="pointer-events-none absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-500/10 blur-[120px] animate-glow"
           aria-hidden="true"
@@ -44,12 +44,12 @@ export default async function HomePage() {
         <div className="relative mt-8 flex animate-rise flex-col gap-3 sm:flex-row">
           <Link
             href="/worlds"
-            className="rounded-md border border-gold-400/70 bg-linear-to-b from-gold-400/25 to-gold-600/10 px-7 py-3 font-medium tracking-wide text-gold-100 shadow-[0_0_32px_-8px_var(--color-gold-400)] transition hover:border-gold-300 hover:from-gold-400/35"
+            className="inline-flex min-h-11 items-center justify-center rounded-md border border-gold-400/70 bg-linear-to-b from-gold-400/25 to-gold-600/10 px-7 py-3 font-medium tracking-wide text-gold-100 shadow-[0_0_32px_-8px_var(--color-gold-400)] transition hover:border-gold-300 hover:from-gold-400/35"
             data-testid="start-life"
           >
             {t("home.start")}
           </Link>
-          <a href="/worlds#compare" className="rounded-md border border-line bg-ink-900/60 px-7 py-3 text-bone-100 transition hover:border-gold-500/60 hover:text-gold-200">
+          <a href="/worlds#compare" className="inline-flex min-h-11 items-center justify-center rounded-md border border-line bg-ink-900/60 px-7 py-3 text-bone-100 transition hover:border-gold-500/60 hover:text-gold-200">
             {t("home.explore")}
           </a>
         </div>

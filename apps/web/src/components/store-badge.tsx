@@ -18,7 +18,7 @@ export function StoreBadge() {
   const dot = kind === "cloud" ? "bg-jade-400" : "bg-gold-400";
   return (
     <span
-      className={`inline-flex items-center gap-2 text-xs ${kind === "local" ? "text-gold-200" : "text-bone-300"}`}
+      className={`hidden min-[360px]:inline-flex items-center gap-2 text-xs ${kind === "local" ? "text-gold-200" : "text-bone-300"}`}
       title={kind === "local" ? t("store.localHint") : label}
       role="status"
       data-testid="store-badge"

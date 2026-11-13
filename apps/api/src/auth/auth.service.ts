@@ -84,31 +84,58 @@ export class AuthService {
    */
   async signInWithEndemionId(request: Request, response: Response, claims: IdClaims, refreshToken: string): Promise<{ transferredLives: number }> {
     const current = await this.sessions.current(request);
-    const sameEmail = claims.email ? await this.db.account.findUnique({ where: { email: claims.email } }) : null;
 
     const result = await this.db.$transaction(async (tx) => {
       let playerId: string | null = (await tx.player.findUnique({ where: { endemionSub: claims.sub }, select: { id: true } }))?.id ?? null;
       let linkedExisting = playerId !== null;
 
-      if (!playerId && sameEmail) {
-        const owner = await tx.player.findUniqueOrThrow({ where: { id: sameEmail.playerId } });
-        if (owner.endemionSub) throw new ApiError(409, "EMAIL_TAKEN", "Аккаунт Life с этой почтой уже связан с другим Endemion ID");
-        if (!claims.emailVerified) {
-          throw new ApiError(409, "INVALID_TOKEN", "Подтвердите почту в Endemion ID: после этого аккаунт Life свяжется с ним и прогресс сохранится");
+      if (!playerId && claims.email) {
+        // Блокируем строку аккаунта по почте: два одновременных входа с разными sub
+        // не должны оба пройти проверку и связать одного владельца дважды
+        await tx.$queryRaw`SELECT player_id FROM accounts WHERE email = ${claims.email} FOR UPDATE`;
+        const sameEmail = await tx.account.findUnique({ where: { email: claims.email } });
+        if (sameEmail) {
+          await tx.$queryRaw`SELECT id FROM players WHERE id = ${sameEmail.playerId}::uuid FOR UPDATE`;
+          const owner = await tx.player.findUniqueOrThrow({ where: { id: sameEmail.playerId } });
+          if (owner.endemionSub) {
+            throw new ApiError(409, "EMAIL_TAKEN", "Аккаунт Life с этой почтой уже связан с другим Endemion ID");
+          }
+          if (!claims.emailVerified) {
+            throw new ApiError(409, "INVALID_TOKEN", "Подтвердите почту в Endemion ID: после этого аккаунт Life свяжется с ним и прогресс сохранится");
+          }
+          playerId = owner.id;
+          linkedExisting = true;
         }
-        playerId = owner.id;
-        linkedExisting = true;
       }
 
-      const guest = current ? await tx.player.findUnique({ where: { id: current.player.id }, include: { account: { select: { id: true } } } }) : null;
+      let guest: { id: string; account: { id: string } | null; endemionSub: string | null } | null = null;
+      if (current) {
+        // Гость блокируется до проверки и переноса: встречный вход не должен
+        // одновременно создать аккаунт и перенести те же жизни второму владельцу
+        await tx.$queryRaw`SELECT id FROM players WHERE id = ${current.player.id}::uuid FOR UPDATE`;
+        guest = await tx.player.findUnique({
+          where: { id: current.player.id },
+          select: { id: true, endemionSub: true, account: { select: { id: true } } }
+        });
+      }
       const isGuest = Boolean(guest && !guest.account && !guest.endemionSub);
 
       if (!playerId) {
         // Гость становится игроком Endemion ID: его жизни остаются на месте
         playerId = isGuest ? guest!.id : (await tx.player.create({ data: {} })).id;
       }
+
+      await tx.$queryRaw`SELECT id FROM players WHERE id = ${playerId}::uuid FOR UPDATE`;
+      const target = await tx.player.findUniqueOrThrow({ where: { id: playerId } });
+      if (target.endemionSub && target.endemionSub !== claims.sub) {
+        throw new ApiError(409, "IDENTITY_CONFLICT", "Этот игрок уже связан с другим Endemion ID");
+      }
       // updateMany с условием: если тот же sub одновременно связался в другом запросе, уникальный индекс не даст второй связи
       await tx.player.updateMany({ where: { id: playerId, endemionSub: null }, data: { endemionSub: claims.sub } });
+      const linked = await tx.player.findUniqueOrThrow({ where: { id: playerId }, select: { endemionSub: true } });
+      if (linked.endemionSub !== claims.sub) {
+        throw new ApiError(409, "IDENTITY_CONFLICT", "Не удалось связать игрока с Endemion ID: попробуйте ещё раз");
+      }
 
       let moved = 0;
       if (current) await this.sessions.revoke(tx, current.sessionId);
@@ -223,6 +250,9 @@ export class AuthService {
     if (locked.length === 0) return 0;
     const moved = await tx.life.updateMany({ where: { playerId: guestPlayerId }, data: { playerId: targetPlayerId } });
     await tx.gameAction.updateMany({ where: { playerId: guestPlayerId }, data: { playerId: targetPlayerId } });
+    // Участник живого окна ссылается на игрока отдельно от жизни. Без переноса
+    // каскадное удаление гостя уничтожило бы вклад и отметку о награде
+    await tx.livePart.updateMany({ where: { playerId: guestPlayerId }, data: { playerId: targetPlayerId } });
     // Пустой игрок гостя больше не нужен. Его сессии удаляются каскадом
     await tx.player.delete({ where: { id: guestPlayerId } });
     return moved.count;
