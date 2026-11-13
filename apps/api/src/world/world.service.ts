@@ -27,6 +27,7 @@ import {
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ApiError } from "../common/api-error.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { PresenceService } from "../presence/presence.service.js";
 
 type Tx = Prisma.TransactionClient;
 
@@ -111,6 +112,30 @@ export interface WorldReconciliationView {
   };
 }
 
+export type WorldContributionTarget = "settlement" | "faction";
+
+export interface WorldContributionInput {
+  actionId: string;
+  expectedSeason: number;
+  targetKind: WorldContributionTarget;
+  targetId: string;
+}
+
+export interface WorldContributionView {
+  world: SharedWorldState;
+  checksum: string;
+  season: number;
+  contribution: {
+    id: string;
+    actionId: string;
+    season: number;
+    targetKind: string;
+    targetId: string;
+    createdAt: string;
+  };
+  replayed: boolean;
+}
+
 function json(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
 }
@@ -124,7 +149,10 @@ export class WorldService {
   private readonly db: PrismaClient;
   private readonly logger = new Logger("World");
 
-  constructor(@Inject(PrismaService) prisma: PrismaService) {
+  constructor(
+    @Inject(PrismaService) prisma: PrismaService,
+    @Inject(PresenceService) private readonly presence: PresenceService
+  ) {
     this.db = prisma.client;
   }
 
@@ -313,6 +341,145 @@ export class WorldService {
    * Replay от seed по журналу команд. Без сезона сверяется текущее состояние,
    * с сезоном — снимок этого сезона. Расхождение не 500: это результат проверки
    */
+  async contribute(playerId: string, universeId: UniverseId, input: WorldContributionInput): Promise<WorldContributionView> {
+    await this.ensureWorld(universeId);
+    try {
+      const result = await this.db.$transaction(async (tx) => {
+        const row = await this.lockWorld(tx, universeId);
+        const before = parseSharedWorldState(row.state);
+        const prior = await tx.worldContribution.findUnique({
+          where: { playerId_actionId: { playerId, actionId: input.actionId } }
+        });
+        if (prior) {
+          return {
+            world: before,
+            checksum: row.checksum,
+            season: before.season,
+            contribution: {
+              id: prior.id,
+              actionId: prior.actionId,
+              season: prior.season,
+              targetKind: prior.targetKind,
+              targetId: prior.targetId,
+              createdAt: prior.createdAt.toISOString()
+            },
+            replayed: true,
+            notification: null
+          };
+        }
+        if (before.season !== input.expectedSeason) {
+          throw new ApiError(409, "WORLD_CONFLICT", "Сезон мира уже изменился; обновите состояние");
+        }
+        const already = await tx.worldContribution.findUnique({
+          where: { worldId_playerId_season: { worldId: row.id, playerId, season: before.season } }
+        });
+        if (already) {
+          throw new ApiError(409, "ALREADY_CONTRIBUTED", "В этом сезоне вы уже поддержали мир");
+        }
+
+        let command: Exclude<SharedWorldCommand, { type: "tick" }>;
+        let title: { ru: string; en: string };
+        if (input.targetKind === "settlement") {
+          const settlement = before.settlements.find((item) => item.id === input.targetId);
+          if (!settlement) throw new ApiError(404, "NOT_FOUND", "Поселение не найдено");
+          command = {
+            type: "settlement",
+            settlementId: settlement.id,
+            prosperity: Math.min(100, settlement.prosperity + 1),
+            stability: Math.min(100, settlement.stability + 1)
+          };
+          title = { ru: `Поддержка: ${settlement.name.ru}`, en: `Support: ${settlement.name.en}` };
+        } else {
+          const faction = before.factions.find((item) => item.id === input.targetId);
+          if (!faction) throw new ApiError(404, "NOT_FOUND", "Фракция не найдена");
+          command = {
+            type: "faction",
+            factionId: faction.id,
+            influence: Math.max(-100, Math.min(100, faction.influence + 1)),
+            standing: Math.max(-100, Math.min(100, faction.standing + 1))
+          };
+          title = { ru: `Поддержка: ${faction.name.ru}`, en: `Support: ${faction.name.en}` };
+        }
+
+        const next = applySharedWorldCommand(before, command);
+        const checksum = sharedWorldChecksum(next);
+        const seq = await this.nextCommandSeq(tx, row.id);
+        await tx.world.update({
+          where: { id: row.id },
+          data: { season: next.season, checksum, state: json(next) }
+        });
+        await this.writeSeason(tx, row.id, next, checksum, 0);
+        await this.writeProjections(tx, row.id, next);
+        await tx.worldCommand.create({
+          data: {
+            worldId: row.id,
+            seq,
+            type: command.type,
+            payload: json(command),
+            seasonBefore: before.season,
+            seasonAfter: next.season,
+            checksum,
+            actor: playerId
+          }
+        });
+        await tx.worldAudit.create({
+          data: {
+            worldId: row.id,
+            action: "player.contribute",
+            actor: playerId,
+            detail: json({ actionId: input.actionId, targetKind: input.targetKind, targetId: input.targetId })
+          }
+        });
+        const contribution = await tx.worldContribution.create({
+          data: {
+            worldId: row.id,
+            playerId,
+            actionId: input.actionId,
+            season: before.season,
+            targetKind: input.targetKind,
+            targetId: input.targetId
+          }
+        });
+        return {
+          world: next,
+          checksum,
+          season: next.season,
+          contribution: {
+            id: contribution.id,
+            actionId: contribution.actionId,
+            season: contribution.season,
+            targetKind: contribution.targetKind,
+            targetId: contribution.targetId,
+            createdAt: contribution.createdAt.toISOString()
+          },
+          replayed: false,
+          notification: {
+            universeId,
+            kind: "contribution" as const,
+            title,
+            text: {
+              ru: "Игрок поддержал баланс сил в этом мире.",
+              en: "A player supported the balance of power in this world."
+            },
+            at: new Date().toISOString()
+          }
+        };
+      });
+      if (result.notification) this.presence.publish(result.notification);
+      return {
+        world: result.world,
+        checksum: result.checksum,
+        season: result.season,
+        contribution: result.contribution,
+        replayed: result.replayed
+      };
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      this.logger.error({ msg: "Не удалось применить вклад игрока", universeId, error });
+      throw new ApiError(500, "INTERNAL", "Не удалось изменить общий мир");
+    }
+  }
+
   async replay(universeId: UniverseId, requestedSeason: number | null): Promise<WorldReplayView> {
     await this.ensureWorld(universeId);
     try {

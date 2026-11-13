@@ -13,14 +13,16 @@ import {
   type RegisterResponse,
   type SessionView
 } from "@endemion/shared";
-import { Body, Controller, Get, Header, HttpCode, Inject, Post, Req, Res } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Header, HttpCode, Inject, Post, Req, Res } from "@nestjs/common";
 import type { Request, Response } from "express";
+import { z } from "zod";
 import { ApiError, parseOrThrow } from "../common/api-error.js";
 import { APP_CONFIG, type AppConfig } from "../config.js";
 import { AuthThrottle, emailKey } from "./auth-throttle.js";
 import { AuthService } from "./auth.service.js";
 
 const ipKey = (request: Request): string => `ip:${request.ip ?? "unknown"}`;
+const deleteAccountSchema = z.strictObject({ confirm: z.literal("DELETE") });
 
 /**
  * Аккаунты. Все изменяющие запросы — POST с JSON: так их защищает общая проверка Origin и Content-Type (CSRF).
@@ -132,5 +134,19 @@ export class AuthController {
   async revokeOthers(@Req() request: Request, @Body() body: unknown): Promise<{ revoked: number }> {
     parseOrThrow(emptyBodySchema, body ?? {});
     return { revoked: await this.auth.revokeOtherSessions(request) };
+  }
+
+  @Get("export")
+  @Header("Cache-Control", "no-store")
+  async exportAccount(@Req() request: Request) {
+    return this.auth.exportAccount(request);
+  }
+
+  @Delete("account")
+  @HttpCode(200)
+  async deleteAccount(@Req() request: Request, @Res({ passthrough: true }) response: Response, @Body() body: unknown): Promise<OkResponse> {
+    parseOrThrow(deleteAccountSchema, body);
+    await this.auth.deleteAccount(request, response);
+    return { ok: true };
   }
 }

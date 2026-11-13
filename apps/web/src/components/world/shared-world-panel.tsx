@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { apiFetch, ClientError } from "@/lib/api";
 import type { MessageKey } from "@/lib/messages";
 import { useI18n } from "../locale-provider";
+import { WorldParticipation } from "./world-participation";
 
 /** Сводка GET /api/world. Веб описывает только поля, которые рисует: контракт API живёт в apps/api. */
 export interface SharedWorldSummary {
@@ -313,6 +314,10 @@ export function SharedWorldPanel() {
   const activeSummary = worlds?.find((world) => world.universeId === selected) ?? null;
   const activeWorld = detail && detail.world.universeId === selected ? detail : null;
 
+  const refreshDetail = useCallback(() => {
+    setDetailAttempt((attempt) => attempt + 1);
+  }, []);
+
   return (
     <Panel as="section" accent aria-labelledby="shared-world-title" className="mt-10 scroll-mt-20" data-testid="shared-world-panel">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -380,6 +385,16 @@ export function SharedWorldPanel() {
               );
             })}
           </div>
+
+          {activeWorld && selected && (
+            <WorldParticipation
+              key={selected}
+              universeId={selected}
+              season={activeWorld.world.season}
+              world={activeWorld.world}
+              onWorldChanged={refreshDetail}
+            />
+          )}
 
           <div className="mt-5" aria-busy={!activeWorld && !detailError}>
             {detailError && (

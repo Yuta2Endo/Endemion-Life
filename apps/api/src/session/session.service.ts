@@ -25,6 +25,12 @@ export interface CurrentSession {
   player: Player;
 }
 
+export interface CurrentAccount {
+  session: CurrentSession;
+  player: Player;
+  account: { id: string; email: string; emailVerifiedAt: Date | null };
+}
+
 type Db = PrismaClient | Prisma.TransactionClient;
 
 export function hashToken(token: string): string {
@@ -85,6 +91,20 @@ export class SessionService {
     const current = await this.current(request);
     if (!current) throw new ApiError(401, "UNAUTHORIZED", "Нет сессии игрока");
     return current;
+  }
+
+  /**
+   * Stage 05: shared-world actions require a real account, not a guest.
+   * Guests remain able to play solo lives; they cannot mutate shared state.
+   */
+  async requireAccount(request: Request): Promise<CurrentAccount> {
+    const session = await this.requireSession(request);
+    const account = await this.prisma.client.account.findUnique({
+      where: { playerId: session.player.id },
+      select: { id: true, email: true, emailVerifiedAt: true }
+    });
+    if (!account) throw new ApiError(403, "ACCOUNT_REQUIRED", "Для общего мира нужен аккаунт");
+    return { session, player: session.player, account };
   }
 
   /**

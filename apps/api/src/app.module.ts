@@ -16,6 +16,8 @@ import { InsightsController } from "./insights/insights.controller.js";
 import { InsightsService } from "./insights/insights.service.js";
 import { LiveController } from "./live/live.controller.js";
 import { LiveService } from "./live/live.service.js";
+import { PresenceController } from "./presence/presence.controller.js";
+import { PresenceService } from "./presence/presence.service.js";
 import { MailService } from "./mail/mail.service.js";
 import { PrismaService } from "./prisma/prisma.service.js";
 import { RateLimitGuard } from "./redis/rate-limit.guard.js";
@@ -28,7 +30,7 @@ import { WorldController } from "./world/world.controller.js";
 import { WorldService } from "./world/world.service.js";
 
 @Module({
-  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, SocialController, LiveController, InsightsController, WorldController],
+  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, SocialController, LiveController, InsightsController, PresenceController, WorldController],
   providers: [
     { provide: APP_CONFIG, useFactory: (): AppConfig => readConfig() },
     PrismaService,
@@ -42,6 +44,7 @@ import { WorldService } from "./world/world.service.js";
     SocialService,
     LiveService,
     InsightsService,
+    PresenceService,
     WorldService,
     // Порядок важен: сначала лимит запросов, потом проверка источника запроса
     { provide: APP_GUARD, useClass: RateLimitGuard },

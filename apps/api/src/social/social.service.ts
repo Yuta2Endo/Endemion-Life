@@ -189,6 +189,15 @@ export class SocialService {
     return { player: { id: other.id, name: called }, lives, tie: tie ? (tie.status as TieStatus) : null };
   }
 
+  /** Stage 05: moderation report. Blocking remains a separate, reversible action. */
+  async report(playerId: string, otherId: string, reason: string, details: string | null): Promise<{ reported: true }> {
+    if (playerId === otherId) throw new ApiError(400, "VALIDATION", "Нельзя пожаловаться на себя");
+    const other = await this.prisma.client.player.findUnique({ where: { id: otherId }, select: { id: true } });
+    if (!other) throw new ApiError(404, "NOT_FOUND", "Игрок не найден");
+    await this.prisma.client.playerReport.create({ data: { reporterId: playerId, targetId: otherId, reason, details } });
+    return { reported: true };
+  }
+
   private async mine(playerId: string, tieId: string): Promise<TieRow> {
     const row = await this.prisma.client.tie.findUnique({
       where: { id: tieId },

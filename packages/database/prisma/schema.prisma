@@ -35,6 +35,10 @@ model Player {
   tiesAsB  Tie[]    @relation("TieB")
   /// Stage 15: вклады игрока в живые окна
   liveParts LivePart[]
+  /// Stage 05: вклад в общий мир
+  worldContributions WorldContribution[]
+  reportsMade       PlayerReport[]       @relation("ReportReporter")
+  reportsReceived   PlayerReport[]       @relation("ReportTarget")
 
   @@index([idDisplayName])
   @@index([idUsername])
@@ -346,6 +350,7 @@ model World {
   events      WorldEvent[]
   commands    WorldCommand[]
   audits      WorldAudit[]
+  contributions WorldContribution[]
 
   @@map("worlds")
 }
@@ -475,6 +480,45 @@ model WorldAudit {
 
   @@index([worldId, createdAt])
   @@map("world_audits")
+}
+
+/// Stage 05: уникальный вклад аккаунта в общий мир.
+/// action_id даёт идемпотентность retry, (world, player, season) - один вклад за сезон.
+model WorldContribution {
+  id         String   @id @default(uuid()) @db.Uuid
+  worldId    String   @map("world_id") @db.Uuid
+  playerId   String   @map("player_id") @db.Uuid
+  actionId   String   @map("action_id") @db.Uuid
+  season     Int
+  targetKind String   @map("target_kind") @db.VarChar(16)
+  targetId   String   @map("target_id") @db.VarChar(48)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  world  World  @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, actionId])
+  @@unique([worldId, playerId, season])
+  @@index([worldId, season])
+  @@map("world_contributions")
+}
+
+/// Stage 05: жалобы игроков. Обрабатываются вне игры, без автоматических санкций.
+model PlayerReport {
+  id         String   @id @default(uuid()) @db.Uuid
+  reporterId String   @map("reporter_id") @db.Uuid
+  targetId   String   @map("target_id") @db.Uuid
+  reason     String   @db.VarChar(32)
+  details    String?  @db.VarChar(500)
+  status     String   @default("open") @db.VarChar(16)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  reporter Player @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  target   Player @relation("ReportTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@index([targetId, createdAt])
+  @@index([status, createdAt])
+  @@map("player_reports")
 }
 
 /// Stage 16: факт хода. Не состояние игры. Игрок, почта и текст сюда не пишутся.

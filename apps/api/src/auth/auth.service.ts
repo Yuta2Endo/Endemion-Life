@@ -390,4 +390,42 @@ export class AuthService {
     const current = await this.sessions.requireSession(request);
     return this.sessions.revokeAll(this.db, current.player.id, current.sessionId);
   }
+
+  /** Account export: user-owned data only, never password/session/token hashes. */
+  async exportAccount(request: Request) {
+    const { player, account } = await this.sessions.requireAccount(request);
+    const [profile, lives, sessions] = await Promise.all([
+      this.db.player.findUniqueOrThrow({ where: { id: player.id }, select: { id: true, createdAt: true, idDisplayName: true, idUsername: true, idEmail: true } }),
+      this.db.life.findMany({
+        where: { playerId: player.id },
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true, universeId: true, name: true, status: true, version: true, age: true,
+          schemaVersion: true, lineageId: true, generation: true, origin: true,
+          createdAt: true, updatedAt: true, state: true
+        }
+      }),
+      this.db.session.findMany({
+        where: { playerId: player.id, revokedAt: null },
+        select: { id: true, createdAt: true, lastSeenAt: true, expiresAt: true, userAgent: true }
+      })
+    ]);
+    return {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      player: { id: profile.id, createdAt: profile.createdAt.toISOString(), displayName: profile.idDisplayName, username: profile.idUsername, email: profile.idEmail },
+      account: { email: account.email, emailVerifiedAt: account.emailVerifiedAt?.toISOString() ?? null },
+      lives,
+      sessions
+    };
+  }
+
+  /** Delete the whole player aggregate; cascades lives, sessions, account, ties, live parts and contributions. */
+  async deleteAccount(request: Request, response: Response): Promise<void> {
+    const { player } = await this.sessions.requireAccount(request);
+    await this.db.$transaction(async (tx) => {
+      await tx.player.delete({ where: { id: player.id } });
+    });
+    this.sessions.clearCookie(response);
+  }
 }

@@ -3,9 +3,11 @@
 // Нет токена или он короче 16 символов — маршрута как будто нет (404).
 import { timingSafeEqual } from "node:crypto";
 import { SHARED_WORLD_EVENT_KINDS } from "@endemion/game-core";
-import { Body, Controller, Get, Headers, HttpCode, Inject, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Headers, HttpCode, Inject, Param, Post, Req } from "@nestjs/common";
+import type { Request } from "express";
 import { z } from "zod";
 import { ApiError, parseOrThrow } from "../common/api-error.js";
+import { SessionService } from "../session/session.service.js";
 import { assertUniverseId, WorldService } from "./world.service.js";
 
 const titleSchema = z.strictObject({
@@ -47,6 +49,13 @@ const factionCommandSchema = z.strictObject({
 
 const commandSchema = z.discriminatedUnion("type", [eventCommandSchema, settlementCommandSchema, factionCommandSchema]);
 
+const contributionSchema = z.strictObject({
+  actionId: z.uuid(),
+  expectedSeason: z.int().min(1),
+  targetKind: z.enum(["settlement", "faction"]),
+  targetId: z.string().trim().min(1).max(48)
+});
+
 const WORLD_OPS_MIN_LENGTH = 16;
 
 function sameToken(given: string | undefined, expected: string): boolean {
@@ -70,7 +79,10 @@ function seasonOf(value: string): number {
 
 @Controller("world")
 export class WorldController {
-  constructor(@Inject(WorldService) private readonly world: WorldService) {}
+  constructor(
+    @Inject(WorldService) private readonly world: WorldService,
+    @Inject(SessionService) private readonly sessions: SessionService
+  ) {}
 
   /** Все шесть миров и сводка текущего сезона */
   @Get()
@@ -122,6 +134,15 @@ export class WorldController {
   }
 
   /** Ops: ровно один сезонный шаг в транзакции под advisory lock */
+  /** Account-only: one contribution per world per season; client sends intent, server computes effects. */
+  @Post(":universeId/contribute")
+  @HttpCode(200)
+  async contribute(@Req() request: Request, @Param("universeId") universeId: string, @Body() body: unknown) {
+    const { player } = await this.sessions.requireAccount(request);
+    const input = parseOrThrow(contributionSchema, body);
+    return this.world.contribute(player.id, assertUniverseId(universeId), input);
+  }
+
   @Post(":universeId/tick")
   @HttpCode(200)
   async tick(@Headers("x-world-ops") token: string | undefined, @Param("universeId") universeId: string) {

@@ -7,6 +7,11 @@ import { SessionService } from "../session/session.service.js";
 import { SocialService } from "./social.service.js";
 
 const playerSchema = z.strictObject({ playerId: z.uuid() });
+const reportSchema = z.strictObject({
+  playerId: z.uuid(),
+  reason: z.enum(["harassment", "spam", "cheating", "other"]),
+  details: z.string().trim().max(500).optional()
+});
 const nameSchema = z.object({ name: z.string().trim().min(3).max(24) });
 
 function tieIdOf(value: string): string {
@@ -56,6 +61,14 @@ export class SocialController {
     const player = await this.sessions.require(request);
     const input = parseOrThrow(playerSchema, body);
     return this.social.block(player.id, input.playerId);
+  }
+
+  @Post("reports")
+  @HttpCode(201)
+  async report(@Req() request: Request, @Body() body: unknown) {
+    const { player } = await this.sessions.requireAccount(request);
+    const input = parseOrThrow(reportSchema, body);
+    return this.social.report(player.id, input.playerId, input.reason, input.details ?? null);
   }
 
   @Get("players")
