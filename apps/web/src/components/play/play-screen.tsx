@@ -16,6 +16,7 @@ import { useI18n } from "../locale-provider";
 import { CharacterSheet } from "./character-sheet";
 import { Dossier } from "./dossier";
 import { NowPanel } from "./now-panel";
+import { TravelPanel } from "./travel-panel";
 import { EventCard, OutcomeCard } from "./event-card";
 import { LifeSummary } from "./life-summary";
 import { LocalLifeBanner } from "./local-life-banner";
@@ -130,7 +131,9 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
               ? result.entries.find((entry) => entry.kind === "market")
               : action.type === "venture"
                 ? result.entries.find((entry) => entry.kind === "adventure")
-                : undefined;
+                : action.type === "travel"
+                  ? result.entries.find((entry) => entry.kind === "travel")
+                  : undefined;
       setOutcome(shown ?? null);
       if (result.life.pendingEvent || result.life.status === "dead" || shown) setTab("event");
     } catch (error) {
@@ -293,8 +296,8 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
       <div className="pointer-events-none fixed inset-x-0 top-0 h-80 opacity-70 blur-3xl" style={{ background: `radial-gradient(600px 200px at 50% 0%, ${universe.theme.glow}, transparent)` }} aria-hidden="true" />
 
       <div className="sticky top-14 z-20 -mx-3 mb-3 flex items-center justify-between gap-3 border-b border-line bg-ink-950/95 px-3 py-2 text-xs backdrop-blur-md lg:hidden" data-testid="mobile-now">
-        <span className="min-w-0 truncate text-bone-100">
-          {life.character.name} · {ageLabel(life.life.age, locale)}
+        <span className="min-w-0 truncate text-bone-100" title={l(life.location.name)}>
+          {life.character.name} · {ageLabel(life.life.age, locale)} · {l(life.location.name)}
         </span>
         {event ? (
           <button type="button" onClick={() => setTab("event")} className="shrink-0 text-gold-200">
@@ -418,6 +421,8 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
               )}
             </Panel>
           )}
+
+          {!dead && <TravelPanel life={life} busy={busy} onTravel={(settlementId) => void perform({ type: "travel", settlementId })} />}
 
           <NowPanel
             life={life}

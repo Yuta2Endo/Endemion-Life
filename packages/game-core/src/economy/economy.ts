@@ -17,6 +17,7 @@ import { clamp, type StatKey } from "../stats.js";
 import type { EconomyCycle, EconomyLine, EconomyLineId, EconomyState, EconomyYear, GameState } from "../types.js";
 import { getUniverse } from "../universes/registry.js";
 import { economyOf } from "./worlds.js";
+import { locationCostFactor, locationWageFactor } from "../world/location.js";
 
 /** С этого возраста персонаж сам платит за жизнь и получает доход сословия */
 export const ADULT_AGE = 16;
@@ -44,7 +45,8 @@ export function livingCost(state: GameState): number {
   if (state.life.age < ADULT_AGE) return 0;
   const universe = getUniverse(state.character.universeId);
   const standing = universe.socialClasses.find((s) => s.id === state.character.socialClassId)?.standing ?? 0;
-  return Math.round(LIVING_BY_STANDING[clamp(standing, 0, LIVING_BY_STANDING.length - 1)]! * economyOf(universe.id).livingFactor);
+  // Stage 02.4: местная стоимость жизни входит в ту же статью один раз, без второй строки расходов
+  return Math.round(LIVING_BY_STANDING[clamp(standing, 0, LIVING_BY_STANDING.length - 1)]! * economyOf(universe.id).livingFactor * locationCostFactor(state));
 }
 
 /** Плата за год нынешнего обучения. 0 — не учится или ступень бесплатная */
@@ -97,8 +99,11 @@ export function yearLines(state: GameState): EconomyLine[] {
   add("thrift", afterThrift - gross);
   const fromWorld = world.worldIncome?.(state) ?? 0;
   add("world", fromWorld);
+  // Stage 02.4: местный заработок поселения — отдельная статья, налог и цикл считаются по ней один раз
+  const fromLocation = Math.round(afterThrift * (locationWageFactor(state) - 1));
+  add("location", fromLocation);
 
-  const earned = afterThrift + fromWorld;
+  const earned = afterThrift + fromWorld + fromLocation;
   const cycle = earned > 0 ? Math.round(earned * (CYCLE_FACTOR[state.economy.cycle] - 1)) : 0;
   add("cycle", cycle);
   add("tax", -Math.floor((earned + cycle) * world.taxRate));
@@ -166,7 +171,8 @@ const LINE_NAMES: Readonly<Record<Exclude<EconomyLineId, "world" | "tax">, Local
   upkeep: t("Содержание дома", "Property upkeep"),
   propertyTax: t("Налог на дом", "Property tax"),
   business: t("Доход дела", "Business income"),
-  businessCosts: t("Расходы дела", "Business expenses")
+  businessCosts: t("Расходы дела", "Business expenses"),
+  location: t("Местный заработок", "Local earnings")
 };
 
 export interface EconomyLineView {

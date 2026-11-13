@@ -26,6 +26,15 @@ export function WorldPanel({ life }: { life: LifeView }) {
         <h2 className="font-display text-xl text-bone-100">{t("dossier.world")}</h2>
         <span className="text-[10px] uppercase tracking-wider text-bone-500">{world.tick > 0 ? `${t("play.current")} · ${world.tick}` : t("play.current")}</span>
       </div>
+      <div className="rounded-md border border-gold-500/30 bg-gold-500/5 px-3 py-2" data-testid="world-current-location" data-settlement={life.location.settlementId}>
+        <p className="text-[10px] uppercase tracking-wider text-gold-400">{t("location.title")}</p>
+        <p className="text-sm text-bone-100">{l(life.location.name)}</p>
+        <p className="text-[11px] text-bone-500">
+          {l(life.location.kindName)}
+          {life.location.wagePercent !== 0 && ` · ${t("location.wage", { n: `${life.location.wagePercent > 0 ? "+" : ""}${life.location.wagePercent}%` })}`}
+          {life.location.costPercent !== 0 && ` · ${t("location.cost", { n: `${life.location.costPercent > 0 ? "+" : ""}${life.location.costPercent}%` })}`}
+        </p>
+      </div>
       <div className="rounded-md border border-line bg-ink-950/50 p-3" data-testid="world-summary">
         <h3 className="mb-2 text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("world.summary")}</h3>
         {empty ? (

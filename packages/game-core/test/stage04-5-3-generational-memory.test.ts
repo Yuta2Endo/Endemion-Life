@@ -270,7 +270,7 @@ describe("Stage 04.5.3: сохранение, детерминизм и регр
 
     const restored = parseSave(deepClone(after));
 
-    expect(restored.schemaVersion).toBe(11);
+    expect(restored.schemaVersion).toBe(12);
     expect(getStoryProgress(restored, MEMORY, "lineage")).toEqual(getStoryProgress(after, MEMORY, "lineage"));
     expect(restored.lineage.stories[FOLLOWUP]).toBe(1);
     restored.life.age = 20;

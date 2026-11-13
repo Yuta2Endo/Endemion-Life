@@ -9,7 +9,8 @@ import { findTalent, findWeakness } from "../rpg/talents.js";
 import { STAT_INFO } from "../stats.js";
 import { getUniverse } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
-import { settlementSeeds } from "../world/state.js";
+import { SETTLEMENT_TAG_NAMES, settlementSeeds, type SettlementTag } from "../world/state.js";
+import { locationMatches } from "../world/location.js";
 import { findRelic } from "../legacy/stories.js";
 import { findHealthCondition } from "../life/health.js";
 import { employmentStatus, EMPLOYMENT_STATUS_NAMES, promotionReady, retirementDue } from "../life/careers.js";
@@ -149,6 +150,8 @@ export function checkCondition(state: GameState, condition: Condition): boolean 
       const losses = condition.id === undefined ? ventures.reduce((max, venture) => Math.max(max, venture.losses), 0) : ventures.find((venture) => venture.id === condition.id)?.losses ?? 0;
       return losses >= condition.min;
     }
+    case "location":
+      return locationMatches(state, condition);
     case "generation":
       return inRange(state.lineage.generation, condition.min, condition.max);
     case "renown":
@@ -373,6 +376,12 @@ export function describeCondition(condition: Condition, universe: UniverseDefini
       return condition.id !== undefined
         ? t(`Убытки дела не меньше ${condition.min} лет`, `The business must have at least ${condition.min} loss years`)
         : t(`Убытки не меньше ${condition.min} лет`, `At least ${condition.min} loss years`);
+    case "location": {
+      const places = (condition.ids ?? []).map((id) => settlementSeeds(universe).find((seed) => seed.id === id)?.name).filter((name): name is LocalizedText => name !== undefined);
+      const tags = (condition.tags ?? []).map((tag) => SETTLEMENT_TAG_NAMES[tag as SettlementTag] ?? t(tag, tag));
+      const labels = [...places, ...tags];
+      return t(`Нужно место: ${labels.map((label) => label.ru).join(" или ")}`, `Requires a place: ${labels.map((label) => label.en).join(" or ")}`);
+    }
     case "generation":
       return t("Не то поколение рода", "Not this generation of the family");
     case "renown":

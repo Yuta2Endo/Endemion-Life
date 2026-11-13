@@ -23,6 +23,7 @@ import { findProperty, MAX_ARREARS, newHouseholdState } from "../life/household.
 import { findBusiness, MAX_BUSINESSES, MAX_BUSINESS_LOSSES, newBusinessState } from "../life/business.js";
 import { RESOURCE_KEYS, STAT_KEYS, WEALTH_MAX } from "../stats.js";
 import { MAX_WORLD_INFLUENCE, MAX_WORLD_INFLUENCE_ENTRIES, settlementSeeds } from "../world/state.js";
+import { MAX_LOCATION_HISTORY, newLocationState } from "../world/location.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import {
   CHRONICLE_KINDS,
@@ -272,6 +273,26 @@ function migrateV10(save: Record<string, unknown>): Record<string, unknown> {
   return { ...save, household: newHouseholdState(), business: newBusinessState() };
 }
 
+/**
+ * Формат 11 → 12 (Stage 02.4): текущее поселение. Первое поселение мира — тот же дом,
+ * который newWorldState создаёт с рождения. Если жизнь уже видела мир, берётся его первое
+ * поселение: ссылка остаётся в существующем каталоге, второго каталога не появляется.
+ * seed, rngState и все прежние поля не меняются
+ */
+function migrateV11(save: Record<string, unknown>): Record<string, unknown> {
+  const character = save.character;
+  const universeId = isRecord(character) && isUniverseId(character.universeId) ? character.universeId : "dark-fantasy";
+  const universe = getUniverse(universeId);
+  const life = save.life;
+  const age = isRecord(life) && isInt(life.age, 0) ? life.age : 0;
+  const world = save.world;
+  const settlements = isRecord(world) && Array.isArray(world.settlements) ? world.settlements : [];
+  const preferred = settlements.find(
+    (item): item is { id: string } => isRecord(item) && typeof item.id === "string" && settlementSeeds(universe).some((seed) => seed.id === item.id)
+  );
+  return { ...save, location: newLocationState(universe, age, preferred?.id) };
+}
+
 /** Переходы между версиями формата: ключ — версия, из которой переводим. Новая версия формата добавляет сюда шаг */
 const MIGRATIONS: Readonly<Record<number, Migration>> = {
   1: migrateV1,
@@ -283,7 +304,8 @@ const MIGRATIONS: Readonly<Record<number, Migration>> = {
   7: migrateV7,
   8: migrateV8,
   9: migrateV9,
-  10: migrateV10
+  10: migrateV10,
+  11: migrateV11
 };
 
 function fail(reason: string): never {
@@ -626,6 +648,22 @@ function checkBusiness(business: unknown, universeId: UniverseId, age: number): 
   }
 }
 
+/** Stage 02.4: текущее поселение и переезды. Только id этого мира, возраст не в будущем, цена в пределах золота */
+function checkLocation(location: unknown, universeId: UniverseId, age: number): void {
+  if (!isRecord(location)) fail("location");
+  const universe = getUniverse(universeId);
+  const seeds = settlementSeeds(universe);
+  if (typeof location.settlementId !== "string" || !seeds.some((seed) => seed.id === location.settlementId)) fail("location.settlement");
+  // since — справочная дата переезда. Старые снимки и тесты могут менять возраст назад, поэтому не сверяем её с age
+  if (!isInt(location.since, 0)) fail("location.since");
+  if (!Array.isArray(location.history) || location.history.length > MAX_LOCATION_HISTORY) fail("location.history");
+  for (const move of location.history) {
+    if (!isRecord(move) || typeof move.from !== "string" || typeof move.to !== "string" || move.from === move.to) fail("location.move");
+    if (!seeds.some((seed) => seed.id === move.from) || !seeds.some((seed) => seed.id === move.to)) fail("location.move");
+    if (!isInt(move.age, 0, age) || !isInt(move.cost, 0, WEALTH_MAX)) fail("location.move");
+  }
+}
+
 /** Проверяет сохранение и возвращает состояние игры. Бросает INVALID_SAVE, если что-то не так */
 export function parseSave(raw: unknown): GameState {
   const save = migrateSave(raw);
@@ -665,6 +703,7 @@ export function parseSave(raw: unknown): GameState {
   checkCareer(save.career, c, universe, life.age);
   checkHousehold(save.household, c.universeId, life.age);
   checkBusiness(save.business, c.universeId, life.age);
+  checkLocation(save.location, c.universeId, life.age);
   if (!isStringArray(save.flags)) fail("flags");
   if (save.autoMode !== undefined && !["manual", "auto", "milestones"].includes(save.autoMode as string)) fail("autoMode");
   if (save.milestones !== undefined && (!isRecord(save.milestones) || !isStringArray(save.milestones.triggered) || save.milestones.triggered.length > 100)) fail("milestones");

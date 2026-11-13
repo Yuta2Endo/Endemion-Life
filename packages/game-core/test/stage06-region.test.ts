@@ -30,8 +30,8 @@ function adult(universeId: GameState["character"]["universeId"]): GameState {
 }
 
 describe("Stage 06: край", () => {
-  it("новая жизнь получает полный склад и нулевое напряжение; сохранение формата 6 доходит до 11 без потерь", () => {
-    expect(SAVE_SCHEMA_VERSION).toBe(11);
+  it("новая жизнь получает полный склад и нулевое напряжение; сохранение формата 6 доходит до 12 без потерь", () => {
+    expect(SAVE_SCHEMA_VERSION).toBe(12);
     const fresh = newGame({ seed: "region-new", universeId: "murim" }).state;
     expect(fresh.region.strain).toBe(0);
     expect(fresh.region.prosperity).toBe(0);
@@ -41,7 +41,7 @@ describe("Stage 06: край", () => {
     old.schemaVersion = 6;
     delete old.region;
     const restored = parseSave(old);
-    expect(restored.schemaVersion).toBe(11);
+    expect(restored.schemaVersion).toBe(12);
     expect(restored.region.stock).toEqual(fresh.region.stock);
     expect(restored.character.name).toBe(fresh.character.name);
     expect(restored.rngState).toBe(fresh.rngState);

@@ -344,7 +344,7 @@ describe("Stage 02.3: своё дело", () => {
 });
 
 describe("Stage 02.3: совместимость, детерминизм и границы", () => {
-  it("перевод 10 → 11 добавляет жильё и дело, сохраняя seed, rngState и все прежние поля", () => {
+  it("перевод 10 → 12 добавляет жильё и дело, сохраняя seed, rngState и все прежние поля", () => {
     for (const [key, raw] of Object.entries(SAVES_V10)) {
       const before = deepClone(raw) as Record<string, unknown>;
       const migrated = migrateSave(deepClone(raw)) as unknown as GameState;
@@ -359,6 +359,7 @@ describe("Stage 02.3: совместимость, детерминизм и гр
       const original = deepClone(raw) as Record<string, unknown>;
       delete rest.household;
       delete rest.business;
+      delete rest.location;
       delete rest.schemaVersion;
       delete original.schemaVersion;
       expect(rest, key).toEqual(original);

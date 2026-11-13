@@ -11,7 +11,9 @@ export const GAME_ERROR_CODES = [
   "HEIR_LOCKED",
   "LINEAGE_CONTINUED",
   // Stage 05: приключение недоступно (возраст, место, предпосылки, уже завершено)
-  "ADVENTURE_LOCKED"
+  "ADVENTURE_LOCKED",
+  // Stage 02.4: на дорогу до поселения не хватает золота
+  "INSUFFICIENT_WEALTH"
 ] as const;
 export type GameErrorCode = (typeof GAME_ERROR_CODES)[number];
 

@@ -179,6 +179,30 @@ export const HUNTER: UniverseBase = {
           success: { text: t("Выжить — тоже победа.", "Surviving is also a victory."), effects: [fx.karma(-5)] }
         }
       ]
+    },
+    {
+      id: "hu.location.gate-district",
+      title: t("Тревога в Районе Врат", "Alarm in the Gate District"),
+      text: t("В Районе Врат сработала сирена. Пока корпорации спорят, кто платит за зачистку, у Врат уже собираются люди.", "An alarm sounds in the Gate District. While the corporations argue over who pays for the raid, people are already gathering at the Gate."),
+      minAge: 14,
+      cooldown: 6,
+      maxOccurrences: 2,
+      locationTags: ["gate"],
+      conditions: [when.location("gate")],
+      choices: [
+        {
+          id: "assist",
+          text: t("Помочь оцеплению", "Help the cordon"),
+          check: check(["agility", "willpower"], 12),
+          success: { text: t("Оцепление держится до прихода группы. Ассоциация отмечает помощь.", "The cordon holds until the raid team arrives. The Association notes the help."), effects: [fx.rep(5), fx.xp(25), fx.meter("fame", 5)] },
+          failure: { text: t("Толпа прорывает оцепление. {name} получает удар в сутолоке.", "The crowd breaks the cordon. {name} takes a hit in the crush."), effects: [fx.health(-15)] }
+        },
+        {
+          id: "sell",
+          text: t("Продать сведения о Вратах", "Sell information about the Gate"),
+          success: { text: t("Корпорация платит за точные данные и не задаёт вопросов.", "A corporation pays for accurate data and asks no questions."), effects: [fx.wealth(16), fx.rep(-2), fx.xp(10)] }
+        }
+      ]
     }
   ]
 };

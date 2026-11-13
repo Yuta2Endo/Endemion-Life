@@ -10,6 +10,7 @@ import {
   presentHealth,
   presentHousehold,
   presentLegacy,
+  presentLocation,
   presentMarket,
   presentRegion,
   presentProfile,
@@ -37,6 +38,7 @@ import {
   type LifeProfile,
   type LifeState,
   type LineageView,
+  type LocationView,
   type MarketView,
   type MasteryView,
   type RegionView,
@@ -75,6 +77,8 @@ export interface LifeView extends LifeMeta {
   household: HouseholdView;
   /** Stage 02.3: свои дела, капитал, доход и убытки */
   business: BusinessView;
+  /** Stage 02.4: текущее поселение, местные поправки и варианты дороги */
+  location: LocationView;
   pendingEvent: EventView | null;
   /** Stage 02: биография, семья и люди вокруг, шкалы мира, задание Системы. Скрытое — только после раскрытия */
   profile: LifeProfile;
@@ -235,6 +239,7 @@ export function toLifeView(meta: LifeMeta, state: GameState): LifeView {
     career: presentCareer(state, universe),
     household: presentHousehold(state),
     business: presentBusiness(state),
+    location: presentLocation(state),
     pendingEvent: presentEvent(state),
     profile: presentProfile(state),
     legacy: presentLegacy(state),

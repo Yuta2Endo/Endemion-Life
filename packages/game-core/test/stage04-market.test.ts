@@ -226,6 +226,7 @@ describe("Stage 04: рынок", () => {
       delete rest.career;
       delete rest.household;
       delete rest.business;
+      delete rest.location;
       delete rest.schemaVersion;
       delete before.schemaVersion;
       expect(rest, key).toEqual(before);

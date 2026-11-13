@@ -181,6 +181,30 @@ export const ACADEMY: UniverseBase = {
           success: { text: t("Тяжёлый кошель и тяжёлая совесть.", "A heavy purse and a heavy conscience."), effects: [fx.wealth(150), fx.karma(-15), fx.later("ac.c-silence-price", 4)] }
         }
       ]
+    },
+    {
+      id: "ac.location.rose-salon",
+      title: t("Приглашение в Розовый салон", "An invitation to the Rose Salon"),
+      text: t("В Розовом салоне сегодня говорят о налогах, дуэлях и чьей-то помолвке. {name} получает приглашение — без объяснения, зачем.", "Tonight the Rose Salon talks of taxes, duels and someone's engagement. {name} receives an invitation — with no explanation why."),
+      minAge: 14,
+      cooldown: 6,
+      maxOccurrences: 2,
+      locationTags: ["social"],
+      conditions: [when.location("social")],
+      choices: [
+        {
+          id: "charm",
+          text: t("Блеснуть в разговоре", "Shine in the conversation"),
+          check: check(["charisma", "intelligence"], 12),
+          success: { text: t("Хозяйка салона смеётся над шуткой {name} и представляет гостям.", "The hostess laughs at {name}'s joke and introduces the guest around."), effects: [fx.rep(5), fx.meter("court-favor", 8), fx.xp(20)] },
+          failure: { text: t("Шутка падает в тишину. Салон вежливо переводит разговор.", "The joke lands in silence. The salon politely changes the subject."), effects: [fx.rep(-3)] }
+        },
+        {
+          id: "listen",
+          text: t("Слушать и запоминать", "Listen and remember"),
+          success: { text: t("Сплетни стоят дешевле золота, но сегодня одна из них — про должника короны.", "Gossip is cheaper than gold, but tonight one rumour concerns a debtor of the crown."), effects: [fx.wealth(8), fx.stat("wisdom", 1), fx.xp(10)] }
+        }
+      ]
     }
   ]
 };

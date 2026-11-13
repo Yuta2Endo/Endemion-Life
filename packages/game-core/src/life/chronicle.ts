@@ -44,7 +44,7 @@ function category(kind: HistoryKind, changes: ChangeKind[], age: number): Chroni
   if (kind === "birth") return "birth";
   if (kind === "death") return "death";
   if (kind === "legacy") return "legacy";
-  if (kind === "adventure") return "travel";
+  if (kind === "adventure" || kind === "travel") return "travel";
   if (kind === "market" || changes.includes("wealth")) return "wealth";
   if (kind === "people" || changes.includes("relation") || changes.includes("npc")) return "relationships";
   if (kind === "event" && age < 18) return "childhood";
@@ -57,7 +57,7 @@ function category(kind: HistoryKind, changes: ChangeKind[], age: number): Chroni
 
 function importance(entry: HistoryEntry): ChronicleImportance {
   if (entry.kind === "birth" || entry.kind === "death" || entry.kind === "legacy") return "major";
-  if (entry.kind === "event" || entry.kind === "consequence" || entry.kind === "adventure") return "notable";
+  if (entry.kind === "event" || entry.kind === "consequence" || entry.kind === "adventure" || entry.kind === "travel") return "notable";
   if (entry.choice || entry.changes.length >= 2) return "notable";
   return "quiet";
 }

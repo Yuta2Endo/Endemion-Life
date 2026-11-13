@@ -193,6 +193,10 @@ export const when = {
   businessCount: (min?: number, max?: number): Condition => ({ type: "businessCount", ...(min === undefined ? {} : { min }), ...(max === undefined ? {} : { max }) }),
   /** Stage 02.3: убыточных лет подряд не меньше min */
   businessLosses: (min: number, id?: string): Condition => ({ type: "businessLosses", min, ...(id === undefined ? {} : { id }) }),
+  /** Stage 02.4: персонаж сейчас в поселении с одним из тегов */
+  location: (...tags: string[]): Condition => ({ type: "location", tags }),
+  /** Stage 02.4: персонаж сейчас именно в одном из этих поселений */
+  settlementAt: (...ids: string[]): Condition => ({ type: "location", ids }),
   affinityAtMost: (role: NpcRef, max: number): Condition => ({ type: "affinity", role, max }),
   meter: (id: string, min: number): Condition => ({ type: "meter", id, min }),
   meterAtMost: (id: string, max: number): Condition => ({ type: "meter", id, max }),

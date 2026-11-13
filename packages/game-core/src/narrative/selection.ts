@@ -12,7 +12,8 @@ import { findBusiness } from "../life/business.js";
 import { allTalents, allWeaknesses } from "../rpg/talents.js";
 import { STAT_KEYS } from "../stats.js";
 import { NPC_ROLES, UNIVERSE_IDS, type GameState, type LifeStage, type UniverseId } from "../types.js";
-import { settlementSeeds } from "../world/state.js";
+import { SETTLEMENT_TAG_NAMES, settlementSeeds } from "../world/state.js";
+import { eventLocationWeight } from "../world/location.js";
 import { getUniverse, listUniverses } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import { COMMON_EVENTS } from "./common.js";
@@ -104,7 +105,10 @@ export function selectEvent(ctx: EngineContext): EventDefinition | undefined {
   // Недавние события не повторяются подряд. Если подходят только они — год проходит без события
   const candidates = eligible.filter((event) => !recent.has(event.id));
   // Чем чаще событие уже было, тем реже оно приходит снова: вес делится на 1 + число повторов
-  return ctx.rng.weighted(candidates, (event) => (event.weight ?? (universeEvents.has(event.id) ? 2 : 1)) / (1 + (ctx.state.occurrences[event.id] ?? 0)));
+  return ctx.rng.weighted(
+    candidates,
+    (event) => ((event.weight ?? (universeEvents.has(event.id) ? 2 : 1)) / (1 + (ctx.state.occurrences[event.id] ?? 0))) * eventLocationWeight(ctx.state, event.locationTags)
+  );
 }
 
 const ROLES = new Set<string>([...NPC_ROLES, "parent", "family"]);
@@ -134,7 +138,7 @@ function skillKnown(universe: UniverseDefinition, id: string): boolean {
 
 /** Ссылка условия, которой в этом мире нет. Пустая строка — ссылка верна или её тут нет */
 function brokenCondition(universe: UniverseDefinition, condition: Condition, events: ReadonlyMap<string, EventDefinition>): string {
-  const ids = "ids" in condition ? condition.ids : [];
+  const ids = "ids" in condition ? condition.ids ?? [] : [];
   const table = condition.type === "skill" ? undefined : knownIds(universe, condition.type);
   if (table) {
     const missing = ids.filter((id) => !table.has(id));
@@ -172,6 +176,12 @@ function brokenCondition(universe: UniverseDefinition, condition: Condition, eve
       return condition.id === undefined || findBusiness(universe.id, condition.id) ? "" : `дело ${condition.id}`;
     case "businessLosses":
       return condition.id === undefined || findBusiness(universe.id, condition.id) ? "" : `дело ${condition.id}`;
+    case "location": {
+      const missingPlace = (condition.ids ?? []).filter((id) => !settlementSeeds(universe).some((seed) => seed.id === id));
+      if (missingPlace.length > 0) return `поселение ${missingPlace.join(",")}`;
+      const missingTag = (condition.tags ?? []).filter((tag) => !(tag in SETTLEMENT_TAG_NAMES));
+      return missingTag.length > 0 ? `тег поселения ${missingTag.join(",")}` : "";
+    }
     default:
       return "";
   }

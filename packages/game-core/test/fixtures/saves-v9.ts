@@ -10,6 +10,7 @@ function withoutCareer(seed: string, universeId: "dark-fantasy" | "murim" | "hun
   delete raw.career;
   delete raw.household;
   delete raw.business;
+  delete raw.location;
   return raw;
 }
 

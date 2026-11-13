@@ -29,6 +29,7 @@ import { newAdventure } from "../adventure/adventure.js";
 import { newMastery } from "../endgame/mastery.js";
 import { newEconomy } from "../economy/economy.js";
 import { normalizeWorldState } from "../world/state.js";
+import { newLocationState } from "../world/location.js";
 import { lawOf, type InheritanceLaw } from "./laws.js";
 import { unlockAchievements } from "./achievements.js";
 import { lineageYear } from "./chronicle.js";
@@ -403,6 +404,8 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
       world.activities = [entry, ...world.activities].slice(0, MAX_WORLD_ACTIVITIES);
       return world;
     })(),
+    // Stage 02.4: наследник живёт там, где застал его род; неизвестное посещение заменяется первым
+    location: newLocationState(universe, age, dead.location?.settlementId)
   };
   return { state, record, deceasedId: "" };
 }

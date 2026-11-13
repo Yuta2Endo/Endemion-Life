@@ -266,7 +266,7 @@ describe("Stage 02.2: карьера", () => {
 });
 
 describe("Stage 02.2: совместимость, детерминизм и границы", () => {
-  it("перевод 9 → 11 сохраняет seed, rngState, диплом и выводит карьеру из профессии", () => {
+  it("перевод 9 → 12 сохраняет seed, rngState, диплом и выводит карьеру из профессии", () => {
     for (const [key, raw] of Object.entries(SAVES_V9)) {
       const before = deepClone(raw) as Record<string, unknown>;
       const migrated = migrateSave(deepClone(raw)) as unknown as GameState;
@@ -284,6 +284,7 @@ describe("Stage 02.2: совместимость, детерминизм и гр
       delete rest.career;
       delete rest.household;
       delete rest.business;
+      delete rest.location;
       delete rest.schemaVersion;
       delete original.schemaVersion;
       expect(rest, key).toEqual(original);

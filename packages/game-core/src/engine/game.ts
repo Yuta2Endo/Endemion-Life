@@ -33,6 +33,7 @@ import { getUniverse } from "../universes/registry.js";
 import { questYearly } from "../world/quests.js";
 import { worldYearly, type Emit } from "../world/rules.js";
 import { emptyWorldInfluence, newWorldState, normalizeWorldState, worldTick } from "../world/state.js";
+import { newLocationState, normalizeLocationState, travel } from "../world/location.js";
 import {
   INTERACTIONS,
   MAX_ADVANCE_YEARS,
@@ -60,9 +61,10 @@ import { applyEffects, isFatal, kill } from "./effects.js";
  * 8 — Stage 10: освоение мира и мастерство навыков (mastery). Наград не даёт;
  * 9 — Stage 02.1: длительное здоровье, болезни и раны (health);
  * 10 — Stage 02.2: обучение (education) и карьера (career);
- * 11 — Stage 02.3: жильё, дом и своё дело (household, business)
+ * 11 — Stage 02.3: жильё, дом и своё дело (household, business);
+ * 12 — Stage 02.4: текущее поселение и переезды (location)
  */
-export const SAVE_SCHEMA_VERSION = 11;
+export const SAVE_SCHEMA_VERSION = 12;
 export const SEED_MAX_LENGTH = 64;
 
 const YEAR_TEXTS: readonly LocalizedText[] = [
@@ -177,6 +179,7 @@ export function newGame(input: NewGameInput): ActionResult {
     autoMode: "manual",
     milestones: { triggered: [] },
     world: newWorldState(universe),
+    location: newLocationState(universe, 0),
     social: newSocialState()
   };
   // Семья, таланты и тайны — из отдельного потока: броски Stage 01 и дальнейшая жизнь от них не сдвигаются
@@ -379,6 +382,7 @@ export function restoreState(snapshot: GameState, currentVersion: number): Actio
   state.career = normalizeCareerState(state);
   state.household = normalizeHouseholdState(state);
   state.business = normalizeBusinessState(state);
+  state.location = normalizeLocationState(state.location, getUniverse(state.character.universeId), state.life.age);
   state.version = currentVersion + 1;
   state.rngState = hashSeed(`${snapshot.seed}::restore::${snapshot.rngState}::${state.version}`);
   const age = ageText(state.life.age);
@@ -415,6 +419,7 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
   state.career = normalizeCareerState(state);
   state.household = normalizeHouseholdState(state);
   state.business = normalizeBusinessState(state);
+  state.location = normalizeLocationState(state.location, universe, state.life.age);
   state.world = normalizeWorldState(state.world, universe);
   normalizeSocialState(state);
   const rng = new Rng(state.rngState);
@@ -461,6 +466,12 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
       if (result.check) fields.check = result.check;
       pushEntry(ctx, entries, "adventure", fields);
       settle(ctx, entries);
+      break;
+    }
+    case "travel": {
+      // Дорога — отдельное действие: цена в золоте, без хода времени и без бросков
+      const result = travel(ctx, action.settlementId);
+      pushEntry(ctx, entries, "travel", { title: result.title, text: result.text });
       break;
     }
     default:

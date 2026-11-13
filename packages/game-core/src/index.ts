@@ -231,7 +231,45 @@ export { allTalents, allWeaknesses, findTalent, findWeakness } from "./rpg/talen
 export { DEFAULT_COOLDOWN, RECENT_LIMIT } from "./narrative/selection.js";
 export { PEOPLE_EVENTS, COMMON_CONSEQUENCES } from "./narrative/people.js";
 export { meterValue, worldTrackFactor } from "./world/rules.js";
-export { MAX_WORLD_ACTIVITIES, MAX_WORLD_SETTLEMENTS, newWorldState, normalizeWorldState, presentWorld, settlementSeeds, worldTick, type WorldView, type WorldViewFaction, type WorldViewSettlement } from "./world/state.js";
+export {
+  MAX_WORLD_ACTIVITIES,
+  MAX_WORLD_SETTLEMENTS,
+  SETTLEMENT_KINDS,
+  SETTLEMENT_KIND_NAMES,
+  SETTLEMENT_TAGS,
+  SETTLEMENT_TAG_NAMES,
+  findSettlementSeed,
+  newWorldState,
+  normalizeWorldState,
+  presentWorld,
+  settlementHasTag,
+  settlementSeeds,
+  worldTick,
+  type SettlementKind,
+  type SettlementSeed,
+  type SettlementTag,
+  type WorldView,
+  type WorldViewFaction,
+  type WorldViewSettlement
+} from "./world/state.js";
+export {
+  MAX_LOCATION_HISTORY,
+  currentSettlement,
+  eventLocationWeight,
+  locationCostFactor,
+  locationMatches,
+  locationWageFactor,
+  newLocationState,
+  normalizeLocationState,
+  presentLocation,
+  travel,
+  travelCostBetween,
+  travelCostTo,
+  type LocationHistoryView,
+  type LocationView,
+  type TravelDestinationView,
+  type TravelResult
+} from "./world/location.js";
 export { worldMetrics, type WorldMetrics, type MetricRange, type SettlementMetrics, type FactionMetrics, type ActivityMetrics } from "./world/metrics.js";
 export { ADULT_AGE, CYCLE_FACTOR, HARDSHIP_PENALTY_YEARS, economyYear, livingCost, MAX_ECONOMY_YEARS, newEconomy, presentEconomy, tuitionCost, yearLines, type EconomyLineView, type EconomyView } from "./economy/economy.js";
 export { economyOf, WORLD_ECONOMIES, type WorldEconomy } from "./economy/worlds.js";

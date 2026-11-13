@@ -24,6 +24,13 @@ describe("контракты API", () => {
     expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "choose", choiceId: "fight", reward: 9000 } }).success).toBe(false);
   });
 
+  it("Stage 02.4: переезд принимает только id поселения и не даёт лишних полей", () => {
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "travel", settlementId: "mist-border" } }).success).toBe(true);
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "travel" } }).success).toBe(false);
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "travel", settlementId: "not a place" } }).success).toBe(false);
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "travel", settlementId: "mist-border", cost: 1 } }).success).toBe(false);
+  });
+
   it("общение с NPC: только известные действия и id вида n1", () => {
     expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "interact", npcId: "n3", interaction: "talk" } }).success).toBe(true);
     expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "interact", npcId: "n3", interaction: "marry" } }).success).toBe(false);
@@ -108,6 +115,8 @@ describe("контракты API", () => {
     expect(view.business.ventures[0]!.revenue).toBeGreaterThan(0);
     expect(view.business.ventures[0]!.costs).toBeGreaterThan(0);
     expect(view.business.ventures[0]!.net).toBeGreaterThan(0);
+    expect(view.location.settlementId).toBe("ash-capital");
+    expect(view.location.destinations.some((destination) => destination.id === "mist-border" && !destination.current)).toBe(true);
     expect(JSON.stringify(view)).not.toMatch(/"(seed|rngState)"/);
   });
 

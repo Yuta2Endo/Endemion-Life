@@ -176,6 +176,30 @@ export const ISEKAI: UniverseBase = {
           success: { text: t("Пусть героями будут другие.", "Let others be heroes."), effects: [fx.rep(-3)] }
         }
       ]
+    },
+    {
+      id: "is.location.frontier-survey",
+      title: t("Разметка Пограничья", "Surveying the Frontier"),
+      text: t("Гильдии нужны карты за Пограничьем. Работа скучная ровно до того момента, когда перестаёт быть скучной.", "The Guild needs maps beyond the Frontier. The work is dull right up until it is not."),
+      minAge: 14,
+      cooldown: 6,
+      maxOccurrences: 2,
+      locationTags: ["frontier"],
+      conditions: [when.location("frontier")],
+      choices: [
+        {
+          id: "survey",
+          text: t("Пойти с землемером", "Go with the surveyor"),
+          check: check(["intelligence", "agility"], 12),
+          success: { text: t("Карта выходит точной. Гильдия платит и ставит отметку в листе.", "The map comes out exact. The Guild pays and marks the sheet."), effects: [fx.wealth(18), fx.skill("survival", 2), fx.xp(20)] },
+          failure: { text: t("Отряд сбивается с маршрута и возвращается на день позже.", "The party loses the route and returns a day late."), effects: [fx.health(-10), fx.rep(-2)] }
+        },
+        {
+          id: "guard",
+          text: t("Наняться охранять обоз", "Hire on as a caravan guard"),
+          success: { text: t("Дорога до Пограничья спокойна. Хозяин обоза расплачивается сразу.", "The road to the Frontier is quiet. The caravan master pays at once."), effects: [fx.wealth(10), fx.xp(12)] }
+        }
+      ]
     }
   ]
 };

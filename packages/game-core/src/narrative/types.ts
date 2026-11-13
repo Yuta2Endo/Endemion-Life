@@ -121,7 +121,10 @@ export type Condition =
   /** Сколько своих дел сейчас открыто */
   | { type: "businessCount"; min?: number; max?: number }
   /** Убыточных лет подряд у дела (или у самого убыточного дела) не меньше min */
-  | { type: "businessLosses"; min: number; id?: string };
+  | { type: "businessLosses"; min: number; id?: string }
+  // Stage 02.4: нынешнее поселение — по id и/или тегам каталога мира
+  /** Событие доступно только в поселении с одним из id и/или тегов */
+  | { type: "location"; ids?: string[]; tags?: string[] };
 
 /** Последствие выбора */
 export type Effect =
@@ -280,6 +283,11 @@ export interface EventDefinition {
   /** Не чаще, чем раз в cooldown лет. Без cooldown и maxOccurrences — не чаще раза в DEFAULT_COOLDOWN лет */
   cooldown?: number;
   maxOccurrences?: number;
+  /**
+   * Stage 02.4: теги поселений, где событие вероятнее. Само событие может быть доступно везде;
+   * жёсткая привязка задаётся условием location
+   */
+  locationTags?: readonly string[];
   /** Сколько раз событие может случиться за всю историю рода (lineage.stories). Stage 03: сюжеты поколений не повторяются без причины */
   lineageMax?: number;
   /** Событие приходит только как продолжение цепочки (Effect schedule) */

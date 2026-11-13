@@ -27,7 +27,9 @@ export const gameActionSchema = z.discriminatedUnion("type", [
   /** Stage 04: купить или продать товар рынка. Клиент называет товар, сторону и количество; цену считает сервер */
   z.strictObject({ type: z.literal("trade"), goodId: optionId, side: z.enum(TRADE_SIDES), qty: z.int().min(1).max(MAX_TRADE_QTY) }),
   /** Stage 05: начать приключение (adventureId), сделать шаг (choiceId) или сдаться (пустое) */
-  z.strictObject({ type: z.literal("venture"), adventureId: contentId.optional(), choiceId: optionId.optional() })
+  z.strictObject({ type: z.literal("venture"), adventureId: contentId.optional(), choiceId: optionId.optional() }),
+  /** Stage 02.4: переезд в поселение мира. Клиент называет только id; цену и допустимость считает сервер */
+  z.strictObject({ type: z.literal("travel"), settlementId: optionId })
 ]);
 
 export const actionRequestSchema = z.strictObject({

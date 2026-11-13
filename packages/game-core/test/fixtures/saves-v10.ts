@@ -8,6 +8,7 @@ function withoutEstate(seed: string, universeId: "dark-fantasy" | "murim" | "hun
   raw.schemaVersion = 10;
   delete raw.household;
   delete raw.business;
+  delete raw.location;
   return raw;
 }
 

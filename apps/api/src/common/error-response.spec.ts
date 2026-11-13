@@ -17,6 +17,7 @@ describe("ответы с ошибкой", () => {
   it("нарушение правил игры — 400 или 409 с кодом правила", () => {
     expect(toErrorResponse(new GameRuleError("CHOICE_LOCKED", "Недоступно")).status).toBe(409);
     expect(toErrorResponse(new GameRuleError("UNKNOWN_CHOICE", "Нет такого")).body.error.code).toBe("UNKNOWN_CHOICE");
+    expect(toErrorResponse(new GameRuleError("INSUFFICIENT_WEALTH", "Мало золота")).status).toBe(409);
   });
 
   it("повреждённое сохранение и неизвестные сбои не раскрывают подробностей", () => {

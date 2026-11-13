@@ -18,7 +18,8 @@ const KIND_MARK: Readonly<Record<HistoryEntry["kind"], string>> = {
   legacy: "❖",
   import: "⇪",
   market: "⚖",
-  adventure: "➤"
+  adventure: "➤",
+  travel: "⇢"
 };
 
 /** Хроника жизни: от новых записей к старым, с решениями и их последствиями */

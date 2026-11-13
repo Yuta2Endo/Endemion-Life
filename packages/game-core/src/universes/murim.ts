@@ -174,6 +174,30 @@ export const MURIM: UniverseBase = {
           success: { text: t("Ночью мастер является во сне и благодарит.", "That night the master appears in a dream with thanks."), effects: [fx.karma(10), fx.stat("wisdom", 2), fx.stat("luck", 1)] }
         }
       ]
+    },
+    {
+      id: "mu.location.black-market",
+      title: t("Слух на Чёрном рынке", "A rumour at the Black Market"),
+      text: t("На Чёрном рынке продают не только клинки. За правильную цену здесь называют имя того, кто заказал твою смерть.", "The Black Market sells more than blades. For the right price it will name whoever ordered your death."),
+      minAge: 14,
+      cooldown: 6,
+      maxOccurrences: 2,
+      locationTags: ["underworld"],
+      conditions: [when.location("underworld")],
+      choices: [
+        {
+          id: "buy",
+          text: t("Заплатить за имя", "Pay for the name"),
+          success: { text: t("Торговец называет имя и исчезает в толпе. Теперь {name} знает, кому не доверять.", "The trader gives the name and vanishes into the crowd. Now {name} knows whom not to trust."), effects: [fx.wealth(-15), fx.xp(25), fx.flag("knows-enemy")] }
+        },
+        {
+          id: "sell",
+          text: t("Продать свой слух", "Sell a rumour of your own"),
+          check: check(["charisma", "intelligence"], 12),
+          success: { text: t("Слух покупают быстро. Плата скромная, зато рынок запоминает лицо.", "The rumour sells quickly. The pay is modest, but the market remembers the face."), effects: [fx.wealth(14), fx.rep(2), fx.xp(15)] },
+          failure: { text: t("Покупатель решает, что слух ложный, и требует назад с процентами.", "The buyer decides the rumour is false and demands the money back with interest."), effects: [fx.wealth(-10), fx.rep(-3)] }
+        }
+      ]
     }
   ]
 };

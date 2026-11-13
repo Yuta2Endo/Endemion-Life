@@ -161,6 +161,30 @@ export const XIANXIA: UniverseBase = {
           success: { text: t("Тренировки продолжаются.", "Training continues."), effects: [fx.track(5)] }
         }
       ]
+    },
+    {
+      id: "xx.location.mortal-harvest",
+      title: t("Жатва в Землях смертных", "Harvest in the Mortal Realm"),
+      text: t("В Землях смертных созревает рис, а вместе с ним — старые долги. Крестьяне просят защиты от сборщиков подати.", "Rice ripens in the Mortal Realm, and with it old debts. The villagers ask for protection from the tax collectors."),
+      minAge: 14,
+      cooldown: 6,
+      maxOccurrences: 2,
+      locationTags: ["mortal"],
+      conditions: [when.location("mortal")],
+      choices: [
+        {
+          id: "protect",
+          text: t("Встать между крестьянами и сборщиками", "Stand between the villagers and the collectors"),
+          check: check(["willpower", "charisma"], 12),
+          success: { text: t("Сборщики уходят ни с чем. В деревне запомнят это имя.", "The collectors leave empty-handed. The village will remember the name."), effects: [fx.karma(10), fx.rep(5), fx.xp(20)] },
+          failure: { text: t("Сборщики возвращаются с охраной. Деревня платит, а {name} получает удар по голове.", "The collectors return with guards. The village pays, and {name} takes a blow to the head."), effects: [fx.health(-15), fx.rep(-2)] }
+        },
+        {
+          id: "trade",
+          text: t("Купить долю урожая", "Buy a share of the harvest"),
+          success: { text: t("Цена честная, рис хороший. Местные привыкают к покупателю.", "The price is fair and the rice is good. The locals get used to the buyer."), effects: [fx.wealth(-8), fx.karma(3), fx.xp(10)] }
+        }
+      ]
     }
   ]
 };

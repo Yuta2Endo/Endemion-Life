@@ -71,7 +71,7 @@ export class LivesController {
     return { life: await this.lives.get(player.id, lifeIdOf(id)) };
   }
 
-  /** Действие игрока: { actionId, expectedVersion, action: { type: "advance" } | { type: "choose", choiceId } } */
+  /** Действие игрока: { actionId, expectedVersion, action: { type: "advance" } | { type: "choose", choiceId } | { type: "travel", settlementId } } */
   @Post(":id/actions")
   @HttpCode(200)
   async act(@Req() request: Request, @Param("id") id: string, @Body() body: unknown): Promise<ActionResponse> {

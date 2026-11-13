@@ -17,46 +17,121 @@ import { getUniverse } from "../universes/registry.js";
 export const MAX_WORLD_ACTIVITIES = 24;
 export const MAX_WORLD_SETTLEMENTS = 6;
 
-interface SettlementSeed {
+/** Stage 02.4: вид поселения. От него зависят цены дороги, события и местная экономика */
+export const SETTLEMENT_KINDS = ["capital", "city", "frontier", "market", "sect", "fortress", "academy"] as const;
+export type SettlementKind = (typeof SETTLEMENT_KINDS)[number];
+
+export const SETTLEMENT_KIND_NAMES: Readonly<Record<SettlementKind, LocalizedText>> = {
+  capital: t("Столица", "Capital"),
+  city: t("Город", "City"),
+  frontier: t("Пограничье", "Frontier"),
+  market: t("Рынок", "Market"),
+  sect: t("Обитель", "Sect"),
+  fortress: t("Крепость", "Fortress"),
+  academy: t("Академия", "Academy")
+};
+
+/**
+ * Stage 02.4: устойчивые признаки поселения для событий и экономики. Это не второй каталог:
+ * те же записи, что и раньше, получают тип и теги
+ */
+export const SETTLEMENT_TAGS = [
+  "capital",
+  "frontier",
+  "market",
+  "sect",
+  "gate",
+  "academy",
+  "court",
+  "guild",
+  "mortal",
+  "underworld",
+  "wilds",
+  "fortress",
+  "order",
+  "scholars",
+  "social"
+] as const;
+export type SettlementTag = (typeof SETTLEMENT_TAGS)[number];
+
+export const SETTLEMENT_TAG_NAMES: Readonly<Record<SettlementTag, LocalizedText>> = {
+  capital: t("Столица", "Capital"),
+  frontier: t("Рубеж", "Frontier"),
+  market: t("Рынок", "Market"),
+  sect: t("Секта", "Sect"),
+  gate: t("Врата", "Gate"),
+  academy: t("Академия", "Academy"),
+  court: t("Двор", "Court"),
+  guild: t("Гильдия", "Guild"),
+  mortal: t("Смертные", "Mortal"),
+  underworld: t("Дно", "Underworld"),
+  wilds: t("Дикие земли", "Wilds"),
+  fortress: t("Крепость", "Fortress"),
+  order: t("Орден", "Order"),
+  scholars: t("Учёные", "Scholars"),
+  social: t("Свет", "Society")
+};
+
+export interface SettlementSeed {
   id: string;
   name: LocalizedText;
+  kind: SettlementKind;
+  tags: readonly SettlementTag[];
+  /** Местный множитель заработка. 1 — как в прежние годы */
+  wageFactor: number;
+  /** Местный множитель стоимости жизни. 1 — как в прежние годы */
+  costFactor: number;
+  /** Базовая цена дороги до этого поселения; итоговая цена считается парой поселений */
+  travelCost: number;
 }
 
 const SETTLEMENTS: Readonly<Record<string, readonly SettlementSeed[]>> = {
   "dark-fantasy": [
-    { id: "ash-capital", name: t("Пепельная столица", "Ashen Capital") },
-    { id: "mist-border", name: t("Граница Мглы", "Mist Border") },
-    { id: "ember-watch", name: t("Эмберская стража", "Ember Watch") }
+    { id: "ash-capital", name: t("Пепельная столица", "Ashen Capital"), kind: "capital", tags: ["capital", "court", "order"], wageFactor: 1, costFactor: 1, travelCost: 4 },
+    { id: "mist-border", name: t("Граница Мглы", "Mist Border"), kind: "frontier", tags: ["frontier", "wilds", "order"], wageFactor: 1.12, costFactor: 0.9, travelCost: 8 },
+    { id: "ember-watch", name: t("Эмберская стража", "Ember Watch"), kind: "fortress", tags: ["fortress", "order", "frontier"], wageFactor: 0.95, costFactor: 1.1, travelCost: 6 }
   ],
   isekai: [
-    { id: "system-city", name: t("Город Системы", "System City") },
-    { id: "frontier", name: t("Пограничье", "The Frontier") },
-    { id: "sky-road", name: t("Небесная дорога", "Sky Road") }
+    { id: "system-city", name: t("Город Системы", "System City"), kind: "capital", tags: ["capital", "guild", "market"], wageFactor: 1, costFactor: 1, travelCost: 5 },
+    { id: "frontier", name: t("Пограничье", "The Frontier"), kind: "frontier", tags: ["frontier", "wilds", "guild"], wageFactor: 1.1, costFactor: 0.9, travelCost: 7 },
+    { id: "sky-road", name: t("Небесная дорога", "Sky Road"), kind: "city", tags: ["market", "guild", "wilds"], wageFactor: 0.92, costFactor: 1.12, travelCost: 6 }
   ],
   murim: [
-    { id: "nine-rivers", name: t("Город Девяти рек", "City of Nine Rivers") },
-    { id: "orthodox-valley", name: t("Долина Союза", "Orthodox Valley") },
-    { id: "black-market", name: t("Чёрный рынок", "Black Market") }
+    { id: "nine-rivers", name: t("Город Девяти рек", "City of Nine Rivers"), kind: "capital", tags: ["capital", "market", "guild"], wageFactor: 1, costFactor: 1, travelCost: 5 },
+    { id: "orthodox-valley", name: t("Долина Союза", "Orthodox Valley"), kind: "sect", tags: ["sect", "order", "wilds"], wageFactor: 0.94, costFactor: 0.88, travelCost: 7 },
+    { id: "black-market", name: t("Чёрный рынок", "Black Market"), kind: "market", tags: ["market", "underworld", "guild"], wageFactor: 1.15, costFactor: 1.05, travelCost: 6 }
   ],
   xianxia: [
-    { id: "cloud-peak", name: t("Облачная вершина", "Cloud Peak") },
-    { id: "mortal-realm", name: t("Земли смертных", "Mortal Realm") },
-    { id: "jade-gate", name: t("Нефритовые врата", "Jade Gate") }
+    { id: "cloud-peak", name: t("Облачная вершина", "Cloud Peak"), kind: "sect", tags: ["sect", "wilds", "order"], wageFactor: 1, costFactor: 1, travelCost: 5 },
+    { id: "mortal-realm", name: t("Земли смертных", "Mortal Realm"), kind: "market", tags: ["mortal", "market", "wilds"], wageFactor: 1.08, costFactor: 0.82, travelCost: 6 },
+    { id: "jade-gate", name: t("Нефритовые врата", "Jade Gate"), kind: "city", tags: ["capital", "market", "mortal"], wageFactor: 0.9, costFactor: 1.15, travelCost: 7 }
   ],
   hunter: [
-    { id: "neo-seoul", name: t("Нео-Сеул", "Neo-Seoul") },
-    { id: "gate-district", name: t("Район Врат", "Gate District") },
-    { id: "association-hub", name: t("Центр Ассоциации", "Association Hub") }
+    { id: "neo-seoul", name: t("Нео-Сеул", "Neo-Seoul"), kind: "capital", tags: ["capital", "guild", "market"], wageFactor: 1, costFactor: 1, travelCost: 5 },
+    { id: "gate-district", name: t("Район Врат", "Gate District"), kind: "frontier", tags: ["gate", "frontier", "wilds"], wageFactor: 1.18, costFactor: 0.98, travelCost: 7 },
+    { id: "association-hub", name: t("Центр Ассоциации", "Association Hub"), kind: "city", tags: ["guild", "capital", "market"], wageFactor: 0.93, costFactor: 1.12, travelCost: 6 }
   ],
   academy: [
-    { id: "lirevale", name: t("Лиреваль", "Lirevale") },
-    { id: "academy-quarter", name: t("Академический квартал", "Academy Quarter") },
-    { id: "rose-salon", name: t("Розовый салон", "Rose Salon") }
+    { id: "lirevale", name: t("Лиреваль", "Lirevale"), kind: "capital", tags: ["capital", "court", "market"], wageFactor: 1, costFactor: 1, travelCost: 5 },
+    { id: "academy-quarter", name: t("Академический квартал", "Academy Quarter"), kind: "academy", tags: ["academy", "scholars", "court"], wageFactor: 0.92, costFactor: 0.9, travelCost: 6 },
+    { id: "rose-salon", name: t("Розовый салон", "Rose Salon"), kind: "city", tags: ["court", "social", "market"], wageFactor: 1.06, costFactor: 1.18, travelCost: 7 }
   ]
 };
 
 export function settlementSeeds(universe: UniverseDefinition): readonly SettlementSeed[] {
   return SETTLEMENTS[universe.id] ?? [];
+}
+
+/** Поселение по id из того же каталога, что и world.settlements. undefined — чужая или неизвестная ссылка */
+export function findSettlementSeed(universe: UniverseDefinition, id: string): SettlementSeed | undefined {
+  return settlementSeeds(universe).find((item) => item.id === id);
+}
+
+/** Есть ли у поселения один из тегов. Пустой список тегов совпадает с любым поселением */
+export function settlementHasTag(seed: SettlementSeed | undefined, tags: readonly string[] | undefined): boolean {
+  if (!seed) return false;
+  if (!tags || tags.length === 0) return true;
+  return tags.some((tag) => (seed.tags as readonly string[]).includes(tag));
 }
 
 /** Наибольшее по модулю многолетнее влияние рода на одну сущность мира */

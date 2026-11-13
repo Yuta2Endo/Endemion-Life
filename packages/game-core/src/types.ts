@@ -684,6 +684,8 @@ export const CHANGE_KINDS = [
   "housing",
   "property",
   "business",
+  /** Stage 02.4: переезд в другое поселение */
+  "location",
   "hidden",
   "renown",
   "achievement",
@@ -702,7 +704,7 @@ export interface HistoryChange {
 
 /** import — Stage 04: жизнь перенесена из браузера на сервер */
 /** adventure — Stage 05: приключение (начало, шаг, завершение, провал) */
-export const HISTORY_KINDS = ["birth", "event", "year", "death", "restore", "consequence", "quest", "people", "legacy", "import", "market", "adventure"] as const;
+export const HISTORY_KINDS = ["birth", "event", "year", "death", "restore", "consequence", "quest", "people", "legacy", "import", "market", "adventure", "travel"] as const;
 export type HistoryKind = (typeof HISTORY_KINDS)[number];
 
 export interface HistoryEntry {
@@ -755,6 +757,29 @@ export interface WorldState {
   factions: WorldFactionState[];
   /** Ограниченный журнал заметных изменений мира, новые записи добавляются сверху */
   activities: WorldActivity[];
+}
+
+/** Stage 02.4: один переезд в пределах жизни. Хранится id поселения из world/state.ts, не копия каталога */
+export interface LocationMove {
+  from: string;
+  to: string;
+  /** Возраст персонажа, в котором произошёл переезд */
+  age: number;
+  /** Сколько золота стоила дорога */
+  cost: number;
+}
+
+/**
+ * Stage 02.4: текущее поселение жизни. Одно на жизнь; каталог поселений — существующий
+ * settlementSeeds вселенной, поэтому здесь только ссылка и короткая история переездов
+ */
+export interface LocationState {
+  /** id текущего поселения из каталога мира */
+  settlementId: string;
+  /** Возраст, с которого персонаж живёт здесь */
+  since: number;
+  /** Последние переезды, новые в конце */
+  history: LocationMove[];
 }
 
 export interface GameState {
@@ -816,6 +841,8 @@ export interface GameState {
   milestones: MilestoneState;
   /** Additive Living World state. Old saves omit it and are normalized at action/presentation boundaries. */
   world?: WorldState;
+  /** Stage 02.4: текущее поселение жизни и история переездов */
+  location: LocationState;
   /** Stage 03: связи людей между собой и личные сюжеты NPC. Additive: старые сохранения нормализуются */
   social?: SocialState;
 }
@@ -844,7 +871,9 @@ export const ECONOMY_LINES = [
   "rent",
   "upkeep",
   "propertyTax",
-  "businessCosts"
+  "businessCosts",
+  /** Stage 02.4: местная поправка заработка поселения */
+  "location"
 ] as const;
 export type EconomyLineId = (typeof ECONOMY_LINES)[number];
 
@@ -894,7 +923,9 @@ export type GameAction =
    * Stage 05: приключение. adventureId — начать, choiceId — шаг активного, пустое — сдаться.
    * Исход и награду считает сервер
    */
-  | { type: "venture"; adventureId?: string; choiceId?: string };
+  | { type: "venture"; adventureId?: string; choiceId?: string }
+  /** Stage 02.4: переехать в поселение из каталога мира. Цену и допустимость считает сервер */
+  | { type: "travel"; settlementId: string };
 
 export const TRADE_SIDES = ["buy", "sell"] as const;
 export type TradeSide = (typeof TRADE_SIDES)[number];

@@ -182,6 +182,30 @@ export const DARK_FANTASY: UniverseBase = {
           success: { text: t("Тишина собора отвечает теплом.", "The cathedral's silence answers with warmth."), effects: [fx.karma(5), fx.stat("wisdom", 1), fx.track(3)] }
         }
       ]
+    },
+    {
+      id: "df.location.mist-road",
+      title: t("Дорога сквозь Мглу", "The road through the Mist"),
+      text: t("На границе Мглы каравану нужен человек, который не побоится идти последним. {name} уже бывал здесь.", "On the Mist border a caravan needs someone unafraid to walk last. {name} has been here before."),
+      minAge: 14,
+      cooldown: 6,
+      maxOccurrences: 2,
+      locationTags: ["frontier"],
+      conditions: [when.location("frontier")],
+      choices: [
+        {
+          id: "guide",
+          text: t("Провести караван", "Guide the caravan"),
+          check: check(["willpower", "wisdom"], 12),
+          success: { text: t("Фонарь не гаснет, и караван доходит до заставы. Платят без торга.", "The lamp does not go out, and the caravan reaches the outpost. They pay without haggling."), effects: [fx.wealth(20), fx.rep(4), fx.xp(20)] },
+          failure: { text: t("Мгла сбивает с пути. До заставы добираются не все, а {name} приходит с обморожением.", "The Mist leads the caravan astray. Not everyone reaches the outpost, and {name} arrives frostbitten."), effects: [fx.health(-15)] }
+        },
+        {
+          id: "watch",
+          text: t("Взять ночную смену у фонаря", "Take the night watch by the lamp"),
+          success: { text: t("Ночь проходит спокойно. Начальник стражи запоминает имя.", "The night passes quietly. The watch captain remembers the name."), effects: [fx.wealth(-4), fx.rep(2), fx.xp(10)] }
+        }
+      ]
     }
   ]
 };

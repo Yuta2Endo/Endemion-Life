@@ -88,7 +88,7 @@ export function OutcomeCard({ entry, universeId, people }: { entry: HistoryEntry
       </div>
       <p className="mt-2 font-display text-xl text-bone-100">{l(entry.title)}</p>
       {entry.choice && <p className="mt-1 text-sm text-bone-500">→ {l(entry.choice)}</p>}
-      {entry.outcome && <p className="mt-3 leading-relaxed text-bone-100">{l(entry.outcome)}</p>}
+      {(entry.outcome ?? entry.text) && <p className="mt-3 leading-relaxed text-bone-100">{l(entry.outcome ?? entry.text)}</p>}
       <div className="mt-3">
         <ChangeChips changes={entry.changes} universeId={universeId} people={people} />
       </div>

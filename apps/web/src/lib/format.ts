@@ -7,6 +7,7 @@ import {
   findGood,
   findProfession,
   findProperty,
+  findSettlementSeed,
   findSkill,
   findTalent,
   findWeakness,
@@ -154,6 +155,10 @@ export function formatChange(change: HistoryChange, universeId: UniverseId, loca
     case "hidden": {
       const key = change.value === "potential" || change.value === "destiny" || change.value === "familySecret" ? change.value : null;
       return key ? { text: msg(locale, `change.hidden.${key}`), tone: "gold" } : null;
+    }
+    case "location": {
+      const seed = findSettlementSeed(universe, change.key ?? "");
+      return seed ? { text: msg(locale, "change.location", { name: seed.name[locale] }), tone: "gold" } : null;
     }
     case "renown":
       return { text: msg(locale, "change.renown", { delta: signed(delta) }), tone };
