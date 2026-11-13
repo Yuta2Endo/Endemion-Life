@@ -2,7 +2,7 @@
 
 **Обновлено:** 2026-11-14 (STAGE 05 deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `9daaec2` (Stage 05)<br>
+**HEAD:** `22810d2` (Android signing docs; Stage 05 code `9daaec2`)<br>
 **Production:** STAGE 05, save schema **14**; общий мир season 1, deployed 2026-11-13 23:04 UTC<br>
 **Production code:** `9daaec2`; DB migrations **12**<br>
 **Rollback:** `cf7d098` (Stage 04) безопасен — миграция Stage 05 additive. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
@@ -18,7 +18,7 @@
 
 STAGE 00 (аудит), STAGE 01 (стабилизация), STAGE 02 (Advanced Life Simulation), STAGE 03 (Dynasty & Legacy), STAGE 04 (Living Worlds) и STAGE 05 (Multiplayer Foundation) завершены и развёрнуты. Production работает на `9daaec2`, save schema **14**, 12 миграций, общий мир season 1.
 
-Production проверен 2026-11-13 после деплоя Stage 04:
+Production проверен 2026-11-13 после деплоя Stage 05:
 
 - `/api/health` — HTTP 200, database/redis up;
 - `/worlds` — HTTP 200;
@@ -120,6 +120,7 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 - Production backup перед деплоем Stage 04: `endemion_life-manual-20261113T215227Z.dump` (10 MB), полный trial restore прошёл: 18 players, 45 lives, 1,716 snapshots, 8,344 history, 5,610 actions.
 - Rollback: `0feb6d9`/`c280c16` безопасен (schema 13), пока нет schema-14 записей. После первой schema-14 записи откат требует восстановления БД из backup. `ca72b8b` не читает schema >8.
 - GitHub: 2 moderate Dependabot alerts.
+- Android signing: upload keystore находится вне репозитория в `G:\II\EndemionLife_keys`; подписанные AAB (4,370,349 B) и APK (4,517,430 B) собраны и проверены, сертификат SHA-256 `FD:83:...:DB:A5`. Play Console upload/listing, Play App Signing enrollment, data-safety/account-deletion declarations и device install остаются блокерами. Секреты в git не добавлены.
 
 ## Deployment history
 
@@ -139,14 +140,15 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 | 18:59 | `0feb6d9` | docs: deployment record |
 | 20:40 | `7989731` | STAGE 03 |
 | 21:59 | `cf7d098` | STAGE 04 |
+| 23:04 | `9daaec2` | STAGE 05 |
 
-`history.log`: `current=cf7d098`, `previous=6e2da77`; PostgreSQL/Redis/backup/monitor остаются на прежних контейнерах.
+`history.log`: `current=9daaec2`, `previous=cf7d098`; PostgreSQL/Redis/backup/monitor остаются на прежних контейнерах.
 
 ## Открытые блокеры
 
 - Production smoke Stage 05: публичные health/world проверены, SSE без аккаунта корректно возвращает 401; полный двухаккаунтный presence/SSE smoke требует Endemion ID тест-аккаунта (password registration в production отключён, `410 USE_ENDEMION_ID`).
 - Portal integration: решение владельца, код вне релиза.
-- Android: release signing, Play Console listing, data-safety/account-deletion compliance.
+- Android: Play Console listing/upload, Play App Signing enrollment, data-safety/account-deletion compliance, CI signing-secret provisioning, device install. Release signing itself завершён.
 - 2 moderate Dependabot alerts.
 - Баланс: бизнес слишком редко проваливается (1.4%), murim имеет тяжёлый нижний хвост смертности, доступ к education tier 2+ сильно различается по мирам.
 - Stage 03 развёрнут; естественное вымирание рода в soak 76,7% — балансовый риск для следующего этапа.
