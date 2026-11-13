@@ -457,7 +457,7 @@ model WorldCommand {
   seasonBefore Int      @map("season_before")
   seasonAfter  Int      @map("season_after")
   checksum     String   @db.VarChar(32)
-  actor        String   @default("ops") @db.VarChar(32)
+  actor        String   @default("ops") @db.VarChar(64)
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
