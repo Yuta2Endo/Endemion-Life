@@ -1,6 +1,6 @@
 # Stage 02.6 — Balance & Long-Run Soak: Report
 
-**Status: Stage 02 is complete.** Stage 02.1–02.6 are implemented and verified on schema 13. Production remains `b634a67` / schema 8 and was **not** deployed.
+**Status: Stage 02 is complete and deployed.** Stage 02.1–02.6 are implemented and verified on schema 13. Production runs the Stage 02 code (`c280c16`, release `8fd0dfc`) with save schema 13.
 
 - Baseline: `HEAD 5f26f8e` (Stage 02.5), save schema 13.
 - Scope: deterministic single-life soak, invariants, aggregate metrics, schema-8 migration, documentation.
@@ -94,4 +94,4 @@ Production was not touched; the deployment path remains outside this slice.
 
 ## Close-out
 
-Stage 02 (02.1 health, 02.2 education/career, 02.3 household/property/business, 02.4 travel, 02.5 creation, 02.6 soak) is **closed**. Save schema stays **13**. The next stage can build on a stable, deterministic life loop with documented balance risks; no production deployment was made from this work.
+Stage 02 (02.1 health, 02.2 education/career, 02.3 household/property/business, 02.4 travel, 02.5 creation, 02.6 soak) is **closed**. Save schema stays **13**.\n\n## Post-deployment note (2026-11-13)\n\nStage 02 was subsequently deployed. Production history records `current=8fd0dfc`, `previous=c280c16`; the Stage 02 code commit is `c280c16`. Pre-deploy backup `endemion_life-manual-20261113T184449Z.dump` passed a full trial restore. `/api/health`, `/worlds` and `/api/universes` returned 200 after deployment; schema-9 lives were readable by the schema-13 code. Immediate rollback is `c280c16`; `ca72b8b` requires a database restore because it cannot read schema >8.

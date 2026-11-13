@@ -102,7 +102,7 @@ These are observations, not changes. Changing them would be a balance redesign a
 
 ## Migration: production schema 8 → 13
 
-Production remains `b634a67` / schema 8. The migration test builds a real mid-life state (age 20–30) from the current engine, removes fields that did not exist in schema 8 (`health`, `education`, `career`, `household`, `business`, `location`, `character.creation`), sets `schemaVersion = 8`, and loads it through `parseSave` for all six worlds. It also covers the packaged `SAVES_V8` fixtures and a variant with no `world`/`social`.
+Production now runs schema 13 (deployed 2026-11-13; code `c280c16`, release `8fd0dfc`). The migration test below remains the pre-deploy validation. It builds a real mid-life state (age 20–30) from the current engine, removes fields that did not exist in schema 8 (`health`, `education`, `career`, `household`, `business`, `location`, `character.creation`), sets `schemaVersion = 8`, and loads it through `parseSave` for all six worlds. It also covers the packaged `SAVES_V8` fixtures and a variant with no `world`/`social`.
 
 Result: every snapshot reaches schema 13 without losing seed, `rngState`, name, age, world, economy, lineage, adventure, region or mastery. After removing the newly added fields, the rest of the snapshot is structurally equal to the schema-8 original. Migration added less than 8 KiB in the synthetic test, and the state stayed below the 256 KiB guard. Live saves continue to advance afterwards; the version grows and the age never moves backwards.
 
