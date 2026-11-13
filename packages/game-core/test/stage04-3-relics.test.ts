@@ -54,8 +54,8 @@ describe("Stage 04.3: каталог реликвий", () => {
     expect(findRelic("")).toBeUndefined();
   });
 
-  it("SAVE_SCHEMA_VERSION остаётся 9", () => {
-    expect(SAVE_SCHEMA_VERSION).toBe(9);
+  it("SAVE_SCHEMA_VERSION остаётся 10", () => {
+    expect(SAVE_SCHEMA_VERSION).toBe(10);
   });
 });
 

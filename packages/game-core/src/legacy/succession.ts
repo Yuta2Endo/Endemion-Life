@@ -13,6 +13,8 @@ import { assignKinRole, chronicle } from "../family/events.js";
 import { BLOOD_RELATIONS, isKin, isPresent, KinGraph, type KinRelation } from "../family/kin.js";
 import { ageText, t, type LocalizedText } from "../i18n.js";
 import { newHealthState } from "../life/health.js";
+import { newEducationState } from "../life/education.js";
+import { findCareerTrack, maxCareerRank, newCareerState } from "../life/careers.js";
 import { stageForAge } from "../life/stages.js";
 import { hashSeed, Rng } from "../rng.js";
 import { allTalents, allWeaknesses, findTalent, findWeakness } from "../rpg/talents.js";
@@ -327,6 +329,18 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
     character: c,
     life: { age, stage: stageForAge(age, lifespanOf(c)), alive: true, deathAge: null, deathCause: null },
     health: newHealthState(),
+    education: newEducationState(),
+    career: (() => {
+      const track = findCareerTrack(universe.id, c.professionId);
+      if (!track || c.professionId === null) return newCareerState();
+      return {
+        rank: clamp(heir.careerRank, 0, maxCareerRank(track)),
+        since: age,
+        tenure: Math.max(0, age - 18),
+        employed: true,
+        retired: false
+      };
+    })(),
     flags: [...flags].sort(),
     occurrences: {},
     lastSeen: {},

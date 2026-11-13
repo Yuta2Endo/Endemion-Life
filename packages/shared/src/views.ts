@@ -3,6 +3,8 @@ import {
   presentAdventure,
   presentMastery,
   presentEconomy,
+  presentEducation,
+  presentCareer,
   presentEvent,
   presentHealth,
   presentLegacy,
@@ -10,6 +12,7 @@ import {
   presentRegion,
   presentProfile,
   presentWorld,
+  getUniverse,
   summarizeCharacter,
   worldMetrics,
   type CharacterState,
@@ -17,7 +20,9 @@ import {
   type AutoMode,
   type MilestoneState,
   type AdventureBoard,
+  type CareerView,
   type EconomyView,
+  type EducationView,
   type EventView,
   type GameErrorCode,
   type GameState,
@@ -58,6 +63,10 @@ export interface LifeView extends LifeMeta {
   life: LifeState;
   /** Stage 02.1: длительное здоровье, болезни, раны и причина смерти */
   health: HealthView;
+  /** Stage 02.2: текущее обучение и последняя пройденная ступень */
+  education: EducationView;
+  /** Stage 02.2: работа, ступень, стаж, жалованье и покой */
+  career: CareerView;
   pendingEvent: EventView | null;
   /** Stage 02: биография, семья и люди вокруг, шкалы мира, задание Системы. Скрытое — только после раскрытия */
   profile: LifeProfile;
@@ -204,6 +213,7 @@ export function lifeStatus(state: GameState): LifeStatus {
 }
 
 export function toLifeView(meta: LifeMeta, state: GameState): LifeView {
+  const universe = getUniverse(state.character.universeId);
   return {
     ...meta,
     universeId: state.character.universeId,
@@ -213,6 +223,8 @@ export function toLifeView(meta: LifeMeta, state: GameState): LifeView {
     summary: summarizeCharacter(state),
     life: state.life,
     health: presentHealth(state),
+    education: presentEducation(state, universe),
+    career: presentCareer(state, universe),
     pendingEvent: presentEvent(state),
     profile: presentProfile(state),
     legacy: presentLegacy(state),

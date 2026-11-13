@@ -2,8 +2,6 @@
 
 import {
   allSkills,
-  findEducation,
-  findProfession,
   findTalent,
   findWeakness,
   getUniverse,
@@ -193,14 +191,70 @@ function Biography({ life }: { life: LifeView }) {
   );
 }
 
+function EducationAndCareer({ life }: { life: LifeView }) {
+  const { l, t } = useI18n();
+  const universe = getUniverse(life.universeId);
+  const education = life.education;
+  const career = life.career;
+  const specialization = universe.specializations.find((s) => s.id === life.character.specializationId);
+  return (
+    <div className="space-y-3" data-testid="education-career">
+      <Heading>{t("dossier.educationCareer")}</Heading>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="rounded-md border border-line bg-ink-950/50 p-2.5" data-testid="education-panel">
+          <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("dossier.education")}</p>
+          {education.current ? (
+            <>
+              <p className="text-sm text-bone-100" data-testid="education-current">
+                {l(education.current.name)}
+              </p>
+              <p className="text-[11px] text-bone-400">
+                {t("education.progress", { done: education.current.progress, total: education.current.duration })}
+                {education.current.tuition > 0 && ` · ${t("education.tuition", { n: education.current.tuition })}`}
+              </p>
+            </>
+          ) : education.completed ? (
+            <p className="text-sm text-bone-100" data-testid="education-current">
+              {l(education.completed.name)}
+            </p>
+          ) : (
+            <p className="text-xs text-bone-500">{t("dossier.none")}</p>
+          )}
+          {education.next && !education.current && (
+            <p className="mt-1 text-[11px] text-bone-500">
+              {t("education.next", { name: l(education.next.stepName), age: education.next.minAge })}
+            </p>
+          )}
+        </div>
+        <div className="rounded-md border border-line bg-ink-950/50 p-2.5" data-testid="career-panel">
+          <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("career.title")}</p>
+          <p className="text-sm text-bone-100" data-testid="career-profession">
+            {career.profession ? l(career.profession) : t("career.noJob")}
+          </p>
+          <p className="text-[11px] text-bone-400" data-testid="career-status">
+            {l(career.statusName)}
+            {career.rankName && ` · ${l(career.rankName)}`}
+            {career.tenure > 0 && ` · ${t("career.tenure", { n: career.tenure })}`}
+          </p>
+          {career.status === "employed" && <p className="text-[11px] text-gold-300">{t("career.wage", { n: career.wage })}</p>}
+          {career.status === "employed" && career.nextRankName && (
+            <p className="text-[11px] text-bone-500">
+              {career.promotionReady ? t("career.promotionReady", { name: l(career.nextRankName) }) : t("career.nextRank", { name: l(career.nextRankName) })}
+            </p>
+          )}
+          {career.retirementAge !== null && <p className="text-[11px] text-bone-500">{t("career.retirementAt", { n: career.retirementAge })}</p>}
+          {specialization && <p className="mt-1 text-[11px] text-gold-300">{t("dossier.specialization")}: {l(specialization.name)}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SkillsAndTalents({ life }: { life: LifeView }) {
   const { l, t } = useI18n();
   const universe = getUniverse(life.universeId);
   const c = life.character;
   const skills = allSkills(universe).filter((skill) => (c.skills[skill.id] ?? 0) > 0);
-  const education = findEducation(universe, c.educationId);
-  const profession = c.professionId ? findProfession(universe, c.professionId) : undefined;
-  const specialization = universe.specializations.find((s) => s.id === c.specializationId);
   const factions = universe.factions.filter((f) => (c.factions[f.id] ?? 0) !== 0);
   const categories = ["combat", "magic", "cultivation", "social", "utility"] as const;
   return (
@@ -255,22 +309,7 @@ function SkillsAndTalents({ life }: { life: LifeView }) {
           </div>
         )}
       </div>
-      <dl className="grid gap-2 text-sm sm:grid-cols-3">
-        <div className="rounded-md border border-line bg-ink-950/50 p-2">
-          <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("dossier.education")}</dt>
-          <dd className="text-bone-100" data-testid="education">
-            {education ? l(education.name) : t("dossier.none")}
-          </dd>
-        </div>
-        <div className="rounded-md border border-line bg-ink-950/50 p-2">
-          <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("dossier.profession")}</dt>
-          <dd className="text-bone-100">{profession ? l(profession.name) : t("dossier.none")}</dd>
-        </div>
-        <div className="rounded-md border border-line bg-ink-950/50 p-2">
-          <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("dossier.specialization")}</dt>
-          <dd className="text-bone-100">{specialization ? l(specialization.name) : t("dossier.none")}</dd>
-        </div>
-      </dl>
+      <EducationAndCareer life={life} />
       {c.abilities.length > 0 && (
         <div>
           <Heading>{t("dossier.abilities")}</Heading>

@@ -8,7 +8,7 @@ import { t } from "../i18n.js";
 import { newLineage } from "../legacy/chronicle.js";
 import { finishLife, foundLineage } from "../legacy/lineage.js";
 import { Rng } from "../rng.js";
-import { findProfession, findSkill } from "../rpg/skills.js";
+import { findEducation, findProfession, findSkill } from "../rpg/skills.js";
 import { findObjective, newMastery } from "../endgame/mastery.js";
 import { newAdventure } from "../adventure/adventure.js";
 import { adventuresOf, placesOf } from "../adventure/content.js";
@@ -17,6 +17,8 @@ import { MAX_ECONOMY_YEARS, newEconomy } from "../economy/economy.js";
 import { MAX_REGION_LOG, newRegion, REGION_LOG_KINDS, STOCK_MAX } from "../economy/region.js";
 import { findGood, goodsOf, MAX_STOCK } from "../economy/market.js";
 import { HEALTH_MAX, MAX_CONDITION_DAMAGE, MAX_CONDITION_YEARS, MAX_HEALTH_CONDITIONS, healthValueFromResources, newHealthState } from "../life/health.js";
+import { educationStep, MAX_EDUCATION_DURATION, newEducationState } from "../life/education.js";
+import { findCareerTrack, maxCareerRank, newCareerState } from "../life/careers.js";
 import { RESOURCE_KEYS, STAT_KEYS, WEALTH_MAX } from "../stats.js";
 import { MAX_WORLD_INFLUENCE, MAX_WORLD_INFLUENCE_ENTRIES, settlementSeeds } from "../world/state.js";
 import type { UniverseDefinition } from "../universes/types.js";
@@ -238,6 +240,26 @@ function migrateV8(save: Record<string, unknown>): Record<string, unknown> {
   return { ...save, health };
 }
 
+/**
+ * Формат 9 → 10 (Stage 02.2): обучение и карьера. Старый диплом остаётся в character.educationId,
+ * нынешний курс начинается пустым. Прежняя профессия становится первой ступенью карьеры:
+ * жалованье и занятость не выдумываются, а выводятся из уже записанной работы. rngState и seed не меняются
+ */
+function migrateV9(save: Record<string, unknown>): Record<string, unknown> {
+  const character = save.character;
+  const life = save.life;
+  const age = isRecord(life) && isInt(life.age, 0) ? life.age : 0;
+  const career = newCareerState();
+  if (isRecord(character) && isUniverseId(character.universeId) && typeof character.professionId === "string") {
+    const track = findCareerTrack(character.universeId, character.professionId);
+    if (track) {
+      career.employed = true;
+      career.since = age;
+    }
+  }
+  return { ...save, education: newEducationState(), career };
+}
+
 /** Переходы между версиями формата: ключ — версия, из которой переводим. Новая версия формата добавляет сюда шаг */
 const MIGRATIONS: Readonly<Record<number, Migration>> = {
   1: migrateV1,
@@ -247,7 +269,8 @@ const MIGRATIONS: Readonly<Record<number, Migration>> = {
   5: migrateV5,
   6: migrateV6,
   7: migrateV7,
-  8: migrateV8
+  8: migrateV8,
+  9: migrateV9
 };
 
 function fail(reason: string): never {
@@ -516,6 +539,49 @@ function checkHealth(health: unknown): void {
   }
 }
 
+/**
+ * Stage 02.2: обучение. Пройденная ступень одна (character.educationId), текущий курс — не выше следующей.
+ * Прогресс не может догнать длительность: такой курс должен был уже завершиться
+ */
+function checkEducation(education: unknown, character: Record<string, unknown>, universe: UniverseDefinition, age: number): void {
+  if (!isRecord(education) || !isNullableString(education.currentId)) fail("education");
+  const completed = typeof character.educationId === "string" ? findEducation(universe, character.educationId) : undefined;
+  if (character.educationId !== null && !completed) fail("education.completed");
+  if (education.currentId === null) {
+    if (education.progress !== 0 || education.duration !== 0 || education.startedAt !== 0) fail("education.idle");
+    return;
+  }
+  const current = typeof education.currentId === "string" ? findEducation(universe, education.currentId) : undefined;
+  const step = current ? educationStep(current.tier) : undefined;
+  if (!current || !step) fail("education.current");
+  if ((completed?.tier ?? 0) + 1 !== current.tier) fail("education.prerequisite");
+  if (!isInt(education.startedAt, 0) || !isInt(education.progress, 0) || !isInt(education.duration, 1, MAX_EDUCATION_DURATION)) fail("education.numbers");
+  if (education.progress >= education.duration) fail("education.progress");
+  if (education.duration !== step.duration) fail("education.duration");
+  if (education.startedAt < step.minAge || education.startedAt > age) fail("education.startedAt");
+  if (education.progress > age - education.startedAt) fail("education.progress.age");
+}
+
+/** Stage 02.2: карьера. Работа — character.professionId, второго jobId нет. Покой и работа несовместимы */
+function checkCareer(career: unknown, character: Record<string, unknown>, universe: UniverseDefinition, age: number): void {
+  if (!isRecord(career)) fail("career");
+  if (typeof career.employed !== "boolean" || typeof career.retired !== "boolean") fail("career.flags");
+  if (career.employed && career.retired) fail("career.conflict");
+  if (!isInt(career.rank, 0, 2) || !isInt(career.since, 0) || !isInt(career.tenure, 0)) fail("career.numbers");
+  if (career.since > age || career.tenure > age) fail("career.numbers");
+  const job = typeof character.professionId === "string" ? character.professionId : null;
+  if (job !== null && !findProfession(universe, job)) fail("career.profession");
+  if (career.employed && job === null) fail("career.employed");
+  if (career.retired && job === null) fail("career.retired");
+  if (job === null) {
+    if (career.rank !== 0 || career.tenure !== 0 || career.since !== 0) fail("career.idle");
+    return;
+  }
+  const track = findCareerTrack(universe.id, job);
+  if (!track) fail("career.track");
+  if (career.rank > maxCareerRank(track)) fail("career.rank");
+}
+
 /** Проверяет сохранение и возвращает состояние игры. Бросает INVALID_SAVE, если что-то не так */
 export function parseSave(raw: unknown): GameState {
   const save = migrateSave(raw);
@@ -546,8 +612,13 @@ export function parseSave(raw: unknown): GameState {
   if (!isIntRecord(c.skills, 0, 100)) fail("skills");
   if (!isIntRecord(c.factions, -100, 100)) fail("factions");
   if (!isNullableString(c.professionId) || !isNullableString(c.educationId) || !isNullableString(c.specializationId)) fail("profession");
+  if (typeof c.professionId === "string" && !findProfession(universe, c.professionId)) fail("profession.id");
+  if (typeof c.educationId === "string" && !findEducation(universe, c.educationId)) fail("education.id");
+  if (typeof c.specializationId === "string" && !universe.specializations.some((item) => item.id === c.specializationId)) fail("specialization.id");
   if (!isRecord(life) || !isInt(life.age, 0) || !LIFE_STAGES.includes(life.stage as never) || typeof life.alive !== "boolean") fail("life");
   checkHealth(save.health);
+  checkEducation(save.education, c, universe, life.age);
+  checkCareer(save.career, c, universe, life.age);
   if (!isStringArray(save.flags)) fail("flags");
   if (save.autoMode !== undefined && !["manual", "auto", "milestones"].includes(save.autoMode as string)) fail("autoMode");
   if (save.milestones !== undefined && (!isRecord(save.milestones) || !isStringArray(save.milestones.triggered) || save.milestones.triggered.length > 100)) fail("milestones");

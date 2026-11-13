@@ -7,7 +7,9 @@ import type { EngineContext } from "../engine/context.js";
 import { applyEffect } from "../engine/effects.js";
 import { t, type LocalizedText } from "../i18n.js";
 import { hashSeed, Rng } from "../rng.js";
-import { findProfession } from "../rpg/skills.js";
+import { findEducation, findProfession } from "../rpg/skills.js";
+import { careerWage, findCareerTrack } from "../life/careers.js";
+import { tuitionFor } from "../life/education.js";
 import { incomeFactor } from "../rpg/talents.js";
 import { clamp, type StatKey } from "../stats.js";
 import type { EconomyCycle, EconomyLine, EconomyLineId, EconomyState, EconomyYear, GameState } from "../types.js";
@@ -43,9 +45,18 @@ export function livingCost(state: GameState): number {
   return Math.round(LIVING_BY_STANDING[clamp(standing, 0, LIVING_BY_STANDING.length - 1)]! * economyOf(universe.id).livingFactor);
 }
 
+/** Плата за год нынешнего обучения. 0 — не учится или ступень бесплатная */
+export function tuitionCost(state: GameState): number {
+  const universe = getUniverse(state.character.universeId);
+  const current = findEducation(universe, state.education?.currentId ?? null);
+  if (!current) return 0;
+  return tuitionFor(universe.id, current.tier);
+}
+
 /**
  * Статьи года для нынешнего состояния. Заработок до мотовства считается как прежде (life/income.ts Stage 01–03),
- * доход мира (зачистки Врат) мотовство не трогает, как и раньше
+ * доход мира (зачистки Врат) мотовство не трогает, как и раньше.
+ * Stage 02.2: жалованье карьеры и плата за обучение — отдельные статьи, каждая считается один раз
  */
 export function yearLines(state: GameState): EconomyLine[] {
   const universe = getUniverse(state.character.universeId);
@@ -58,16 +69,23 @@ export function yearLines(state: GameState): EconomyLine[] {
   };
 
   const profession = c.professionId ? findProfession(universe, c.professionId) : undefined;
-  const fromProfession = profession ? profession.base + Math.floor(meanStat(stats, profession.stats) / 4) + Math.floor((c.skills[profession.skill] ?? 0) / 10) : 0;
+  const careerTrack = findCareerTrack(c.universeId, c.professionId);
+  // Профессия без карьеры (старые миры и сохранения) платит по прежней формуле.
+  // Карьера платит жалованьем, поэтому та же работа второй раз не считается.
+  const fromProfession = careerTrack ? 0 : profession ? profession.base + Math.floor(meanStat(stats, profession.stats) / 4) + Math.floor((c.skills[profession.skill] ?? 0) / 10) : 0;
+  const fromWage = careerWage(state);
+  const employed = state.career ? state.career.employed : careerTrack !== undefined && c.professionId !== null;
+  const retired = state.career?.retired ?? false;
   let fromGuild = 0;
   for (const job of JOBS) if (state.flags.includes(job.flag)) fromGuild += job.base + Math.floor(meanStat(stats, job.stats) / 4);
-  // Ремесло без особой специальности тоже приносит немного
-  const fromTrade = fromProfession === 0 && fromGuild === 0 && state.flags.includes("profession") ? 2 + Math.floor(meanStat(stats, []) / 6) : 0;
+  // Подработка есть у безработного, но не у того, кто получает жалованье или уже на покое
+  const fromTrade = !employed && !retired && fromProfession === 0 && fromGuild === 0 && state.flags.includes("profession") ? 2 + Math.floor(meanStat(stats, []) / 6) : 0;
   // Сословие кормит взрослых: рента знати, жалованье, подаяние
   const fromClass = state.life.age >= ADULT_AGE ? (universe.socialClasses.find((s) => s.id === c.socialClassId)?.income ?? 0) : 0;
-  const gross = fromProfession + fromGuild + fromTrade + fromClass;
+  const gross = fromProfession + fromWage + fromGuild + fromTrade + fromClass;
   const afterThrift = Math.max(0, Math.round(gross * incomeFactor(universe, c)));
   add("profession", fromProfession);
+  add("wage", fromWage);
   add("guild", fromGuild);
   add("trade", fromTrade);
   add("class", fromClass);
@@ -80,6 +98,7 @@ export function yearLines(state: GameState): EconomyLine[] {
   add("cycle", cycle);
   add("tax", -Math.floor((earned + cycle) * world.taxRate));
   add("living", -livingCost(state));
+  add("tuition", -tuitionCost(state));
   return lines;
 }
 
@@ -122,12 +141,14 @@ export function economyYear(ctx: EngineContext): void {
 
 const LINE_NAMES: Readonly<Record<Exclude<EconomyLineId, "world" | "tax">, LocalizedText>> = {
   profession: t("Ремесло", "Profession"),
+  wage: t("Жалованье", "Wages"),
   guild: t("Гильдия", "Guild"),
   trade: t("Подработка", "Odd jobs"),
   class: t("Доход сословия", "Class income"),
   thrift: t("Мотовство", "Spendthrift ways"),
   cycle: t("Состояние хозяйства", "State of the economy"),
-  living: t("Стоимость жизни", "Cost of living")
+  living: t("Стоимость жизни", "Cost of living"),
+  tuition: t("Плата за обучение", "Tuition")
 };
 
 export interface EconomyLineView {

@@ -4,6 +4,8 @@ import { canParent, chronicle, logNpc, markDeath, returnHome, setMissing } from 
 import { isKin, KinGraph, MIN_PARENT_AGE, selfSpouse } from "../family/kin.js";
 import { t, type LocalizedText } from "../i18n.js";
 import { addHealthCondition, cureHealthCondition, normalizeHealthState } from "../life/health.js";
+import { clearEducation, enrollEducation } from "../life/education.js";
+import { careerWage, loseCareer, promoteCareer, retireCareer, startCareer } from "../life/careers.js";
 import { lineageYear } from "../legacy/chronicle.js";
 import type { Effect, NpcRef } from "../narrative/types.js";
 import { findEducation, findProfession, findSkill, SKILL_MAX } from "../rpg/skills.js";
@@ -345,10 +347,10 @@ export function setSocialClass(ctx: EngineContext, id: string): void {
 export function setProfession(ctx: EngineContext, id: string): void {
   const c = ctx.state.character;
   const profession = findProfession(ctx.universe, id);
-  if (!profession || c.professionId === id) return;
-  c.professionId = id;
+  if (!profession || (c.professionId === id && ctx.state.career?.employed)) return;
+  // Прямая сюжетная награда профессии сама подтверждает квалификацию; обычный найм идёт через startCareer
+  startCareer(ctx, id, true);
   setFlag(ctx, "profession", true);
-  record(ctx, { kind: "profession", value: id });
   changeSkill(ctx, profession.skill, 5);
 }
 
@@ -358,8 +360,13 @@ export function setEducation(ctx: EngineContext, id: string): void {
   const education = findEducation(ctx.universe, id);
   if (!education) return;
   const current = findEducation(ctx.universe, c.educationId);
-  if (current && current.tier >= education.tier) return;
+  if (current && current.tier >= education.tier) {
+    // Диплом той же или низшей ступени закрывает текущий курс: два образования одновременно невозможны
+    if (findEducation(ctx.universe, ctx.state.education?.currentId ?? null)?.tier === education.tier) clearEducation(ctx.state);
+    return;
+  }
   c.educationId = id;
+  clearEducation(ctx.state);
   record(ctx, { kind: "education", value: id });
   for (const skill of education.skills) changeSkill(ctx, skill, 10);
 }
@@ -552,6 +559,27 @@ export function applyEffect(ctx: EngineContext, effect: Effect): void {
       return addHealthCondition(ctx, effect.id, { severity: effect.severity, duration: effect.duration });
     case "cure":
       return cureHealthCondition(ctx, effect.id);
+    case "enrollEducation":
+      enrollEducation(ctx, effect.id);
+      return;
+    case "startCareer":
+      startCareer(ctx, effect.id);
+      return;
+    case "promoteCareer":
+      promoteCareer(ctx);
+      return;
+    case "loseCareer":
+      loseCareer(ctx);
+      return;
+    case "retireCareer":
+      retireCareer(ctx);
+      return;
+    case "severance": {
+      const years = clamp(Math.round(effect.years), 0, 5);
+      const amount = careerWage(ctx.state) * years;
+      if (amount > 0) applyEffect(ctx, { type: "wealth", delta: amount });
+      return;
+    }
   }
 }
 

@@ -1,7 +1,7 @@
 // Life Engine: что происходит с персонажем за один прожитый год
 import { effectiveStats, lifespanOf, maxResources, meanStat } from "../character/derived.js";
 import { TEMPERAMENTS } from "../character/temperaments.js";
-import { changeResource, changeSkill, changeStat, gainTrack, gainXp, isTrackOpen, kill } from "../engine/effects.js";
+import { changeResource, changeSkill, changeStat, gainTrack, gainXp, isTrackOpen, kill, applyEffect } from "../engine/effects.js";
 import { evaluateGoal, goalForTemperament, type GoalOutcome } from "../character/goals.js";
 import type { EngineContext } from "../engine/context.js";
 import { findProfession, pathSkill } from "../rpg/skills.js";
@@ -13,6 +13,8 @@ import { economyYear } from "../economy/economy.js";
 import { consumeGoods } from "../economy/market.js";
 import { regionYear } from "../economy/region.js";
 import { DEATH_CAUSES, naturalDeathChance } from "./death.js";
+import { educationYear } from "./education.js";
+import { careerYear } from "./careers.js";
 import { healthYear } from "./health.js";
 import { stageForAge } from "./stages.js";
 
@@ -118,6 +120,10 @@ export function ageOneYear(ctx: EngineContext): YearSummary {
   if (life.age >= 5) gainXp(ctx, ctx.rng.round(4 + effectiveStats(c).wisdom / 5));
   // Stage 04: доходы и расходы года (economy/economy.ts). Основной генератор здесь новых чисел не тянет
   economyYear(ctx);
+  // Stage 02.2: год обучения и год карьеры. Диплом выдаётся тем же эффектом, что и прямой сюжетный
+  const study = educationYear(ctx);
+  if (study.completedId) applyEffect(ctx, { type: "education", id: study.completedId });
+  careerYear(ctx);
   // Рынок: запасы тратятся по штуке в год на навык, шкалу мира или отношение фракции
   consumeGoods(ctx);
   // Stage 06: склад края восстанавливается, напряжение остывает, след приключения учитывается один раз

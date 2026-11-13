@@ -82,6 +82,50 @@ export {
   type HealthView,
   type HealthYearResult
 } from "./life/health.js";
+export {
+  EDUCATION_LADDER,
+  EDUCATION_TUITION,
+  MAX_EDUCATION_DURATION,
+  canEnrollEducation,
+  educationDuration,
+  educationOfTier,
+  educationStep,
+  educationStepName,
+  educationYear,
+  enrollEducation,
+  newEducationState,
+  normalizeEducationState,
+  presentEducation,
+  tuitionFor,
+  type EducationCourseView,
+  type EducationStep,
+  type EducationView
+} from "./life/education.js";
+export {
+  EMPLOYMENT_STATUS_NAMES,
+  canStartCareer,
+  careerTracksOf,
+  careerWage,
+  careerYear,
+  currentRank,
+  currentTrack,
+  employmentStatus,
+  findCareerTrack,
+  loseCareer,
+  maxCareerRank,
+  newCareerState,
+  nextRank,
+  normalizeCareerState,
+  presentCareer,
+  promoteCareer,
+  promotionReady,
+  retireCareer,
+  retirementDue,
+  startCareer,
+  type CareerRankDefinition,
+  type CareerTrackDefinition,
+  type CareerView
+} from "./life/careers.js";
 
 export { checkChance, MAX_CHANCE, MIN_CHANCE } from "./engine/checks.js";
 export {
@@ -114,7 +158,7 @@ export {
   RELATIONSHIP_NAMES
 } from "./character/social.js";
 export { activeStoryOf, advanceStory, failStory, findStory, MAX_ACTIVE_STORIES, NPC_STORIES, storyTick } from "./character/stories.js";
-export { BOND_AT, BOND_FLAG, changeNpcAffinity } from "./engine/effects.js";
+export { applyEffect, BOND_AT, BOND_FLAG, changeNpcAffinity } from "./engine/effects.js";
 export { COMMON_PROFESSIONS, COMMON_SKILLS, COMMON_TALENTS, COMMON_WEAKNESSES, NPC_TRAITS } from "./rpg/common.js";
 export { allProfessions, allSkills, educationTier, findEducation, findProfession, findSkill, pathSkill, SKILL_MAX } from "./rpg/skills.js";
 export { allTalents, allWeaknesses, findTalent, findWeakness } from "./rpg/talents.js";
@@ -123,7 +167,7 @@ export { PEOPLE_EVENTS, COMMON_CONSEQUENCES } from "./narrative/people.js";
 export { meterValue, worldTrackFactor } from "./world/rules.js";
 export { MAX_WORLD_ACTIVITIES, MAX_WORLD_SETTLEMENTS, newWorldState, normalizeWorldState, presentWorld, settlementSeeds, worldTick, type WorldView, type WorldViewFaction, type WorldViewSettlement } from "./world/state.js";
 export { worldMetrics, type WorldMetrics, type MetricRange, type SettlementMetrics, type FactionMetrics, type ActivityMetrics } from "./world/metrics.js";
-export { ADULT_AGE, CYCLE_FACTOR, HARDSHIP_PENALTY_YEARS, livingCost, MAX_ECONOMY_YEARS, newEconomy, presentEconomy, yearLines, type EconomyLineView, type EconomyView } from "./economy/economy.js";
+export { ADULT_AGE, CYCLE_FACTOR, HARDSHIP_PENALTY_YEARS, economyYear, livingCost, MAX_ECONOMY_YEARS, newEconomy, presentEconomy, tuitionCost, yearLines, type EconomyLineView, type EconomyView } from "./economy/economy.js";
 export { economyOf, WORLD_ECONOMIES, type WorldEconomy } from "./economy/worlds.js";
 export {
   changeProsperity,

@@ -70,6 +70,25 @@ describe("контракты API", () => {
     expect(dead.life.deathCause).toEqual(state.life.deathCause);
   });
 
+  it("представление жизни Stage 02.2: обучение и карьера видны, покой прекращает жалованье", () => {
+    const meta = { id: "id", createdAt: "", updatedAt: "" };
+    const { state } = newGame({ seed: "career-view", universeId: "hunter" });
+    state.character.educationId = "hu-hunter-academy";
+    state.character.professionId = "raid-hunter";
+    state.career = { rank: 1, since: 20, tenure: 4, employed: true, retired: false };
+    const view = toLifeView(meta, state);
+    expect(view.education.completed?.id).toBe("hu-hunter-academy");
+    expect(view.education.current).toBeNull();
+    expect(view.career.status).toBe("employed");
+    expect(view.career.profession?.en).toBe("Raid hunter");
+    expect(view.career.rankName?.en).toBe("Raid hunter");
+    expect(view.career.wage).toBeGreaterThan(0);
+    state.career = { rank: 1, since: 30, tenure: 6, employed: false, retired: true };
+    const retired = toLifeView(meta, state);
+    expect(retired.career.status).toBe("retired");
+    expect(retired.career.wage).toBe(0);
+  });
+
   it("история: limit по умолчанию и ограничение сверху", () => {
     expect(historyQuerySchema.parse({})).toEqual({ limit: 50 });
     expect(historyQuerySchema.safeParse({ limit: "1000" }).success).toBe(false);

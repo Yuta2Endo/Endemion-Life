@@ -12,6 +12,8 @@ import type { UniverseDefinition } from "../universes/types.js";
 import { settlementSeeds } from "../world/state.js";
 import { findRelic } from "../legacy/stories.js";
 import { findHealthCondition } from "../life/health.js";
+import { employmentStatus, EMPLOYMENT_STATUS_NAMES, promotionReady, retirementDue } from "../life/careers.js";
+import { STRAIN_PRESSURE } from "../economy/region.js";
 import { getStoryProgress } from "./effects.js";
 import type { GameState } from "../types.js";
 
@@ -111,6 +113,22 @@ export function checkCondition(state: GameState, condition: Condition): boolean 
       return inRange(state.health?.value ?? 100, condition.min, condition.max);
     case "condition":
       return (state.health?.conditions ?? []).some((item) => item.id === condition.id) === condition.has;
+    case "studying":
+      return (state.education?.currentId != null) === condition.has;
+    case "employment":
+      return employmentStatus(state) === condition.status;
+    case "careerRank":
+      return inRange(state.career?.rank ?? 0, condition.min, condition.max);
+    case "tenure":
+      return (state.career?.tenure ?? 0) >= condition.min;
+    case "careerRisk": {
+      const risk = (state.economy.cycle === "slump" ? 1 : 0) + (state.economy.hardship >= 1 ? 1 : 0) + ((state.region?.strain ?? 0) >= STRAIN_PRESSURE ? 1 : 0);
+      return risk >= condition.min;
+    }
+    case "promotionReady":
+      return promotionReady(state);
+    case "retirementDue":
+      return retirementDue(state);
     case "generation":
       return inRange(state.lineage.generation, condition.min, condition.max);
     case "renown":
@@ -291,6 +309,26 @@ export function describeCondition(condition: Condition, universe: UniverseDefini
       const name = findHealthCondition(condition.id)?.name ?? t(condition.id, condition.id);
       return condition.has ? t(`Нужно состояние: ${name.ru}`, `Requires condition: ${name.en}`) : t(`Без состояния: ${name.ru}`, `Without condition: ${name.en}`);
     }
+    case "studying":
+      return condition.has ? t("Нужно учиться", "Requires being in study") : t("Сначала нужно закончить обучение", "Finish your studies first");
+    case "employment": {
+      const name = EMPLOYMENT_STATUS_NAMES[condition.status];
+      return t(`Нужно положение: ${name.ru}`, `Requires status: ${name.en}`);
+    }
+    case "careerRank": {
+      const min = condition.min;
+      const max = condition.max;
+      const range = min !== undefined && max !== undefined ? rangeText(min, max) : min !== undefined ? t(`не меньше ${min}`, `at least ${min}`) : t(`не больше ${max ?? 0}`, `at most ${max ?? 0}`);
+      return join(t("Ступень карьеры", "Career rank"), range);
+    }
+    case "tenure":
+      return join(t("Стаж", "Tenure"), t(`не меньше ${condition.min}`, `at least ${condition.min}`));
+    case "careerRisk":
+      return condition.min > 0 ? t("Сейчас спокойные времена", "These are calm times") : t("Работа под угрозой", "The job is at risk");
+    case "promotionReady":
+      return t("Повышение ещё не заслужено", "A promotion has not been earned yet");
+    case "retirementDue":
+      return t("Ещё рано на покой", "Too early to retire");
     case "generation":
       return t("Не то поколение рода", "Not this generation of the family");
     case "renown":

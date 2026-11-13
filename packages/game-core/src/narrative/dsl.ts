@@ -66,7 +66,19 @@ export const fx = {
     ...(duration === undefined ? {} : { duration })
   }),
   /** Stage 02.1: лечение болезни или раны */
-  cure: (id: string): Effect => ({ type: "cure", id })
+  cure: (id: string): Effect => ({ type: "cure", id }),
+  /** Stage 02.2: поступить на курс обучения */
+  enrollEducation: (id: string): Effect => ({ type: "enrollEducation", id }),
+  /** Stage 02.2: начать работу по профессии */
+  startCareer: (id: string): Effect => ({ type: "startCareer", id }),
+  /** Stage 02.2: повышение */
+  promoteCareer: (): Effect => ({ type: "promoteCareer" }),
+  /** Stage 02.2: потерять работу */
+  loseCareer: (): Effect => ({ type: "loseCareer" }),
+  /** Stage 02.2: выйти на покой */
+  retireCareer: (): Effect => ({ type: "retireCareer" }),
+  /** Stage 02.2: выходное пособие в годовых жалованьях */
+  severance: (years: number): Effect => ({ type: "severance", years })
 };
 
 export const when = {
@@ -137,6 +149,20 @@ export const when = {
   /** Stage 02.1: активна ли болезнь или рана */
   condition: (id: string): Condition => ({ type: "condition", id, has: true }),
   noCondition: (id: string): Condition => ({ type: "condition", id, has: false }),
+  /** Stage 02.2: идёт обучение */
+  studying: (has = true): Condition => ({ type: "studying", has }),
+  /** Stage 02.2: статус занятости */
+  employment: (status: "employed" | "unemployed" | "retired"): Condition => ({ type: "employment", status }),
+  /** Stage 02.2: ступень карьеры */
+  careerRank: (min?: number, max?: number): Condition => ({ type: "careerRank", ...(min === undefined ? {} : { min }), ...(max === undefined ? {} : { max }) }),
+  /** Stage 02.2: стаж в профессии */
+  tenure: (min: number): Condition => ({ type: "tenure", min }),
+  /** Stage 02.2: риск потерять работу не ниже */
+  careerRisk: (min = 1): Condition => ({ type: "careerRisk", min }),
+  /** Stage 02.2: повышение доступно */
+  promotionReady: (): Condition => ({ type: "promotionReady" }),
+  /** Stage 02.2: пора на покой */
+  retirementDue: (): Condition => ({ type: "retirementDue" }),
   affinityAtMost: (role: NpcRef, max: number): Condition => ({ type: "affinity", role, max }),
   meter: (id: string, min: number): Condition => ({ type: "meter", id, min }),
   meterAtMost: (id: string, max: number): Condition => ({ type: "meter", id, max }),

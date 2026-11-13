@@ -16,6 +16,8 @@ import { milestoneAt, milestoneId } from "../life/milestones.js";
 import { abandonAdventure, beginAdventure, discoverYearly, newAdventure, venture } from "../adventure/adventure.js";
 import { masteryYearly, newMastery } from "../endgame/mastery.js";
 import { newEconomy } from "../economy/economy.js";
+import { newEducationState, normalizeEducationState } from "../life/education.js";
+import { newCareerState, normalizeCareerState } from "../life/careers.js";
 import { newRegion } from "../economy/region.js";
 import { trade } from "../economy/market.js";
 import { newLineage } from "../legacy/chronicle.js";
@@ -54,9 +56,10 @@ import { applyEffects, isFatal, kill } from "./effects.js";
  * 6 — Stage 05: открытые места и приключение (adventure);
  * 7 — Stage 06: край этой жизни (region) — склад товаров, напряжение, благополучие;
  * 8 — Stage 10: освоение мира и мастерство навыков (mastery). Наград не даёт;
- * 9 — Stage 02.1: длительное здоровье, болезни и раны (health)
+ * 9 — Stage 02.1: длительное здоровье, болезни и раны (health);
+ * 10 — Stage 02.2: обучение (education) и карьера (career)
  */
-export const SAVE_SCHEMA_VERSION = 9;
+export const SAVE_SCHEMA_VERSION = 10;
 export const SEED_MAX_LENGTH = 64;
 
 const YEAR_TEXTS: readonly LocalizedText[] = [
@@ -143,6 +146,8 @@ export function newGame(input: NewGameInput): ActionResult {
     character,
     life: { age: 0, stage: stageForAge(0, lifespanOf(character)), alive: true, deathAge: null, deathCause: null },
     health: newHealthState(),
+    education: newEducationState(),
+    career: newCareerState(),
     flags,
     occurrences: {},
     lastSeen: {},
@@ -364,6 +369,9 @@ export function restoreState(snapshot: GameState, currentVersion: number): Actio
   const state = deepClone(snapshot);
   // Снимок мог быть сделан до Stage 02.1: здоровье восстанавливается из прежнего запаса
   state.health = normalizeHealthState(state);
+  // Stage 02.2: обучение и карьера нормализуются на границе, как и здоровье
+  state.education = normalizeEducationState(state, getUniverse(state.character.universeId));
+  state.career = normalizeCareerState(state);
   state.version = currentVersion + 1;
   state.rngState = hashSeed(`${snapshot.seed}::restore::${snapshot.rngState}::${state.version}`);
   const age = ageText(state.life.age);
@@ -395,10 +403,13 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
   state.lineage.storyProgress ??= {};
   state.lineage.worldInfluence ??= emptyWorldInfluence();
   state.health = normalizeHealthState(state);
-  state.world = normalizeWorldState(state.world, getUniverse(state.character.universeId));
+  const universe = getUniverse(state.character.universeId);
+  state.education = normalizeEducationState(state, universe);
+  state.career = normalizeCareerState(state);
+  state.world = normalizeWorldState(state.world, universe);
   normalizeSocialState(state);
   const rng = new Rng(state.rngState);
-  const ctx: EngineContext = { state, rng, universe: getUniverse(state.character.universeId), changes: [] };
+  const ctx: EngineContext = { state, rng, universe, changes: [] };
   const entries: HistoryEntry[] = [];
 
   switch (action.type) {

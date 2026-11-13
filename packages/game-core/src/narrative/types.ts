@@ -1,6 +1,6 @@
 import type { LocalizedText } from "../i18n.js";
 import type { ResourceKey, StatKey } from "../stats.js";
-import type { EconomyCycle, HiddenKey, LifeStage, NpcRole, StoryScope, UniverseId, WorldInfluenceKind } from "../types.js";
+import type { EconomyCycle, EmploymentStatus, HiddenKey, LifeStage, NpcRole, StoryScope, UniverseId, WorldInfluenceKind } from "../types.js";
 
 /** Роль NPC, любой из родителей или вся семья (родители, бабушки и дедушки, братья и сёстры, супруг, дети) */
 export type NpcRef = NpcRole | "parent" | "family";
@@ -94,7 +94,21 @@ export type Condition =
   /** Stage 02.1: длительное здоровье 0–100 */
   | { type: "health"; min?: number; max?: number }
   /** Stage 02.1: активная болезнь или рана из каталога жизни */
-  | { type: "condition"; id: string; has: boolean };
+  | { type: "condition"; id: string; has: boolean }
+  /** Stage 02.2: персонаж сейчас учится */
+  | { type: "studying"; has: boolean }
+  /** Stage 02.2: статус занятости — работает, без работы или на покое */
+  | { type: "employment"; status: EmploymentStatus }
+  /** Stage 02.2: ступень карьеры */
+  | { type: "careerRank"; min?: number; max?: number }
+  /** Stage 02.2: полный стаж в нынешней профессии */
+  | { type: "tenure"; min: number }
+  /** Stage 02.2: риск потерять работу: спад, нужда, напряжение края */
+  | { type: "careerRisk"; min: number }
+  /** Stage 02.2: на нынешней ступени отработано достаточно для повышения */
+  | { type: "promotionReady" }
+  /** Stage 02.2: возраст дошёл до пенсионного для нынешней профессии */
+  | { type: "retirementDue" };
 
 /** Последствие выбора */
 export type Effect =
@@ -173,7 +187,19 @@ export type Effect =
   /** Stage 02.1: наложить болезнь или рану. severity и duration переопределяют каталог */
   | { type: "condition"; id: string; severity?: number; duration?: number }
   /** Stage 02.1: вылечить болезнь или рану */
-  | { type: "cure"; id: string };
+  | { type: "cure"; id: string }
+  /** Stage 02.2: поступить на курс обучения. Недоступный курс — тихий no-op */
+  | { type: "enrollEducation"; id: string }
+  /** Stage 02.2: начать работу по профессии. Требования проверяются ещё раз */
+  | { type: "startCareer"; id: string }
+  /** Stage 02.2: повышение на следующую ступень */
+  | { type: "promoteCareer" }
+  /** Stage 02.2: потерять работу */
+  | { type: "loseCareer" }
+  /** Stage 02.2: выйти на покой */
+  | { type: "retireCareer" }
+  /** Stage 02.2: выходное пособие в годовых жалованьях. Считается по текущей работе */
+  | { type: "severance"; years: number };
 
 export interface StatCheck {
   /** Берётся среднее по этим характеристикам (с бонусом ранга) */

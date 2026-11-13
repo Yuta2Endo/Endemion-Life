@@ -1,6 +1,7 @@
 // Подписи для изменений персонажа в истории и итогах выбора
 import {
   findAchievement,
+  findCareerTrack,
   findEducation,
   findGood,
   findProfession,
@@ -111,6 +112,13 @@ export function formatChange(change: HistoryChange, universeId: UniverseId, loca
     case "education": {
       const education = findEducation(universe, String(change.value));
       return education ? { text: msg(locale, "change.education", { name: education.name[locale] }), tone: "gold" } : null;
+    }
+    case "career": {
+      if (change.value === "unemployed") return { text: msg(locale, "change.careerUnemployed"), tone: "bad" };
+      if (change.value === "retired") return { text: msg(locale, "change.careerRetired"), tone: "neutral" };
+      const track = findCareerTrack(universe.id, change.key ?? "");
+      const rank = track?.ranks[Number(change.value)];
+      return rank ? { text: msg(locale, "change.career", { name: rank.name[locale] }), tone: "gold" } : null;
     }
     case "specialization": {
       const specialization = universe.specializations.find((x) => x.id === change.value);

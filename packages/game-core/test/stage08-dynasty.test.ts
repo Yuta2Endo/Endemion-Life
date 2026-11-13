@@ -190,7 +190,7 @@ describe("Action-based faction relations", () => {
     dead.lineage.achievements.push({ id: "dynasty", gen: 2, age: 50 });
     const { state } = succeed(dead, heirCandidates(dead).find((c) => c.available)!.npc.id, "s8-save-succ");
     const round = roundTrip(state);
-    expect(round.schemaVersion).toBe(9);
+    expect(round.schemaVersion).toBe(10);
     expect(round.lineage.renown).toBe(state.lineage.renown);
     const view = presentLineage(round);
     expect(view.dynasty.factionRelations.length).toBeGreaterThan(0);
@@ -201,7 +201,7 @@ describe("Action-based faction relations", () => {
     const current = newGame({ seed: "s8-legacy", universeId: "academy" }).state;
     current.lineage.renown = 0;
     const parsed = parseSave(JSON.parse(JSON.stringify(current)));
-    expect(parsed.schemaVersion).toBe(9);
+    expect(parsed.schemaVersion).toBe(10);
     const view = presentLineage(parsed);
     expect(view.dynasty.factionRelations.length).toBeGreaterThan(0);
     for (const f of view.dynasty.factionRelations) {

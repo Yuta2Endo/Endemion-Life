@@ -319,6 +319,6 @@ describe("Stage 04.5.1: детерминизм и наследование", () 
     expect(settlementOf(restored).stability).toBe(settlementOf(after).stability);
     expect(settlementOf(restored).prosperity).toBe(settlementOf(after).prosperity);
     expect(restored.lineage.stories[CRISIS]).toBe(1);
-    expect(restored.schemaVersion).toBe(9);
+    expect(restored.schemaVersion).toBe(10);
   });
 });

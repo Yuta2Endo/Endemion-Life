@@ -53,6 +53,16 @@ export function CharacterSheet({ life }: { life: LifeView }) {
           {t("sheet.class")}: {l(socialClass.name)}
         </p>
       )}
+      <p className="-mt-3 text-xs text-bone-400" data-testid="sheet-education-career">
+        {life.education.current
+          ? t("sheet.studying", { name: l(life.education.current.name) })
+          : life.education.completed
+            ? l(life.education.completed.name)
+            : t("sheet.noEducation")}
+        {" · "}
+        {life.career.profession ? l(life.career.profession) : t("career.noJob")}
+        {life.career.profession ? ` (${l(life.career.statusName)})` : ""}
+      </p>
 
       <div className="space-y-3">
         <Meter label={l({ ru: "Здоровье", en: "Health" })} value={c.resources.health} max={s.maxResources.health} tone="blood" />

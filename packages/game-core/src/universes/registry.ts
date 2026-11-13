@@ -1,4 +1,6 @@
 import { GameRuleError } from "../errors.js";
+import { COMMON_PROFESSIONS } from "../rpg/common.js";
+import { careerEventsFor } from "../narrative/career-events.js";
 import { WORLD_ECONOMY_EVENTS } from "../narrative/economy-events.js";
 import { WORLD_HEALTH_EVENTS } from "../narrative/health-events.js";
 import { COMMON_CONSEQUENCES } from "../narrative/people.js";
@@ -25,7 +27,13 @@ function compose(base: UniverseBase, world: WorldDefinition): UniverseDefinition
     ...rest,
     consequences: [...COMMON_CONSEQUENCES, ...rest.consequences],
     abilities: [...base.abilities.map((ability) => ({ ...ability, category: ability.category ?? abilityCategories[ability.id] ?? "utility" })), ...abilities],
-    events: [...base.events, ...events, ...WORLD_ECONOMY_EVENTS[base.id], ...WORLD_HEALTH_EVENTS[base.id]]
+    events: [
+      ...base.events,
+      ...events,
+      ...WORLD_ECONOMY_EVENTS[base.id],
+      ...WORLD_HEALTH_EVENTS[base.id],
+      ...careerEventsFor(base.id, rest.education, rest.specializations, [...rest.professions, ...COMMON_PROFESSIONS])
+    ]
   };
 }
 

@@ -553,6 +553,41 @@ export interface HealthState {
   deathCause: LocalizedText | null;
 }
 
+/** Stage 02.2: статус занятости. retired — вышел на покой сам или по возрасту */
+export const EMPLOYMENT_STATUSES = ["employed", "unemployed", "retired"] as const;
+export type EmploymentStatus = (typeof EMPLOYMENT_STATUSES)[number];
+
+/**
+ * Stage 02.2: обучение. Пройденная ступень по-прежнему одна — character.educationId,
+ * поэтому здесь только текущий курс, а не второй список diplomas
+ */
+export interface EducationState {
+  /** id курса из universe.education. null — сейчас не учится */
+  currentId: string | null;
+  /** Возраст, в котором начался текущий курс */
+  startedAt: number;
+  /** Сколько лет уже пройдено. 0 — только поступил */
+  progress: number;
+  /** Полная длительность текущего курса, лет. 0 — не учится */
+  duration: number;
+}
+
+/**
+ * Stage 02.2: карьера. Работа хранится в character.professionId: второго поля с должностью нет.
+ * employed — получает жалованье; retired — на покое и жалованья не получает.
+ * professionId после увольнения или выхода на покой остаётся названием последней работы.
+ */
+export interface CareerState {
+  /** Ступень в профессии: 0 — начало, выше — повышения */
+  rank: number;
+  /** Возраст, в котором началась нынешняя ступень */
+  since: number;
+  /** Всего лет в нынешней профессии */
+  tenure: number;
+  employed: boolean;
+  retired: boolean;
+}
+
 /** Режим продвижения жизни. Настройка хранится в сохранении, но сам цикл запускает интерфейс. */
 export const AUTO_MODES = ["manual", "auto", "milestones"] as const;
 export type AutoMode = (typeof AUTO_MODES)[number];
@@ -596,6 +631,7 @@ export const CHANGE_KINDS = [
   "profession",
   "education",
   "specialization",
+  "career",
   "hidden",
   "renown",
   "achievement",
@@ -681,6 +717,10 @@ export interface GameState {
   life: LifeState;
   /** Stage 02.1: длительное здоровье, болезни и причина смерти от них */
   health: HealthState;
+  /** Stage 02.2: текущий курс обучения. Пройденная ступень — character.educationId */
+  education: EducationState;
+  /** Stage 02.2: карьера: ступень, стаж, занятость и покой */
+  career: CareerState;
   flags: string[];
   /** Сколько раз произошло событие */
   occurrences: Record<string, number>;
@@ -728,8 +768,8 @@ export interface GameState {
 export const ECONOMY_CYCLES = ["slump", "normal", "boom"] as const;
 export type EconomyCycle = (typeof ECONOMY_CYCLES)[number];
 
-/** Статьи доходов и расходов года */
-export const ECONOMY_LINES = ["profession", "guild", "trade", "class", "thrift", "world", "cycle", "tax", "living"] as const;
+/** Статьи доходов и расходов года. wage и tuition — Stage 02.2: жалованье и плата за обучение */
+export const ECONOMY_LINES = ["profession", "guild", "trade", "class", "thrift", "world", "cycle", "wage", "tax", "living", "tuition"] as const;
 export type EconomyLineId = (typeof ECONOMY_LINES)[number];
 
 export interface EconomyLine {

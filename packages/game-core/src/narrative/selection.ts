@@ -6,6 +6,7 @@ import { ACHIEVEMENTS } from "../legacy/achievements.js";
 import { LINEAGE_CONSEQUENCES, THREADS } from "../legacy/stories.js";
 import { findHealthCondition } from "../life/health.js";
 import { findProfession, findSkill } from "../rpg/skills.js";
+import { findCareerTrack } from "../life/careers.js";
 import { allTalents, allWeaknesses } from "../rpg/talents.js";
 import { STAT_KEYS } from "../stats.js";
 import { NPC_ROLES, UNIVERSE_IDS, type GameState, type LifeStage, type UniverseId } from "../types.js";
@@ -182,6 +183,10 @@ function brokenEffect(universe: UniverseDefinition, effect: Effect, events: Read
       return universe.socialClasses.some((item) => item.id === effect.id) ? "" : `сословие ${effect.id}`;
     case "profession":
       return findProfession(universe, effect.id) ? "" : `ремесло ${effect.id}`;
+    case "startCareer":
+      return findProfession(universe, effect.id) && findCareerTrack(universe.id, effect.id) ? "" : `карьера ${effect.id}`;
+    case "enrollEducation":
+      return universe.education.some((item) => item.id === effect.id) ? "" : `образование ${effect.id}`;
     case "education":
       return universe.education.some((item) => item.id === effect.id) ? "" : `образование ${effect.id}`;
     case "talent":
