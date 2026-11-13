@@ -43,6 +43,31 @@ export interface AppConfig {
    * В рабочей среде не задаётся, пока окна не ведут вручную
    */
   liveOpsToken: string | null;
+  /**
+   * Stage 11.2: проверка утверждений портала Endemion (ES256 + JWKS).
+   * null — интеграция выключена, /api/portal/* отвечает 404
+   */
+  portal: PortalConfig | null;
+}
+
+/** Настройки проверки portal-утверждений. Все значения проверяются при старте. */
+export interface PortalConfig {
+  /** Точный iss. По контракту — https://endemion.online */
+  issuer: string;
+  /** Точный aud. По контракту — https://life.endemion.online */
+  audience: string;
+  /** Фиксированный адрес JWKS портала; из заголовка JWT никогда не берётся */
+  jwksUrl: string;
+  /** Сколько держать ключи в кэше до планового обновления */
+  jwksCacheTtlMs: number;
+  /** Тайм-аут запроса JWKS */
+  jwksTimeoutMs: number;
+  /** Минимальный интервал между запросами JWKS: защита от amplification по unknown kid */
+  jwksMinRefreshMs: number;
+  /** Аварийно заблокированные kid (компрометация ключа) */
+  jwksBlockedKids: ReadonlySet<string>;
+  /** Лимит запросов в минуту на один sub. 0 — без лимита */
+  subjectRateLimitPerMinute: number;
 }
 
 export interface EndemionIdConfig {
@@ -84,7 +109,17 @@ const envSchema = z.object({
   ENDEMION_ID_CLIENT_ID: z.string().optional(),
   ENDEMION_ID_CLIENT_SECRET: z.string().optional(),
   ENDEMION_ID_TOKEN_KEY: z.string().optional(),
-  LIVE_OPS_TOKEN: z.string().optional()
+  LIVE_OPS_TOKEN: z.string().optional(),
+  // Stage 11.2: проверка утверждений портала Endemion
+  PORTAL_INTEGRATION_ENABLED: z.enum(["true", "false"]).default("false"),
+  PORTAL_JWT_ISSUER: z.string().optional(),
+  PORTAL_JWT_AUDIENCE: z.string().optional(),
+  PORTAL_JWKS_URL: z.string().optional(),
+  PORTAL_JWKS_CACHE_TTL_SECONDS: z.coerce.number().int().min(1).max(3600).default(300),
+  PORTAL_JWKS_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(3000),
+  PORTAL_JWKS_MIN_REFRESH_MS: z.coerce.number().int().min(0).max(60_000).default(10_000),
+  PORTAL_JWKS_BLOCKED_KIDS: z.string().default(""),
+  PORTAL_SUBJECT_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(0).max(100_000).default(60)
 });
 
 function readEndemionId(e: z.infer<typeof envSchema>, production: boolean, publicUrl: string): EndemionIdConfig | null {
@@ -112,6 +147,50 @@ function readEndemionId(e: z.infer<typeof envSchema>, production: boolean, publi
     redirectUri: `${publicUrl}/api/auth/oidc/callback`,
     postLogoutRedirectUri: `${publicUrl}/`,
     accountUrl: `${issuer.origin}/account`
+  };
+}
+
+const PORTAL_KID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
+const PORTAL_ISSUER_DEFAULT = "https://endemion.online";
+const PORTAL_AUDIENCE_DEFAULT = "https://life.endemion.online";
+const PORTAL_JWKS_DEFAULT = "https://endemion.online/.well-known/jwks.json";
+
+function readPortal(e: z.infer<typeof envSchema>, production: boolean): PortalConfig | null {
+  if (e.PORTAL_INTEGRATION_ENABLED !== "true") return null;
+  const fail = (message: string): never => {
+    throw new Error(`Некорректные настройки API: ${message}`);
+  };
+  const parseUrl = (name: string, value: string): string => {
+    let url: URL;
+    try {
+      url = new URL(value);
+    } catch {
+      return fail(`${name} должен быть корректным URL`);
+    }
+    if (production && url.protocol !== "https:") fail(`${name} в рабочей среде должен начинаться с https://`);
+    return url.origin + (url.pathname === "/" ? "" : url.pathname.replace(/\/+$/, "")) + (url.search || "");
+  };
+  const issuer = parseUrl("PORTAL_JWT_ISSUER", blankToNull(e.PORTAL_JWT_ISSUER) ?? PORTAL_ISSUER_DEFAULT);
+  const audience = parseUrl("PORTAL_JWT_AUDIENCE", blankToNull(e.PORTAL_JWT_AUDIENCE) ?? PORTAL_AUDIENCE_DEFAULT);
+  const jwksUrl = parseUrl("PORTAL_JWKS_URL", blankToNull(e.PORTAL_JWKS_URL) ?? PORTAL_JWKS_DEFAULT);
+  // Контракт фиксирует iss/aud: значения по умолчанию совпадают с production-адресами
+  const blocked = (blankToNull(e.PORTAL_JWKS_BLOCKED_KIDS) ?? "")
+    .split(",")
+    .map((kid) => kid.trim())
+    .filter(Boolean);
+  if (blocked.length > 32) fail("PORTAL_JWKS_BLOCKED_KIDS — не больше 32 значений");
+  for (const kid of blocked) {
+    if (!PORTAL_KID_PATTERN.test(kid)) fail("PORTAL_JWKS_BLOCKED_KIDS содержит некорректный kid");
+  }
+  return {
+    issuer,
+    audience,
+    jwksUrl,
+    jwksCacheTtlMs: e.PORTAL_JWKS_CACHE_TTL_SECONDS * 1000,
+    jwksTimeoutMs: e.PORTAL_JWKS_TIMEOUT_MS,
+    jwksMinRefreshMs: e.PORTAL_JWKS_MIN_REFRESH_MS,
+    jwksBlockedKids: new Set(blocked),
+    subjectRateLimitPerMinute: e.PORTAL_SUBJECT_RATE_LIMIT_PER_MINUTE
   };
 }
 
@@ -160,6 +239,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     log: { level: e.LOG_LEVEL, format: e.LOG_FORMAT ?? (production ? "json" : "pretty") },
     sentryDsn: blankToNull(e.SENTRY_DSN),
     endemionId: readEndemionId(e, production, publicUrl),
-    liveOpsToken: blankToNull(e.LIVE_OPS_TOKEN)
+    liveOpsToken: blankToNull(e.LIVE_OPS_TOKEN),
+    portal: readPortal(e, production)
   };
 }

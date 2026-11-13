@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, type MiddlewareConsumer, type NestModule } from "@nestjs/common";
 import { APP_FILTER, APP_GUARD } from "@nestjs/core";
 import { AuthThrottle } from "./auth/auth-throttle.js";
 import { AuthController } from "./auth/auth.controller.js";
@@ -19,6 +19,13 @@ import { LiveService } from "./live/live.service.js";
 import { PresenceController } from "./presence/presence.controller.js";
 import { PresenceService } from "./presence/presence.service.js";
 import { MailService } from "./mail/mail.service.js";
+import { PortalAuditService } from "./portal/portal-audit.service.js";
+import { PortalAuthGuard } from "./portal/portal-auth.guard.js";
+import { portalNoStore } from "./portal/portal-cache.middleware.js";
+import { PortalController } from "./portal/portal.controller.js";
+import { PortalJwksService } from "./portal/portal-jwks.service.js";
+import { PortalService } from "./portal/portal.service.js";
+import { PortalTokenService } from "./portal/portal-token.service.js";
 import { PrismaService } from "./prisma/prisma.service.js";
 import { RateLimitGuard } from "./redis/rate-limit.guard.js";
 import { RedisService } from "./redis/redis.service.js";
@@ -30,7 +37,7 @@ import { WorldController } from "./world/world.controller.js";
 import { WorldService } from "./world/world.service.js";
 
 @Module({
-  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, SocialController, LiveController, InsightsController, PresenceController, WorldController],
+  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, SocialController, LiveController, InsightsController, PortalController, PresenceController, WorldController],
   providers: [
     { provide: APP_CONFIG, useFactory: (): AppConfig => readConfig() },
     PrismaService,
@@ -46,10 +53,21 @@ import { WorldService } from "./world/world.service.js";
     InsightsService,
     PresenceService,
     WorldService,
+    // Stage 11.2: проверка portal-утверждений (только для /api/portal/*)
+    PortalAuditService,
+    PortalJwksService,
+    PortalTokenService,
+    PortalAuthGuard,
+    PortalService,
     // Порядок важен: сначала лимит запросов, потом проверка источника запроса
     { provide: APP_GUARD, useClass: RateLimitGuard },
     { provide: APP_GUARD, useClass: RequestGuard },
     { provide: APP_FILTER, useClass: ApiExceptionFilter }
   ]
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    // Stage 11.2.1: заголовок кэша ставится до гвардов, чтобы покрыть и 429 общего лимита по IP
+    consumer.apply(portalNoStore).forRoutes("portal");
+  }
+}
