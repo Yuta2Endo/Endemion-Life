@@ -278,3 +278,24 @@ Before any gameplay expansion:
 6. Then begin STAGE 02 with advanced life simulation, preserving save schema 8 and all six worlds.
 
 **The game is now materially safer to grow. It is not yet released.**
+
+---
+
+## 16. Post-release addendum (2026-11-13)
+
+After this report was written, the stabilization was committed and pushed with explicit owner approval to proceed:
+
+| Item | Result |
+|---|---|
+| Stabilization commit | `d19be69` |
+| Gitleaks false-positive fix | `cd2e6a9` |
+| Android CI setup fix | `3fe71aa` |
+| `origin/main` | `3fe71aa22ce3b8dd36e4c7028e8693dc70c9c54d` |
+| CI | run **43425468438 — success** |
+| Security | run **43425468466 — success** |
+| Deploy | run **43426512519 — waiting for production environment approval; not approved** |
+| Production | unchanged at `ca72b8b` |
+
+The earlier statements in sections 11, 13, and 14 that “no commit/push was performed” are historical and superseded by this addendum. The portal wiring and untracked portal source remain intentionally outside the pushed stabilization commit, as do the 74 Stage 11 reports and blueprint `.docx`.
+
+**Updated status: STAGE 01 is released to GitHub and CI-verified; production deployment has not been performed and remains a separate owner decision.**

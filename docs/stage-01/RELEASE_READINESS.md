@@ -122,3 +122,19 @@ pnpm --filter @endemion/database exec prisma migrate status
 - [ ] Deployment approved and performed (out of scope)
 
 **Release status: BLOCKED ON PROVENANCE AND OWNER APPROVAL.**
+
+---
+
+## Post-release addendum (2026-11-13)
+
+The stabilization was committed and pushed after this report was written:
+
+- `d19be69` — stabilization commit
+- `cd2e6a9` — gitleaks false-positive fix
+- `3fe71aa` — Android CI SDK setup fix
+- `origin/main` = `3fe71aa`
+- CI run **43425468438 — success**
+- Security run **43425468466 — success**
+- Deploy run **43426512519 — waiting for production environment approval; not approved**
+
+Checklist items “stabilization commit created” and “pushed” are now complete. The GitHub release is complete; **production is unchanged at `ca72b8b`**. Remaining blockers are portal owner approval, Android signing/Play compliance, device smoke testing, and a separately approved deployment. The earlier “no commit/push” statements are historical and superseded by this addendum.

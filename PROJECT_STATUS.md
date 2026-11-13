@@ -1,14 +1,14 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-13 (STAGE 01 stabilization)
-**Ветка:** `main`, HEAD `cda9a39`
-**Production:** `ca72b8b` (release 04.5.4), проверено в STAGE 00
-**origin/main:** `c7951d0` — production-коммиты ещё не отправлены в GitHub
-**Рабочее дерево:** изменено (STAGE 01 stabilization + незакоммиченная portal-интеграция). Подробности — `docs/stage-01/REPOSITORY_PROVENANCE.md`.
+**Обновлено:** 2026-11-13 (STAGE 01 stabilization, CI green)
+**Ветка:** `main`, HEAD `3fe71aa`
+**Production:** `ca72b8b` (release 04.5.4), не изменялся
+**origin/main:** `3fe71aa` — stabilization запушен
+**Рабочее дерево:** только незакоммиченная portal-интеграция (`.env.example`, `app.module.ts`, `config.ts`, `apps/api/src/portal/`) и untracked Stage 11 reports/docx. Подробности — `docs/stage-01/REPOSITORY_PROVENANCE.md`.
 
 ## Текущий статус
 
-STAGE 01 (Core Stabilization) реализован и проверен локально. Изменения **не закоммичены и не развёрнуты**. Portal-интеграция (`apps/api/src/portal/`, `PORTAL_*`) остаётся вне релиза до решения владельца продукта. Production не изменялся.
+STAGE 01 (Core Stabilization) реализован, проверен, **закоммичен и запушен**: `d19be69`, `cd2e6a9`, `3fe71aa`. CI и Security на `3fe71aa` — **success**. Deploy ожидает ручного подтверждения environment и **не подтверждён**. Portal-интеграция (`apps/api/src/portal/`, `PORTAL_*`) остаётся вне релиза до решения владельца продукта. Production не изменялся.
 
 | Этап | Название | Статус |
 |------|----------|--------|
@@ -37,3 +37,9 @@ STAGE 01 (Core Stabilization) реализован и проверен лока�
 - API: порт 4000; web: 3000. Локальный режим остаётся запасным для web, но **не создаёт новые жизни в Android-оболочке при недоступном API**.
 - Миграции: 10 аддитивных; production backup и rollback — см. `docs/stage-01/RELEASE_READINESS.md`.
 - Блокеры релиза: commit/push approval, portal decision, Android signing/Play compliance, production deploy approval.
+
+## Post-release addendum (2026-11-13)
+
+STAGE 01 stabilization is now committed and pushed: `d19be69` → `cd2e6a9` → `3fe71aa`; `origin/main` = `3fe71aa`. CI run **43425468438 — success**, Security run **43425468466 — success**. Deploy run **43426512519 — waiting for production environment approval; not approved**, so production remains `ca72b8b`.
+
+The working tree still contains only the intentionally excluded portal wiring (`.env.example`, `apps/api/src/app.module.ts`, `apps/api/src/config.ts`), untracked `apps/api/src/portal/`, 74 Stage 11 reports, and the blueprint `.docx`. Android signing/Play compliance and portal approval remain external owner blockers. The GitHub release is complete; deployment has not been performed.
