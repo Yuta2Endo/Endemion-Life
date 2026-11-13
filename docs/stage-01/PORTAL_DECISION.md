@@ -43,3 +43,20 @@
 - Security review confirms `jti` replay handling and no-store coverage.
 
 Until then, the portal stays out of the release, and its uncommitted state is recorded in `REPOSITORY_PROVENANCE.md`.
+
+## 5. Addendum 2026-11-14 — Option C: dark integration
+
+The product owner opened the Portal track. The Life-side integration is now committed as
+`4c786d6` (`portal: integrate disabled portal profile API`) and registered in `AppModule`,
+but it ships **disabled**:
+
+- `PORTAL_INTEGRATION_ENABLED=false` by default;
+- `/api/portal/profile` returns `404 NOT_FOUND`;
+- no JWKS request, no key, no database lookup;
+- API unit **74/74** and API e2e **135/135** pass, including AppModule wiring tests;
+- no Portal private key or production flag was created.
+
+Activation remains blocked by the Portal side: `https://endemion.online/.well-known/jwks.json`
+returns `503`. A Portal production ES256 key, `ENDEMION_LIFE_ASSERTION=1`, and a `200`
+JWKS response are required before enabling Life. See `docs/portal/INTEGRATION.md`.
+

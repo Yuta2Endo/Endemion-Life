@@ -42,7 +42,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 
 ## Portal ↔ Life (Life-side integrated, disabled)
 
-Life-side API портала (`apps/api/src/portal/*`) зарегистрирован в `AppModule` и собирается в production-образ, но `PORTAL_INTEGRATION_ENABLED=false` по умолчанию: `/api/portal/profile` отвечает `404`, JWKS не запрашивается. Это позволяет выпустить код dark и активировать интеграцию конфигурацией.
+Life-side API портала (`apps/api/src/portal/*`) зарегистрирован в `AppModule` (commit `4c786d6`) и собирается в production-образ, но `PORTAL_INTEGRATION_ENABLED=false` по умолчанию: `/api/portal/profile` отвечает `404`, JWKS не запрашивается. Это позволяет выпустить код dark и активировать интеграцию конфигурацией.
 
 - Контракт: ES256 JWT, `iss=https://endemion.online`, `aud=https://life.endemion.online`, `scope=portal:read`, lifetime ≤120 s, skew 30 s, `sub` = Endemion ID UUID.
 - Endpoint: `GET /api/portal/profile`; ответ только `exists`, `displayName`, `lives.total`, `lives.alive`; `Cache-Control: private, no-store`.
