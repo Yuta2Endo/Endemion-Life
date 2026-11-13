@@ -6,6 +6,8 @@ import { affinityLabel, roleName } from "../character/npcs.js";
 import { isKin, KinGraph, type KinRelation } from "../family/kin.js";
 import { fillText, t, type LocalizedText } from "../i18n.js";
 import { findAdventure } from "../adventure/content.js";
+import { findBusiness } from "../life/business.js";
+import { findProperty } from "../life/household.js";
 import { findEvent } from "../narrative/selection.js";
 import { findProfession } from "../rpg/skills.js";
 import { findTalent, findWeakness } from "../rpg/talents.js";
@@ -13,7 +15,7 @@ import { SELF_ID, type ChronicleEntry, type DeathCauseId, type GameState, type L
 import { getUniverse } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import { ACHIEVEMENTS, type AchievementCategory } from "./achievements.js";
-import { lawOf } from "./laws.js";
+import { lawOf, type InheritanceLaw } from "./laws.js";
 import { findLineageConsequence, findRelic, THREADS } from "./stories.js";
 import { heirCandidates } from "./succession.js";
 import { LIFE_TITLES, SCORE_PARTS, SCORE_PART_NAMES, scoreLife } from "./summary.js";
@@ -83,6 +85,8 @@ export interface HeirView {
   available: boolean;
   locked: LocalizedText | null;
   primary: boolean;
+  /** Почему именно этот наследник считается первым по закону мира */
+  primaryReason: LocalizedText | null;
   wealth: number;
   regency: boolean;
   classInherited: boolean;
@@ -139,6 +143,13 @@ export interface LifeSummaryView {
   continuedName: string | null;
 }
 
+export interface InheritanceAssetsView {
+  liquid: number;
+  home: { id: string; name: LocalizedText; value: number } | null;
+  businesses: { id: string; name: LocalizedText; value: number }[];
+  total: number;
+}
+
 export interface InheritanceView {
   fromName: string;
   fromGen: number;
@@ -148,6 +159,10 @@ export interface InheritanceView {
   ownWealth: number;
   held: number;
   shares: { name: string; amount: number }[];
+  /** Stage 03.1: из чего состояло наследство: золото, дом, проданные дела */
+  assets: InheritanceAssetsView | null;
+  /** Stage 03.1: родовой дом перешёл в натуре */
+  homeInherited: boolean;
   socialClass: LocalizedText;
   classInherited: boolean;
   reputation: number;
@@ -352,10 +367,19 @@ function achievementViews(state: GameState, onlyGen?: number): AchievementView[]
     .filter((a) => onlyGen === undefined || a.gen === onlyGen);
 }
 
+/** Почему закон мира ставит этого наследника первым: игрок должен видеть причину, а не только бейдж */
+function primaryReason(law: InheritanceLaw): LocalizedText {
+  if (law.order === "eldest") return t("Старший доступный наследник по праву первородства", "Eldest available heir under primogeniture");
+  if (law.order === "merit") return t("Самый сильный и заслуженный наследник по закону клана", "The strongest and most accomplished heir under clan law");
+  if (law.order === "equal") return t("Старший доступный наследник; доли равны", "Eldest available heir; shares are equal");
+  return t("Самый близкий по отношениям наследник по гражданскому кодексу; выбор за вами", "Closest heir by affinity under the civil code; the choice is yours");
+}
+
 /** Наследник глазами игрока. Сословие — то, которое он получит: своё или унаследованное от умершего */
 function heirView(state: GameState, universe: UniverseDefinition, candidate: ReturnType<typeof heirCandidates>[number]): HeirView {
   const npc = candidate.npc;
   const education = universe.education.find((e) => e.tier === npc.educationTier);
+  const law = lawOf(universe.id);
   return {
     id: npc.id,
     name: npc.name,
@@ -369,6 +393,7 @@ function heirView(state: GameState, universe: UniverseDefinition, candidate: Ret
     available: candidate.available,
     locked: candidate.locked,
     primary: candidate.primary,
+    primaryReason: candidate.primary ? primaryReason(law) : null,
     wealth: candidate.wealth,
     regency: candidate.regency,
     classInherited: candidate.classInherited,
@@ -490,6 +515,21 @@ function presentInheritance(state: GameState): InheritanceView | null {
   const record = state.lineage.inheritance;
   if (!record) return null;
   const universe = getUniverse(state.character.universeId);
+  const homeDef = record.assets?.home ? findProperty(universe.id, record.assets.home.id) : undefined;
+  const assets = record.assets
+    ? {
+        liquid: record.assets.liquid,
+        home: record.assets.home
+          ? { id: record.assets.home.id, name: homeDef?.name ?? t(record.assets.home.id, record.assets.home.id), value: record.assets.home.value }
+          : null,
+        businesses: record.assets.businesses.map((business) => ({
+          id: business.id,
+          name: findBusiness(universe.id, business.id)?.name ?? t(business.id, business.id),
+          value: business.value
+        })),
+        total: record.assets.total
+      }
+    : null;
   return {
     fromName: record.fromName,
     fromGen: record.fromGen,
@@ -499,6 +539,8 @@ function presentInheritance(state: GameState): InheritanceView | null {
     ownWealth: record.ownWealth,
     held: record.held,
     shares: record.shares.map((s) => ({ name: s.name, amount: s.amount })),
+    assets,
+    homeInherited: record.homeInherited === true,
     socialClass: className(universe, record.socialClassId),
     classInherited: record.classInherited,
     reputation: record.reputation,
@@ -761,7 +803,9 @@ function names(universe: UniverseDefinition, entry: ChronicleEntry): LocalizedTe
     case "relic": {
       const relic = findRelic(String(v.relic));
       const name = relic ? relic.name : t(String(v.relic), String(v.relic));
-      return t(`${n0} обрёл реликвию: ${name.ru}.`, `${n0} acquired a relic: ${name.en}.`);
+      return v.lost
+        ? t(`${n0} теряет реликвию: ${name.ru}.`, `${n0} loses a relic: ${name.en}.`)
+        : t(`${n0} обрёл реликвию: ${name.ru}.`, `${n0} acquired a relic: ${name.en}.`);
     }
     case "talent":
     case "secret":

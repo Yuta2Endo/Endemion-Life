@@ -30,6 +30,11 @@ function HeirCard({ heir, controlAge, busy, onChoose }: { heir: HeirView; contro
         </p>
         {heir.primary && <span className="rounded border border-gold-500/50 px-1.5 py-0.5 text-[10px] text-gold-200">{t("heir.primary")}</span>}
       </div>
+      {heir.primaryReason && (
+        <p className="mt-1 text-[11px] leading-snug text-gold-300/90" data-testid="heir-primary-reason">
+          {l(heir.primaryReason)}
+        </p>
+      )}
       <p className="mt-1 text-xs text-bone-300">
         {[t("heir.age", { n: heir.age }), l(heir.race), l(heir.socialClass), heir.profession && l(heir.profession), heir.adopted && t("lineage.adopted")].filter(Boolean).join(" · ")}
       </p>
@@ -163,6 +168,16 @@ function Summary({ summary }: { summary: LifeSummaryView }) {
           <dd className="text-xs text-bone-500">{t("summary.born", { name: l(summary.bornClass) })}</dd>
         </div>
       </dl>
+
+      <div className="rounded-lg border border-line/70 bg-ink-950/40 p-4" data-testid="succession-law">
+        <Heading>{t("summary.lawMore")}</Heading>
+        <p className="text-sm text-bone-100">{l(summary.law.name)}</p>
+        <p className="mt-1 text-xs leading-relaxed text-bone-300">{l(summary.law.description)}</p>
+        <p className="mt-2 text-xs text-bone-400">
+          {t("summary.lawControl", { age: summary.law.controlAge })} ·{" "}
+          {t("inherit.levy", { name: l(summary.law.levyName), n: Math.round(summary.law.levy * 100) })}
+        </p>
+      </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>

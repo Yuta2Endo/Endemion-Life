@@ -212,7 +212,7 @@ describe("Stage 04.5.4: сохранение и наследование", () =>
 
     const restored = parseSave(deepClone(after));
 
-    expect(restored.schemaVersion).toBe(13);
+    expect(restored.schemaVersion).toBe(14);
     expect(restored.lineage.stories[EVENT]).toBe(1);
     expect(influenceOf(restored)).toBe(influenceOf(after));
     restored.life.age = 20;
@@ -223,7 +223,7 @@ describe("Stage 04.5.4: сохранение и наследование", () =>
     const state = recoveredState("s454-save-before");
     const restored = parseSave(deepClone(state));
 
-    expect(restored.schemaVersion).toBe(13);
+    expect(restored.schemaVersion).toBe(14);
     restored.life.age = 20;
     expect(isEligible(restored, eventOf(EVENT))).toBe(true);
   });

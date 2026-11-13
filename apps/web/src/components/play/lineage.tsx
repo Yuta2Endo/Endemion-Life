@@ -328,6 +328,7 @@ export function InheritanceDetails({ inheritance }: { inheritance: InheritanceVi
       <dd className="text-right text-bone-100">{value}</dd>
     </div>
   );
+  const businessValue = inheritance.assets ? inheritance.assets.businesses.reduce((sum, business) => sum + business.value, 0) : 0;
   return (
     <div className="space-y-3" data-testid="inheritance">
       <p className="font-display text-lg text-bone-100">{t("inherit.from", { name: inheritance.fromName, gen: inheritance.fromGen })}</p>
@@ -340,6 +341,34 @@ export function InheritanceDetails({ inheritance }: { inheritance: InheritanceVi
         {row(t("inherit.class"), `${l(inheritance.socialClass)}${inheritance.classInherited ? ` · ${t("inherit.classInherited")}` : ""}`)}
         {row(t("inherit.reputation"), inheritance.reputation)}
       </dl>
+      {inheritance.assets && (
+        <div>
+          <Heading>{t("inherit.estate")}</Heading>
+          <dl className="space-y-1 text-sm">
+            {row(t("inherit.estateLiquid"), <span className="tabular-nums">{inheritance.assets.liquid}</span>)}
+            {inheritance.assets.home &&
+              row(
+                t("inherit.estateHome"),
+                <span>
+                  {l(inheritance.assets.home.name)} · <span className="tabular-nums text-gold-200">{inheritance.assets.home.value}</span>
+                </span>
+              )}
+            {inheritance.assets.businesses.length > 0 &&
+              row(
+                t("inherit.estateBusinesses"),
+                <span>
+                  {inheritance.assets.businesses.map((business) => l(business.name)).join(", ")} · <span className="tabular-nums text-gold-200">{businessValue}</span>
+                </span>
+              )}
+            {row(t("inherit.estateTotal"), <span className="tabular-nums text-gold-200" data-testid="inherit-estate-total">{inheritance.assets.total}</span>)}
+          </dl>
+          {inheritance.assets.home && (
+            <p className={`mt-1 text-xs ${inheritance.homeInherited ? "text-jade-300" : "text-bone-500"}`}>
+              {inheritance.homeInherited ? t("inherit.homeKept", { name: l(inheritance.assets.home.name) }) : t("inherit.homeSold", { name: l(inheritance.assets.home.name) })}
+            </p>
+          )}
+        </div>
+      )}
       <p className="text-xs text-bone-500">{l(inheritance.law.description)}</p>
       {inheritance.held > 0 && <p className="rounded-md border border-azure-500/40 bg-azure-600/10 px-3 py-2 text-xs text-bone-100">{t("inherit.held", { age: inheritance.law.controlAge, n: inheritance.held })}</p>}
       {inheritance.guardianName && <p className="text-xs text-bone-300">{t("inherit.guardian", { name: inheritance.guardianName })}</p>}

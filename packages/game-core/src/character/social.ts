@@ -146,6 +146,62 @@ export function normalizeSocialState(state: GameState): SocialState {
   return normalized;
 }
 
+/** Порядковый номер личного сюжета в его id ("story-7"): по нему следующий id не совпадёт с перенесённым */
+function storyOrdinal(id: string): number {
+  const match = /(\d+)$/.exec(id);
+  return match ? Number.parseInt(match[1]!, 10) : 0;
+}
+
+/**
+ * Stage 03.2: социальная память NPC–NPC переживает наследование. Связи и личные сюжеты переносятся
+ * с пересчётом id: умерший персонаж (SELF_ID) становится записью deceasedId, наследник — новым SELF_ID.
+ * Связи с предшественником, с выпавшими из жизни людьми и связи персонажа с NPC не переносятся:
+ * отношение персонажа к людям по-прежнему выводится из роли и affinity. Время сдвигается на shift —
+ * тот же сдвиг, что у возрастов NPC, — и не уходит в прошлое. Возвращается нормализованное состояние.
+ */
+export function carrySocialState(
+  previous: GameState,
+  next: GameState,
+  idMap: ReadonlyMap<string, string>,
+  deceasedId: string,
+  shift: number
+): SocialState {
+  const source = readSocialState(previous);
+  const known = idsOf(next);
+  const remap = (id: string) => idMap.get(id) ?? id;
+  const at = (value: number) => Math.max(0, Math.round(value - shift));
+
+  const relationships: NpcRelationship[] = [];
+  const pairs = new Set<string>();
+  for (const item of source.relationships) {
+    const a = remap(item.a);
+    const b = remap(item.b);
+    if (a === b || a === SELF_ID || b === SELF_ID) continue;
+    if (a === deceasedId || b === deceasedId || !known.has(a) || !known.has(b)) continue;
+    const key = pairKey(a, b);
+    if (pairs.has(key)) continue;
+    pairs.add(key);
+    relationships.push({ ...item, a, b, since: at(item.since), updatedAt: at(item.updatedAt) });
+  }
+  relationships.sort((a, b) => a.id - b.id);
+
+  const stories: NpcStoryState[] = [];
+  const storyKeys = new Set<string>();
+  for (const item of source.stories) {
+    const npcId = remap(item.npcId);
+    if (npcId === SELF_ID || npcId === deceasedId || !known.has(npcId)) continue;
+    const key = `${npcId}::${item.storyId}`;
+    if (storyKeys.has(key)) continue;
+    storyKeys.add(key);
+    stories.push({ ...item, npcId, since: at(item.since), updatedAt: at(item.updatedAt) });
+  }
+  stories.sort((a, b) => a.updatedAt - b.updatedAt || a.id.localeCompare(b.id));
+
+  const nextRelationshipId = Math.max(1, ...relationships.map((item) => item.id + 1), Math.round(source.nextRelationshipId));
+  const nextStoryId = Math.max(1, ...stories.map((item) => storyOrdinal(item.id) + 1), Math.round(source.nextStoryId));
+  return { relationships, stories, nextRelationshipId, nextStoryId };
+}
+
 export function relationshipsOf(state: GameState, id: string): NpcRelationship[] {
   return readSocialState(state).relationships.filter((item) => item.a === id || item.b === id);
 }

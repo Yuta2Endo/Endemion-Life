@@ -84,8 +84,8 @@ describe("Dynasty: lightweight dynasty model", () => {
     expect(kinProblem(round)).toBeNull();
   });
 
-  it("SAVE_SCHEMA_VERSION не менялся в Stage 04 (теперь 13 в Stage 02.5)", () => {
-    expect(SAVE_SCHEMA_VERSION).toBe(13);
+  it("SAVE_SCHEMA_VERSION обновлён до 14 в Stage 03.1 (было 13 в Stage 02.5)", () => {
+    expect(SAVE_SCHEMA_VERSION).toBe(14);
   });
 
   it("родовия карта связей всех миров валидна после полной жизни", () => {

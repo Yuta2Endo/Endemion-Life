@@ -64,8 +64,9 @@ import { applyEffects, isFatal, kill } from "./effects.js";
  * 11 — Stage 02.3: жильё, дом и своё дело (household, business);
  * 12 — Stage 02.4: текущее поселение и переезды (location);
  * 13 — Stage 02.5: уклад детства и очки характеристик при рождении (character.creation). Поле необязательное
+ * 14 — Stage 03.1: оценка имущества в записи о наследстве (lineage.inheritance.assets). Поле необязательное
  */
-export const SAVE_SCHEMA_VERSION = 13;
+export const SAVE_SCHEMA_VERSION = 14;
 export const SEED_MAX_LENGTH = 64;
 
 const YEAR_TEXTS: readonly LocalizedText[] = [

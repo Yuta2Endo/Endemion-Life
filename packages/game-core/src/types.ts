@@ -422,6 +422,15 @@ export interface AchievementRecord {
   age: number;
 }
 
+/** Оценка имущества предшественника на момент смерти. liquid — золото, home — собственный дом,
+ * businesses — дела (всегда продаются в наследство), total — их сумма */
+export interface InheritanceAssets {
+  liquid: number;
+  home: { id: string; value: number } | null;
+  businesses: { id: string; value: number }[];
+  total: number;
+}
+
 /** Что получил текущий персонаж от предшественника. null у основателя рода */
 export interface InheritanceRecord {
   fromGen: number;
@@ -437,6 +446,10 @@ export interface InheritanceRecord {
   ownWealth: number;
   /** Что ушло другим наследникам */
   shares: { npcId: string; name: string; amount: number }[];
+  /** Stage 03.1: из чего состояло наследство. Нет в старых сохранениях — значит, только золото */
+  assets?: InheritanceAssets;
+  /** Stage 03.1: родовой дом перешёл наследнику в натуре, а не был продан в золото */
+  homeInherited?: boolean;
   socialClassId: string;
   /** Сословие перешло от предшественника (а не своё) */
   classInherited: boolean;

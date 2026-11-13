@@ -83,8 +83,8 @@ export type Condition =
   | { type: "worldFaction"; id: string; power?: { min?: number; max?: number }; influence?: { min?: number; max?: number }; standing?: { min?: number; max?: number } }
   /** Активная личная цель игрока */
   | { type: "goal"; id: string }
-  /** Фамильная реликвия в наличии */
-  | { type: "relic"; id: string }
+  /** Фамильная реликвия в наличии. Без id — любая реликвия рода */
+  | { type: "relic"; id?: string }
   /** Этап личного или фамильного сюжета: точный номер этапа и область действия */
   | { type: "storyStage"; id: string; stage: number; scope: StoryScope }
   /** Выбор, сделанный в событии сюжета: id сюжета, id события, id варианта и область действия */
@@ -194,6 +194,8 @@ export type Effect =
   | { type: "influence"; kind: WorldInfluenceKind; id: string; delta: number }
   /** Получение реликвия рода */
   | { type: "relic"; id: string }
+  /** Stage 03.1: потеря реликвии рода. Нет реликвии — тихий no-op, повтор безопасен */
+  | { type: "loseRelic"; id: string }
   /** Страховой этап сюжета: продвигается только при совпадении текущего этапа с ожидаемым */
   | { type: "advanceStory"; id: string; expectedStage: number; nextStage: number; scope: StoryScope }
   /** Запись выбора в событии сюжета: id сюжета, id события, id варианта и область действия */

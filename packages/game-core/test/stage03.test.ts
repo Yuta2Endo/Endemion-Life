@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   allProfessions,
   applyAction,
+  businessSaleValue,
   deepClone,
   getUniverse,
   heirCandidates,
@@ -20,6 +21,7 @@ import {
   presentLegacy,
   presentLineage,
   SAVE_SCHEMA_VERSION,
+  saleValue,
   scoreLife,
   SELF_ID,
   succeed,
@@ -315,13 +317,17 @@ describe("Legacy & Inheritance: смерть персонажа и наслед�
   it("наследование по закону мира: сбор, доля супруга, характеристики не копируются целиком", () => {
     const candidate = heirCandidates(dead).find((c) => c.available)!;
     const law = INHERITANCE_LAWS["dark-fantasy"];
-    const total = dead.character.wealth;
+    const home = dead.household.residence === "own" ? saleValue(dead) : 0;
+    const businesses = (dead.business?.ventures ?? []).reduce((sum, venture) => sum + businessSaleValue(dead, venture), 0);
+    const total = dead.character.wealth + home + businesses;
     expect(candidate.wealth).toBeLessThanOrEqual(total - Math.round(total * law.levy));
     const { state } = succeed(dead, candidate.npc.id, "law");
     const record = state.lineage.inheritance!;
     expect(record.law).toBe(law.id);
-    expect(record.wealth).toBe(candidate.wealth);
-    if (candidate.age >= law.controlAge) expect(state.character.wealth).toBe(candidate.npc.wealth + candidate.wealth);
+    if (record.homeInherited) expect(record.wealth).toBeLessThanOrEqual(candidate.wealth);
+    else expect(record.wealth).toBe(candidate.wealth);
+    if (candidate.age >= law.controlAge) expect(state.character.wealth).toBe(candidate.npc.wealth + record.wealth);
+    expect(record.assets?.total).toBe(total);
     expect(state.character.stats).not.toEqual(dead.character.stats);
     // Сословие: наследуемое переходит, если оно выше своего
     if (candidate.classInherited) expect(state.character.socialClassId).toBe(dead.character.socialClassId);

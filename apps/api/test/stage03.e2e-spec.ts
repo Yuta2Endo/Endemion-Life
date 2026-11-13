@@ -2,7 +2,7 @@
 // авторизация, жизни формата 2 в базе
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { SAVE_SCHEMA_VERSION } from "@endemion/game-core";
+import { SAVE_SCHEMA_VERSION, type GameState } from "@endemion/game-core";
 import type { ActionResponse, LifeListItem, LifeView, LineageResponse, SuccessionResponse } from "@endemion/shared";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -123,6 +123,44 @@ describe("Stage 03: смерть персонажа и продолжение р
     // Новая жизнь продолжается обычными действиями
     const next = await act(client, body.life, body.life.pendingEvent ? { type: "choose", choiceId: body.life.pendingEvent.choices.find((c) => c.available)!.id } : { type: "advance" }).expect(200);
     expect((next.body as ActionResponse).life.version).toBe(2);
+  });
+
+  it("наследство с домом и реликвией: дом переходит в натуре, реликвия — в записи рода", async () => {
+    const client = agent();
+    const dead = await liveToDeath(client, await createLife(client, { universeId: "hunter", seed: DEATH_SEED }));
+    // В базе — как у жизни, прожитой в этом мире: своё жильё и фамильная реликвия
+    const row = await t.prisma.client.life.findUniqueOrThrow({ where: { id: dead.id } });
+    const state = row.state as unknown as GameState;
+    state.character.wealth = 300;
+    state.household = { residence: "own", homeId: "hu-home-small", since: 0, condition: 100, arrears: 0 };
+    state.business = { ventures: [] };
+    state.lineage.relics = [
+      {
+        id: "gate-hunter-badge",
+        name: { ru: "Знак охотника Врат", en: "Gate Hunter Badge" },
+        description: { ru: "Знак тех, кто стоит на страже Врат.", en: "Badge of those who stand guard at the Gates." },
+        acquiredGen: 1,
+        acquiredAge: 18,
+        source: "e2e"
+      }
+    ];
+    await t.prisma.client.life.update({ where: { id: dead.id }, data: { state: state as unknown as Record<string, string> } });
+
+    const fresh = ((await client.get(`/api/lives/${dead.id}`).expect(200)).body as { life: LifeView }).life;
+    const heir = fresh.legacy.summary!.heirs.find((h) => h.available && h.primary) ?? fresh.legacy.summary!.heirs.find((h) => h.available)!;
+    const body = (await succession(client, fresh, heir.id).expect(200)).body as SuccessionResponse;
+    const record = body.life.legacy.inheritance!;
+
+    expect(body.life.household.residence).toBe("own");
+    expect(body.life.household.home?.id).toBe("hu-home-small");
+    expect(record.homeInherited).toBe(true);
+    expect(record.assets?.home?.id).toBe("hu-home-small");
+    expect(record.assets?.liquid).toBe(300);
+    expect(record.wealth + (record.assets?.home?.value ?? 0)).toBe(heir.wealth);
+    expect(record.relics.map((relic) => relic.id)).toEqual(["gate-hunter-badge"]);
+
+    const lineage = ((await client.get(`/api/lives/${body.life.id}/lineage`).expect(200)).body as LineageResponse).lineage;
+    expect(lineage.dynasty.relics.map((relic) => relic.id)).toEqual(["gate-hunter-badge"]);
   });
 
   it("повтор запроса с тем же actionId возвращает ту же новую жизнь и не создаёт второй", async () => {

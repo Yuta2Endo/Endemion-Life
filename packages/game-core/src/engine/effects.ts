@@ -551,6 +551,8 @@ export function applyEffect(ctx: EngineContext, effect: Effect): void {
       return adoptChild(ctx);
     case "relic":
       return applyRelic(ctx, effect);
+    case "loseRelic":
+      return loseRelic(ctx, effect);
     case "advanceStory":
       return advanceStoryEffect(ctx, effect.id, effect.expectedStage, effect.nextStage, effect.scope);
     case "recordStoryChoice":
@@ -694,6 +696,17 @@ export function applyRelic(ctx: EngineContext, effect: { type: "relic"; id: stri
   // Apply the relic's configured gameplay effect exactly once at acquisition
   for (const eff of relicDef.effects) applyEffect(ctx, eff);
   chronicle(ctx, "relic", [SELF_ID], { relic: effect.id }, effect.id);
+}
+
+/** Stage 03.1: реликвия потеряна и больше не перейдёт наследникам. Повтор и отсутствие реликвии — тихий no-op */
+function loseRelic(ctx: EngineContext, effect: { type: "loseRelic"; id: string }): void {
+  const lineage = ctx.state.lineage;
+  const relics = lineage.relics;
+  if (!Array.isArray(relics)) return;
+  const index = relics.findIndex((relic) => relic.id === effect.id);
+  if (index === -1) return;
+  relics.splice(index, 1);
+  chronicle(ctx, "relic", [SELF_ID], { relic: effect.id, lost: 1 }, ctx.source ?? effect.id);
 }
 
 /** Прогресс сюжета в области действия: отсутствующий сюжет начинается с этапа 0. */

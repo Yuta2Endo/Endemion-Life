@@ -303,6 +303,15 @@ function migrateV12(save: Record<string, unknown>): Record<string, unknown> {
   return save;
 }
 
+/**
+ * Формат 13 → 14 (Stage 03.1): в записи о наследстве появляется оценка имущества. Поле необязательное:
+ * старые записи без assets остаются действительными и читаются как «только золото». Ничего не удаляется,
+ * seed, rngState и прежние поля не меняются
+ */
+function migrateV13(save: Record<string, unknown>): Record<string, unknown> {
+  return save;
+}
+
 /** Переходы между версиями формата: ключ — версия, из которой переводим. Новая версия формата добавляет сюда шаг */
 const MIGRATIONS: Readonly<Record<number, Migration>> = {
   1: migrateV1,
@@ -316,7 +325,8 @@ const MIGRATIONS: Readonly<Record<number, Migration>> = {
   9: migrateV9,
   10: migrateV10,
   11: migrateV11,
-  12: migrateV12
+  12: migrateV12,
+  13: migrateV13
 };
 
 function fail(reason: string): never {
@@ -464,6 +474,26 @@ function checkLineage(lineage: unknown, universe: UniverseDefinition): void {
   if (!isRecord(lineage.names) || !Object.values(lineage.names).every((n) => typeof n === "string")) fail("lineage.names");
   const inheritance = lineage.inheritance;
   if (inheritance !== null && !(isRecord(inheritance) && isInt(inheritance.fromGen, 1) && typeof inheritance.fromName === "string" && isInt(inheritance.wealth, 0) && isInt(inheritance.held, 0) && isInt(inheritance.controlAge, 0) && Array.isArray(inheritance.shares) && isStringArray(inheritance.talents) && isStringArray(inheritance.weaknesses) && isStringArray(inheritance.threads) && isStringArray(inheritance.flags))) fail("lineage.inheritance");
+  if (isRecord(inheritance)) {
+    if (inheritance.homeInherited !== undefined && typeof inheritance.homeInherited !== "boolean") fail("lineage.inheritance.homeInherited");
+    const assets = inheritance.assets;
+    if (assets !== undefined) {
+      if (!isRecord(assets) || !isInt(assets.liquid, 0, WEALTH_MAX) || !isInt(assets.total, 0)) fail("lineage.inheritance.assets");
+      if (!Array.isArray(assets.businesses) || assets.businesses.length > MAX_BUSINESSES) fail("lineage.inheritance.assets.businesses");
+      let businessValue = 0;
+      for (const business of assets.businesses) {
+        if (!isRecord(business) || typeof business.id !== "string" || !findBusiness(universe.id, business.id) || !isInt(business.value, 0, WEALTH_MAX)) fail("lineage.inheritance.assets.businesses");
+        businessValue += business.value;
+      }
+      let homeValue = 0;
+      if (assets.home !== null) {
+        if (!isRecord(assets.home) || typeof assets.home.id !== "string" || !findProperty(universe.id, assets.home.id) || !isInt(assets.home.value, 0, WEALTH_MAX)) fail("lineage.inheritance.assets.home");
+        homeValue = assets.home.value;
+      }
+      if (assets.total !== assets.liquid + homeValue + businessValue) fail("lineage.inheritance.assets.total");
+      if (inheritance.homeInherited === true && assets.home === null) fail("lineage.inheritance.homeInherited");
+    }
+  }
   const relics = lineage.relics as unknown[];
   if (Array.isArray(relics)) {
     if (!relics.every((r: unknown) => isRecord(r) && typeof r.id === "string" && isText(r.name) && isText(r.description) && isInt(r.acquiredGen, 0) && isInt(r.acquiredAge, 0) && typeof r.source === "string")) {

@@ -5,6 +5,7 @@
 import { lifespanOf, maxResources } from "../character/derived.js";
 import { generateCharacter } from "../character/generator.js";
 import { baseAffinity, npcAge, roleName } from "../character/npcs.js";
+import { carrySocialState } from "../character/social.js";
 import { TEMPERAMENTS } from "../character/temperaments.js";
 import { deepClone } from "../clone.js";
 import type { EngineContext } from "../engine/context.js";
@@ -15,14 +16,14 @@ import { ageText, t, type LocalizedText } from "../i18n.js";
 import { newHealthState } from "../life/health.js";
 import { newEducationState } from "../life/education.js";
 import { findCareerTrack, maxCareerRank, newCareerState } from "../life/careers.js";
-import { newHouseholdState } from "../life/household.js";
-import { newBusinessState } from "../life/business.js";
+import { newHouseholdState, homeOf, saleValue } from "../life/household.js";
+import { businessSaleValue, newBusinessState } from "../life/business.js";
 import { stageForAge } from "../life/stages.js";
 import { hashSeed, Rng } from "../rng.js";
 import { allTalents, allWeaknesses, findTalent, findWeakness } from "../rpg/talents.js";
 import { findProfession, pathSkill } from "../rpg/skills.js";
 import { BIRTH_STAT_MAX, clamp, KARMA_LIMIT, REPUTATION_LIMIT, STAT_KEYS, STAT_MAX, STAT_MIN, WEALTH_MAX, type StatKey } from "../stats.js";
-import { SELF_ID, type GameState, type HistoryChange, type HistoryEntry, type InheritanceRecord, type NpcState, type WorldActivity } from "../types.js";
+import { SELF_ID, type GameState, type HistoryChange, type HistoryEntry, type InheritanceAssets, type InheritanceRecord, type NpcState, type WorldActivity } from "../types.js";
 import { getUniverse } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import { newAdventure } from "../adventure/adventure.js";
@@ -89,27 +90,51 @@ interface Estate {
   rest: number;
   /** Сонаследники: та же степень родства, что у первого наследника */
   coheirs: HeirCandidate[];
+  /** Stage 03.1: из чего состоит имущество. liquid уже не включает дом и дела */
+  assets: InheritanceAssets;
 }
 
+/** Всё имущество умершего, а не только золото: дом оценивается по цене продажи, дела — по выкупу.
+ * Золото под опекой принадлежит умершему, даже если лежит не в его кошельке: иначе при смерти
+ * наследника до controlAge оно исчезало бы из рода. */
 function estateOf(state: GameState, law: InheritanceLaw, ordered: HeirCandidate[]): Estate {
-  const total = state.character.wealth;
+  const liquid = state.character.wealth + (state.lineage.inheritance?.held ?? 0);
+  const homeDef = state.household?.residence === "own" ? homeOf(state) : undefined;
+  const homeValue = homeDef ? saleValue(state) : 0;
+  const businesses = (state.business?.ventures ?? []).map((venture) => ({ id: venture.id, value: businessSaleValue(state, venture) }));
+  const total = liquid + homeValue + businesses.reduce((sum, item) => sum + item.value, 0);
+  const assets: InheritanceAssets = {
+    liquid,
+    home: homeDef ? { id: homeDef.id, value: homeValue } : null,
+    businesses,
+    total
+  };
   const levy = Math.round(total * law.levy);
   const spouse = widowOf(state) ? Math.round((total - levy) * law.spouseShare) : 0;
   const first = ordered[0];
   const coheirs = first ? ordered.filter((c) => (DEGREE[c.relation] ?? 99) === (DEGREE[first.relation] ?? 99)) : [];
-  return { total, levy, spouse, rest: total - levy - spouse, coheirs };
+  return { total, levy, spouse, rest: total - levy - spouse, coheirs, assets };
 }
 
-/** Доля наследника heir, если род продолжит именно он */
+/** Доля наследника heir, если род продолжит именно он. Остаток от округления забирает главный наследник */
 function shareOf(law: InheritanceLaw, estate: Estate, heir: HeirCandidate, primary: HeirCandidate | undefined): number {
   const among = estate.coheirs.some((c) => c.npc.id === heir.npc.id) ? estate.coheirs : [...estate.coheirs, heir];
   const n = among.length;
   if (n <= 1) return estate.rest;
-  if (law.order === "equal") return Math.floor(estate.rest / n);
+  if (law.order === "equal") {
+    const per = Math.floor(estate.rest / n);
+    const remainder = estate.rest - per * n;
+    return heir.npc.id === primary?.npc.id ? per + remainder : per;
+  }
   // Главная доля — тому, кого ставит первым закон; при завещании — тому, кого выбрал игрок
   const main = Math.round(estate.rest * law.heirShare);
   const isMain = law.order === "chosen" || heir.npc.id === primary?.npc.id;
-  return isMain ? main : Math.floor((estate.rest - main) / (n - 1));
+  if (isMain) {
+    const others = n - 1;
+    const share = others > 0 ? Math.floor((estate.rest - main) / others) : 0;
+    return main + (estate.rest - main - share * others);
+  }
+  return Math.floor((estate.rest - main) / (n - 1));
 }
 
 /** Кандидаты в наследники: живая кровная родня, в том числе приёмные дети. Порядок — по закону мира */
@@ -167,13 +192,22 @@ interface HeirBuild {
   deceasedId: string;
 }
 
+/** Что именно получает наследник: доля в золоте, дом в натуре (если закон и возраст позволяют) и опека */
+interface HeirInheritance {
+  /** Золото, которое действительно переходит наследнику: доля минус стоимость дома */
+  gold: number;
+  /** Дом переходит в натуре; null — продан в золото */
+  home: { id: string; value: number; condition: number } | null;
+  assets: InheritanceAssets;
+}
+
 /**
  * Состояние новой жизни: наследник становится персонажем. Характеристики не копируются: наследник рождается
  * со своими бросками (поток нового seed), растёт по возрасту, получает навыки от воспитания, образования и ремесла,
  * часть фамильных талантов и слабостей, имущество и сословие по закону мира.
  * salt — случайное значение сервера: без него seed наследника можно было бы вычислить из seed предка
  */
-function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate[], salt: string): HeirBuild {
+function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate[], salt: string, inheritance: HeirInheritance): HeirBuild {
   const universe = getUniverse(dead.character.universeId);
   const law = lawOf(universe.id);
   const heir = candidate.npc;
@@ -271,7 +305,7 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
   // Имущество: доля по закону. У младшего наследника её держит опекун до возраста закона
   const regency = candidate.age < law.controlAge;
   const ownWealth = heir.wealth;
-  c.wealth = Math.min(WEALTH_MAX, ownWealth + (regency ? 0 : candidate.wealth));
+  c.wealth = Math.min(WEALTH_MAX, ownWealth + (regency ? 0 : inheritance.gold));
   c.reputation = clamp(Math.round(prev.reputation * 0.3 + dead.lineage.renown / 10), -REPUTATION_LIMIT, REPUTATION_LIMIT);
   c.karma = clamp(Math.round(prev.karma * 0.1) + (temperament?.karma ?? 0), -KARMA_LIMIT, KARMA_LIMIT);
   // Отношение фракций: своё по происхождению и треть того, что заслужил предшественник
@@ -297,9 +331,11 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
     fromNpcId: "",
     relation: candidate.relation,
     law: law.id,
-    wealth: candidate.wealth,
+    wealth: inheritance.gold,
     ownWealth,
     shares: [],
+    assets: inheritance.assets,
+    homeInherited: inheritance.home !== null,
     socialClassId,
     classInherited: candidate.classInherited,
     reputation: c.reputation,
@@ -311,7 +347,7 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
     relics: (dead.lineage.relics || []).map((r) => r.id),
     controlAge: law.controlAge,
     guardianName: guardian?.name ?? null,
-    held: regency ? candidate.wealth : 0
+    held: regency ? inheritance.gold : 0
   };
 
   const age = candidate.age;
@@ -344,9 +380,11 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
         retired: false
       };
     })(),
-    // Stage 02.3: наследник начинает со своим жильём и своими делами. Недвижимость предшественника
-    // оценивается в его наследство, а не переносится вторым списком поверх новой жизни
-    household: newHouseholdState(age),
+    // Stage 03.1: родовой дом переходит в натуре только главному совершеннолетнему наследнику;
+    // в остальных случаях он продан в наследство, а дела предшественника всегда продаются
+    household: inheritance.home
+      ? { residence: "own", homeId: inheritance.home.id, since: age, condition: inheritance.home.condition, arrears: 0 }
+      : newHouseholdState(age),
     business: newBusinessState(),
     flags: [...flags].sort(),
     occurrences: {},
@@ -494,7 +532,33 @@ export function succeed(dead: GameState, heirId: string, salt = ""): SuccessionR
 
   const universe = getUniverse(dead.character.universeId);
   const law = lawOf(universe.id);
-  const build = buildHeir(dead, candidate, candidates, salt);
+  const available = candidates.filter((c) => c.available);
+  const estate = estateOf(dead, law, available);
+  // Доля наследника и сонаследников считается от всего имущества, а не от одного золота.
+  // Остаток округления забирает выбранный наследник: сумма долей всегда равна остатку наследства
+  const coheirs = available.filter((c) => c.npc.id !== candidate.npc.id && (DEGREE[c.relation] ?? 99) === (DEGREE[candidate.relation] ?? 99));
+  const heirsCount = coheirs.length + 1;
+  const rest = estate.rest;
+  let share: number;
+  if (heirsCount <= 1) share = rest;
+  else if (law.order === "equal") share = Math.floor(rest / heirsCount);
+  else if (law.order === "chosen" || candidate.primary) share = Math.round(rest * law.heirShare);
+  else share = Math.floor((rest - Math.round(rest * law.heirShare)) / (heirsCount - 1));
+  const coheirGold = coheirs.length > 0 ? Math.floor((rest - share) / coheirs.length) : 0;
+  share += rest - (share + coheirGold * coheirs.length);
+  // Дом переходит в натуре только главному совершеннолетнему наследнику по закону, который не делит имущество поровну.
+  // Иначе дом продаётся в наследство, а дела предшественника продаются всегда
+  const home = estate.assets.home;
+  const inheritedCondition = dead.household?.residence === "own" && Number.isFinite(dead.household.condition) ? clamp(Math.round(dead.household.condition), 0, 100) : 100;
+  const transferHome = home !== null && candidate.primary && candidate.age >= law.controlAge && law.order !== "equal" && home.value > 0 && home.value <= share;
+  const gold = transferHome && home ? share - home.value : share;
+  const inheritance: HeirInheritance = {
+    gold,
+    home: transferHome && home ? { id: home.id, value: home.value, condition: inheritedCondition } : null,
+    assets: estate.assets
+  };
+  const widow = widowOf(dead);
+  const build = buildHeir(dead, candidate, candidates, salt, inheritance);
   const next = build.state;
   const heir = candidate.npc;
   const shift = heir.bornAt;
@@ -527,6 +591,8 @@ export function succeed(dead: GameState, heirId: string, salt = ""): SuccessionR
   // иначе у наследника пропал бы родитель (например, бывший супруг умершего)
   const keep = new Set(next.npcs.filter((npc) => npc.id === deceasedId || oldKin.has(npc.id) || npc.lifeGen !== null || (npc.alive && Math.abs(npc.affinity) >= 30)).map((npc) => npc.id));
   for (const id of next.lineage.selfParents) keep.add(id);
+  // Вдова или вдовец получает долю наследства и остаётся в жизни рода, даже если отношения остыли
+  if (widow) keep.add(widow.id);
   const byId = new Map(next.npcs.map((npc) => [npc.id, npc]));
   for (let changed = true; changed; ) {
     changed = false;
@@ -544,6 +610,9 @@ export function succeed(dead: GameState, heirId: string, salt = ""): SuccessionR
   next.npcs = next.npcs.filter((npc) => keep.has(npc.id));
   // Бывшие супруги, которых не оставили, остаются только в хронике
   for (const npc of next.npcs) npc.formerSpouses = npc.formerSpouses.filter((id) => id === SELF_ID || keep.has(id));
+  // Stage 03.2: социальная память NPC–NPC продолжается с пересчётом id и сдвигом времени.
+  // Связи предшественника и выпавших людей не остаются: каждый ref указывает на NPC нового состояния
+  next.social = carrySocialState(dead, next, map, deceasedId, shift);
   const graph = new KinGraph(next);
   for (const npc of next.npcs) {
     const before = npc.role;
@@ -556,25 +625,23 @@ export function succeed(dead: GameState, heirId: string, salt = ""): SuccessionR
       npc.affinity = clamp(Math.round(npc.affinity * 0.4), -100, 100);
     }
   }
-  // Сонаследники получают свои доли
+  // Сонаследники получают свои доли; вдова — долю супруга. Все выплаты золотые и в сумме дают остаток наследства
   const shares: InheritanceRecord["shares"] = [];
-  const coheirs = candidates.filter((c) => c.available && c.npc.id !== heir.id && (DEGREE[c.relation] ?? 99) === (DEGREE[candidate.relation] ?? 99));
-  const left = Math.max(0, dead.character.wealth - Math.round(dead.character.wealth * law.levy) - (widowOf(dead) ? Math.round((dead.character.wealth - Math.round(dead.character.wealth * law.levy)) * law.spouseShare) : 0) - candidate.wealth);
-  const per = coheirs.length > 0 ? Math.floor(left / coheirs.length) : 0;
   for (const c of coheirs) {
     const npc = next.npcs.find((x) => x.id === c.npc.id);
-    if (!npc || per <= 0) continue;
-    npc.wealth += per;
-    shares.push({ npcId: npc.id, name: npc.name, amount: per });
+    if (!npc || coheirGold <= 0) continue;
+    npc.wealth += coheirGold;
+    shares.push({ npcId: npc.id, name: npc.name, amount: coheirGold });
   }
-  const widow = widowOf(dead);
   if (widow) {
     const npc = next.npcs.find((x) => x.id === widow.id);
-    if (npc) npc.wealth += Math.round((dead.character.wealth - Math.round(dead.character.wealth * law.levy)) * law.spouseShare);
+    if (npc) npc.wealth += estate.spouse;
   }
 
   // Род: поколение, отсчёт лет, хроника, итог прошлой жизни
   const lineage = next.lineage;
+  // Старые сохранения могли не знать о реликвиях: новая жизнь всегда получает пустой список, а не undefined
+  if (!Array.isArray(lineage.relics)) lineage.relics = [];
   lineage.generation += 1;
   lineage.epoch += shift;
   lineage.startRenown = lineage.renown;
@@ -590,19 +657,24 @@ export function succeed(dead: GameState, heirId: string, salt = ""): SuccessionR
   lineage.inheritance = build.record;
 
   const ctx: EngineContext = { state: next, rng: Rng.fromSeed(next.seed, "succession"), universe, changes: [] };
-  chronicle(ctx, "succession", [deceasedId, SELF_ID], { law: law.id, relation: candidate.relation, sum: candidate.wealth, gen: lineage.generation }, "succession");
+  chronicle(ctx, "succession", [deceasedId, SELF_ID], { law: law.id, relation: candidate.relation, sum: gold, gen: lineage.generation }, "succession");
   if (candidate.classInherited) chronicle(ctx, "class", [SELF_ID], { cls: build.record.socialClassId, dir: 1, inherited: 1 }, "succession");
 
   // Биография наследника
   const predecessor = dead.character;
   const who = roleName(graph.relation(SELF_ID, deceasedId) === "parent" ? (predecessor.gender === "female" ? "mother" : "father") : "relative", predecessor.gender);
   const lawName = law.name;
+  const homeName = inheritance.home ? (homeOf(dead)?.name ?? t(inheritance.home.id, inheritance.home.id)) : null;
+  const soldText = inheritance.assets.businesses.length > 0
+    ? t("; дела предшественника проданы и вошли в наследство", "; the predecessor's businesses were sold into the estate")
+    : t("", "");
+  const relicText = build.record.relics.length > 0 ? t("; реликвии рода остаются в семье", "; the family relics remain with the line") : t("", "");
   next.background.biography = [
     t(`${next.character.name} — ${lineage.generation}-е поколение рода ${lineage.name}.`, `${next.character.name} is the ${ordinal(lineage.generation)} generation of the ${lineage.name} family.`),
     t(`${who.ru}: ${predecessor.name}. ${(dead.life.deathCause ?? t("", "")).ru}, ${ageText(dead.life.age).ru}.`, `${who.en}: ${predecessor.name}. ${(dead.life.deathCause ?? t("", "")).en}, aged ${dead.life.age}.`),
     t(
-      `По закону «${lawName.ru}» наследнику достаётся ${candidate.wealth} золота${build.record.held > 0 ? ` — до ${law.controlAge} лет им распоряжается опекун` : ""}.`,
-      `Under the law of ${lawName.en} the heir receives ${candidate.wealth} gold${build.record.held > 0 ? `, held by a guardian until age ${law.controlAge}` : ""}.`
+      `По закону «${lawName.ru}» наследнику достаётся ${gold} золота${homeName ? ` и родовой дом «${homeName.ru}»` : ""}${soldText.ru}${relicText.ru}${build.record.held > 0 ? ` — до ${law.controlAge} лет им распоряжается опекун` : ""}.`,
+      `Under the law of ${lawName.en} the heir receives ${gold} gold${homeName ? ` and the family home "${homeName.en}"` : ""}${soldText.en}${relicText.en}${build.record.held > 0 ? `, held by a guardian until age ${law.controlAge}` : ""}.`
     )
   ];
   next.background.familyHistory = t(

@@ -275,6 +275,98 @@ export const LEGACY_EVENTS: readonly EventDefinition[] = [
       { id: "keep", text: t("Унести знание с собой", "Take the knowledge to the grave"), success: { text: t("Некоторым знаниям лучше умереть.", "Some knowledge is better left to die."), effects: [fx.stat("wisdom", 1), fx.thread("ancient-knowledge", false)] } }
     ]
   }),
+  legacy({
+    id: "legacy.relic-ancestral-blade",
+    title: t("Клинок под половицей", "The blade beneath the floorboards"),
+    text: t("При починке старого дома {name} находит под половицей свёрток: клинок в промасленной ткани и герб, которого нет в летописи рода.", "While repairing the old house, {name} finds a bundle beneath the floorboards: a blade wrapped in oiled cloth and a crest absent from the family chronicle."),
+    minAge: 16,
+    weight: 3,
+    conditions: [when.world("dark-fantasy")],
+    choices: [
+      { id: "keep", text: t("Взять клинок в дом", "Take the blade into the house"), success: { text: t("Клинок занимает место над очагом. Теперь у рода есть своя реликвия.", "The blade takes its place above the hearth. The family has a relic of its own now."), effects: [fx.relic("ancestral-blade")] } },
+      { id: "sell", text: t("Продать находку", "Sell the find"), success: { text: t("Старьёвщик платит без торга: герб ему знаком.", "The junk dealer pays without haggling: he knows the crest."), effects: [fx.wealth(12)] } }
+    ]
+  }),
+  legacy({
+    id: "legacy.relic-system-crystal",
+    title: t("Осколок Системы", "A shard of the System"),
+    text: t("За закрытые Врата Система выдаёт {name} награду, которой нет в её каталоге: тёплый кристалл с чужим рисунком граней.", "For the cleared Gate the System grants {name} a reward absent from its catalogue: a warm crystal with an unfamiliar pattern of facets."),
+    minAge: 15,
+    weight: 3,
+    conditions: [when.world("isekai")],
+    choices: [
+      { id: "keep", text: t("Оставить кристалл себе", "Keep the crystal"), success: { text: t("Кристалл отзывается на мысли. Система молчит, но что-то в нём живёт.", "The crystal answers to thought. The System says nothing, but something lives within it."), effects: [fx.relic("system-crystal")] } },
+      { id: "sell", text: t("Продать осколок оценщику", "Sell the shard to an appraiser"), success: { text: t("Оценщик долго вертит кристалл, потом называет цену.", "The appraiser turns the crystal for a long while, then names a price."), effects: [fx.wealth(18)] } }
+    ]
+  }),
+  legacy({
+    id: "legacy.relic-clan-scroll",
+    title: t("Свиток в архиве", "The scroll in the archive"),
+    text: t("Разбирая архив клана, {name} находит свиток с печатью основателя: записи о дыхании и воле, которых нет в открытых уроках.", "Sorting the clan archive, {name} finds a scroll bearing the founder's seal: notes on breath and will absent from the open lessons."),
+    minAge: 16,
+    weight: 3,
+    conditions: [when.world("murim")],
+    choices: [
+      { id: "keep", text: t("Сохранить свиток для рода", "Keep the scroll for the family"), success: { text: t("Свиток переходит к роду. Старшие делают вид, что не заметили.", "The scroll passes to the family. The elders pretend not to notice."), effects: [fx.relic("clan-scroll")] } },
+      { id: "return", text: t("Вернуть свиток клану", "Return the scroll to the clan"), success: { text: t("Старшие принимают свиток с поклоном. Клан запоминает жест.", "The elders accept the scroll with a bow. The clan remembers the gesture."), effects: [fx.rep(3), fx.karma(2)] } }
+    ]
+  }),
+  legacy({
+    id: "legacy.relic-spirit-root-amulet",
+    title: t("Амулет у духовной жилы", "The amulet by the spirit vein"),
+    text: t("На испытании у духовной жилы старейшина вкладывает в руку {name} амулет: «Твой корень откликается. Пусть вещь помнит это».", "At the trial by the spirit vein, an elder places an amulet in {name}'s hand: 'Your root answers. Let this thing remember it.'"),
+    minAge: 12,
+    weight: 3,
+    conditions: [when.world("xianxia")],
+    choices: [
+      { id: "keep", text: t("Принять амулет", "Accept the amulet"), success: { text: t("Амулет теплеет на ладони, будто внутри дышит ци.", "The amulet warms in the palm as if qi breathes inside."), effects: [fx.relic("spirit-root-amulet")] } },
+      { id: "decline", text: t("Отказаться от дара", "Decline the gift"), success: { text: t("Старейшина кивает: не всякий дар нужно брать.", "The elder nods: not every gift must be taken."), effects: [fx.karma(1), fx.stat("willpower", 1)] } }
+    ]
+  }),
+  legacy({
+    id: "legacy.relic-gate-hunter-badge",
+    title: t("Знак павшего охотника", "A fallen hunter's badge"),
+    text: t("В вещах охотника, чей рейд закончился плохо, {name} находит значок с номером. Ассоциация не успела его изъять.", "Among the belongings of a hunter whose raid ended badly, {name} finds a numbered badge. The Association has not yet reclaimed it."),
+    minAge: 18,
+    weight: 3,
+    conditions: [when.world("hunter")],
+    choices: [
+      { id: "keep", text: t("Оставить значок себе", "Keep the badge"), success: { text: t("Металл холодный, но у входа в Врата его узнают.", "The metal is cold, but at the Gate entrance they recognise it."), effects: [fx.relic("gate-hunter-badge")] } },
+      { id: "return", text: t("Передать значок Ассоциации", "Hand the badge to the Association"), success: { text: t("Ассоциация благодарит коротко и по-казённому.", "The Association thanks you briefly and officially."), effects: [fx.rep(3)] } }
+    ]
+  }),
+  legacy({
+    id: "legacy.relic-noble-signet",
+    title: t("Перстень с печатью", "The signet ring"),
+    text: t("В бумагах семейного поверенного {name} находит перстень с печатью: им скрепляли письма, о которых род предпочитал молчать.", "Among the family lawyer's papers, {name} finds a signet ring: it sealed letters the family preferred not to mention."),
+    minAge: 16,
+    weight: 3,
+    conditions: [when.world("academy")],
+    choices: [
+      { id: "keep", text: t("Оставить перстень роду", "Keep the ring for the family"), success: { text: t("Печать снова принадлежит дому. Двери открываются чуть легче.", "The seal belongs to the house again. Doors open a little more easily."), effects: [fx.relic("noble-signet")] } },
+      { id: "sell", text: t("Продать перстень антиквару", "Sell the ring to an antiquary"), success: { text: t("Антиквар платит щедро и не задаёт вопросов о гербе.", "The antiquary pays generously and asks no questions about the crest."), effects: [fx.wealth(20)] } }
+    ]
+  }),
+  legacy({
+    id: "legacy.relic-demand",
+    title: t("Долг предка", "An ancestor's debt"),
+    text: t("Кредитор с гербовой печатью приносит письмо: предок заложил одну из реликвий рода. Он готов принять сам предмет вместо долга.", "A creditor with a sealed letter arrives: an ancestor pledged one of the family relics. He is willing to take the object itself instead of the debt."),
+    minAge: 16,
+    cooldown: 15,
+    maxOccurrences: 2,
+    lineageMax: 2,
+    weight: 1.5,
+    conditions: [when.anyRelic()],
+    choices: [
+      { id: "refuse", text: t("Отказать и заплатить словом", "Refuse and pay with words"), success: { text: t("Кредитор уходит ни с чем. В городе помнят, что род не отдаёт своё.", "The creditor leaves empty-handed. The city remembers that the family does not give up its own."), effects: [fx.renown(-2)] } },
+      { id: "give-ancestral-blade", text: t("Отдать предковый клинок", "Surrender the Ancestral Blade"), requires: [when.relic("ancestral-blade")], success: { text: t("Клинок уходит в чужие руки. Долг закрыт, но память о нём остаётся.", "The blade passes into foreign hands. The debt is closed, but the memory remains."), effects: [fx.loseRelic("ancestral-blade"), fx.karma(2)] } },
+      { id: "give-system-crystal", text: t("Отдать кристалл Системы", "Surrender the System Crystal"), requires: [when.relic("system-crystal")], success: { text: t("Кристалл гаснет в чужой ладони. Кредитор доволен больше, чем следовало бы.", "The crystal dims in a foreign palm. The creditor looks more pleased than he should."), effects: [fx.loseRelic("system-crystal"), fx.karma(2)] } },
+      { id: "give-clan-scroll", text: t("Отдать свиток клана", "Surrender the Clan Scroll"), requires: [when.relic("clan-scroll")], success: { text: t("Свиток покидает дом. Часть клановой памяти уходит вместе с ним.", "The scroll leaves the house. Part of the clan's memory goes with it."), effects: [fx.loseRelic("clan-scroll"), fx.karma(2)] } },
+      { id: "give-spirit-root-amulet", text: t("Отдать амулет духовного корня", "Surrender the Spirit Root Amulet"), requires: [when.relic("spirit-root-amulet")], success: { text: t("Амулет больше не отвечает на вашу ци. Он чужой.", "The amulet no longer answers your qi. It belongs to someone else."), effects: [fx.loseRelic("spirit-root-amulet"), fx.karma(2)] } },
+      { id: "give-gate-hunter-badge", text: t("Отдать знак охотника Врат", "Surrender the Gate Hunter Badge"), requires: [when.relic("gate-hunter-badge")], success: { text: t("Знак исчезает в кармане кредитора. У Врат больше не узнают ваш номер.", "The badge disappears into the creditor's pocket. At the Gates they no longer know your number."), effects: [fx.loseRelic("gate-hunter-badge"), fx.karma(2)] } },
+      { id: "give-noble-signet", text: t("Отдать знак знати", "Surrender the Noble Signet"), requires: [when.relic("noble-signet")], success: { text: t("Печать переходит к чужому роду. Ваши письма теперь скрепляет простая сургучная лепёшка.", "The seal passes to another house. Your letters are now sealed with plain wax."), effects: [fx.loseRelic("noble-signet"), fx.karma(2)] } }
+    ]
+  }),
   /** Демонстрационная сюжетная цепочка Stage 04.4: фамильный сюжет с этапами, выборами и ветвящимися концами. */
   legacy({
     id: "story.broken-oath.1",

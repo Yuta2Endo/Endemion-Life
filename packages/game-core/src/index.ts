@@ -223,6 +223,7 @@ export {
 export { AFFINITY_LIMIT, affinityLabel, FAMILY_ROLES, roleName } from "./character/npcs.js";
 export { GIFT_COST, INTERACTION_RULES, interactionBlock } from "./character/interactions.js";
 export {
+  carrySocialState,
   MAX_RELATIONSHIPS,
   MAX_STORY_RECORDS,
   newSocialState,
@@ -364,6 +365,7 @@ export {
   type ChronicleView,
   type DecisionView,
   type HeirView,
+  type InheritanceAssetsView,
   type InheritanceView,
   type LawView,
   type LegacyBrief,

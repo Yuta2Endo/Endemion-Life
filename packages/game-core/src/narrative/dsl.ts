@@ -52,6 +52,8 @@ export const fx = {
   influence: (kind: WorldInfluenceKind, id: string, delta: number): Effect => ({ type: "influence", kind, id, delta }),
   /** Получить реликвию рода */
   relic: (id: string): Effect => ({ type: "relic", id }),
+  /** Stage 03.1: потерять реликвию рода */
+  loseRelic: (id: string): Effect => ({ type: "loseRelic", id }),
   /** Страховой этап сюжета: продвигается только при совпадении текущего этапа с ожидаемым */
   advanceStory: (id: string, expectedStage: number, nextStage: number, scope: StoryScope): Effect => ({ type: "advanceStory", id, expectedStage, nextStage, scope }),
   /** Запись выбора в событии сюжета */
@@ -156,6 +158,8 @@ export const when = {
   goal: (id: string): Condition => ({ type: "goal", id }),
   /** Реликвия рода в наличии */
   relic: (id: string): Condition => ({ type: "relic", id }),
+  /** Stage 03.1: у рода есть хотя бы одна реликвия */
+  anyRelic: (): Condition => ({ type: "relic" }),
   /** Этап сюжета: точное совпадение номера этапа в области действия */
   storyStage: (id: string, stage: number, scope: StoryScope): Condition => ({ type: "storyStage", id, stage, scope }),
   /** Выбор в событии сюжета: совпадение id события и id варианта в области действия */

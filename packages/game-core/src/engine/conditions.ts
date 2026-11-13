@@ -169,7 +169,9 @@ export function checkCondition(state: GameState, condition: Condition): boolean 
     case "goal":
       return state.character.goal === condition.id;
     case "relic":
-      return (state.lineage.relics ?? []).some((r) => r.id === condition.id);
+      return condition.id === undefined
+        ? (state.lineage.relics ?? []).length > 0
+        : (state.lineage.relics ?? []).some((r) => r.id === condition.id);
     case "storyStage": {
       const progress = getStoryProgress(state, condition.id, condition.scope);
       return progress.stage === condition.stage;
@@ -399,6 +401,7 @@ export function describeCondition(condition: Condition, universe: UniverseDefini
     case "goal":
       return t("Цель: ${condition.id}", "Goal: ${condition.id}");
     case "relic": {
+      if (condition.id === undefined) return t("Нужна реликвия рода", "Requires a family relic");
       const relic = findRelic(condition.id);
       if (!relic) return t(`Нет реликвии: ${condition.id}`, `No relic: ${condition.id}`);
       return t(`Реликвия: ${relic.name.ru}`, `Relic: ${relic.name.en}`);

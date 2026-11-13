@@ -172,7 +172,7 @@ describe("Stage 03.1: основной поток генератора и жиз
 });
 
 describe("Stage 03.1: сюжеты рода", () => {
-  it("19 сюжетов поколений и 4 последствия для рода — все с уникальными id и lineageMax", () => {
+  it("26 сюжетов поколений и 4 последствия для рода — все с уникальными id и lineageMax", () => {
     const stories = LEGACY_EVENTS.map((e) => e.id);
     const consequences = LINEAGE_CONSEQUENCES.map((c) => c.id);
     expect(new Set([...stories, ...consequences]).size).toBe(stories.length + consequences.length);
@@ -195,6 +195,13 @@ describe("Stage 03.1: сюжеты рода", () => {
         "legacy.fall",
         "legacy.adopt-heir",
         "legacy.ancient-knowledge",
+        "legacy.relic-ancestral-blade",
+        "legacy.relic-system-crystal",
+        "legacy.relic-clan-scroll",
+        "legacy.relic-spirit-root-amulet",
+        "legacy.relic-gate-hunter-badge",
+        "legacy.relic-noble-signet",
+        "legacy.relic-demand",
         "story.broken-oath.1",
         "story.broken-oath.2",
         "story.broken-oath.3"

@@ -128,7 +128,7 @@ describe("Stage 02.6: длительный прогон и баланс", () => 
 });
 
 describe("Stage 02.6: миграция production-сохранений формата 8", () => {
-  it("снимок 8 загружается, доходит до 13, не теряет данные и продолжает жизнь", () => {
+  it("снимок 8 загружается, доходит до 14, не теряет данные и продолжает жизнь", () => {
     for (const universeId of UNIVERSE_IDS) {
       const before = midLife(universeId);
       const raw = toSchema8(before);
