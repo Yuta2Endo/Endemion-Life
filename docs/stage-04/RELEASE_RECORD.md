@@ -1,188 +1,104 @@
-# Stage 04 — Living Worlds: запись о готовности
+# STAGE 04 — Living Worlds: Release Record
 
-## Статус
+## Status
 
-Backend, web-панель и документация реализованы и проверены в рабочем дереве. **Ничего не
-закоммичено, не запушено и не развёрнуто.** Production по-прежнему работает на Stage 03.
-Миграция на production не применялась.
+**COMPLETE AND DEPLOYED.**
 
-`SAVE_SCHEMA_VERSION` остаётся **14**. Общий мир — отдельная проекция, не часть
-сохранения жизни.
+- **Code commit:** `cf7d098` — `stage-04: add living shared worlds`
+- **Runtime production code:** `cf7d098`
+- **Production git HEAD:** `cf7d098` at deployment; a later docs-only commit may advance HEAD without changing runtime code
+- **Deployed:** 2026-11-13 21:59:22 UTC
+- **Previous release:** `6e2da77` (runtime `7989731`, Stage 03)
+- **Save schema:** **14** (unchanged)
+- **Database migration:** `20261114120000_stage04_living_worlds` (11th applied migration)
+- **Shared-world season at verification:** 1 for all six universes
 
-## Маршруты
+## Commit table
 
-| Метод | Путь | Доступ | Назначение |
-|---|---|---|---|
-| GET | `/api/world` | публично | все шесть миров, сводка текущего сезона |
-| GET | `/api/world/:universeId` | публично | текущее состояние: поселения, фракции, события, товары |
-| GET | `/api/world/:universeId/seasons/:season` | публично | исторический снимок сезона |
-| GET | `/api/world/:universeId/reconciliation` | публично | агрегированная сверка с мирами живых жизней, без PII |
-| POST | `/api/world/:universeId/tick` | ops | ровно один сезонный шаг |
-| POST | `/api/world/:universeId/commands` | ops | `event` / `settlement` / `faction` |
-| GET | `/api/world/:universeId/replay` | ops | replay от seed по всему журналу |
-| GET | `/api/world/:universeId/seasons/:season/replay` | ops | replay до сезона и сверка со снимком |
-| GET | `/api/world/admin/metrics` | ops | длительность tick, отставание проекции, сезоны, checksum |
+| Scope | Commit | State |
+|---|---|---|
+| Shared-world engine and tests | `cf7d098` | committed and deployed |
+| Prisma schema + additive migration | `cf7d098` | committed and deployed |
+| API world read/ops routes | `cf7d098` | committed and deployed |
+| Web shared-world panel `/worlds` | `cf7d098` | committed and deployed |
+| Stage 04 docs | this docs commit | committed after deployment |
 
-Ops-доступ: заголовок `x-world-ops`, значение — `WORLD_OPS_TOKEN` из `process.env`.
-Токен короче 16 символов, не задан или не совпал — **404**. `config.ts` не менялся.
+The commit was built with a portal-free `apps/api/src/app.module.ts`; pre-existing portal wiring remains uncommitted in the working tree.
 
-### Тела ops-команд
+## Deployment evidence
 
-```json
-{ "type": "event", "kind": "politics",
-  "title": { "ru": "…", "en": "…" },
-  "text": { "ru": "…", "en": "…" },
-  "settlementId": "lirevale", "factionId": "imperial-court", "severity": 4 }
-```
+- CI run **43514454702**: success.
+- Security run **43514454577**: success.
+- Manual Deploy run **43514926901**: success, with `allow_migrations=true`.
+- Automatic Deploy run **43514902695** was cancelled because it lacked the migration flag.
+- Production `history.log`:
+  - `2026-11-13T21:58:53Z deploy-start cf7d098... from 6e2da77...`
+  - `2026-11-13T21:59:22Z deploy cf7d098... ok from 6e2da77...`
+- Pre-deploy backup: `endemion_life-manual-20261113T215227Z.dump` (10 MB), checksum and catalogue verified, full trial restore passed: 10 migrations, 18 players, 45 lives, 1,716 snapshots, 8,344 history entries, 5,610 actions; uploaded externally.
+- Disk before deploy: 9.3 GB free (threshold 7048 MB).
 
-```json
-{ "type": "settlement", "settlementId": "lirevale",
-  "population": 12345, "prosperity": 88, "stability": 17,
-  "dominantFactionId": "magic-tower" }
-```
+## Production verification
 
-```json
-{ "type": "faction", "factionId": "magic-tower",
-  "power": 91, "influence": 44, "standing": 60 }
-```
+- All seven containers healthy: nginx, web, api, backup, monitor, postgres, redis.
+- `/api/health` — 200, `status: ok`, database and redis up.
+- `/worlds` — 200, 104,307 bytes.
+- `/api/world` — 200, six universes; first lazy-seed request 1.7 s, subsequent requests ~31 ms.
+- `/api/world/dark-fantasy` — 200, season 1, 3 settlements, 3 factions, 0 events.
+- `/api/world/admin/metrics` without `x-world-ops` — 404, as designed.
+- PostgreSQL: **11** applied migrations; six world rows, each season 1.
+- API logs: no `INVALID_SAVE`, migration failure, unhandled exception or `ERROR` entries after deployment.
+- Save schema remains 14; no life save format changed.
 
-`tick` через `/commands` не принимается: у него отдельный маршрут с длительностью и
-снимком сезона.
+## What was delivered
 
-## Схема и миграция
+- Deterministic shared-world engine in `packages/game-core/src/world/shared.ts`:
+  - six universes, seeded seasons, canonical checksum;
+  - `tick`, admin `event`, settlement and faction commands;
+  - replay from command log; strict validation; 40-event cap;
+  - goods supply/buy/sell prices;
+  - reconciliation against per-life world projections.
+- Seven additive Prisma models: `World`, `WorldSeason`, `Settlement`, `Faction`, `WorldEvent`, `WorldCommand`, `WorldAudit`.
+- Public API: `GET /api/world`, `GET /api/world/:universeId`, season snapshots and reconciliation.
+- Ops API: `POST /tick`, `POST /commands`, replay, metrics; `x-world-ops` is timing-safe and returns 404 when unset, too short or wrong.
+- Transactional tick under `pg_advisory_xact_lock(hashtext('world:<universeId>'))`, season snapshot, command journal, audit trail, normalized projections and atomic rollback.
+- Web panel on `/worlds`: season, checksum, settlements, factions, goods/prices, recent events; RU/EN.
+- Solo life actions do not require a shared-world write; per-life world state remains separate.
 
-Миграция: `20261114120000_stage04_living_worlds` (одна, аддитивная).
-Файл: `packages/database/prisma/migrations/20261114120000_stage04_living_worlds/migration.sql`.
+## Verification summary
 
-Новые таблицы:
+| Check | Result |
+|---|---:|
+| game-core | **775/775** |
+| shared | **18/18** |
+| API unit | **74/74** |
+| API e2e | **127/127** |
+| web | **25/25** |
+| typecheck | PASS |
+| lint | 0 errors, 1 pre-existing warning |
+| web production build | PASS |
+| desktop 1440 RU / mobile 390 EN | clean |
 
-- `worlds` — одна строка на вселенную, `state` (JSONB), seed, сезон, checksum,
-  длительность последнего tick;
-- `world_seasons` — снимок на `(world_id, season)` с checksum, state и duration;
-- `settlements` — проекция поселений и товаров (`goods` JSONB);
-- `factions` — проекция фракций;
-- `world_events` — все события (в состоянии хранятся 40 последних);
-- `world_commands` — журнал команд, уникальный `(world_id, seq)`;
-- `world_audits` — аудит ops-действий.
+The e2e suite covers two independent readers receiving identical world state, concurrent tick serialization, deterministic replay, unauthorized ops, command audit, solo-life independence, reconciliation without life IDs, metrics and atomic rollback after corrupted state.
 
-Ограничения: `worlds.universe_id` уникален; уникальные проекции
-`(world_id, settlement_id)` и `(world_id, faction_id)`; внешние ключи с
-`ON DELETE CASCADE`; CHECK-ограничения на сезон, население, процветание, стабильность,
-силу/влияние/репутацию и severity.
+## Operational notes and limitations
 
-## Изменённые файлы
+1. **Ops routes are disabled in production** until `WORLD_OPS_TOKEN` is configured (minimum 16 characters). The current production env does not define it, so `/api/world/admin/metrics` correctly returns 404. Enabling it is a separate operational action.
+2. **Reconciliation scans alive lives only**, latest 1,000 by `updatedAt`; the response reports total, scanned, aligned, drifted and unreadable counts.
+3. **Checksum is a deterministic 32-hex fingerprint**, not a cryptographic signature.
+4. **No automatic projection rebuild.** A drift requires an admin command/replay action; the reconciliation report is the detection path.
+5. **No retention policy for `world_events`.** At one event per season per world, growth is slow but unbounded.
+6. **No Playwright test for the shared-world panel.** Render tests and manual desktop/mobile checks cover it.
+7. **Season tick is admin-triggered**, not scheduled. Automatic ticks require a scheduler/worker decision and scoped ops token.
+8. **World reads seed all six worlds lazily** on the first list request; this caused a one-time 1.7 s response.
 
-Новые:
+## Rollback
 
-- `packages/game-core/src/world/shared.ts`
-- `packages/game-core/test/stage04-shared-world.test.ts`
-- `packages/database/prisma/migrations/20261114120000_stage04_living_worlds/migration.sql`
-- `apps/api/src/world/world.service.ts`
-- `apps/api/src/world/world.controller.ts`
-- `apps/api/test/stage04-shared-world.e2e-spec.ts`
-- `apps/web/src/components/world/shared-world-panel.tsx`
-- `apps/web/src/components/world/shared-world-panel.test.tsx`
-- `docs/stage-04/IMPLEMENTATION_PLAN.md`
-- `docs/stage-04/SHARED_WORLD_MODEL.md`
-- `docs/stage-04/WORLD_TICK.md`
-- `docs/stage-04/WEB_UI.md`
-- `docs/stage-04/RELEASE_RECORD.md`
+The Stage 04 migration is additive. Rolling back runtime code to `6e2da77`/`7989731` is safe: old code ignores the new tables and `/api/world` routes disappear. The new tables may remain in place. No life save schema changed, so no database restore is required for a Stage 04 code rollback.
 
-Изменены:
+## Preservation
 
-- `packages/game-core/src/index.ts` — экспорты общего мира;
-- `packages/database/prisma/schema.prisma` — новые модели;
-- `apps/api/src/app.module.ts` — `WorldController`/`WorldService`; portal-импорты и
-  записи сохранены;
-- `apps/api/test/helpers.ts` — очистка новых таблиц между e2e-файлами;
-- `apps/web/src/app/worlds/page.tsx` — панель общего мира;
-- `apps/web/src/lib/messages.ts` — RU/EN тексты панели.
-
-Сгенерированный Prisma-клиент обновлён локально (`db:generate`), каталог
-`packages/database/src/generated/` в `.gitignore`.
-
-Не менялись: `apps/api/src/config.ts`, `packages/game-core/src/engine/*`,
-`apps/api/src/lives/*`, рынок жизни, портал, отчёты Stage 11. Существующие
-незакоммиченные изменения `.env.example`, `config.ts` и `apps/api/src/portal/` оставлены
-как есть.
-
-## Тесты
-
-Инфраструктура: PostgreSQL 18 и Redis 8 в Docker (`infrastructure/docker-compose.yml`),
-тестовая база `DATABASE_URL_TEST`, миграции применяются `global-setup.ts`.
-
-| Команда | Результат |
-|---|---|
-| `pnpm --filter @endemion/game-core test` | 53 файла, **775 тестов** — passed |
-| `pnpm --filter @endemion/shared test` | 2 файла, **18 тестов** — passed |
-| `pnpm --filter @endemion/api test` | 7 файлов, **74 теста** — passed |
-| `pnpm test:api` | 15 файлов, **127 тестов** — passed (86,36 с) |
-| `pnpm --filter @endemion/web test` | 8 файлов, **25 тестов** — passed |
-| `pnpm --filter @endemion/web build` | PASS, `/worlds` dynamic, 12 routes |
-
-Дополнительно проверены сборка/типы:
-
-- `pnpm --filter @endemion/game-core build` — ok;
-- `pnpm --filter @endemion/database build` — ok (`prisma generate` + tsc);
-- `pnpm --filter @endemion/api typecheck` — ok;
-- `pnpm typecheck` (все пакеты и web) — ok;
-- `prisma validate` — schema valid;
-- ESLint по изменённым файлам — без ошибок.
-
-Что покрыто тестами:
-
-- шесть вселенных, детерминированный seed, одинаковый checksum;
-- tick ровно на один сезон, одинаковые события при одинаковом seed;
-- replay из seed и журнала команд совпадает с пошаговым применением;
-- зажим значений и конечность чисел, лимит 40 событий за 60 сезонов;
-- каноническая контрольная сумма и отказ на `NaN`;
-- проверка формы и `parseSharedWorldState`;
-- сверка: aligned / drifted / missing, примеры без PII;
-- два независимых гостя видят одинаковый мир, шесть строк `worlds`;
-- закрытое управление: нет токена / неверный / короткий / токен удалён из env;
-- tick через API сверен с `replaySharedWorld` и снимками сезонов;
-- команды администратора: событие, поселение, фракция, команда и аудит, replay;
-- ход одинокой жизни не меняет `worlds`, checksum, `updatedAt`, команды и аудит;
-- публичная сверка: форма ответа и отсутствие id жизни;
-- metrics: длительность, лаг проекции, checksum;
-- два параллельных tick дают сезоны 2 и 3 без потери снимков;
-- повреждённое состояние → 500, транзакция не оставляет снимок/команду.
-
-## Риски и ограничения
-
-1. **Сверка — по живым жизням.** Учитываются `status = alive`: `lives.total` — все такие
-   жизни, `lives.scanned` — разобранные (до 1000 последних по `updatedAt`). Мёртвые жизни
-   в агрегат не входят.
-2. **Checksum не криптографический.** 32 hex-символа обнаруживают случайный дрейф, но не
-   защищают от злонамеренного изменения БД. Для защиты нужен внешний якорь/подпись.
-3. **Replay доверяет журналу.** Изменение seed или payload команды в БД изменит и replay;
-   checksum сверяется с тем же миром, а не с независимым источником.
-4. **Один advisory lock на вселенную.** Tick и команды сериализуются. При высокой частоте
-   операторских правок возможна очередь; для текущего масштаба это приемлемо.
-5. **Проекции производные.** При расхождении `settlements`/`factions`/`world_events` с
-   `worlds.state` нужен ручной/будущий rebuild. Отдельной команды rebuild в этом срезе нет.
-6. **Рост `world_events`.** Строка на каждый tick/команду, без retention. При сезонном
-   tick это небольшой объём; политику хранения нужно задать до высокочастотных тиков.
-7. **`WORLD_OPS_TOKEN` вне `config.ts`.** Проверка идёт из `process.env` при запросе;
-   токен не валидируется при старте. Если он не задан, ops-маршруты просто отвечают 404.
-   Для эксплуатации нужен секрет ≥ 16 символов.
-8. **`SHARED_WORLD_VERSION = 1`.** Любое изменение порядка вызовов RNG или полей должно
-   повышать версию и сопровождаться миграцией/пересозданием миров; иначе старые журналы
-   перестанут сходиться.
-9. **`durationMs` недетерминирован** и намеренно не входит в checksum.
-10. **Публичное чтение раскрывает seed.** Seed детерминирован и не является секретом;
-    он нужен клиенту/ops для воспроизведения. Это не даёт прав на запись.
-11. **Миграция не применена к production.** Откат приложения оставляет таблицы; удаление
-    таблиц — отдельное разрушительное действие, требующее явного разрешения.
-12. **Web-панель не покрыта Playwright.** Есть unit/render-тесты и ручная проверка 1440/390;
-    сквозной сценарий с живым API в CI пока не добавлен.
-13. **`app.module.ts` содержит portal-код.** Для коммита Stage 04 нужен чистый вариант
-    файла без portal-импортов; рабочая копия с порталом должна сохраниться.
-
-## Откат
-
-- Приложение: вернуть предыдущую версию API. Таблицы Stage 04 аддитивны и старым кодом
-  не используются.
-- Миграция: forward-only. Не удалять таблицы и не переписывать историю миграций без
-  отдельного плана и резервной копии.
-- Ops-доступ: убрать `WORLD_OPS_TOKEN` — все изменяющие маршруты станут 404.
+- Portal integration remains uncommitted and outside the release.
+- 74 `STAGE_11_*` reports and the blueprint docx remain untracked and untouched.
+- No new dependencies.
+- Six universes and all solo gameplay mechanics are unchanged.
+- `game-core` remains deterministic and free of DB/network access.

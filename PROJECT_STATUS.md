@@ -1,22 +1,22 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-14 (STAGE 03 deployed; STAGE 04 local)<br>
+**Обновлено:** 2026-11-14 (STAGE 04 deployed)<br>
 **Ветка:** `main`  
-**Код Stage 03:** `7989731`<br>
-**Production:** STAGE 03, save schema **14**; существующие сохранения schema 1–9, deployed 2026-11-13 20:40 UTC<br>
-**Production code/HEAD:** `7989731` / docs HEAD `6e2da77`<br>
-**Rollback:** `0feb6d9` или `c280c16` (schema 13), пока нет schema-14 записей. После первой schema-14 записи — только восстановление БД из backup.<br>
-**Рабочее дерево:** незакоммиченные portal-интеграция (`.env.example`, `app.module.ts`, `config.ts`, `apps/api/src/portal/`) и Stage 04 (shared world, web-панель, docs); untracked Stage 11 reports/docx.
+**Код Stage 04:** `cf7d098`<br>
+**Production:** STAGE 04, save schema **14**; общий мир season 1, deployed 2026-11-13 21:59 UTC<br>
+**Production code:** `cf7d098` (docs-only commit may advance HEAD)<br>
+**Rollback:** `6e2da77`/`7989731` (Stage 03) безопасен — миграция Stage 04 additive, таблицы можно оставить. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
+**Рабочее дерево:** незакоммиченные portal-интеграция (`.env.example`, `app.module.ts`, `config.ts`, `apps/api/src/portal/`) и docs-update Stage 04; untracked Stage 11 reports/docx.
 
-**Stage 04 (2026-11-14, локально):** backend shared-world и web-панель `/worlds` реализованы и проверены; **не закоммичены и не развёрнуты**, production остаётся Stage 03. См. `docs/stage-04/RELEASE_RECORD.md`.
+**Stage 04 (2026-11-14):** backend shared-world, детерминированный сезонный tick, replay/checksum, семь таблиц и web-панель `/worlds` реализованы, проверены, закоммичены (`cf7d098`) и развёрнуты. См. `docs/stage-04/RELEASE_RECORD.md`.
 
 **Stage 03 (2026-11-14):** реализован, проверен, закоммичен (`7989731`) и развёрнут в production. Save schema **14**; существующие жизни schema 1–9 перечитываются и мигрируют при следующей записи. См. `docs/stage-03/STAGE_03_REPORT.md` и `docs/stage-03/RELEASE_RECORD.md`.
 
 ## Текущий статус
 
-STAGE 00 (аудит), STAGE 01 (стабилизация), STAGE 02 (Advanced Life Simulation) и STAGE 03 (Dynasty & Legacy) завершены. STAGE 03 развёрнут в production: код `7989731`, save schema **14**, все шесть миров. STAGE 04 (Living Worlds) готов локально и ожидает коммита/деплоя.
+STAGE 00 (аудит), STAGE 01 (стабилизация), STAGE 02 (Advanced Life Simulation), STAGE 03 (Dynasty & Legacy) и STAGE 04 (Living Worlds) завершены. Production работает на `cf7d098`, save schema **14**, общий мир season 1.
 
-Production проверен 2026-11-13 после деплоя Stage 03:
+Production проверен 2026-11-13 после деплоя Stage 04:
 
 - `/api/health` — HTTP 200, database/redis up;
 - `/worlds` — HTTP 200;
@@ -35,11 +35,11 @@ Production проверен 2026-11-13 после деплоя Stage 03:
 | STAGE 01 (стабилизация) | Core Stabilization | **COMPLETED WITH BLOCKERS** — см. `docs/stage-01/STAGE_01_REPORT.md` |
 | STAGE 02 (Advanced Life Simulation) | Health, education/career, household/property/business, travel, creation agency, balance/soak | **COMPLETE; deployed, schema 13 → 14** — см. `docs/stage-02/RELEASE_RECORD.md` |
 | STAGE 03 (Dynasty & Legacy) | Relics, continuity, heir agency, six laws, long-run soak | **COMPLETE; deployed, schema 14** — см. `docs/stage-03/STAGE_03_REPORT.md` |
-| STAGE 04 (Living Worlds) | Shared world, deterministic season tick, replay, web panel | **COMPLETE LOCALLY; not committed/deployed** — см. `docs/stage-04/RELEASE_RECORD.md` |
+| STAGE 04 (Living Worlds) | Shared world, deterministic season tick, replay, web panel | **COMPLETE; deployed, schema 14, migration 11** — см. `docs/stage-04/RELEASE_RECORD.md` |
 
-## STAGE 04 — Living Worlds (локально, 2026-11-14)
+## STAGE 04 — Living Worlds (deployed, 2026-11-14)
 
-Stage 04 добавляет серверный общий мир для каждой вселенной: детерминированный сезонный tick, снимки сезонов, журнал команд, replay/checksum, ops-аудит, публичную сверку с мирами жизней и web-панель на `/worlds`. `SAVE_SCHEMA_VERSION` остаётся **14**; общий мир — отдельная проекция. Backend: game-core 775/775, API e2e 127/127; web 25/25. Миграция `20261114120000_stage04_living_worlds` аддитивная и применена только к тестовой БД.
+Stage 04 добавляет серверный общий мир для каждой вселенной: детерминированный сезонный tick, снимки сезонов, журнал команд, replay/checksum, ops-аудит, публичную сверку с мирами жизней и web-панель на `/worlds`. `SAVE_SCHEMA_VERSION` остаётся **14**; общий мир — отдельная проекция. Backend: game-core 775/775, API e2e 127/127; web 25/25. Миграция `20261114120000_stage04_living_worlds` аддитивная, применена в production (11 миграций); шесть миров созданы lazily, season 1.
 
 ## STAGE 02 — Advanced Life Simulation
 
@@ -100,8 +100,8 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 - Production `SAVE_SCHEMA_VERSION = 14`. Совместимость форматов 1–14 сохраняется через аддитивные миграции.
 - API: порт 4000; web: 3000. Локальный режим остаётся запасным для web, но **не создаёт новые жизни в Android-оболочке при недоступном API**.
 - Импорт проверяет schema через `SAVE_SCHEMA_VERSION`, а не через захардкоженное значение.
-- DB migrations: 10 аддитивных; schema 14 — это формат JSON-сохранения, а не новая DB-миграция.
-- Production backup перед деплоем Stage 03: `endemion_life-manual-20261113T203304Z.dump` (10 MB), полный trial restore прошёл: 18 players, 45 lives, 1,716 snapshots, 8,344 history, 5,610 actions.
+- DB migrations: 11 аддитивных; schema 14 — это формат JSON-сохранения, а не новая DB-миграция.
+- Production backup перед деплоем Stage 04: `endemion_life-manual-20261113T215227Z.dump` (10 MB), полный trial restore прошёл: 18 players, 45 lives, 1,716 snapshots, 8,344 history, 5,610 actions.
 - Rollback: `0feb6d9`/`c280c16` безопасен (schema 13), пока нет schema-14 записей. После первой schema-14 записи откат требует восстановления БД из backup. `ca72b8b` не читает schema >8.
 - GitHub: 2 moderate Dependabot alerts.
 
@@ -122,8 +122,9 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 | 18:48 | `8fd0dfc` | release docs |
 | 18:59 | `0feb6d9` | docs: deployment record |
 | 20:40 | `7989731` | STAGE 03 |
+| 21:59 | `cf7d098` | STAGE 04 |
 
-`history.log`: `current=7989731`, `previous=0feb6d9`; PostgreSQL/Redis/backup/monitor остаются на прежних контейнерах.
+`history.log`: `current=cf7d098`, `previous=6e2da77`; PostgreSQL/Redis/backup/monitor остаются на прежних контейнерах.
 
 ## Открытые блокеры
 
