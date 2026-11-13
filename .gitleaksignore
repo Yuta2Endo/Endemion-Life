@@ -1,0 +1,4 @@
+# False positives in historical commits.
+# This line is a schema-table description, not a credential. The wording is
+# fixed in the follow-up commit, but the old blob remains in git history.
+docs/audit/ARCHITECTURE_MAP.md:generic-api-key:188

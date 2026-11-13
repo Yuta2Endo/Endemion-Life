@@ -185,7 +185,7 @@ The uncommitted portal adds a read-only profile endpoint, verified ES256 JWT, fi
 |---|---|---|---|
 | `players` | API/auth | root identity | guest or account; optional `endemion_sub` |
 | `accounts` | auth | 1:1 player | email, scrypt hash, verification, lockout |
-| `sessions` | auth | N:1 player | hashed token, refresh token, expiry/revocation |
+| `sessions` | auth | N:1 player | opaque credential digest, refresh credential, expiry/revocation |
 | `oidc_logins` | auth | transient | state hash, PKCE verifier, nonce, expiry |
 | `auth_tokens` | auth | N:1 account | email verification / password reset |
 | `lives` | lives | N:1 player | full game state JSON, version, schema, origin, generation |
