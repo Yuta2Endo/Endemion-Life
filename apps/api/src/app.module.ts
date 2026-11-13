@@ -24,9 +24,11 @@ import { SessionController } from "./session/session.controller.js";
 import { SessionService } from "./session/session.service.js";
 import { SocialController } from "./social/social.controller.js";
 import { SocialService } from "./social/social.service.js";
+import { WorldController } from "./world/world.controller.js";
+import { WorldService } from "./world/world.service.js";
 
 @Module({
-  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, SocialController, LiveController, InsightsController],
+  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, SocialController, LiveController, InsightsController, WorldController],
   providers: [
     { provide: APP_CONFIG, useFactory: (): AppConfig => readConfig() },
     PrismaService,
@@ -40,6 +42,7 @@ import { SocialService } from "./social/social.service.js";
     SocialService,
     LiveService,
     InsightsService,
+    WorldService,
     // Порядок важен: сначала лимит запросов, потом проверка источника запроса
     { provide: APP_GUARD, useClass: RateLimitGuard },
     { provide: APP_GUARD, useClass: RequestGuard },

@@ -1,18 +1,20 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-14 (STAGE 03 deployed)<br>
+**Обновлено:** 2026-11-14 (STAGE 03 deployed; STAGE 04 local)<br>
 **Ветка:** `main`  
 **Код Stage 03:** `7989731`<br>
 **Production:** STAGE 03, save schema **14**; существующие сохранения schema 1–9, deployed 2026-11-13 20:40 UTC<br>
-**Production HEAD:** `7989731`<br>
+**Production code/HEAD:** `7989731` / docs HEAD `6e2da77`<br>
 **Rollback:** `0feb6d9` или `c280c16` (schema 13), пока нет schema-14 записей. После первой schema-14 записи — только восстановление БД из backup.<br>
-**Рабочее дерево:** незакоммиченные portal-интеграция (`.env.example`, `app.module.ts`, `config.ts`, `apps/api/src/portal/`) и docs-update Stage 03; untracked Stage 11 reports/docx. Подробности — `docs/stage-01/REPOSITORY_PROVENANCE.md`.
+**Рабочее дерево:** незакоммиченные portal-интеграция (`.env.example`, `app.module.ts`, `config.ts`, `apps/api/src/portal/`) и Stage 04 (shared world, web-панель, docs); untracked Stage 11 reports/docx.
+
+**Stage 04 (2026-11-14, локально):** backend shared-world и web-панель `/worlds` реализованы и проверены; **не закоммичены и не развёрнуты**, production остаётся Stage 03. См. `docs/stage-04/RELEASE_RECORD.md`.
 
 **Stage 03 (2026-11-14):** реализован, проверен, закоммичен (`7989731`) и развёрнут в production. Save schema **14**; существующие жизни schema 1–9 перечитываются и мигрируют при следующей записи. См. `docs/stage-03/STAGE_03_REPORT.md` и `docs/stage-03/RELEASE_RECORD.md`.
 
 ## Текущий статус
 
-STAGE 00 (аудит), STAGE 01 (стабилизация), STAGE 02 (Advanced Life Simulation) и STAGE 03 (Dynasty & Legacy) завершены. STAGE 03 развёрнут в production: код `7989731`, save schema **14**, все шесть миров.
+STAGE 00 (аудит), STAGE 01 (стабилизация), STAGE 02 (Advanced Life Simulation) и STAGE 03 (Dynasty & Legacy) завершены. STAGE 03 развёрнут в production: код `7989731`, save schema **14**, все шесть миров. STAGE 04 (Living Worlds) готов локально и ожидает коммита/деплоя.
 
 Production проверен 2026-11-13 после деплоя Stage 03:
 
@@ -33,6 +35,11 @@ Production проверен 2026-11-13 после деплоя Stage 03:
 | STAGE 01 (стабилизация) | Core Stabilization | **COMPLETED WITH BLOCKERS** — см. `docs/stage-01/STAGE_01_REPORT.md` |
 | STAGE 02 (Advanced Life Simulation) | Health, education/career, household/property/business, travel, creation agency, balance/soak | **COMPLETE; deployed, schema 13 → 14** — см. `docs/stage-02/RELEASE_RECORD.md` |
 | STAGE 03 (Dynasty & Legacy) | Relics, continuity, heir agency, six laws, long-run soak | **COMPLETE; deployed, schema 14** — см. `docs/stage-03/STAGE_03_REPORT.md` |
+| STAGE 04 (Living Worlds) | Shared world, deterministic season tick, replay, web panel | **COMPLETE LOCALLY; not committed/deployed** — см. `docs/stage-04/RELEASE_RECORD.md` |
+
+## STAGE 04 — Living Worlds (локально, 2026-11-14)
+
+Stage 04 добавляет серверный общий мир для каждой вселенной: детерминированный сезонный tick, снимки сезонов, журнал команд, replay/checksum, ops-аудит, публичную сверку с мирами жизней и web-панель на `/worlds`. `SAVE_SCHEMA_VERSION` остаётся **14**; общий мир — отдельная проекция. Backend: game-core 775/775, API e2e 127/127; web 25/25. Миграция `20261114120000_stage04_living_worlds` аддитивная и применена только к тестовой БД.
 
 ## STAGE 02 — Advanced Life Simulation
 

@@ -323,6 +323,160 @@ model LiveLog {
   @@map("live_log")
 }
 
+/// Stage 04 — Living Worlds: общий мир сервера. Одна строка на вселенную, состояние — полный
+/// SharedWorldState из game-core. Это отдельная проекция: жизни на неё не пишут и от неё не зависят
+model World {
+  id                 String    @id @default(uuid()) @db.Uuid
+  universeId         String    @unique @map("universe_id") @db.VarChar(32)
+  /// Детерминированный seed из id вселенной
+  seed               String    @db.VarChar(64)
+  version            Int       @default(1)
+  season             Int
+  /// Контрольная сумма текущего состояния (не криптографическая подпись)
+  checksum           String    @db.VarChar(32)
+  state              Json
+  lastTickDurationMs Int       @default(0) @map("last_tick_duration_ms")
+  lastTickAt         DateTime? @map("last_tick_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  seasons     WorldSeason[]
+  settlements Settlement[]
+  factions    Faction[]
+  events      WorldEvent[]
+  commands    WorldCommand[]
+  audits      WorldAudit[]
+
+  @@map("worlds")
+}
+
+/// Снимок сезона: состояние, контрольная сумма и длительность хода.
+/// (world_id, season) уникальны: повторный tick не создаёт вторую запись
+model WorldSeason {
+  id         String   @id @default(uuid()) @db.Uuid
+  worldId    String   @map("world_id") @db.Uuid
+  season     Int
+  checksum   String   @db.VarChar(32)
+  state      Json
+  /// Длительность tick в миллисекундах. Для снимка, изменённого командой, не пересчитывается
+  durationMs Int      @default(0) @map("duration_ms")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
+
+  @@unique([worldId, season])
+  @@index([worldId, season])
+  @@map("world_seasons")
+}
+
+/// Нормализованная проекция поселения для чтения и отчётов. Источник истины — worlds.state
+model Settlement {
+  id                String   @id @default(uuid()) @db.Uuid
+  worldId           String   @map("world_id") @db.Uuid
+  settlementId      String   @map("settlement_id") @db.VarChar(48)
+  nameRu            String   @map("name_ru") @db.VarChar(120)
+  nameEn            String   @map("name_en") @db.VarChar(120)
+  kind              String   @db.VarChar(16)
+  tags              String[] @default([])
+  wageFactor        Float    @map("wage_factor")
+  costFactor        Float    @map("cost_factor")
+  travelCost        Int      @map("travel_cost")
+  population        Int
+  prosperity        Int
+  stability         Int
+  dominantFactionId String?  @map("dominant_faction_id") @db.VarChar(48)
+  /// Товары поселения (id, base, supply, buy, sell, тексты)
+  goods             Json
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
+
+  @@unique([worldId, settlementId])
+  @@index([worldId])
+  @@map("settlements")
+}
+
+/// Нормализованная проекция фракции. Источник истины — worlds.state
+model Faction {
+  id         String   @id @default(uuid()) @db.Uuid
+  worldId    String   @map("world_id") @db.Uuid
+  factionId  String   @map("faction_id") @db.VarChar(48)
+  nameRu     String   @map("name_ru") @db.VarChar(120)
+  nameEn     String   @map("name_en") @db.VarChar(120)
+  power      Int
+  influence  Int
+  standing   Int
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
+
+  @@unique([worldId, factionId])
+  @@index([worldId])
+  @@map("factions")
+}
+
+/// Событие мира. Журнал в состоянии ограничен 40 записями, здесь копятся все сезоны.
+/// id события детерминирован (tick:… или admin:…) и уникален в пределах вселенной
+model WorldEvent {
+  id           String   @id @db.VarChar(96)
+  worldId      String   @map("world_id") @db.Uuid
+  season       Int
+  kind         String   @db.VarChar(16)
+  titleRu      String   @map("title_ru") @db.VarChar(160)
+  titleEn      String   @map("title_en") @db.VarChar(160)
+  textRu       String   @map("text_ru") @db.VarChar(600)
+  textEn       String   @map("text_en") @db.VarChar(600)
+  settlementId String?  @map("settlement_id") @db.VarChar(48)
+  factionId    String?  @map("faction_id") @db.VarChar(48)
+  severity     Int
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
+
+  @@index([worldId, season])
+  @@index([worldId, createdAt])
+  @@map("world_events")
+}
+
+/// Журнал команд: tick и правки администратора. Replay идёт от seed по seq.
+/// payload — SharedWorldCommand целиком, чтобы воспроизведение не зависело от проекций
+model WorldCommand {
+  id           String   @id @default(uuid()) @db.Uuid
+  worldId      String   @map("world_id") @db.Uuid
+  seq          Int
+  type         String   @db.VarChar(16)
+  payload      Json
+  seasonBefore Int      @map("season_before")
+  seasonAfter  Int      @map("season_after")
+  checksum     String   @db.VarChar(32)
+  actor        String   @default("ops") @db.VarChar(32)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
+
+  @@unique([worldId, seq])
+  @@index([worldId, createdAt])
+  @@map("world_commands")
+}
+
+/// Аудит действий администратора. Токен и его части сюда не пишутся
+model WorldAudit {
+  id        String   @id @default(uuid()) @db.Uuid
+  worldId   String   @map("world_id") @db.Uuid
+  action    String   @db.VarChar(48)
+  actor     String   @default("ops") @db.VarChar(32)
+  detail    Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
+
+  @@index([worldId, createdAt])
+  @@map("world_audits")
+}
+
 /// Stage 16: факт хода. Не состояние игры. Игрок, почта и текст сюда не пишутся.
 /// ref уникален вместе с name: повтор того же хода не двоит счётчик
 model Insight {

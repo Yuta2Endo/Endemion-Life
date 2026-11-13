@@ -2,6 +2,7 @@ import { universeCatalog } from "@endemion/game-core";
 import { Ornament } from "@endemion/ui";
 import type { Metadata } from "next";
 import { BornNow } from "@/components/born-now";
+import { SharedWorldPanel } from "@/components/world/shared-world-panel";
 import { WorldCard } from "@/components/world-card";
 import { getServerI18n } from "@/lib/locale-server";
 
@@ -24,6 +25,7 @@ export default async function WorldsPage() {
         <p className="mx-auto mt-4 max-w-2xl text-bone-300">{t("worlds.lead")}</p>
         <Ornament className="mx-auto mt-8 max-w-sm" />
       </header>
+      <SharedWorldPanel />
       <ul id="compare" className="mt-10 scroll-mt-20 divide-y divide-line rounded-xl border border-line">
         {universeCatalog().map((universe) => (
           <li key={universe.id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
