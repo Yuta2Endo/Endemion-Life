@@ -1,7 +1,7 @@
 # STAGE 03 — Dynasty & Legacy: план реализации
 
-**Статус:** реализовано в рабочем дереве, проверено; **не закоммичено и не развёрнуто** (2026-11-14)  
-**Базовая версия:** production `0feb6d9` / code `c280c16`, save schema 13; Stage 03 locally — schema 14  
+**Статус:** **COMPLETE AND DEPLOYED** — реализовано, проверено и развёрнуто (2026-11-14)<br>
+**Базовая версия:** production `7989731`, save schema 14; предыдущий релиз `0feb6d9` / code `c280c16`, schema 13<br>
 **Цель:** завершить поколенческий цикл и сделать наследие основной механикой удержания.
 
 ## Критерии приёмки Stage 03
@@ -59,15 +59,15 @@
 
 ## Сверка 2026-11-14
 
-**Итог:** Stage 03.1–03.5 реализованы и проверены в рабочем дереве. HEAD остался `0feb6d9`; коммитов, push и deploy не было. Production остаётся STAGE 02, schema 13.
+**Итог:** Stage 03.1–03.5 реализованы, проверены, закоммичены (`7989731`) и развёрнуты в production. Production работает на `7989731`, schema 14 engine; существующие сохранения schema 1–9 читаются и мигрируют при следующей записи.
 
 | Срез | Фактический статус | Доказательство |
 |---|---|---|
-| 03.1 | COMPLETE LOCALLY | `stage03-2-estate-relics.test.ts`; `InheritanceRecord.assets`, `homeInherited`; schema 14 |
-| 03.2 | COMPLETE LOCALLY | `stage03-2-continuity.test.ts`: социальная память, мир, 5 поколений |
-| 03.3 | COMPLETE LOCALLY | `presentHeirs`, `primaryReason`, `presentLegacy`, `presentLineage`; web-компоненты |
-| 03.4 | COMPLETE LOCALLY | `stage03-4-inheritance-laws.test.ts`: 61 тест, шесть законов |
-| 03.5 | COMPLETE LOCALLY | `stage03-dynasty-soak.test.ts`: 12 родов в CI, 60 в full; `STAGE_03_5_BALANCE_SOAK.md` |
+| 03.1 | COMPLETE | `stage03-2-estate-relics.test.ts`; `InheritanceRecord.assets`, `homeInherited`; schema 14 |
+| 03.2 | COMPLETE | `stage03-2-continuity.test.ts`: социальная память, мир, 5 поколений |
+| 03.3 | COMPLETE | `presentHeirs`, `primaryReason`, `presentLegacy`, `presentLineage`; web-компоненты |
+| 03.4 | COMPLETE | `stage03-4-inheritance-laws.test.ts`: 61 тест, шесть законов |
+| 03.5 | COMPLETE | `stage03-dynasty-soak.test.ts`: 12 родов в CI, 60 в full; `STAGE_03_5_BALANCE_SOAK.md` |
 
 **Отклонения от плана и уточнения:**
 

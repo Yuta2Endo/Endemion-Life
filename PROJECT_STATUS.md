@@ -1,28 +1,27 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-14 (STAGE 02 deployed)  
+**Обновлено:** 2026-11-14 (STAGE 03 deployed)<br>
 **Ветка:** `main`  
-**Код Stage 02:** `c280c16`<br>
-**Release/docs commit:** `0feb6d9`<br>
-**Production:** STAGE 02, save schema **13**, deployed 2026-11-13 18:59 UTC<br>
-**Production HEAD:** `0feb6d9` (code `c280c16`)<br>
-**Rollback:** `8fd0dfc` или `c280c16` (schema 13). `ca72b8b` — только вместе с восстановлением БД из backup.<br>
-**Рабочее дерево:** незакоммиченные portal-интеграция (`.env.example`, `app.module.ts`, `config.ts`, `apps/api/src/portal/`) и Stage 03.1–03.5 (schema 14); untracked Stage 11 reports/docx. Подробности — `docs/stage-01/REPOSITORY_PROVENANCE.md`.
+**Код Stage 03:** `7989731`<br>
+**Production:** STAGE 03, save schema **14**; существующие сохранения schema 1–9, deployed 2026-11-13 20:40 UTC<br>
+**Production HEAD:** `7989731`<br>
+**Rollback:** `0feb6d9` или `c280c16` (schema 13), пока нет schema-14 записей. После первой schema-14 записи — только восстановление БД из backup.<br>
+**Рабочее дерево:** незакоммиченные portal-интеграция (`.env.example`, `app.module.ts`, `config.ts`, `apps/api/src/portal/`) и docs-update Stage 03; untracked Stage 11 reports/docx. Подробности — `docs/stage-01/REPOSITORY_PROVENANCE.md`.
 
-**Stage 03 (2026-11-14):** реализован и проверен в рабочем дереве на `0feb6d9`; **не закоммичен и не развёрнут**. Production остаётся STAGE 02, schema 13. См. `docs/stage-03/STAGE_03_REPORT.md` и `docs/stage-03/RELEASE_RECORD.md`.
+**Stage 03 (2026-11-14):** реализован, проверен, закоммичен (`7989731`) и развёрнут в production. Save schema **14**; существующие жизни schema 1–9 перечитываются и мигрируют при следующей записи. См. `docs/stage-03/STAGE_03_REPORT.md` и `docs/stage-03/RELEASE_RECORD.md`.
 
 ## Текущий статус
 
-STAGE 00 (аудит), STAGE 01 (стабилизация) и STAGE 02 (Advanced Life Simulation) завершены. STAGE 02 развёрнут в production: сохранения schema 13, все шесть миров, здоровье, образование/карьера, жильё/бизнес, путешествия и создание персонажа.
+STAGE 00 (аудит), STAGE 01 (стабилизация), STAGE 02 (Advanced Life Simulation) и STAGE 03 (Dynasty & Legacy) завершены. STAGE 03 развёрнут в production: код `7989731`, save schema **14**, все шесть миров.
 
-Production проверен 2026-11-13 после деплоя:
+Production проверен 2026-11-13 после деплоя Stage 03:
 
 - `/api/health` — HTTP 200, database/redis up;
 - `/worlds` — HTTP 200;
 - `/api/universes` — HTTP 200, все шесть миров;
 - CSP активен, контейнеры api/web/nginx healthy;
 - ошибок `INVALID_SAVE`/migration в логах не обнаружено;
-- schema 9 жизни читаются кодом schema 13; новые schema 13 записи появятся после действий игроков.
+- schema 9 жизни читаются кодом schema 14; новые schema 14 записи появятся после действий игроков.
 
 | Этап | Название | Статус |
 |------|----------|--------|
@@ -32,8 +31,8 @@ Production проверен 2026-11-13 после деплоя:
 | STAGE 10–16 | Mastery, live windows, insights | реализованы в production |
 | STAGE 11.x | Portal integration | только локально, решение не принято |
 | STAGE 01 (стабилизация) | Core Stabilization | **COMPLETED WITH BLOCKERS** — см. `docs/stage-01/STAGE_01_REPORT.md` |
-| STAGE 02 (Advanced Life Simulation) | Health, education/career, household/property/business, travel, creation agency, balance/soak | **COMPLETE; deployed, schema 13** — см. `docs/stage-02/RELEASE_RECORD.md` |
-| STAGE 03 (Dynasty & Legacy) | Relics, continuity, heir agency, six laws, long-run soak | **COMPLETE LOCALLY; schema 14; not committed/deployed** — см. `docs/stage-03/STAGE_03_REPORT.md` |
+| STAGE 02 (Advanced Life Simulation) | Health, education/career, household/property/business, travel, creation agency, balance/soak | **COMPLETE; deployed, schema 13 → 14** — см. `docs/stage-02/RELEASE_RECORD.md` |
+| STAGE 03 (Dynasty & Legacy) | Relics, continuity, heir agency, six laws, long-run soak | **COMPLETE; deployed, schema 14** — см. `docs/stage-03/STAGE_03_REPORT.md` |
 
 ## STAGE 02 — Advanced Life Simulation
 
@@ -47,9 +46,9 @@ STAGE 02.1–02.6 реализованы, проверены, запушены �
 - Deterministic 1008-life soak: no negative wealth, no NaN, state max 78.2 KiB, 74-year median death age.
 - Полный soak: `ENDEMION_FULL_SOAK=1` в `packages/game-core/test/stage02-balance-soak.test.ts`.
 
-## STAGE 03 — Dynasty & Legacy (локально, 2026-11-14)
+## STAGE 03 — Dynasty & Legacy (deployed, 2026-11-14)
 
-STAGE 03.1–03.5 реализованы и проверены в рабочем дереве на `0feb6d9`. **Не закоммичены и не развёрнуты**; production остаётся STAGE 02, schema 13. `SAVE_SCHEMA_VERSION = 14`, миграция 13 → 14 additive.
+STAGE 03.1–03.5 реализованы, проверены, закоммичены (`7989731`) и развёрнуты в production. `SAVE_SCHEMA_VERSION = 14`, миграция 13 → 14 additive; существующие жизни schema 1–9 читаются и мигрируют при следующей записи.
 
 - 03.1: полная оценка наследства (золото + дом + дела), передача дома в натуре, реликвии, `InheritanceRecord.assets`; schema 14.
 - 03.2: социальная память NPC–NPC, мир и фракции переживают наследование; синтетические 5 поколений.
@@ -76,9 +75,9 @@ STAGE 03.1–03.5 реализованы и проверены в рабочем
 - Высокая естественная смертность рода: 46/60 (76,7%) в полном прогоне, особенно dark-fantasy и hunter (по 9/10). Это балансовый риск, а не порча сохранения; механики и законы не менялись.
 - Наследники могут быть старше 100 лет (xianxia/isekai), из-за чего следующее поколение живёт несколько лет.
 - Опека редка (2 из 124 наследований); полный soak её покрывает, CI — нет.
-- Stage 03 не выкачен: production schema 13, код `c280c16` / docs `0feb6d9`.
+- Stage 03 развёрнут: production код `7989731`, schema 14 engine; все семь контейнеров healthy, `/api/health` 200, `/worlds` 200, `/api/universes` — шесть миров.
 
-## Проверки (снимок Stage 02)
+## Проверки (исторический снимок Stage 02)
 
 - game-core: **679/679**
 - API unit: **74/74**
@@ -91,17 +90,17 @@ STAGE 03.1–03.5 реализованы и проверены в рабочем
 
 ## Технические детали
 
-- Production `SAVE_SCHEMA_VERSION = 13`; в рабочем дереве Stage 03 — **14**. Совместимость форматов 1–14 сохраняется через аддитивные миграции.
+- Production `SAVE_SCHEMA_VERSION = 14`. Совместимость форматов 1–14 сохраняется через аддитивные миграции.
 - API: порт 4000; web: 3000. Локальный режим остаётся запасным для web, но **не создаёт новые жизни в Android-оболочке при недоступном API**.
 - Импорт проверяет schema через `SAVE_SCHEMA_VERSION`, а не через захардкоженное значение.
-- DB migrations: 10 аддитивных; schema 13 — это формат JSON-сохранения, а не новая DB-миграция.
-- Production backup перед деплоем: `endemion_life-manual-20261113T184449Z.dump` (10.3 MB), полный trial restore прошёл: 18 players, 45 lives, 1,716 snapshots, 8,344 history, 5,610 actions.
-- Rollback: `c280c16` безопасен (schema 13). `ca72b8b` не читает schema >8; откат на него требует восстановления БД из backup и потери действий после backup.
+- DB migrations: 10 аддитивных; schema 14 — это формат JSON-сохранения, а не новая DB-миграция.
+- Production backup перед деплоем Stage 03: `endemion_life-manual-20261113T203304Z.dump` (10 MB), полный trial restore прошёл: 18 players, 45 lives, 1,716 snapshots, 8,344 history, 5,610 actions.
+- Rollback: `0feb6d9`/`c280c16` безопасен (schema 13), пока нет schema-14 записей. После первой schema-14 записи откат требует восстановления БД из backup. `ca72b8b` не читает schema >8.
 - GitHub: 2 moderate Dependabot alerts.
 
 ## Deployment history
 
-Все Stage 02 коммиты были развёрнуты последовательно 2026-11-13:
+Все Stage 02 и Stage 03 коммиты были развёрнуты последовательно 2026-11-13:
 
 | UTC | Коммит | Результат |
 |---|---|---|
@@ -115,8 +114,9 @@ STAGE 03.1–03.5 реализованы и проверены в рабочем
 | 18:42 | `c280c16` | STAGE 02.6 |
 | 18:48 | `8fd0dfc` | release docs |
 | 18:59 | `0feb6d9` | docs: deployment record |
+| 20:40 | `7989731` | STAGE 03 |
 
-`history.log`: `current=0feb6d9`, `previous=8fd0dfc`; PostgreSQL/Redis/backup/monitor остаются на прежних контейнерах.
+`history.log`: `current=7989731`, `previous=0feb6d9`; PostgreSQL/Redis/backup/monitor остаются на прежних контейнерах.
 
 ## Открытые блокеры
 
@@ -124,5 +124,5 @@ STAGE 03.1–03.5 реализованы и проверены в рабочем
 - Android: release signing, Play Console listing, data-safety/account-deletion compliance.
 - 2 moderate Dependabot alerts.
 - Баланс: бизнес слишком редко проваливается (1.4%), murim имеет тяжёлый нижний хвост смертности, доступ к education tier 2+ сильно различается по мирам.
-- Stage 03: локально готов и проверен, но не закоммичен и не развёрнут; нужно отдельное решение владельца. Естественное вымирание рода 76,7% — балансовый риск.
+- Stage 03 развёрнут; естественное вымирание рода в soak 76,7% — балансовый риск для следующего этапа.
 - Rollback на schema 8 невозможен без восстановления БД из backup.
