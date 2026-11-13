@@ -472,7 +472,7 @@ model WorldAudit {
   id        String   @id @default(uuid()) @db.Uuid
   worldId   String   @map("world_id") @db.Uuid
   action    String   @db.VarChar(48)
-  actor     String   @default("ops") @db.VarChar(32)
+  actor     String   @default("ops") @db.VarChar(64)
   detail    Json
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
