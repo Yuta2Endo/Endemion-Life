@@ -137,4 +137,17 @@ The stabilization was committed and pushed after this report was written:
 - Security run **43425468466 — success**
 - Deploy run **43426512519 — waiting for production environment approval; not approved**
 
-Checklist items “stabilization commit created” and “pushed” are now complete. The GitHub release is complete; **production is unchanged at `ca72b8b`**. Remaining blockers are portal owner approval, Android signing/Play compliance, device smoke testing, and a separately approved deployment. The earlier “no commit/push” statements are historical and superseded by this addendum.
+Checklist items "stabilization commit created" and "pushed" are now complete. The GitHub release is complete. Remaining blockers are portal owner approval, Android signing/Play compliance, and device smoke testing.
+
+## Post-deploy record (2026-11-13 12:48 UTC)
+
+The approved deployment was executed by the GitHub Deploy workflow and **succeeded on the server**:
+
+- Production is **`b634a67`**; previous/rollback is **`ca72b8b`**.
+- Server history: `12:48:23Z deploy-start b634a67 from ca72b8b`, `12:48:51Z deploy b634a67 ok from ca72b8b`.
+- `api`, `web`, and `nginx` were recreated and report healthy.
+- Public checks: `/api/health` 200 (`database: up`, `redis: up`), `/worlds` 200, `/api/universes` 200 with all six worlds, CSP header present.
+- Disk cleanup freed space to 8.0 GB; 66 dangling and 4 old pre-stage04 images were removed. Current and `1bcf224` rollback tags were preserved.
+- GitHub Deploy run `43426512519` reports failure at a post-deploy/reporting stage and its job log is unavailable (`404 BlobNotFound`); this contradicts the server history and live health checks. Treat the server as deployed and healthy, but investigate the workflow false negative before the next release.
+
+The earlier "no commit/push" and "production unchanged" statements are historical and superseded by this record.

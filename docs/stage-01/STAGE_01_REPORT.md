@@ -298,4 +298,17 @@ After this report was written, the stabilization was committed and pushed with e
 
 The earlier statements in sections 11, 13, and 14 that “no commit/push was performed” are historical and superseded by this addendum. The portal wiring and untracked portal source remain intentionally outside the pushed stabilization commit, as do the 74 Stage 11 reports and blueprint `.docx`.
 
-**Updated status: STAGE 01 is released to GitHub and CI-verified; production deployment has not been performed and remains a separate owner decision.**
+**Updated status: STAGE 01 is released to GitHub and CI-verified.**
+
+## 16. Post-deploy record (2026-11-13 12:48 UTC)
+
+Production deployment **succeeded on the server** despite the GitHub run showing failure:
+
+- Production HEAD: **`b634a67`** (same code as `3fe71aa` plus docs); rollback: **`ca72b8b`**.
+- Server history: `deploy-start b634a67 from ca72b8b` at 12:48:23Z; `deploy b634a67 ok from ca72b8b` at 12:48:51Z.
+- `api`, `web`, `nginx` healthy; database and Redis up.
+- Public verification: `/api/health` 200, `/worlds` 200, `/api/universes` 200 with all six worlds, CSP present.
+- Disk cleanup: 8.0 GB free; 66 dangling and 4 old pre-stage04 images removed; current and `1bcf224` rollback tags preserved.
+- GitHub Deploy run `43426512519` reports failure at a post-deploy/reporting stage; job log unavailable (`404 BlobNotFound`). The server and public endpoints prove the deployment itself succeeded. Investigate the workflow false negative before the next release.
+
+Earlier sections stating that production was unchanged or that no deploy occurred are historical and superseded by this record.

@@ -1,14 +1,14 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-13 (STAGE 01 stabilization, CI green)
-**Ветка:** `main`, HEAD `3fe71aa`
-**Production:** `ca72b8b` (release 04.5.4), не изменялся
-**origin/main:** `3fe71aa` — stabilization запушен
+**Обновлено:** 2026-11-13 (STAGE 01 stabilization; production deploy)
+**Ветка:** `main`, HEAD `b634a67`
+**Production:** `b634a67` — задеплоен 2026-11-13 12:48:51 UTC, previous/rollback `ca72b8b`
+**origin/main:** `b634a67`
 **Рабочее дерево:** только незакоммиченная portal-интеграция (`.env.example`, `app.module.ts`, `config.ts`, `apps/api/src/portal/`) и untracked Stage 11 reports/docx. Подробности — `docs/stage-01/REPOSITORY_PROVENANCE.md`.
 
 ## Текущий статус
 
-STAGE 01 (Core Stabilization) реализован, проверен, **закоммичен и запушен**: `d19be69`, `cd2e6a9`, `3fe71aa`. CI и Security на `3fe71aa` — **success**. Deploy ожидает ручного подтверждения environment и **не подтверждён**. Portal-интеграция (`apps/api/src/portal/`, `PORTAL_*`) остаётся вне релиза до решения владельца продукта. Production не изменялся.
+STAGE 01 (Core Stabilization) реализован, проверен, **закоммичен и запушен**: `d19be69`, `cd2e6a9`, `3fe71aa`, `b634a67`. CI и Security на `3fe71aa` — **success**. Production обновлён до `b634a67`; серверная история: `deploy b634a67 ok from ca72b8b`. GitHub Deploy run 43426512519 показывает failure на пост-деплой/отчётном шаге, лог недоступен (404 BlobNotFound); это не отменяет успешный серверный деплой и проверенный health. Portal-интеграция (`apps/api/src/portal/`, `PORTAL_*`) остаётся вне релиза до решения владельца продукта.
 
 | Этап | Название | Статус |
 |------|----------|--------|
