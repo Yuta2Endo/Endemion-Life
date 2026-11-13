@@ -60,3 +60,21 @@ Activation remains blocked by the Portal side: `https://endemion.online/.well-kn
 returns `503`. A Portal production ES256 key, `ENDEMION_LIFE_ASSERTION=1`, and a `200`
 JWKS response are required before enabling Life. See `docs/portal/INTEGRATION.md`.
 
+## 6. Addendum 2026-11-14 - ACTIVATED
+
+The activation gate is closed. Portal production now publishes a `200` JWKS with
+`kid=life-2026-11` and no private `d` field. Life production HEAD `3f35fdc` passes the
+`PORTAL_*` variables to the API and runs with `PORTAL_INTEGRATION_ENABLED=true`.
+
+Verified:
+
+- `/api/portal/profile` without a token returns `401 UNAUTHORIZED` with
+  `Cache-Control: private, no-store`;
+- a malformed bearer returns `401 INVALID_TOKEN`;
+- all seven Life containers are healthy and `/api/health` is 200;
+- API logs show the portal controller mapped and only expected auth-failure reasons.
+
+Not verified: a real `200` response with a live Endemion ID session. No private key,
+`.env` value, or JWT was written to the repository. Rollback remains a Life config flag
+change and API restart. Option C is superseded by this activation record.
+

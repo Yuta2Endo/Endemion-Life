@@ -1,9 +1,9 @@
 # Portal ↔ Life Integration
 
-**Status:** Life-side code integrated and verified; feature **disabled by default**.
+**Status:** **ACTIVE in production**; Portal JWKS live, Life endpoint verified for 401 paths.
 **Date:** 2026-11-14
-**Life production:** portal route currently `404 NOT_FOUND`.
-**Portal production:** `GET https://endemion.online/.well-known/jwks.json` currently returns `503` (feature disabled).
+**Life production:** `3f35fdc`; `/api/portal/profile` returns `401 UNAUTHORIZED` without a token.
+**Portal production:** `GET https://endemion.online/.well-known/jwks.json` returns `200` with one public ES256 key.
 
 This document supersedes the earlier "Option B: keep portal out of the release" decision for the
 Life code. The code may ship dark; activation still requires the Portal-side key and flag.
@@ -104,7 +104,29 @@ Production startup rejects non-HTTPS issuer/audience/JWKS URLs.
 The e2e tests prove the feature is wired through `AppModule`, not only through the
 controller test module.
 
-## 6. Activation prerequisites (not done)
+## 6. Activation record (completed 2026-11-14)
+
+Production activation was completed with the Portal key stored only in the Portal
+server `.env` (mode 600, backed up root-only outside the repository).
+
+| Step | Evidence |
+|---|---|
+| Portal key generated (ES256, P-256) | `kid=life-2026-11`; private key never printed or committed |
+| Portal app recreated | `endemion-app-1` healthy |
+| Portal JWKS | `200`, one EC P-256 key, `alg=ES256`, `use=sig`, no `d` |
+| Life compose passes `PORTAL_*` | commit `3f35fdc`, production HEAD `3f35fdc` |
+| Life health | `/api/health` 200, DB/Redis up |
+| Life portal route, no token | `401 UNAUTHORIZED`, `Cache-Control: private, no-store` |
+| Life portal route, malformed token | `401 INVALID_TOKEN`, no-store |
+| API logs | `PortalController {/api/portal}` mapped; expected `portal.auth.failed` reasons `missing_authorization`, `malformed`; no config/JWKS/startup errors |
+| Containers | all seven `endemion-life-prod-*` healthy |
+
+The full `200` profile response was **not** smoke-tested with a real Endemion ID session
+because no disposable production identity was available. The 401/404/429 contract is
+covered by unit and AppModule e2e tests; a joint 200 smoke remains an operational
+follow-up.
+
+### Historical prerequisites (all completed)
 
 1. Portal: generate an ES256 signing key offline and store it in the production secret
    store. Do not put it in git or chat.
@@ -121,8 +143,6 @@ controller test module.
 7. Verify `401`, `404 NO_LIFE_PROFILE`, `429`, and disabled `404`.
 8. Observe `portal.auth.*` and Portal `life.*` events for at least 5 minutes.
 
-Until step 3 passes, enabling Life would only produce JWKS fetch failures and `401`s.
-
 ## 7. Rollback
 
 1. Set `PORTAL_INTEGRATION_ENABLED=false` on Life; endpoint returns 404.
@@ -137,4 +157,4 @@ Until step 3 passes, enabling Life would only produce JWKS fetch failures and `4
 - Write operations, life creation, or character control from the Portal.
 - Single-use `jti` replay protection.
 - Staging environment.
-- Any production key generation or production flag change.
+- A verified production `200` profile smoke with a disposable Endemion ID session.

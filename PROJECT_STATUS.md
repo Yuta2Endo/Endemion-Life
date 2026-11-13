@@ -1,12 +1,12 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-14 (STAGE 05 deployed)<br>
+**Обновлено:** 2026-11-14 (Portal integration ACTIVE)<br>
 **Ветка:** `main`  
-**HEAD:** `22810d2` (Android signing docs; Stage 05 code `9daaec2`)<br>
+**HEAD:** `3f35fdc` (infra: pass portal settings; code `4c786d6`, docs `d0420db`)<br>
 **Production:** STAGE 05, save schema **14**; общий мир season 1, deployed 2026-11-13 23:04 UTC<br>
-**Production code:** `9daaec2`; DB migrations **12**<br>
+**Production code:** `3f35fdc`; DB migrations **12**<br>
 **Rollback:** `cf7d098` (Stage 04) безопасен — миграция Stage 05 additive. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
-**Рабочее дерево:** только незакоммиченная portal-интеграция (`.env.example`, `app.module.ts`, `config.ts`, `apps/api/src/portal/`) и untracked Stage 11 reports/docx.
+**Рабочее дерево:** clean, кроме untracked Stage 11 reports/docx.
 
 **Stage 05 (2026-11-14):** account boundary, Redis presence, SSE, идемпотентный вклад в общий мир, export/delete аккаунта, reports, web-панель и Nginx SSE реализованы, проверены, закоммичены (`b6db176` → `9daaec2`) и развёрнуты. Production работает на `9daaec2`, 12 миграций. См. `docs/stage-05/STAGE_05_REPORT.md` и `docs/stage-05/RELEASE_RECORD.md`.
 
@@ -33,22 +33,23 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | STAGE 01 (исторический) | Life Experience Upgrade | завершён |
 | STAGE 02–09 | Living world, dynasty, social, economy, region | завершены |
 | STAGE 10–16 | Mastery, live windows, insights | реализованы в production |
-| STAGE 11.x | Portal integration | Life-side код интегрирован (disabled); активация заблокирована Portal JWKS/ключом |
+| STAGE 11.x | Portal integration | **ACTIVE**; Life endpoint и Portal JWKS deployed, 401-пути проверены |
 | STAGE 01 (стабилизация) | Core Stabilization | **COMPLETED WITH BLOCKERS** — см. `docs/stage-01/STAGE_01_REPORT.md` |
 | STAGE 02 (Advanced Life Simulation) | Health, education/career, household/property/business, travel, creation agency, balance/soak | **COMPLETE; deployed, schema 13 → 14** — см. `docs/stage-02/RELEASE_RECORD.md` |
 | STAGE 03 (Dynasty & Legacy) | Relics, continuity, heir agency, six laws, long-run soak | **COMPLETE; deployed, schema 14** — см. `docs/stage-03/STAGE_03_REPORT.md` |
 | STAGE 04 (Living Worlds) | Shared world, deterministic season tick, replay, web panel | **COMPLETE; deployed, schema 14, migration 11** — см. `docs/stage-04/RELEASE_RECORD.md` |
 | STAGE 05 (Multiplayer Foundation) | Account gate, presence/SSE, contributions, export/delete, reports | **COMPLETE; deployed, schema 14, migration 12** — см. `docs/stage-05/STAGE_05_REPORT.md` |
 
-## Portal ↔ Life (Life-side integrated, disabled)
+## Portal ↔ Life (ACTIVE in production)
 
-Life-side API портала (`apps/api/src/portal/*`) зарегистрирован в `AppModule` (commit `4c786d6`) и собирается в production-образ, но `PORTAL_INTEGRATION_ENABLED=false` по умолчанию: `/api/portal/profile` отвечает `404`, JWKS не запрашивается. Это позволяет выпустить код dark и активировать интеграцию конфигурацией.
+Life-side API портала (`apps/api/src/portal/*`) зарегистрирован в `AppModule` (commit `4c786d6`) и активирован в production (`PORTAL_INTEGRATION_ENABLED=true`) после деплоя `3f35fdc`. `/api/portal/profile` без токена отвечает `401`, с некорректным токеном — `401 INVALID_TOKEN`; JWKS Portal отдаёт `200`.
 
 - Контракт: ES256 JWT, `iss=https://endemion.online`, `aud=https://life.endemion.online`, `scope=portal:read`, lifetime ≤120 s, skew 30 s, `sub` = Endemion ID UUID.
 - Endpoint: `GET /api/portal/profile`; ответ только `exists`, `displayName`, `lives.total`, `lives.alive`; `Cache-Control: private, no-store`.
 - Защита: фиксированный JWKS URL, allow-list EC P-256/ES256/use=sig, timeout/cache/min-refresh, blocked kids, per-`sub` limit, отсутствие raw `sub`/токенов в логах.
 - Проверки: API unit 74/74 (включая 39 portal-тестов), API e2e 135/135, typecheck/build/lint pass.
-- Активация заблокирована: `https://endemion.online/.well-known/jwks.json` сейчас `503`; нужен production key в Portal и `ENDEMION_LIFE_ASSERTION=1`, затем Life flag.
+- Production: JWKS `200`, `kid=life-2026-11`, no `d`; Life `401`/`INVALID_TOKEN` и no-store проверены; все семь контейнеров healthy.
+- Не проверено: `200`-профиль с реальной Endemion ID сессией (нет одноразового production-аккаунта).
 - Документация: `docs/portal/INTEGRATION.md`.
 
 ## STAGE 05 — Multiplayer Foundation (deployed, 2026-11-14)
@@ -152,13 +153,15 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 | 20:40 | `7989731` | STAGE 03 |
 | 21:59 | `cf7d098` | STAGE 04 |
 | 23:04 | `9daaec2` | STAGE 05 |
+| 23:44 | `4c786d6` | Portal code (dark) |
+| 23:54 | `3f35fdc` | Portal ACTIVE |
 
-`history.log`: `current=9daaec2`, `previous=cf7d098`; PostgreSQL/Redis/backup/monitor остаются на прежних контейнерах.
+`history.log`: `current=3f35fdc`, `previous=4c786d6`; PostgreSQL/Redis/backup/monitor остаются на прежних контейнерах.
 
 ## Открытые блокеры
 
 - Production smoke Stage 05: публичные health/world проверены, SSE без аккаунта корректно возвращает 401; полный двухаккаунтный presence/SSE smoke требует Endemion ID тест-аккаунта (password registration в production отключён, `410 USE_ENDEMION_ID`).
-- Portal: Life-side код выпускается disabled; для активации нужен Portal production key + `ENDEMION_LIFE_ASSERTION=1` + JWKS 200, затем Life flag. Сейчас JWKS отдаёт 503.
+- Portal: интеграция **ACTIVE**; JWKS 200, Life 401/INVALID_TOKEN проверены. Осталось: `200`-smoke с реальной Endemion ID сессией и мониторинг `portal.auth.*`/Portal `life.*`.
 - Android: Play Console listing/upload, Play App Signing enrollment, data-safety/account-deletion compliance, CI signing-secret provisioning, device install. Release signing itself завершён.
 - 2 moderate Dependabot alerts.
 - Баланс: бизнес слишком редко проваливается (1.4%), murim имеет тяжёлый нижний хвост смертности, доступ к education tier 2+ сильно различается по мирам.
