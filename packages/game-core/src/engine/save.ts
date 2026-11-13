@@ -19,6 +19,8 @@ import { findGood, goodsOf, MAX_STOCK } from "../economy/market.js";
 import { HEALTH_MAX, MAX_CONDITION_DAMAGE, MAX_CONDITION_YEARS, MAX_HEALTH_CONDITIONS, healthValueFromResources, newHealthState } from "../life/health.js";
 import { educationStep, MAX_EDUCATION_DURATION, newEducationState } from "../life/education.js";
 import { findCareerTrack, maxCareerRank, newCareerState } from "../life/careers.js";
+import { findProperty, MAX_ARREARS, newHouseholdState } from "../life/household.js";
+import { findBusiness, MAX_BUSINESSES, MAX_BUSINESS_LOSSES, newBusinessState } from "../life/business.js";
 import { RESOURCE_KEYS, STAT_KEYS, WEALTH_MAX } from "../stats.js";
 import { MAX_WORLD_INFLUENCE, MAX_WORLD_INFLUENCE_ENTRIES, settlementSeeds } from "../world/state.js";
 import type { UniverseDefinition } from "../universes/types.js";
@@ -36,6 +38,7 @@ import {
   NPC_STATUSES,
   NPC_STORY_STATUSES,
   RELATIONSHIP_TYPES,
+  RESIDENCE_KINDS,
   SELF_ID,
   type GameState,
   type NpcRole,
@@ -260,6 +263,15 @@ function migrateV9(save: Record<string, unknown>): Record<string, unknown> {
   return { ...save, education: newEducationState(), career };
 }
 
+/**
+ * Формат 10 → 11 (Stage 02.3): жильё и своё дело. Старая жизнь не получает выдуманный дом
+ * и не платит за него: она начинается без отдельного жилья и без дел. seed, rngState и все
+ * прежние поля не меняются — миграция только добавляет два состояния
+ */
+function migrateV10(save: Record<string, unknown>): Record<string, unknown> {
+  return { ...save, household: newHouseholdState(), business: newBusinessState() };
+}
+
 /** Переходы между версиями формата: ключ — версия, из которой переводим. Новая версия формата добавляет сюда шаг */
 const MIGRATIONS: Readonly<Record<number, Migration>> = {
   1: migrateV1,
@@ -270,7 +282,8 @@ const MIGRATIONS: Readonly<Record<number, Migration>> = {
   6: migrateV6,
   7: migrateV7,
   8: migrateV8,
-  9: migrateV9
+  9: migrateV9,
+  10: migrateV10
 };
 
 function fail(reason: string): never {
@@ -582,6 +595,37 @@ function checkCareer(career: unknown, character: Record<string, unknown>, univer
   if (career.rank > maxCareerRank(track)) fail("career.rank");
 }
 
+/**
+ * Stage 02.3: жильё. Бездомный не имеет дома и состояния; аренда и собственность ссылаются
+ * на дом каталога этого мира. У аренды состояние всегда 0: дом чинит хозяин
+ */
+function checkHousehold(household: unknown, universeId: UniverseId, age: number): void {
+  if (!isRecord(household) || !oneOf(RESIDENCE_KINDS, household.residence) || !isNullableString(household.homeId)) fail("household");
+  if (!isInt(household.since, 0, age) || !isInt(household.condition, 0, 100) || !isInt(household.arrears, 0, MAX_ARREARS)) fail("household.numbers");
+  if (household.residence === "homeless") {
+    if (household.homeId !== null || household.condition !== 0) fail("household.homeless");
+    return;
+  }
+  const property = typeof household.homeId === "string" ? findProperty(universeId, household.homeId) : undefined;
+  if (!property) fail("household.home");
+  if (household.residence === "rent" && (property.rent <= 0 || household.condition !== 0)) fail("household.rent");
+}
+
+/** Stage 02.3: свои дела. Только дела этого мира, без повторов, числа в допустимых пределах */
+function checkBusiness(business: unknown, universeId: UniverseId, age: number): void {
+  if (!isRecord(business) || !Array.isArray(business.ventures) || business.ventures.length > MAX_BUSINESSES) fail("business");
+  const seen = new Set<string>();
+  for (const venture of business.ventures) {
+    if (!isRecord(venture) || typeof venture.id !== "string") fail("business.id");
+    const definition = findBusiness(universeId, venture.id);
+    if (!definition || seen.has(venture.id)) fail("business.id");
+    seen.add(venture.id);
+    if (!isInt(venture.foundedAge, 0, age) || !isInt(venture.level, 0, definition.maxLevel) || !isInt(venture.capital, 0, WEALTH_MAX)) fail("business.numbers");
+    if (!isInt(venture.years, 0, Math.max(0, age - venture.foundedAge)) || !isInt(venture.losses, 0, MAX_BUSINESS_LOSSES)) fail("business.years");
+    if (!(venture.lastNet === null || isInt(venture.lastNet, -WEALTH_MAX, WEALTH_MAX))) fail("business.net");
+  }
+}
+
 /** Проверяет сохранение и возвращает состояние игры. Бросает INVALID_SAVE, если что-то не так */
 export function parseSave(raw: unknown): GameState {
   const save = migrateSave(raw);
@@ -619,6 +663,8 @@ export function parseSave(raw: unknown): GameState {
   checkHealth(save.health);
   checkEducation(save.education, c, universe, life.age);
   checkCareer(save.career, c, universe, life.age);
+  checkHousehold(save.household, c.universeId, life.age);
+  checkBusiness(save.business, c.universeId, life.age);
   if (!isStringArray(save.flags)) fail("flags");
   if (save.autoMode !== undefined && !["manual", "auto", "milestones"].includes(save.autoMode as string)) fail("autoMode");
   if (save.milestones !== undefined && (!isRecord(save.milestones) || !isStringArray(save.milestones.triggered) || save.milestones.triggered.length > 100)) fail("milestones");

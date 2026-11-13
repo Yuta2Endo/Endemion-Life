@@ -5,8 +5,10 @@ import {
   presentEconomy,
   presentEducation,
   presentCareer,
+  presentBusiness,
   presentEvent,
   presentHealth,
+  presentHousehold,
   presentLegacy,
   presentMarket,
   presentRegion,
@@ -20,6 +22,7 @@ import {
   type AutoMode,
   type MilestoneState,
   type AdventureBoard,
+  type BusinessView,
   type CareerView,
   type EconomyView,
   type EducationView,
@@ -27,6 +30,7 @@ import {
   type GameErrorCode,
   type GameState,
   type HealthView,
+  type HouseholdView,
   type HistoryEntry,
   type ImportAdjustment,
   type LegacyBrief,
@@ -67,6 +71,10 @@ export interface LifeView extends LifeMeta {
   education: EducationView;
   /** Stage 02.2: работа, ступень, стаж, жалованье и покой */
   career: CareerView;
+  /** Stage 02.3: жильё, дом, расходы и домашние */
+  household: HouseholdView;
+  /** Stage 02.3: свои дела, капитал, доход и убытки */
+  business: BusinessView;
   pendingEvent: EventView | null;
   /** Stage 02: биография, семья и люди вокруг, шкалы мира, задание Системы. Скрытое — только после раскрытия */
   profile: LifeProfile;
@@ -225,6 +233,8 @@ export function toLifeView(meta: LifeMeta, state: GameState): LifeView {
     health: presentHealth(state),
     education: presentEducation(state, universe),
     career: presentCareer(state, universe),
+    household: presentHousehold(state),
+    business: presentBusiness(state),
     pendingEvent: presentEvent(state),
     profile: presentProfile(state),
     legacy: presentLegacy(state),

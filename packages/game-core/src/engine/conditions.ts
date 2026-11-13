@@ -13,6 +13,8 @@ import { settlementSeeds } from "../world/state.js";
 import { findRelic } from "../legacy/stories.js";
 import { findHealthCondition } from "../life/health.js";
 import { employmentStatus, EMPLOYMENT_STATUS_NAMES, promotionReady, retirementDue } from "../life/careers.js";
+import { findProperty, RESIDENCE_NAMES } from "../life/household.js";
+import { findBusiness } from "../life/business.js";
 import { STRAIN_PRESSURE } from "../economy/region.js";
 import { getStoryProgress } from "./effects.js";
 import type { GameState } from "../types.js";
@@ -129,6 +131,24 @@ export function checkCondition(state: GameState, condition: Condition): boolean 
       return promotionReady(state);
     case "retirementDue":
       return retirementDue(state);
+    case "housing":
+      return condition.kinds.includes(state.household?.residence ?? "homeless");
+    case "home":
+      return state.household?.residence === "own" && state.household.homeId === condition.id;
+    case "propertyCondition":
+      return inRange(state.household?.residence === "own" ? state.household.condition : 0, undefined, condition.max);
+    case "business": {
+      const ventures = state.business?.ventures ?? [];
+      if (condition.id === undefined) return (ventures.length > 0) === condition.has;
+      return ventures.some((venture) => venture.id === condition.id) === condition.has;
+    }
+    case "businessCount":
+      return inRange(state.business?.ventures.length ?? 0, condition.min, condition.max);
+    case "businessLosses": {
+      const ventures = state.business?.ventures ?? [];
+      const losses = condition.id === undefined ? ventures.reduce((max, venture) => Math.max(max, venture.losses), 0) : ventures.find((venture) => venture.id === condition.id)?.losses ?? 0;
+      return losses >= condition.min;
+    }
     case "generation":
       return inRange(state.lineage.generation, condition.min, condition.max);
     case "renown":
@@ -329,6 +349,30 @@ export function describeCondition(condition: Condition, universe: UniverseDefini
       return t("Повышение ещё не заслужено", "A promotion has not been earned yet");
     case "retirementDue":
       return t("Ещё рано на покой", "Too early to retire");
+    case "housing": {
+      const names = condition.kinds.map((kind) => RESIDENCE_NAMES[kind]);
+      return t(`Жильё: ${names.map((name) => name.ru).join(" или ")}`, `Housing: ${names.map((name) => name.en).join(" or ")}`);
+    }
+    case "home": {
+      const property = findProperty(universe.id, condition.id);
+      return t(`Нужен дом: ${property?.name.ru ?? condition.id}`, `Requires the home: ${property?.name.en ?? condition.id}`);
+    }
+    case "propertyCondition":
+      return t(`Дом в состоянии не выше ${condition.max}`, `The house condition must be at most ${condition.max}`);
+    case "business": {
+      if (condition.id !== undefined) {
+        const business = findBusiness(universe.id, condition.id);
+        const name = business?.name ?? t(condition.id, condition.id);
+        return condition.has ? t(`Нужно дело: ${name.ru}`, `Requires the business: ${name.en}`) : t(`Без дела: ${name.ru}`, `Without the business: ${name.en}`);
+      }
+      return condition.has ? t("Нужно своё дело", "Requires a business of your own") : t("Своё дело уже есть", "A business already exists");
+    }
+    case "businessCount":
+      return t(`Своих дел: ${rangeText(condition.min, condition.max).ru}`, `Businesses: ${rangeText(condition.min, condition.max).en}`);
+    case "businessLosses":
+      return condition.id !== undefined
+        ? t(`Убытки дела не меньше ${condition.min} лет`, `The business must have at least ${condition.min} loss years`)
+        : t(`Убытки не меньше ${condition.min} лет`, `At least ${condition.min} loss years`);
     case "generation":
       return t("Не то поколение рода", "Not this generation of the family");
     case "renown":

@@ -588,6 +588,54 @@ export interface CareerState {
   retired: boolean;
 }
 
+/** Stage 02.3: вид жилья. homeless — своего жилья нет: персонаж живёт при родне или без крова */
+export const RESIDENCE_KINDS = ["homeless", "rent", "own"] as const;
+export type ResidenceKind = (typeof RESIDENCE_KINDS)[number];
+
+/**
+ * Stage 02.3: одно жильё персонажа. Дом берётся из каталога мира (life/household.ts):
+ * в сохранении лежит id, а качество, вместимость, аренда и содержание считаются по каталогу.
+ * condition — состояние собственного дома 0–100; у аренды и бездомности всегда 0.
+ */
+export interface HouseholdState {
+  residence: ResidenceKind;
+  /** id дома из каталога мира. null — своего жилья нет */
+  homeId: string | null;
+  /** Возраст, с которого персонаж живёт так */
+  since: number;
+  /** Состояние собственного дома 0–100. 0 — не дом или дом разрушен */
+  condition: number;
+  /** Сколько лет подряд не хватило денег на жильё */
+  arrears: number;
+}
+
+/**
+ * Stage 02.3: своё дело. Капитал — оборотные средства дела, а не второе золото:
+ * он не тратится на жизнь и не может уйти ниже нуля. Золото игрока меняет только
+ * годовая статья хозяйства и разовые сделки.
+ */
+export interface BusinessVenture {
+  /** id дела из каталога мира (life/business.ts) */
+  id: string;
+  /** Возраст, когда дело открыто или куплено */
+  foundedAge: number;
+  /** Ступень роста 0–2 */
+  level: number;
+  /** Оборотный капитал дела 0..WEALTH_MAX */
+  capital: number;
+  /** Сколько лет дело работает */
+  years: number;
+  /** Сколько лет подряд дело в убытке */
+  losses: number;
+  /** Итог последнего года. null — дело ещё не прожило года */
+  lastNet: number | null;
+}
+
+export interface BusinessState {
+  /** Свои дела, не больше MAX_BUSINESSES (life/business.ts) */
+  ventures: BusinessVenture[];
+}
+
 /** Режим продвижения жизни. Настройка хранится в сохранении, но сам цикл запускает интерфейс. */
 export const AUTO_MODES = ["manual", "auto", "milestones"] as const;
 export type AutoMode = (typeof AUTO_MODES)[number];
@@ -632,6 +680,10 @@ export const CHANGE_KINDS = [
   "education",
   "specialization",
   "career",
+  /** Stage 02.3: жильё, дом и дело */
+  "housing",
+  "property",
+  "business",
   "hidden",
   "renown",
   "achievement",
@@ -721,6 +773,10 @@ export interface GameState {
   education: EducationState;
   /** Stage 02.2: карьера: ступень, стаж, занятость и покой */
   career: CareerState;
+  /** Stage 02.3: жильё, собственный дом и домашние */
+  household: HouseholdState;
+  /** Stage 02.3: свои дела: капитал, рост, убытки и закрытие */
+  business: BusinessState;
   flags: string[];
   /** Сколько раз произошло событие */
   occurrences: Record<string, number>;
@@ -768,8 +824,28 @@ export interface GameState {
 export const ECONOMY_CYCLES = ["slump", "normal", "boom"] as const;
 export type EconomyCycle = (typeof ECONOMY_CYCLES)[number];
 
-/** Статьи доходов и расходов года. wage и tuition — Stage 02.2: жалованье и плата за обучение */
-export const ECONOMY_LINES = ["profession", "guild", "trade", "class", "thrift", "world", "cycle", "wage", "tax", "living", "tuition"] as const;
+/**
+ * Статьи доходов и расходов года. wage и tuition — Stage 02.2: жалованье и плата за обучение.
+ * rent, upkeep, propertyTax, business и businessCosts — Stage 02.3: жильё и своё дело
+ */
+export const ECONOMY_LINES = [
+  "profession",
+  "guild",
+  "trade",
+  "class",
+  "thrift",
+  "world",
+  "cycle",
+  "wage",
+  "business",
+  "tax",
+  "living",
+  "tuition",
+  "rent",
+  "upkeep",
+  "propertyTax",
+  "businessCosts"
+] as const;
 export type EconomyLineId = (typeof ECONOMY_LINES)[number];
 
 export interface EconomyLine {

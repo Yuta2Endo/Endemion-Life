@@ -266,7 +266,7 @@ describe("Stage 02.2: карьера", () => {
 });
 
 describe("Stage 02.2: совместимость, детерминизм и границы", () => {
-  it("перевод 9 → 10 сохраняет seed, rngState, диплом и выводит карьеру из профессии", () => {
+  it("перевод 9 → 11 сохраняет seed, rngState, диплом и выводит карьеру из профессии", () => {
     for (const [key, raw] of Object.entries(SAVES_V9)) {
       const before = deepClone(raw) as Record<string, unknown>;
       const migrated = migrateSave(deepClone(raw)) as unknown as GameState;
@@ -282,6 +282,8 @@ describe("Stage 02.2: совместимость, детерминизм и гр
       const original = deepClone(raw) as Record<string, unknown>;
       delete rest.education;
       delete rest.career;
+      delete rest.household;
+      delete rest.business;
       delete rest.schemaVersion;
       delete original.schemaVersion;
       expect(rest, key).toEqual(original);
@@ -294,7 +296,7 @@ describe("Stage 02.2: совместимость, детерминизм и гр
     expect(employed.career.rank).toBe(0);
   });
 
-  it("старые сохранения 1, 2, 5 и 8 доходят до 10 без потери данных", () => {
+  it("старые сохранения 1, 2, 5 и 8 доходят до 11 без потери данных", () => {
     const schema5 = deepClone(SAVES_V4["dark-fantasy-adult"]!) as Record<string, unknown>;
     schema5.schemaVersion = 5;
     (schema5.economy as Record<string, unknown>).goods = {};

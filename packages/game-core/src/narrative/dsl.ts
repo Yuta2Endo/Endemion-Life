@@ -78,7 +78,25 @@ export const fx = {
   /** Stage 02.2: выйти на покой */
   retireCareer: (): Effect => ({ type: "retireCareer" }),
   /** Stage 02.2: выходное пособие в годовых жалованьях */
-  severance: (years: number): Effect => ({ type: "severance", years })
+  severance: (years: number): Effect => ({ type: "severance", years }),
+  /** Stage 02.3: снять дом */
+  rentHome: (id: string): Effect => ({ type: "rentHome", id }),
+  /** Stage 02.3: купить дом */
+  buyProperty: (id: string): Effect => ({ type: "buyProperty", id }),
+  /** Stage 02.3: продать собственный дом */
+  sellProperty: (id?: string): Effect => ({ type: "sellProperty", ...(id === undefined ? {} : { id }) }),
+  /** Stage 02.3: починить дом */
+  repairProperty: (): Effect => ({ type: "repairProperty" }),
+  /** Stage 02.3: запустить дом */
+  neglectHome: (amount: number): Effect => ({ type: "neglectHome", amount }),
+  /** Stage 02.3: открыть дело */
+  startBusiness: (id: string): Effect => ({ type: "startBusiness", id }),
+  /** Stage 02.3: вложить в дело */
+  investBusiness: (id: string, amount: number): Effect => ({ type: "investBusiness", id, amount }),
+  /** Stage 02.3: продать дело */
+  sellBusiness: (id?: string): Effect => ({ type: "sellBusiness", ...(id === undefined ? {} : { id }) }),
+  /** Stage 02.3: закрыть дело */
+  closeBusiness: (id?: string): Effect => ({ type: "closeBusiness", ...(id === undefined ? {} : { id }) })
 };
 
 export const when = {
@@ -163,6 +181,18 @@ export const when = {
   promotionReady: (): Condition => ({ type: "promotionReady" }),
   /** Stage 02.2: пора на покой */
   retirementDue: (): Condition => ({ type: "retirementDue" }),
+  /** Stage 02.3: вид жилья */
+  housing: (...kinds: ("homeless" | "rent" | "own")[]): Condition => ({ type: "housing", kinds }),
+  /** Stage 02.3: персонаж владеет именно этим домом */
+  home: (id: string): Condition => ({ type: "home", id }),
+  /** Stage 02.3: состояние собственного дома не выше max */
+  propertyCondition: (max: number): Condition => ({ type: "propertyCondition", max }),
+  /** Stage 02.3: есть ли своё дело (или именно это) */
+  business: (has = true, id?: string): Condition => ({ type: "business", has, ...(id === undefined ? {} : { id }) }),
+  /** Stage 02.3: сколько своих дел открыто */
+  businessCount: (min?: number, max?: number): Condition => ({ type: "businessCount", ...(min === undefined ? {} : { min }), ...(max === undefined ? {} : { max }) }),
+  /** Stage 02.3: убыточных лет подряд не меньше min */
+  businessLosses: (min: number, id?: string): Condition => ({ type: "businessLosses", min, ...(id === undefined ? {} : { id }) }),
   affinityAtMost: (role: NpcRef, max: number): Condition => ({ type: "affinity", role, max }),
   meter: (id: string, min: number): Condition => ({ type: "meter", id, min }),
   meterAtMost: (id: string, max: number): Condition => ({ type: "meter", id, max }),

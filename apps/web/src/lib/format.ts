@@ -1,10 +1,12 @@
 // Подписи для изменений персонажа в истории и итогах выбора
 import {
   findAchievement,
+  findBusiness,
   findCareerTrack,
   findEducation,
   findGood,
   findProfession,
+  findProperty,
   findSkill,
   findTalent,
   findWeakness,
@@ -123,6 +125,31 @@ export function formatChange(change: HistoryChange, universeId: UniverseId, loca
     case "specialization": {
       const specialization = universe.specializations.find((x) => x.id === change.value);
       return specialization ? { text: msg(locale, "change.specialization", { name: specialization.name[locale] }), tone: "gold" } : null;
+    }
+    case "housing": {
+      const name = change.key ? (findProperty(universeId, change.key)?.name[locale] ?? change.key) : "";
+      if (change.value === "rented") return { text: msg(locale, "change.housingRented", { name }), tone: "gold" };
+      if (change.value === "evicted") return { text: msg(locale, "change.housingEvicted", { name }), tone: "bad" };
+      return null;
+    }
+    case "property": {
+      const name = change.key ? (findProperty(universeId, change.key)?.name[locale] ?? change.key) : "";
+      if (change.value === "bought") return { text: msg(locale, "change.propertyBought", { name }), tone: "gold" };
+      if (change.value === "sold") return { text: msg(locale, "change.propertySold", { name }), tone: "good" };
+      if (change.value === "lost") return { text: msg(locale, "change.propertyLost", { name }), tone: "bad" };
+      if (change.value === "repaired") return { text: msg(locale, "change.propertyRepaired", { name }), tone: "good" };
+      if (change.value === "damaged") return { text: msg(locale, "change.propertyDamaged", { name }), tone: "bad" };
+      return null;
+    }
+    case "business": {
+      const name = change.key ? (findBusiness(universeId, change.key)?.name[locale] ?? change.key) : "";
+      if (change.value === "opened") return { text: msg(locale, "change.businessOpened", { name }), tone: "gold" };
+      if (change.value === "grew") return { text: msg(locale, "change.businessGrew", { name }), tone: "good" };
+      if (change.value === "invested") return { text: msg(locale, "change.businessInvested", { name }), tone: "neutral" };
+      if (change.value === "sold") return { text: msg(locale, "change.businessSold", { name }), tone: "good" };
+      if (change.value === "closed") return { text: msg(locale, "change.businessClosed", { name }), tone: "neutral" };
+      if (change.value === "failed") return { text: msg(locale, "change.businessFailed", { name }), tone: "bad" };
+      return null;
     }
     case "hidden": {
       const key = change.value === "potential" || change.value === "destiny" || change.value === "familySecret" ? change.value : null;

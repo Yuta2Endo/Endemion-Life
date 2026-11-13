@@ -86,7 +86,11 @@ function heirWithMemory(): GameState {
   const dead = markAncestorAid(deepClone(deadWithHeir()));
   const heir = heirCandidates(dead).find((candidate) => candidate.available)!;
   const { state } = succeed(dead, heir.npc.id, "s453-memory-salt");
+  // Тест искусственно возвращает возраст назад: служебные даты не должны оказаться в будущем
   state.life.age = 20;
+  state.career.since = Math.min(state.career.since, 20);
+  state.career.tenure = Math.min(state.career.tenure, 20);
+  state.household.since = Math.min(state.household.since, 20);
   return state;
 }
 
@@ -266,7 +270,7 @@ describe("Stage 04.5.3: сохранение, детерминизм и регр
 
     const restored = parseSave(deepClone(after));
 
-    expect(restored.schemaVersion).toBe(10);
+    expect(restored.schemaVersion).toBe(11);
     expect(getStoryProgress(restored, MEMORY, "lineage")).toEqual(getStoryProgress(after, MEMORY, "lineage"));
     expect(restored.lineage.stories[FOLLOWUP]).toBe(1);
     restored.life.age = 20;

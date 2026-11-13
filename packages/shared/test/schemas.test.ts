@@ -89,6 +89,28 @@ describe("контракты API", () => {
     expect(retired.career.wage).toBe(0);
   });
 
+  it("представление жизни Stage 02.3: жильё, дом и своё дело видны", () => {
+    const meta = { id: "id", createdAt: "", updatedAt: "" };
+    const { state } = newGame({ seed: "estate-view", universeId: "dark-fantasy" });
+    state.life.age = 30;
+    state.character.wealth = 200;
+    state.household = { residence: "own", homeId: "df-home-small", since: 20, condition: 90, arrears: 0 };
+    state.business.ventures.push({ id: "df-business-stall", foundedAge: 20, level: 1, capital: 20, years: 3, losses: 0, lastNet: 5 });
+    const view = toLifeView(meta, state);
+    expect(view.household.residence).toBe("own");
+    expect(view.household.home?.name.ru).toContain("Угол");
+    expect(view.household.condition).toBe(90);
+    expect(view.household.rent).toBe(0);
+    expect(view.household.upkeep).toBeGreaterThan(0);
+    expect(view.household.tax).toBeGreaterThan(0);
+    expect(view.business.ventures).toHaveLength(1);
+    expect(view.business.ventures[0]!.name.en).toContain("Chandler");
+    expect(view.business.ventures[0]!.revenue).toBeGreaterThan(0);
+    expect(view.business.ventures[0]!.costs).toBeGreaterThan(0);
+    expect(view.business.ventures[0]!.net).toBeGreaterThan(0);
+    expect(JSON.stringify(view)).not.toMatch(/"(seed|rngState)"/);
+  });
+
   it("история: limit по умолчанию и ограничение сверху", () => {
     expect(historyQuerySchema.parse({})).toEqual({ limit: 50 });
     expect(historyQuerySchema.safeParse({ limit: "1000" }).success).toBe(false);

@@ -18,6 +18,8 @@ import { masteryYearly, newMastery } from "../endgame/mastery.js";
 import { newEconomy } from "../economy/economy.js";
 import { newEducationState, normalizeEducationState } from "../life/education.js";
 import { newCareerState, normalizeCareerState } from "../life/careers.js";
+import { newHouseholdState, normalizeHouseholdState } from "../life/household.js";
+import { newBusinessState, normalizeBusinessState } from "../life/business.js";
 import { newRegion } from "../economy/region.js";
 import { trade } from "../economy/market.js";
 import { newLineage } from "../legacy/chronicle.js";
@@ -57,9 +59,10 @@ import { applyEffects, isFatal, kill } from "./effects.js";
  * 7 — Stage 06: край этой жизни (region) — склад товаров, напряжение, благополучие;
  * 8 — Stage 10: освоение мира и мастерство навыков (mastery). Наград не даёт;
  * 9 — Stage 02.1: длительное здоровье, болезни и раны (health);
- * 10 — Stage 02.2: обучение (education) и карьера (career)
+ * 10 — Stage 02.2: обучение (education) и карьера (career);
+ * 11 — Stage 02.3: жильё, дом и своё дело (household, business)
  */
-export const SAVE_SCHEMA_VERSION = 10;
+export const SAVE_SCHEMA_VERSION = 11;
 export const SEED_MAX_LENGTH = 64;
 
 const YEAR_TEXTS: readonly LocalizedText[] = [
@@ -148,6 +151,8 @@ export function newGame(input: NewGameInput): ActionResult {
     health: newHealthState(),
     education: newEducationState(),
     career: newCareerState(),
+    household: newHouseholdState(),
+    business: newBusinessState(),
     flags,
     occurrences: {},
     lastSeen: {},
@@ -372,6 +377,8 @@ export function restoreState(snapshot: GameState, currentVersion: number): Actio
   // Stage 02.2: обучение и карьера нормализуются на границе, как и здоровье
   state.education = normalizeEducationState(state, getUniverse(state.character.universeId));
   state.career = normalizeCareerState(state);
+  state.household = normalizeHouseholdState(state);
+  state.business = normalizeBusinessState(state);
   state.version = currentVersion + 1;
   state.rngState = hashSeed(`${snapshot.seed}::restore::${snapshot.rngState}::${state.version}`);
   const age = ageText(state.life.age);
@@ -406,6 +413,8 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
   const universe = getUniverse(state.character.universeId);
   state.education = normalizeEducationState(state, universe);
   state.career = normalizeCareerState(state);
+  state.household = normalizeHouseholdState(state);
+  state.business = normalizeBusinessState(state);
   state.world = normalizeWorldState(state.world, universe);
   normalizeSocialState(state);
   const rng = new Rng(state.rngState);

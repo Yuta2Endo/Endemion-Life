@@ -108,7 +108,20 @@ export type Condition =
   /** Stage 02.2: на нынешней ступени отработано достаточно для повышения */
   | { type: "promotionReady" }
   /** Stage 02.2: возраст дошёл до пенсионного для нынешней профессии */
-  | { type: "retirementDue" };
+  | { type: "retirementDue" }
+  // Stage 02.3: жильё, дом и своё дело
+  /** Вид жилья: без своего, аренда или собственность */
+  | { type: "housing"; kinds: ("homeless" | "rent" | "own")[] }
+  /** Персонаж владеет именно этим домом */
+  | { type: "home"; id: string }
+  /** Состояние собственного дома не выше max */
+  | { type: "propertyCondition"; max: number }
+  /** Есть ли своё дело (или именно это дело) */
+  | { type: "business"; has: boolean; id?: string }
+  /** Сколько своих дел сейчас открыто */
+  | { type: "businessCount"; min?: number; max?: number }
+  /** Убыточных лет подряд у дела (или у самого убыточного дела) не меньше min */
+  | { type: "businessLosses"; min: number; id?: string };
 
 /** Последствие выбора */
 export type Effect =
@@ -199,7 +212,26 @@ export type Effect =
   /** Stage 02.2: выйти на покой */
   | { type: "retireCareer" }
   /** Stage 02.2: выходное пособие в годовых жалованьях. Считается по текущей работе */
-  | { type: "severance"; years: number };
+  | { type: "severance"; years: number }
+  // Stage 02.3: жильё, дом и своё дело
+  /** Снять дом из каталога мира. Недоступный дом — тихий no-op */
+  | { type: "rentHome"; id: string }
+  /** Купить дом: цена списывается один раз, состояние становится собственным */
+  | { type: "buyProperty"; id: string }
+  /** Продать собственный дом. id не задан — продать нынешний */
+  | { type: "sellProperty"; id?: string }
+  /** Починить собственный дом: цена берётся из каталога */
+  | { type: "repairProperty" }
+  /** Запустить дом: состояние падает без ремонта */
+  | { type: "neglectHome"; amount: number }
+  /** Открыть или купить дело из каталога мира */
+  | { type: "startBusiness"; id: string }
+  /** Вложить золото в капитал дела */
+  | { type: "investBusiness"; id: string; amount: number }
+  /** Продать дело: возвращает часть капитала */
+  | { type: "sellBusiness"; id?: string }
+  /** Закрыть дело без выручки */
+  | { type: "closeBusiness"; id?: string };
 
 export interface StatCheck {
   /** Берётся среднее по этим характеристикам (с бонусом ранга) */

@@ -101,6 +101,11 @@ export function prepareImport(raw: unknown, salt: string): ImportResult {
   const inheritance = state.lineage.inheritance;
   if (inheritance) inheritance.held = clampField(adjustments, "lineage.inheritance.held", inheritance.held, importWealthCap(state));
   for (const npc of state.npcs) npc.wealth = clampField(adjustments, `npc.${npc.id}.wealth`, npc.wealth, NPC_WEALTH_MAX);
+  // Stage 02.3: капитал дела — не второе золото, но продажа возвращает его в кошелёк.
+  // Поэтому перенос из браузера режет и его по тому же пределу, что и золото
+  for (const venture of state.business.ventures) {
+    venture.capital = clampField(adjustments, `business.${venture.id}.capital`, venture.capital, importWealthCap(state));
+  }
 
   // Событие, которого нет в игре, не может ждать ответа: иначе жизнь застрянет
   if (state.pending && !findEvent(universe, state.pending.eventId)) state.pending = null;

@@ -6,6 +6,8 @@ import { t, type LocalizedText } from "../i18n.js";
 import { addHealthCondition, cureHealthCondition, normalizeHealthState } from "../life/health.js";
 import { clearEducation, enrollEducation } from "../life/education.js";
 import { careerWage, loseCareer, promoteCareer, retireCareer, startCareer } from "../life/careers.js";
+import { findProperty, homeOf, leaveHome, neglectHome, ownHome, repairCost, repairHome, rentHome, saleValue } from "../life/household.js";
+import { addBusiness, businessSaleValue, findBusiness, findVenture, investInBusiness, removeBusiness } from "../life/business.js";
 import { lineageYear } from "../legacy/chronicle.js";
 import type { Effect, NpcRef } from "../narrative/types.js";
 import { findEducation, findProfession, findSkill, SKILL_MAX } from "../rpg/skills.js";
@@ -580,7 +582,99 @@ export function applyEffect(ctx: EngineContext, effect: Effect): void {
       if (amount > 0) applyEffect(ctx, { type: "wealth", delta: amount });
       return;
     }
+    case "rentHome":
+      return rentHomeEffect(ctx, effect.id);
+    case "buyProperty":
+      return buyPropertyEffect(ctx, effect.id);
+    case "sellProperty":
+      return sellPropertyEffect(ctx, effect.id);
+    case "repairProperty":
+      return repairPropertyEffect(ctx);
+    case "neglectHome":
+      return neglectHomeEffect(ctx, effect.amount);
+    case "startBusiness":
+      return startBusinessEffect(ctx, effect.id);
+    case "investBusiness":
+      return investBusinessEffect(ctx, effect.id, effect.amount);
+    case "sellBusiness":
+      return sellBusinessEffect(ctx, effect.id);
+    case "closeBusiness":
+      return closeBusinessEffect(ctx, effect.id);
   }
+}
+
+function rentHomeEffect(ctx: EngineContext, id: string): void {
+  const def = findProperty(ctx.state.character.universeId, id);
+  if (!def || def.rent <= 0) return;
+  if (!rentHome(ctx.state, id)) return;
+  record(ctx, { kind: "housing", key: id, value: "rented" });
+}
+
+function buyPropertyEffect(ctx: EngineContext, id: string): void {
+  const def = findProperty(ctx.state.character.universeId, id);
+  if (!def || ctx.state.character.wealth < def.price) return;
+  if (!ownHome(ctx.state, id)) return;
+  applyEffect(ctx, { type: "wealth", delta: -def.price });
+  record(ctx, { kind: "property", key: id, value: "bought" });
+}
+
+function sellPropertyEffect(ctx: EngineContext, id?: string): void {
+  if (ctx.state.household.residence !== "own") return;
+  const def = homeOf(ctx.state);
+  if (!def || (id !== undefined && def.id !== id)) return;
+  const value = saleValue(ctx.state);
+  leaveHome(ctx.state);
+  if (value > 0) applyEffect(ctx, { type: "wealth", delta: value });
+  record(ctx, { kind: "property", key: def.id, value: "sold" });
+}
+
+function repairPropertyEffect(ctx: EngineContext): void {
+  const def = homeOf(ctx.state);
+  if (!def) return;
+  const cost = repairCost(ctx.state);
+  if (ctx.state.character.wealth < cost) return;
+  if (!repairHome(ctx.state)) return;
+  applyEffect(ctx, { type: "wealth", delta: -cost });
+  record(ctx, { kind: "property", key: def.id, value: "repaired" });
+}
+
+function neglectHomeEffect(ctx: EngineContext, amount: number): void {
+  const def = homeOf(ctx.state);
+  if (!def) return;
+  if (!neglectHome(ctx.state, amount)) return;
+  record(ctx, { kind: "property", key: def.id, value: "damaged" });
+}
+
+function startBusinessEffect(ctx: EngineContext, id: string): void {
+  const def = findBusiness(ctx.state.character.universeId, id);
+  if (!def || ctx.state.character.wealth < def.cost) return;
+  if (!addBusiness(ctx.state, id)) return;
+  applyEffect(ctx, { type: "wealth", delta: -def.cost });
+  record(ctx, { kind: "business", key: id, value: "opened" });
+}
+
+function investBusinessEffect(ctx: EngineContext, id: string, amount: number): void {
+  const venture = findVenture(ctx.state, id);
+  const value = Math.max(0, Math.round(amount));
+  if (!venture || value <= 0 || ctx.state.character.wealth < value) return;
+  if (!investInBusiness(ctx.state, id, value)) return;
+  applyEffect(ctx, { type: "wealth", delta: -value });
+  record(ctx, { kind: "business", key: id, value: "invested" });
+}
+
+function sellBusinessEffect(ctx: EngineContext, id?: string): void {
+  const venture = findVenture(ctx.state, id);
+  if (!venture) return;
+  const value = businessSaleValue(ctx.state, venture);
+  if (!removeBusiness(ctx.state, venture.id)) return;
+  if (value > 0) applyEffect(ctx, { type: "wealth", delta: value });
+  record(ctx, { kind: "business", key: venture.id, value: "sold" });
+}
+
+function closeBusinessEffect(ctx: EngineContext, id?: string): void {
+  const venture = findVenture(ctx.state, id);
+  if (!venture || !removeBusiness(ctx.state, venture.id)) return;
+  record(ctx, { kind: "business", key: venture.id, value: "closed" });
 }
 
 export function applyRelic(ctx: EngineContext, effect: { type: "relic"; id: string }): void {

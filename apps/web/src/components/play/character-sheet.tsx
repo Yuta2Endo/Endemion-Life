@@ -63,6 +63,12 @@ export function CharacterSheet({ life }: { life: LifeView }) {
         {life.career.profession ? l(life.career.profession) : t("career.noJob")}
         {life.career.profession ? ` (${l(life.career.statusName)})` : ""}
       </p>
+      <p className="-mt-3 text-xs text-bone-400" data-testid="sheet-estate">
+        {t("sheet.estate", {
+          home: life.household.home ? l(life.household.home.name) : l(life.household.residenceName),
+          business: life.business.ventures.length > 0 ? life.business.ventures.map((venture) => l(venture.name)).join(", ") : t("estate.noBusinessShort")
+        })}
+      </p>
 
       <div className="space-y-3">
         <Meter label={l({ ru: "Здоровье", en: "Health" })} value={c.resources.health} max={s.maxResources.health} tone="blood" />

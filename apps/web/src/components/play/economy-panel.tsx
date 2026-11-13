@@ -5,6 +5,7 @@ import type { LifeView } from "@endemion/shared";
 import { Meter, Ornament } from "@endemion/ui";
 import { ageLabel } from "@/lib/format";
 import { useI18n } from "../locale-provider";
+import { EstatePanel } from "./estate-panel";
 import { MarketPanel } from "./market-panel";
 
 const BAND = { low: "region.bandLow", enough: "region.bandEnough", high: "region.bandHigh" } as const;
@@ -116,6 +117,8 @@ export function EconomyPanel({ life, busy, onTrade }: { life: LifeView; busy: bo
           {l(profession.name)}
         </p>
       )}
+
+      <EstatePanel life={life} />
 
       {e.hardship > 0 && (
         <p className="rounded-md border border-blood-500/40 bg-blood-600/10 px-3 py-2 text-sm text-blood-200" role="status" data-testid="economy-hardship" data-years={e.hardship}>

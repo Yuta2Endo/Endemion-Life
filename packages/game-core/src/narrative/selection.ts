@@ -7,6 +7,8 @@ import { LINEAGE_CONSEQUENCES, THREADS } from "../legacy/stories.js";
 import { findHealthCondition } from "../life/health.js";
 import { findProfession, findSkill } from "../rpg/skills.js";
 import { findCareerTrack } from "../life/careers.js";
+import { findProperty } from "../life/household.js";
+import { findBusiness } from "../life/business.js";
 import { allTalents, allWeaknesses } from "../rpg/talents.js";
 import { STAT_KEYS } from "../stats.js";
 import { NPC_ROLES, UNIVERSE_IDS, type GameState, type LifeStage, type UniverseId } from "../types.js";
@@ -164,6 +166,12 @@ function brokenCondition(universe: UniverseDefinition, condition: Condition, eve
       return ROLES.has(condition.role) ? "" : `роль ${condition.role}`;
     case "condition":
       return findHealthCondition(condition.id) ? "" : `состояние ${condition.id}`;
+    case "home":
+      return findProperty(universe.id, condition.id) ? "" : `дом ${condition.id}`;
+    case "business":
+      return condition.id === undefined || findBusiness(universe.id, condition.id) ? "" : `дело ${condition.id}`;
+    case "businessLosses":
+      return condition.id === undefined || findBusiness(universe.id, condition.id) ? "" : `дело ${condition.id}`;
     default:
       return "";
   }
@@ -212,6 +220,20 @@ function brokenEffect(universe: UniverseDefinition, effect: Effect, events: Read
     case "condition":
     case "cure":
       return findHealthCondition(effect.id) ? "" : `состояние ${effect.id}`;
+    case "rentHome":
+    case "buyProperty":
+      return findProperty(universe.id, effect.id) ? "" : `дом ${effect.id}`;
+    case "sellProperty":
+      return effect.id === undefined || findProperty(universe.id, effect.id) ? "" : `дом ${effect.id}`;
+    case "repairProperty":
+    case "neglectHome":
+      return "";
+    case "startBusiness":
+    case "investBusiness":
+      return findBusiness(universe.id, effect.id) ? "" : `дело ${effect.id}`;
+    case "sellBusiness":
+    case "closeBusiness":
+      return effect.id === undefined || findBusiness(universe.id, effect.id) ? "" : `дело ${effect.id}`;
     default:
       return "";
   }

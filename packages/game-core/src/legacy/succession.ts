@@ -15,6 +15,8 @@ import { ageText, t, type LocalizedText } from "../i18n.js";
 import { newHealthState } from "../life/health.js";
 import { newEducationState } from "../life/education.js";
 import { findCareerTrack, maxCareerRank, newCareerState } from "../life/careers.js";
+import { newHouseholdState } from "../life/household.js";
+import { newBusinessState } from "../life/business.js";
 import { stageForAge } from "../life/stages.js";
 import { hashSeed, Rng } from "../rng.js";
 import { allTalents, allWeaknesses, findTalent, findWeakness } from "../rpg/talents.js";
@@ -341,6 +343,10 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
         retired: false
       };
     })(),
+    // Stage 02.3: наследник начинает со своим жильём и своими делами. Недвижимость предшественника
+    // оценивается в его наследство, а не переносится вторым списком поверх новой жизни
+    household: newHouseholdState(age),
+    business: newBusinessState(),
     flags: [...flags].sort(),
     occurrences: {},
     lastSeen: {},

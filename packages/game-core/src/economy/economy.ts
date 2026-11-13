@@ -10,6 +10,8 @@ import { hashSeed, Rng } from "../rng.js";
 import { findEducation, findProfession } from "../rpg/skills.js";
 import { careerWage, findCareerTrack } from "../life/careers.js";
 import { tuitionFor } from "../life/education.js";
+import { housingCosts, householdYear } from "../life/household.js";
+import { businessIncome, businessOperatingCosts, businessYear } from "../life/business.js";
 import { incomeFactor } from "../rpg/talents.js";
 import { clamp, type StatKey } from "../stats.js";
 import type { EconomyCycle, EconomyLine, EconomyLineId, EconomyState, EconomyYear, GameState } from "../types.js";
@@ -82,13 +84,16 @@ export function yearLines(state: GameState): EconomyLine[] {
   const fromTrade = !employed && !retired && fromProfession === 0 && fromGuild === 0 && state.flags.includes("profession") ? 2 + Math.floor(meanStat(stats, []) / 6) : 0;
   // Сословие кормит взрослых: рента знати, жалованье, подаяние
   const fromClass = state.life.age >= ADULT_AGE ? (universe.socialClasses.find((s) => s.id === c.socialClassId)?.income ?? 0) : 0;
-  const gross = fromProfession + fromWage + fromGuild + fromTrade + fromClass;
+  // Stage 02.3: доход своих дел входит в общий заработок и облагается налогом мира один раз
+  const fromBusiness = businessIncome(state);
+  const gross = fromProfession + fromWage + fromGuild + fromTrade + fromClass + fromBusiness;
   const afterThrift = Math.max(0, Math.round(gross * incomeFactor(universe, c)));
   add("profession", fromProfession);
   add("wage", fromWage);
   add("guild", fromGuild);
   add("trade", fromTrade);
   add("class", fromClass);
+  add("business", fromBusiness);
   add("thrift", afterThrift - gross);
   const fromWorld = world.worldIncome?.(state) ?? 0;
   add("world", fromWorld);
@@ -99,6 +104,11 @@ export function yearLines(state: GameState): EconomyLine[] {
   add("tax", -Math.floor((earned + cycle) * world.taxRate));
   add("living", -livingCost(state));
   add("tuition", -tuitionCost(state));
+  const housing = housingCosts(state);
+  add("rent", -housing.rent);
+  add("upkeep", -housing.upkeep);
+  add("propertyTax", -housing.tax);
+  add("businessCosts", -businessOperatingCosts(state));
   return lines;
 }
 
@@ -135,6 +145,9 @@ export function economyYear(ctx: EngineContext): void {
   const expenses = lines.filter((l) => l.amount < 0).reduce((sum, l) => sum - l.amount, 0);
   economy.last = { age: state.life.age, lines, shortfall };
   if (income > 0 || expenses > 0) economy.years = [...economy.years, { age: state.life.age, income, expenses, shortfall }].slice(-MAX_ECONOMY_YEARS);
+  // Stage 02.3: дом ветшает, дело живёт или закрывается. Оба видят уже посчитанную нехватку года
+  householdYear(ctx);
+  businessYear(ctx);
 }
 
 // ——— Представление для клиента ———
@@ -148,7 +161,12 @@ const LINE_NAMES: Readonly<Record<Exclude<EconomyLineId, "world" | "tax">, Local
   thrift: t("Мотовство", "Spendthrift ways"),
   cycle: t("Состояние хозяйства", "State of the economy"),
   living: t("Стоимость жизни", "Cost of living"),
-  tuition: t("Плата за обучение", "Tuition")
+  tuition: t("Плата за обучение", "Tuition"),
+  rent: t("Аренда жилья", "Housing rent"),
+  upkeep: t("Содержание дома", "Property upkeep"),
+  propertyTax: t("Налог на дом", "Property tax"),
+  business: t("Доход дела", "Business income"),
+  businessCosts: t("Расходы дела", "Business expenses")
 };
 
 export interface EconomyLineView {

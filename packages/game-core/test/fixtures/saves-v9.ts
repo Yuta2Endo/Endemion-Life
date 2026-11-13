@@ -8,6 +8,8 @@ function withoutCareer(seed: string, universeId: "dark-fantasy" | "murim" | "hun
   raw.schemaVersion = 9;
   delete raw.education;
   delete raw.career;
+  delete raw.household;
+  delete raw.business;
   return raw;
 }
 

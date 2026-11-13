@@ -7,6 +7,10 @@ function withoutHealth(seed: string, universeId: "dark-fantasy" | "murim"): Reco
   const raw = JSON.parse(JSON.stringify(state)) as Record<string, unknown>;
   raw.schemaVersion = 8;
   delete raw.health;
+  delete raw.education;
+  delete raw.career;
+  delete raw.household;
+  delete raw.business;
   return raw;
 }
 
