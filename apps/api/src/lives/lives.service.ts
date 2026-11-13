@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@endemion/database";
-import { applyAction, GameRuleError, newGame, parseSave, prepareImport, presentLineage, restoreState, succeed, type GameState, type HistoryEntry, type InsightFact, type LineageView } from "@endemion/game-core";
+import { applyAction, GameRuleError, newGame, parseSave, prepareImport, presentLineage, restoreState, SAVE_SCHEMA_VERSION, succeed, type GameState, type HistoryEntry, type InsightFact, type LineageView } from "@endemion/game-core";
 import {
   MAX_ALIVE_LIVES,
   lifeStatus,
@@ -329,7 +329,7 @@ export class LivesService {
       throw new ApiError(400, "INVALID_SAVE", "Возраст персонажа: целое число от 0 до 200");
     }
     const version = state.schemaVersion;
-    if (!Number.isInteger(version) || (version as number) < 1 || (version as number) > 8) {
+    if (!Number.isInteger(version) || (version as number) < 1 || (version as number) > SAVE_SCHEMA_VERSION) {
       throw new ApiError(400, "INVALID_SAVE", "Неподдерживаемая версия сохранения");
     }
     if (request.history.length > 2000) throw new ApiError(400, "INVALID_SAVE", "История больше 2000 записей");

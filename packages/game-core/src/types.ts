@@ -519,6 +519,40 @@ export interface LifeState {
   deathCause: LocalizedText | null;
 }
 
+/** Stage 02.1: вид длительного состояния здоровья */
+export const HEALTH_CONDITION_KINDS = ["illness", "injury", "wound", "curse"] as const;
+export type HealthConditionKind = (typeof HEALTH_CONDITION_KINDS)[number];
+
+/**
+ * Stage 02.1: активная болезнь или рана. Это снимок, а не ссылка на каталог: старые сохранения
+ * продолжают работать, даже если контент позже изменится
+ */
+export interface HealthCondition {
+  /** id из каталога life/health.ts */
+  id: string;
+  kind: HealthConditionKind;
+  /** Тяжесть 1–3. Растёт, когда состояние ухудшается */
+  severity: number;
+  /** Откуда пришло: id события, последствия или "age" */
+  source: string;
+  /** Возраст персонажа, когда состояние началось */
+  onsetAge: number;
+  /** Осталось лет до естественного выздоровления. 0 — хроническое состояние */
+  remaining: number;
+  /** Урон здоровью за год */
+  damage: number;
+  recoverable: boolean;
+  lethal: boolean;
+}
+
+/** Stage 02.1: длительное здоровье персонажа 0–100 и активные состояния */
+export interface HealthState {
+  value: number;
+  conditions: HealthCondition[];
+  /** Причина смерти, сохранённая в момент, когда здоровье достигло нуля */
+  deathCause: LocalizedText | null;
+}
+
 /** Режим продвижения жизни. Настройка хранится в сохранении, но сам цикл запускает интерфейс. */
 export const AUTO_MODES = ["manual", "auto", "milestones"] as const;
 export type AutoMode = (typeof AUTO_MODES)[number];
@@ -645,6 +679,8 @@ export interface GameState {
   version: number;
   character: CharacterState;
   life: LifeState;
+  /** Stage 02.1: длительное здоровье, болезни и причина смерти от них */
+  health: HealthState;
   flags: string[];
   /** Сколько раз произошло событие */
   occurrences: Record<string, number>;

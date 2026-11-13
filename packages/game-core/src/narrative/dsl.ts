@@ -58,6 +58,15 @@ export const fx = {
   recordStoryChoice: (id: string, eventId: string, choiceId: string, scope: StoryScope): Effect => ({ type: "recordStoryChoice", id, eventId, choiceId, scope }),
   /** Завершение сюжета */
   completeStory: (id: string, scope: StoryScope): Effect => ({ type: "completeStory", id, scope }),
+  /** Stage 02.1: болезнь или рана. severity и duration переопределяют каталог */
+  condition: (id: string, severity?: number, duration?: number): Effect => ({
+    type: "condition",
+    id,
+    ...(severity === undefined ? {} : { severity }),
+    ...(duration === undefined ? {} : { duration })
+  }),
+  /** Stage 02.1: лечение болезни или раны */
+  cure: (id: string): Effect => ({ type: "cure", id })
 };
 
 export const when = {
@@ -123,6 +132,11 @@ export const when = {
   storyChoice: (id: string, eventId: string, choiceId: string, scope: StoryScope): Condition => ({ type: "storyChoice", id, eventId, choiceId, scope }),
   /** Сюжет завершён в области действия */
   storyCompleted: (id: string, scope: StoryScope): Condition => ({ type: "storyCompleted", id, scope }),
+  /** Stage 02.1: длительное здоровье не ниже min */
+  health: (min: number, max?: number): Condition => ({ type: "health", min, ...(max === undefined ? {} : { max }) }),
+  /** Stage 02.1: активна ли болезнь или рана */
+  condition: (id: string): Condition => ({ type: "condition", id, has: true }),
+  noCondition: (id: string): Condition => ({ type: "condition", id, has: false }),
   affinityAtMost: (role: NpcRef, max: number): Condition => ({ type: "affinity", role, max }),
   meter: (id: string, min: number): Condition => ({ type: "meter", id, min }),
   meterAtMost: (id: string, max: number): Condition => ({ type: "meter", id, max }),

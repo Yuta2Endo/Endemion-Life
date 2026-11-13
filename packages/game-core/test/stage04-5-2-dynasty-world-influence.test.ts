@@ -316,7 +316,7 @@ describe("Stage 04.5.2: сохранение и наследование", () =>
 
     const restored = parseSave(deepClone(state));
 
-    expect(restored.schemaVersion).toBe(8);
+    expect(restored.schemaVersion).toBe(9);
     expect(restored.lineage.worldInfluence).toEqual(state.lineage.worldInfluence);
   });
 

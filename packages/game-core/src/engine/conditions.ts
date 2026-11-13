@@ -11,6 +11,7 @@ import { getUniverse } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import { settlementSeeds } from "../world/state.js";
 import { findRelic } from "../legacy/stories.js";
+import { findHealthCondition } from "../life/health.js";
 import { getStoryProgress } from "./effects.js";
 import type { GameState } from "../types.js";
 
@@ -106,6 +107,10 @@ export function checkCondition(state: GameState, condition: Condition): boolean 
       return state.quest !== null === condition.active;
     case "yearsLeft":
       return lifespanOf(c) - state.life.age <= condition.max;
+    case "health":
+      return inRange(state.health?.value ?? 100, condition.min, condition.max);
+    case "condition":
+      return (state.health?.conditions ?? []).some((item) => item.id === condition.id) === condition.has;
     case "generation":
       return inRange(state.lineage.generation, condition.min, condition.max);
     case "renown":
@@ -280,6 +285,12 @@ export function describeCondition(condition: Condition, universe: UniverseDefini
       return condition.active ? t("Нужно задание Системы", "Requires a System quest") : t("Задание уже идёт", "A quest is already active");
     case "yearsLeft":
       return t("Ещё не время", "Not yet time");
+    case "health":
+      return join(t("Здоровье жизни", "Life health"), rangeText(condition.min, condition.max));
+    case "condition": {
+      const name = findHealthCondition(condition.id)?.name ?? t(condition.id, condition.id);
+      return condition.has ? t(`Нужно состояние: ${name.ru}`, `Requires condition: ${name.en}`) : t(`Без состояния: ${name.ru}`, `Without condition: ${name.en}`);
+    }
     case "generation":
       return t("Не то поколение рода", "Not this generation of the family");
     case "renown":

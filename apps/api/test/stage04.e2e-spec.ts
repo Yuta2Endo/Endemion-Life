@@ -19,7 +19,11 @@ function agent() {
 }
 type Agent = ReturnType<typeof agent>;
 
-/** Жизнь, прожитая в браузере: то же ядро, что в локальном режиме сайта */
+/**
+ * Жизнь, прожитая в браузере: то же ядро, что в локальном режиме сайта.
+ * Смертельный год не применяется: тест переносит жизнь, чтобы продолжить ход, а мёртвая жизнь отвечает LIFE_ENDED.
+ * Поэтому снимок остаётся последним живым годом, а история — ровно тем, что успело произойти.
+ */
 function browserLife(seed: string, steps = 40): { state: GameState; history: HistoryEntry[] } {
   const born = newGame({ seed, universeId: "murim" });
   let state = born.state;
@@ -27,6 +31,7 @@ function browserLife(seed: string, steps = 40): { state: GameState; history: His
   for (let i = 0; i < steps && state.life.alive; i++) {
     const choice = presentEvent(state)?.choices.find((c) => c.available);
     const result = applyAction(state, state.pending && choice ? { type: "choose", choiceId: choice.id } : { type: "advance" });
+    if (!result.state.life.alive) break;
     state = result.state;
     history.push(...result.entries);
   }

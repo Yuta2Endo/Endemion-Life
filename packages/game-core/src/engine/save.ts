@@ -16,6 +16,7 @@ import { ADVENTURE_LOG_KINDS } from "../adventure/types.js";
 import { MAX_ECONOMY_YEARS, newEconomy } from "../economy/economy.js";
 import { MAX_REGION_LOG, newRegion, REGION_LOG_KINDS, STOCK_MAX } from "../economy/region.js";
 import { findGood, goodsOf, MAX_STOCK } from "../economy/market.js";
+import { HEALTH_MAX, MAX_CONDITION_DAMAGE, MAX_CONDITION_YEARS, MAX_HEALTH_CONDITIONS, healthValueFromResources, newHealthState } from "../life/health.js";
 import { RESOURCE_KEYS, STAT_KEYS, WEALTH_MAX } from "../stats.js";
 import { MAX_WORLD_INFLUENCE, MAX_WORLD_INFLUENCE_ENTRIES, settlementSeeds } from "../world/state.js";
 import type { UniverseDefinition } from "../universes/types.js";
@@ -23,6 +24,7 @@ import {
   CHRONICLE_KINDS,
   ECONOMY_CYCLES,
   ECONOMY_LINES,
+  HEALTH_CONDITION_KINDS,
   HIDDEN_KEYS,
   LIFE_STAGES,
   NPC_DEATH_CAUSES,
@@ -215,6 +217,27 @@ function migrateV7(save: Record<string, unknown>): Record<string, unknown> {
   return { ...save, mastery: newMastery() };
 }
 
+/**
+ * Формат 8 → 9 (Stage 02.1): длительное здоровье и болезни. Текущее здоровье — доля прежнего запаса сил,
+ * мёртвые получают ту же причину смерти. Пустые состояния не выдумываются, rngState не меняется
+ */
+function migrateV8(save: Record<string, unknown>): Record<string, unknown> {
+  const life = save.life;
+  const character = save.character;
+  const dead = isRecord(life) && life.alive === false;
+  let value = dead ? 0 : HEALTH_MAX;
+  if (!dead && isRecord(character)) {
+    try {
+      value = Math.max(1, healthValueFromResources(character as unknown as GameState["character"]));
+    } catch {
+      value = HEALTH_MAX;
+    }
+  }
+  const health = newHealthState(value);
+  if (dead && isRecord(life) && isText(life.deathCause)) health.deathCause = life.deathCause as GameState["life"]["deathCause"];
+  return { ...save, health };
+}
+
 /** Переходы между версиями формата: ключ — версия, из которой переводим. Новая версия формата добавляет сюда шаг */
 const MIGRATIONS: Readonly<Record<number, Migration>> = {
   1: migrateV1,
@@ -223,7 +246,8 @@ const MIGRATIONS: Readonly<Record<number, Migration>> = {
   4: migrateV4,
   5: migrateV5,
   6: migrateV6,
-  7: migrateV7
+  7: migrateV7,
+  8: migrateV8
 };
 
 function fail(reason: string): never {
@@ -473,6 +497,25 @@ function checkRegion(region: unknown, universeId: UniverseId): void {
   }
 }
 
+/** Stage 02.1: здоровье 0–100 и ограниченный список уникальных состояний с допустимыми числами */
+function checkHealth(health: unknown): void {
+  if (!isRecord(health)) fail("health");
+  if (!isInt(health.value, 0, HEALTH_MAX)) fail("health.value");
+  if (!(health.deathCause === null || isText(health.deathCause))) fail("health.deathCause");
+  if (!Array.isArray(health.conditions) || health.conditions.length > MAX_HEALTH_CONDITIONS) fail("health.conditions");
+  const ids = new Set<string>();
+  for (const condition of health.conditions) {
+    if (!isRecord(condition) || typeof condition.id !== "string" || condition.id.length === 0 || condition.id.length > 80) fail("health.condition.id");
+    if (ids.has(condition.id)) fail("health.condition.duplicate");
+    ids.add(condition.id);
+    if (!oneOf(HEALTH_CONDITION_KINDS, condition.kind)) fail("health.condition.kind");
+    if (!isInt(condition.severity, 1, 3) || !isInt(condition.onsetAge, 0) || !isInt(condition.remaining, 0, MAX_CONDITION_YEARS)) fail("health.condition.numbers");
+    if (!isInt(condition.damage, 1, MAX_CONDITION_DAMAGE)) fail("health.condition.damage");
+    if (typeof condition.source !== "string" || condition.source.length > 100) fail("health.condition.source");
+    if (typeof condition.recoverable !== "boolean" || typeof condition.lethal !== "boolean") fail("health.condition.flags");
+  }
+}
+
 /** Проверяет сохранение и возвращает состояние игры. Бросает INVALID_SAVE, если что-то не так */
 export function parseSave(raw: unknown): GameState {
   const save = migrateSave(raw);
@@ -504,6 +547,7 @@ export function parseSave(raw: unknown): GameState {
   if (!isIntRecord(c.factions, -100, 100)) fail("factions");
   if (!isNullableString(c.professionId) || !isNullableString(c.educationId) || !isNullableString(c.specializationId)) fail("profession");
   if (!isRecord(life) || !isInt(life.age, 0) || !LIFE_STAGES.includes(life.stage as never) || typeof life.alive !== "boolean") fail("life");
+  checkHealth(save.health);
   if (!isStringArray(save.flags)) fail("flags");
   if (save.autoMode !== undefined && !["manual", "auto", "milestones"].includes(save.autoMode as string)) fail("autoMode");
   if (save.milestones !== undefined && (!isRecord(save.milestones) || !isStringArray(save.milestones.triggered) || save.milestones.triggered.length > 100)) fail("milestones");

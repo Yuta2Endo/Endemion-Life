@@ -147,7 +147,7 @@ describe("Stage 10: сохранение и наследование", () => {
     const standing = factionStanding(state, "order-of-ash");
     const prosperity = state.world!.settlements[0]!.prosperity;
     const round = roundTrip(state);
-    expect(round.schemaVersion).toBe(8);
+    expect(round.schemaVersion).toBe(9);
     expect(factionStanding(round, "order-of-ash")).toBe(standing);
     expect(round.world!.settlements[0]!.prosperity).toBe(prosperity);
     expect(round.world!.activities.some((a) => a.id.startsWith("dynasty-favor."))).toBe(true);

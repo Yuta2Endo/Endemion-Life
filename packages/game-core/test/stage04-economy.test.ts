@@ -58,8 +58,10 @@ describe("Stage 04: перевод сохранений 3 → 4", () => {
     const raw = SAVES_V3[key] as GameState;
     const state = parseSave(deepClone(raw));
     expect(state.schemaVersion).toBe(SAVE_SCHEMA_VERSION);
-    // Цепочка 3 → 8: хозяйство, запас, пустое приключение, край и пустое мастерство
+    // Цепочка 3 → 9: хозяйство, запас, пустое приключение, край, мастерство и здоровье
     expect(state.economy).toEqual({ cycle: "normal", cycleSince: raw.life.age, hardship: 0, last: null, years: [], goods: {} });
+    expect(state.health.value).toBeGreaterThanOrEqual(0);
+    expect(state.health.conditions).toEqual([]);
     expect(state.adventure).toEqual({ discovered: [], active: null, done: [], failed: [], log: [] });
     expect(state.region.strain).toBe(0);
     expect(state.mastery).toEqual({ objectives: [], skills: [] });
@@ -70,6 +72,7 @@ describe("Stage 04: перевод сохранений 3 → 4", () => {
     delete rest.adventure;
     delete rest.region;
     delete rest.mastery;
+    delete rest.health;
     delete rest.schemaVersion;
     delete before.schemaVersion;
     expect(rest).toEqual(before);

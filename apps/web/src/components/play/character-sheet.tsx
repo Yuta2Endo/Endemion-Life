@@ -4,6 +4,7 @@ import { getUniverse, STAGE_INFO, STAT_INFO, STAT_KEYS, TEMPERAMENTS, xpForLevel
 import type { LifeView } from "@endemion/shared";
 import { Meter, Ornament, Panel } from "@endemion/ui";
 import { ageLabel } from "@/lib/format";
+import type { MessageKey } from "@/lib/messages";
 import { useI18n } from "../locale-provider";
 import { WorldEmblem } from "../world-emblem";
 
@@ -24,6 +25,7 @@ export function CharacterSheet({ life }: { life: LifeView }) {
   const socialClass = universe.socialClasses.find((x) => x.id === c.socialClassId);
   const ranks = universe.track.ranks;
   const currentThreshold = ranks[c.track.rank]?.threshold ?? 0;
+  const deathCause = life.health.deathCause ?? life.life.deathCause;
 
   return (
     <Panel className="space-y-5" data-testid="character-sheet">
@@ -58,6 +60,48 @@ export function CharacterSheet({ life }: { life: LifeView }) {
         <Meter label={l(universe.manaName)} value={c.resources.mana} max={s.maxResources.mana} tone="azure" />
         <Meter label={l({ ru: "Выносливость", en: "Stamina" })} value={c.resources.stamina} max={s.maxResources.stamina} tone="bone" />
         <Meter label={t("sheet.xp")} value={c.xp} max={xpForLevel(c.level)} tone="gold" />
+      </div>
+
+      <div className="rounded-md border border-line bg-ink-950/40 p-3" data-testid="health-panel">
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <h3 className="text-[10px] uppercase tracking-[0.2em] text-gold-400">{t("health.title")}</h3>
+          <span className="font-display text-lg tabular-nums text-bone-100" data-testid="health-value">
+            {life.health.value}
+            <span className="text-xs text-bone-500">/100</span>
+          </span>
+        </div>
+        <Meter
+          label={t("health.meter")}
+          value={life.health.value}
+          max={100}
+          tone={life.health.value <= 25 ? "blood" : life.health.value <= 50 ? "gold" : "jade"}
+        />
+        {life.health.conditions.length === 0 ? (
+          <p className="mt-2 text-xs text-bone-500">{t("health.noConditions")}</p>
+        ) : (
+          <ul className="mt-2 space-y-1.5" data-testid="health-conditions">
+            {life.health.conditions.map((condition) => (
+              <li key={condition.id} className="rounded border border-line/70 bg-ink-900/50 px-2 py-1.5" data-testid="health-condition" data-condition={condition.id}>
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="text-xs text-bone-100">{l(condition.name)}</span>
+                  <span className="text-[10px] uppercase tracking-wider text-bone-500">
+                    {t(`health.kind.${condition.kind}` as MessageKey)} · {t("health.severity", { n: condition.severity })}
+                  </span>
+                </div>
+                {condition.description.ru.trim() && <p className="mt-0.5 text-[11px] text-bone-400">{l(condition.description)}</p>}
+                <p className="mt-0.5 text-[10px] text-bone-500">
+                  {condition.remaining > 0 ? t("health.remaining", { n: condition.remaining }) : t("health.chronic")} · {t("health.damage", { n: condition.damage })}
+                  {condition.lethal ? ` · ${t("health.lethal")}` : ""}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+        {deathCause && (
+          <p className="mt-2 text-xs text-blood-300" data-testid="health-death-cause">
+            {t("health.cause")}: {l(deathCause)}
+          </p>
+        )}
       </div>
 
       <Ornament />

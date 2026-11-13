@@ -3,6 +3,7 @@ import { AFFINITY_LIMIT, canAddRole, createNpc, livingWith, shiftAffinity } from
 import { canParent, chronicle, logNpc, markDeath, returnHome, setMissing } from "../family/events.js";
 import { isKin, KinGraph, MIN_PARENT_AGE, selfSpouse } from "../family/kin.js";
 import { t, type LocalizedText } from "../i18n.js";
+import { addHealthCondition, cureHealthCondition, normalizeHealthState } from "../life/health.js";
 import { lineageYear } from "../legacy/chronicle.js";
 import type { Effect, NpcRef } from "../narrative/types.js";
 import { findEducation, findProfession, findSkill, SKILL_MAX } from "../rpg/skills.js";
@@ -37,10 +38,17 @@ export function changeStat(ctx: EngineContext, stat: StatKey, delta: number): vo
   recordDelta(ctx, "stat", before, stats[stat], stat);
 }
 
-export function changeResource(ctx: EngineContext, resource: ResourceKey, delta: number): void {
+/** changeResource: health можно не переносить в длительное здоровье — так делает пассивный отдых года */
+export function changeResource(ctx: EngineContext, resource: ResourceKey, delta: number, trackHealth = true): void {
   const c = ctx.state.character;
   const before = c.resources[resource];
-  c.resources[resource] = clamp(before + delta, 0, maxResources(c)[resource]);
+  const max = maxResources(c)[resource];
+  c.resources[resource] = clamp(before + delta, 0, max);
+  if (resource === "health" && trackHealth && max > 0 && delta !== 0) {
+    const health = normalizeHealthState(ctx.state);
+    ctx.state.health = health;
+    health.value = clamp(health.value + Math.round((delta / max) * 100), 0, 100);
+  }
   recordDelta(ctx, "resource", before, c.resources[resource], resource);
 }
 
@@ -391,6 +399,10 @@ export function kill(ctx: EngineContext, cause: LocalizedText): void {
   life.alive = false;
   life.deathAge = life.age;
   life.deathCause = cause;
+  // Причина смерти дублируется в модели здоровья: панель и итог жизни не расходятся
+  const health = normalizeHealthState(ctx.state);
+  ctx.state.health = health;
+  health.deathCause = cause;
   ctx.state.character.resources.health = 0;
   ctx.state.pending = null;
   ctx.state.scheduled = [];
@@ -536,6 +548,10 @@ export function applyEffect(ctx: EngineContext, effect: Effect): void {
       return recordStoryChoiceEffect(ctx, effect.id, effect.eventId, effect.choiceId, effect.scope);
     case "completeStory":
       return completeStoryEffect(ctx, effect.id, effect.scope);
+    case "condition":
+      return addHealthCondition(ctx, effect.id, { severity: effect.severity, duration: effect.duration });
+    case "cure":
+      return cureHealthCondition(ctx, effect.id);
   }
 }
 
@@ -629,9 +645,12 @@ export function applyEffects(ctx: EngineContext, effects: readonly Effect[]): vo
   clampResources(ctx);
 }
 
-/** Умер ли персонаж от ран после действия */
+/** Умер ли персонаж от ран или истощения после действия */
 export function isFatal(ctx: EngineContext): boolean {
-  return ctx.state.life.alive && ctx.state.character.resources.health <= 0;
+  if (!ctx.state.life.alive) return false;
+  const health = normalizeHealthState(ctx.state);
+  ctx.state.health = health;
+  return ctx.state.character.resources.health <= 0 || health.value <= 0;
 }
 
 export { AFFINITY_LIMIT };

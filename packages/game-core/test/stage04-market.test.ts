@@ -213,6 +213,7 @@ describe("Stage 04: рынок", () => {
       expect(state.schemaVersion, key).toBe(SAVE_SCHEMA_VERSION);
       expect(state.economy.goods, key).toEqual({});
       expect(state.adventure, key).toEqual({ discovered: [], active: null, done: [], failed: [], log: [] });
+      expect(state.health.conditions, key).toEqual([]);
       const rest = deepClone(state) as unknown as Record<string, unknown>;
       const before = deepClone(raw) as Record<string, unknown>;
       (rest.economy as Record<string, unknown>).goods = undefined;
@@ -220,6 +221,7 @@ describe("Stage 04: рынок", () => {
       delete rest.adventure;
       delete rest.region;
       delete rest.mastery;
+      delete rest.health;
       delete rest.schemaVersion;
       delete before.schemaVersion;
       expect(rest, key).toEqual(before);

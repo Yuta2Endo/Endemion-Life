@@ -193,7 +193,7 @@ describe("Save/load integrity", () => {
     const { state } = succeed(dead, heirCandidates(dead).find((c) => c.available)!.npc.id, "s7-save-succ");
 
     const round = roundTrip(state);
-    expect(round.schemaVersion).toBe(8);
+    expect(round.schemaVersion).toBe(9);
     expect(round.lineage.renown).toBe(state.lineage.renown);
     expect(round.lineage.achievements.map((a) => a.id)).toEqual(state.lineage.achievements.map((a) => a.id));
     expect(kinProblem(round)).toBeNull();
@@ -208,7 +208,7 @@ describe("Save/load integrity", () => {
     const legacy = deepClone(current) as GameState & { world?: unknown };
     delete legacy.world;
     const parsed = parseSave(JSON.parse(JSON.stringify(legacy)));
-    expect(parsed.schemaVersion).toBe(8);
+    expect(parsed.schemaVersion).toBe(9);
     expect(parsed.character.name).toBe(current.character.name);
     // Stage 07 не добавляет обязательных полей: производные данные восстанавливаются при презентации
     expect(presentLineage(parsed).dynasty.identity.label.ru).toBeTruthy();

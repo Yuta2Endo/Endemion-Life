@@ -13,6 +13,7 @@ import { economyYear } from "../economy/economy.js";
 import { consumeGoods } from "../economy/market.js";
 import { regionYear } from "../economy/region.js";
 import { DEATH_CAUSES, naturalDeathChance } from "./death.js";
+import { healthYear } from "./health.js";
 import { stageForAge } from "./stages.js";
 
 /** Сколько раз за год пробуется рост характеристик и с какой вероятностью */
@@ -76,7 +77,8 @@ function restore(ctx: EngineContext, stage: LifeStage): void {
   const max = maxResources(c);
   const stats = effectiveStats(c);
   const healing = Math.round((max.health * (stage === "elder" ? 0.1 : 0.25) + stats.vitality / 2) * healingFactor(ctx.universe, c));
-  changeResource(ctx, "health", healing);
+  // Пассивный отдых восстанавливает только запас сил: длительное здоровье лечит healthYear
+  changeResource(ctx, "health", healing, false);
   // Энергия, мана и выносливость за год восстанавливаются полностью. В историю это не пишется
   c.resources.energy = max.energy;
   c.resources.mana = max.mana;
@@ -121,9 +123,12 @@ export function ageOneYear(ctx: EngineContext): YearSummary {
   // Stage 06: склад края восстанавливается, напряжение остывает, след приключения учитывается один раз
   regionYear(ctx);
   restore(ctx, life.stage);
+  // Stage 02.1: болезни, раны и возраст меняют длительное здоровье. Смерть от них — та же смерть жизни
+  const health = healthYear(ctx);
+  if (health.died) kill(ctx, health.died);
 
   let diedOfAge = false;
-  if (ctx.rng.chance(naturalDeathChance(c, life.age))) {
+  if (life.alive && ctx.rng.chance(naturalDeathChance(c, life.age))) {
     kill(ctx, DEATH_CAUSES.oldAge);
     diedOfAge = true;
   }

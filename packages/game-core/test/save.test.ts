@@ -47,10 +47,10 @@ describe("Save Engine", () => {
   it("старые форматы 5, 6, 7 и 8 поднимаются до текущей версии без потери персонажа", () => {
     const current = start({ seed: "save-format-5", universeId: "murim" });
     const formats: Array<{ version: number; remove: string[] }> = [
-      { version: 5, remove: ["adventure", "region", "mastery"] },
-      { version: 6, remove: ["region", "mastery"] },
-      { version: 7, remove: ["mastery"] },
-      { version: 8, remove: [] }
+      { version: 5, remove: ["adventure", "region", "mastery", "health"] },
+      { version: 6, remove: ["region", "mastery", "health"] },
+      { version: 7, remove: ["mastery", "health"] },
+      { version: 8, remove: ["health"] }
     ];
     for (const format of formats) {
       const raw = JSON.parse(JSON.stringify(current)) as Record<string, unknown>;
@@ -64,6 +64,7 @@ describe("Save Engine", () => {
       expect(migrated.adventure).toBeDefined();
       expect(migrated.region).toBeDefined();
       expect(migrated.mastery).toBeDefined();
+      expect(migrated.health).toBeDefined();
       expect(() => parseSave(migrated)).not.toThrow();
     }
   });

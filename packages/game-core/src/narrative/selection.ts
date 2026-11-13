@@ -4,6 +4,7 @@ import type { EngineContext } from "../engine/context.js";
 import { TEMPERAMENTS } from "../character/temperaments.js";
 import { ACHIEVEMENTS } from "../legacy/achievements.js";
 import { LINEAGE_CONSEQUENCES, THREADS } from "../legacy/stories.js";
+import { findHealthCondition } from "../life/health.js";
 import { findProfession, findSkill } from "../rpg/skills.js";
 import { allTalents, allWeaknesses } from "../rpg/talents.js";
 import { STAT_KEYS } from "../stats.js";
@@ -160,6 +161,8 @@ function brokenCondition(universe: UniverseDefinition, condition: Condition, eve
     case "npc":
     case "affinity":
       return ROLES.has(condition.role) ? "" : `роль ${condition.role}`;
+    case "condition":
+      return findHealthCondition(condition.id) ? "" : `состояние ${condition.id}`;
     default:
       return "";
   }
@@ -201,6 +204,9 @@ function brokenEffect(universe: UniverseDefinition, effect: Effect, events: Read
     }
     case "stat":
       return (STAT_KEYS as readonly string[]).includes(effect.stat) ? "" : `характеристика ${effect.stat}`;
+    case "condition":
+    case "cure":
+      return findHealthCondition(effect.id) ? "" : `состояние ${effect.id}`;
     default:
       return "";
   }

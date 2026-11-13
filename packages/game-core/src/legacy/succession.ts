@@ -12,6 +12,7 @@ import { GameRuleError } from "../errors.js";
 import { assignKinRole, chronicle } from "../family/events.js";
 import { BLOOD_RELATIONS, isKin, isPresent, KinGraph, type KinRelation } from "../family/kin.js";
 import { ageText, t, type LocalizedText } from "../i18n.js";
+import { newHealthState } from "../life/health.js";
 import { stageForAge } from "../life/stages.js";
 import { hashSeed, Rng } from "../rng.js";
 import { allTalents, allWeaknesses, findTalent, findWeakness } from "../rpg/talents.js";
@@ -325,6 +326,7 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
     version: 1,
     character: c,
     life: { age, stage: stageForAge(age, lifespanOf(c)), alive: true, deathAge: null, deathCause: null },
+    health: newHealthState(),
     flags: [...flags].sort(),
     occurrences: {},
     lastSeen: {},

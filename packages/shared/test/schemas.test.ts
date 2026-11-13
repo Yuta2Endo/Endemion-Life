@@ -43,6 +43,33 @@ describe("контракты API", () => {
     for (const talent of state.hidden.dormantTalents) expect(json).not.toContain(`"${talent}"`);
   });
 
+  it("представление жизни Stage 02.1: здоровье и недуги видны, причина смерти сохраняется", () => {
+    const { state } = newGame({ seed: "health-view", universeId: "hunter" });
+    state.health.value = 37;
+    state.health.conditions.push({
+      id: "hu-gate-wound",
+      kind: "wound",
+      severity: 2,
+      source: "health.hunter.gate-wound",
+      onsetAge: 18,
+      remaining: 2,
+      damage: 8,
+      recoverable: true,
+      lethal: true
+    });
+    const view = toLifeView({ id: "id", createdAt: "", updatedAt: "" }, state);
+    expect(view.health.value).toBe(37);
+    expect(view.health.conditions).toHaveLength(1);
+    expect(view.health.conditions[0]).toMatchObject({ id: "hu-gate-wound", kind: "wound", severity: 2 });
+    expect(view.health.conditions[0]!.name.ru).toBe("Рана Врат");
+    state.life.alive = false;
+    state.life.deathCause = { ru: "Раны оказались смертельными", en: "The wounds proved fatal" };
+    state.health.deathCause = state.life.deathCause;
+    const dead = toLifeView({ id: "id", createdAt: "", updatedAt: "" }, state);
+    expect(dead.health.deathCause).toEqual(state.life.deathCause);
+    expect(dead.life.deathCause).toEqual(state.life.deathCause);
+  });
+
   it("история: limit по умолчанию и ограничение сверху", () => {
     expect(historyQuerySchema.parse({})).toEqual({ limit: 50 });
     expect(historyQuerySchema.safeParse({ limit: "1000" }).success).toBe(false);

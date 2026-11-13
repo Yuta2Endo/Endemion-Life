@@ -4,6 +4,7 @@ import {
   presentMastery,
   presentEconomy,
   presentEvent,
+  presentHealth,
   presentLegacy,
   presentMarket,
   presentRegion,
@@ -20,6 +21,7 @@ import {
   type EventView,
   type GameErrorCode,
   type GameState,
+  type HealthView,
   type HistoryEntry,
   type ImportAdjustment,
   type LegacyBrief,
@@ -54,6 +56,8 @@ export interface LifeView extends LifeMeta {
   character: CharacterState;
   summary: CharacterSummary;
   life: LifeState;
+  /** Stage 02.1: длительное здоровье, болезни, раны и причина смерти */
+  health: HealthView;
   pendingEvent: EventView | null;
   /** Stage 02: биография, семья и люди вокруг, шкалы мира, задание Системы. Скрытое — только после раскрытия */
   profile: LifeProfile;
@@ -208,6 +212,7 @@ export function toLifeView(meta: LifeMeta, state: GameState): LifeView {
     character: state.character,
     summary: summarizeCharacter(state),
     life: state.life,
+    health: presentHealth(state),
     pendingEvent: presentEvent(state),
     profile: presentProfile(state),
     legacy: presentLegacy(state),

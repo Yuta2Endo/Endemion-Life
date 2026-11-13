@@ -57,6 +57,31 @@ export { STAGE_INFO, stageForAge } from "./life/stages.js";
 export { DEFAULT_MILESTONE_AGES, isMilestoneEvent, milestoneAges, milestoneAt, milestoneEvent, milestoneId } from "./life/milestones.js";
 export { toLifeChronicle, type ChronicleCategory, type ChronicleImportance, type LifeChronicleEntry } from "./life/chronicle.js";
 export { naturalDeathChance } from "./life/death.js";
+export {
+  addHealthCondition,
+  conditionDeathCause,
+  conditionName,
+  cureHealthCondition,
+  findHealthCondition,
+  HEALTH_CONDITIONS,
+  HEALTH_MAX,
+  HEALTH_MIN,
+  healthConditionNames,
+  healthFatalCause,
+  healthFromState,
+  healthValueFromResources,
+  healthYear,
+  MAX_CONDITION_DAMAGE,
+  MAX_CONDITION_YEARS,
+  MAX_HEALTH_CONDITIONS,
+  newHealthState,
+  normalizeHealthState,
+  presentHealth,
+  type HealthConditionDefinition,
+  type HealthConditionView,
+  type HealthView,
+  type HealthYearResult
+} from "./life/health.js";
 
 export { checkChance, MAX_CHANCE, MIN_CHANCE } from "./engine/checks.js";
 export {

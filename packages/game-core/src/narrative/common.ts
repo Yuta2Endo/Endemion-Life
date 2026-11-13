@@ -3,6 +3,7 @@ import { t } from "../i18n.js";
 import { check, fx, when } from "./dsl.js";
 import { LEGACY_EVENTS } from "../legacy/stories.js";
 import { ECONOMY_EVENTS } from "./economy-events.js";
+import { COMMON_HEALTH_EVENTS } from "./health-events.js";
 import { PEOPLE_EVENTS } from "./people.js";
 import type { EventDefinition } from "./types.js";
 
@@ -166,21 +167,21 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
         id: "physician",
         text: t("Позвать лекаря (30 золота)", "Call the physician (30 gold)"),
         requires: [when.wealth(30)],
-        success: { text: t("Горькое лекарство помогает. Через неделю — на ногах.", "The bitter medicine works. On your feet within a week."), effects: [fx.wealth(-30), fx.health(10)] }
+        success: { text: t("Горькое лекарство помогает. Через неделю — на ногах.", "The bitter medicine works. On your feet within a week."), effects: [fx.wealth(-30), fx.health(10), fx.cure("common-fever")] }
       },
       {
         id: "herbs",
         text: t("Довериться травам знахарки", "Trust the herbwife's remedies"),
         check: check(["vitality", "luck"], 10),
-        success: { text: t("Отвар из горьких корней сбивает жар. Тело становится крепче.", "A brew of bitter roots breaks the fever. The body grows stronger."), effects: [fx.wealth(-2), fx.stat("vitality", 1)] },
-        failure: { text: t("Болезнь отступает медленно и оставляет след.", "The illness recedes slowly and leaves its mark."), effects: [fx.wealth(-2), fx.health(-20), fx.stat("vitality", -1)] }
+        success: { text: t("Отвар из горьких корней сбивает жар. Тело становится крепче.", "A brew of bitter roots breaks the fever. The body grows stronger."), effects: [fx.wealth(-2), fx.stat("vitality", 1), fx.cure("common-fever")] },
+        failure: { text: t("Болезнь отступает медленно и оставляет след.", "The illness recedes slowly and leaves its mark."), effects: [fx.wealth(-2), fx.health(-20), fx.stat("vitality", -1), fx.condition("common-fever")] }
       },
       {
         id: "endure",
         text: t("Перетерпеть", "Endure it"),
         check: check(["vitality", "willpower"], 12),
-        success: { text: t("Воля сильнее жара.", "Will is stronger than fever."), effects: [fx.stat("willpower", 1)] },
-        failure: { text: t("Неделя в бреду. Силы возвращаются с трудом.", "A week of delirium. Strength returns slowly."), effects: [fx.health(-30), fx.stat("strength", -1)] }
+        success: { text: t("Воля сильнее жара.", "Will is stronger than fever."), effects: [fx.stat("willpower", 1), fx.cure("common-fever")] },
+        failure: { text: t("Неделя в бреду. Силы возвращаются с трудом.", "A week of delirium. Strength returns slowly."), effects: [fx.health(-30), fx.stat("strength", -1), fx.condition("common-fever")] }
       }
     ]
   },
@@ -392,8 +393,8 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
         id: "exercise",
         text: t("Каждое утро упражняться", "Exercise every morning"),
         check: check(["vitality", "willpower"], 14),
-        success: { text: t("Тело благодарит за заботу.", "The body is grateful for the care."), effects: [fx.stat("vitality", 1), fx.health(15)] },
-        failure: { text: t("Перестарались — неделя в постели.", "Overdid it — a week in bed."), effects: [fx.health(-15)] }
+        success: { text: t("Тело благодарит за заботу.", "The body is grateful for the care."), effects: [fx.stat("vitality", 1), fx.health(15), fx.cure("common-old-wound")] },
+        failure: { text: t("Перестарались — неделя в постели.", "Overdid it — a week in bed."), effects: [fx.health(-15), fx.condition("common-old-wound")] }
       },
       {
         id: "rest",
@@ -412,5 +413,7 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
   // Stage 03: сюжеты рода и поколений
   ...LEGACY_EVENTS,
   // Stage 04: хозяйство и общество
-  ...ECONOMY_EVENTS
+  ...ECONOMY_EVENTS,
+  // Stage 02.1: общие болезни и раны
+  ...COMMON_HEALTH_EVENTS
 ];

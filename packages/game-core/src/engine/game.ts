@@ -10,6 +10,7 @@ import { ageText, fillText, t, type LocalizedText } from "../i18n.js";
 import { lifespanOf } from "../character/derived.js";
 import { ageOneYear } from "../life/aging.js";
 import { DEATH_CAUSES } from "../life/death.js";
+import { healthConditionNames, healthFatalCause, newHealthState, normalizeHealthState } from "../life/health.js";
 import { STAGE_INFO, stageForAge } from "../life/stages.js";
 import { milestoneAt, milestoneId } from "../life/milestones.js";
 import { abandonAdventure, beginAdventure, discoverYearly, newAdventure, venture } from "../adventure/adventure.js";
@@ -52,11 +53,10 @@ import { applyEffects, isFatal, kill } from "./effects.js";
  * 5 — Stage 04, рынок: запас товаров (economy.goods);
  * 6 — Stage 05: открытые места и приключение (adventure);
  * 7 — Stage 06: край этой жизни (region) — склад товаров, напряжение, благополучие;
- * 8 — Stage 10: освоение мира и мастерство навыков (mastery). Наград не даёт
+ * 8 — Stage 10: освоение мира и мастерство навыков (mastery). Наград не даёт;
+ * 9 — Stage 02.1: длительное здоровье, болезни и раны (health)
  */
-// Stage 01 adds optional fields without invalidating the established save format.
-// Older saves are normalized at action/presentation boundaries, so schema 8 remains readable.
-export const SAVE_SCHEMA_VERSION = 8;
+export const SAVE_SCHEMA_VERSION = 9;
 export const SEED_MAX_LENGTH = 64;
 
 const YEAR_TEXTS: readonly LocalizedText[] = [
@@ -104,9 +104,13 @@ function pushEntry(ctx: EngineContext, entries: HistoryEntry[], kind: HistoryKin
 function deathEntry(ctx: EngineContext, entries: HistoryEntry[]): void {
   const life = ctx.state.life;
   const cause = life.deathCause ?? DEATH_CAUSES.wounds;
+  const conditions = healthConditionNames(ctx.state);
+  const ailments = conditions.length
+    ? t(` Недуги: ${conditions.map((item) => item.ru).join(", ")}.`, ` Ailments: ${conditions.map((item) => item.en).join(", ")}.`)
+    : t("", "");
   pushEntry(ctx, entries, "death", {
     title: t("Конец пути", "The end of the road"),
-    text: named(ctx, t(`${cause.ru}. {name} прожил ${ageText(life.age).ru}.`, `${cause.en}. {name} lived ${ageText(life.age).en}.`))
+    text: named(ctx, t(`${cause.ru}. {name} прожил ${ageText(life.age).ru}.${ailments.ru}`, `${cause.en}. {name} lived ${ageText(life.age).en}.${ailments.en}`))
   });
 }
 
@@ -138,6 +142,7 @@ export function newGame(input: NewGameInput): ActionResult {
     version: 1,
     character,
     life: { age: 0, stage: stageForAge(0, lifespanOf(character)), alive: true, deathAge: null, deathCause: null },
+    health: newHealthState(),
     flags,
     occurrences: {},
     lastSeen: {},
@@ -208,9 +213,9 @@ function ending(ctx: EngineContext, entries: HistoryEntry[]): void {
   deathEntry(ctx, entries);
 }
 
-/** Раны после правил года (искажение ци, последствия) могут оказаться смертельными */
+/** Раны и истощение после правил года (искажение ци, последствия) могут оказаться смертельными */
 function settle(ctx: EngineContext, entries: HistoryEntry[]): boolean {
-  if (isFatal(ctx)) kill(ctx, DEATH_CAUSES.wounds);
+  if (isFatal(ctx)) kill(ctx, healthFatalCause(ctx.state));
   if (ctx.state.life.alive) return true;
   ending(ctx, entries);
   return false;
@@ -316,7 +321,7 @@ function choose(ctx: EngineContext, entries: HistoryEntry[], choiceId: string): 
   state.pending = null;
   ctx.source = event.id;
   applyEffects(ctx, outcome.effects);
-  if (isFatal(ctx)) kill(ctx, DEATH_CAUSES.wounds);
+  if (isFatal(ctx)) kill(ctx, healthFatalCause(ctx.state));
   recordStory(ctx, event, choice.id, check ? check.success : null);
   ctx.source = undefined;
   // Ключевое решение: чем больше оно изменило, тем значимее. Сюжеты рода и выборы с проверкой весят больше
@@ -357,6 +362,8 @@ function interactWith(ctx: EngineContext, entries: HistoryEntry[], npcId: string
  */
 export function restoreState(snapshot: GameState, currentVersion: number): ActionResult {
   const state = deepClone(snapshot);
+  // Снимок мог быть сделан до Stage 02.1: здоровье восстанавливается из прежнего запаса
+  state.health = normalizeHealthState(state);
   state.version = currentVersion + 1;
   state.rngState = hashSeed(`${snapshot.seed}::restore::${snapshot.rngState}::${state.version}`);
   const age = ageText(state.life.age);
@@ -387,6 +394,7 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
   state.character.storyProgress ??= {};
   state.lineage.storyProgress ??= {};
   state.lineage.worldInfluence ??= emptyWorldInfluence();
+  state.health = normalizeHealthState(state);
   state.world = normalizeWorldState(state.world, getUniverse(state.character.universeId));
   normalizeSocialState(state);
   const rng = new Rng(state.rngState);

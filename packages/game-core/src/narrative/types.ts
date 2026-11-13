@@ -90,7 +90,11 @@ export type Condition =
   /** Выбор, сделанный в событии сюжета: id сюжета, id события, id варианта и область действия */
   | { type: "storyChoice"; id: string; eventId: string; choiceId: string; scope: StoryScope }
   /** Сюжет завершён: дальнейшее продвижение невозможно */
-  | { type: "storyCompleted"; id: string; scope: StoryScope };
+  | { type: "storyCompleted"; id: string; scope: StoryScope }
+  /** Stage 02.1: длительное здоровье 0–100 */
+  | { type: "health"; min?: number; max?: number }
+  /** Stage 02.1: активная болезнь или рана из каталога жизни */
+  | { type: "condition"; id: string; has: boolean };
 
 /** Последствие выбора */
 export type Effect =
@@ -165,7 +169,11 @@ export type Effect =
   /** Запись выбора в событии сюжета: id сюжета, id события, id варианта и область действия */
   | { type: "recordStoryChoice"; id: string; eventId: string; choiceId: string; scope: StoryScope }
   /** Завершение сюжета: дальнейшее продвижение невозможно */
-  | { type: "completeStory"; id: string; scope: StoryScope };
+  | { type: "completeStory"; id: string; scope: StoryScope }
+  /** Stage 02.1: наложить болезнь или рану. severity и duration переопределяют каталог */
+  | { type: "condition"; id: string; severity?: number; duration?: number }
+  /** Stage 02.1: вылечить болезнь или рану */
+  | { type: "cure"; id: string };
 
 export interface StatCheck {
   /** Берётся среднее по этим характеристикам (с бонусом ранга) */
