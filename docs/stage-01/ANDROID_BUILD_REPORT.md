@@ -1,7 +1,7 @@
 # Android Build Report — STAGE 01
 
-**Status:** build reproducibility **FIXED**; Play Store release **COMPLETED WITH BLOCKERS**  
-**Date:** 2026-11-13
+**Status:** build reproducibility **FIXED**; release signing **FIXED**; Play Store release **COMPLETED WITH BLOCKERS**<br>
+**Date:** 2026-11-13 (signed artifacts added 2026-11-14)
 
 ## 1. Original problem
 
@@ -83,7 +83,7 @@ This satisfies the requirement not to create an unsynchronized authoritative lif
 
 ## 5. Remaining blockers / not verified
 
-1. **Release signing:** no keystore or CI signing secrets; AAB is unsigned. Never commit a keystore.
+1. **Release signing:** signing key material is available **outside the repository** at `G:\II\EndemionLife_keys`; signed AAB/APK were produced locally (see §7). Play Console upload and CI secret provisioning are still outstanding.
 2. **Play Console submission:** no listing, screenshots, privacy policy URL, data-safety form, content rating, or account-deletion URL/flow evidence.
 3. **Device/emulator test:** APK was built and inspected, not installed on a physical device or emulator in this stage.
 4. **Deep links / OIDC callback:** no App Link intent filter; OIDC uses browser redirects. This works as a remote shell but is not a native OAuth app.
@@ -91,6 +91,43 @@ This satisfies the requirement not to create an unsynchronized authoritative lif
 6. **Offline cache:** not implemented; remote URL shell requires network.
 7. **Signing key custody and Play App Signing** require owner decisions.
 
-## 6. Verdict
+## 7. Signed release artifacts (2026-11-14)
 
-Android **debug/release build reproducibility is fixed and evidenced**. Android **production release is not ready** because signing, Play compliance, and device verification remain. Do not represent the APK/AAB as a store-ready release.
+Signing material is stored outside the repository at `G:\II\EndemionLife_keys`. No
+keystore, password, or credential file was copied into the repository or printed in
+build output.
+
+Build environment:
+
+- JDK 21: `C:\Program Files\Microsoft\jdk-21.0.13.21-hotspot`
+- Android SDK: `E:\ASGG` (platform 36, build-tools 36.0.0)
+- Release signing supplied through `RELEASE_STORE_FILE`, `RELEASE_STORE_PASSWORD`,
+  `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD` environment variables only.
+
+Artifacts:
+
+| Artifact | Path | Size | SHA-256 |
+|---|---|---|---|
+| Signed AAB | `android/app/build/outputs/bundle/release/app-release.aab` | 4,370,349 B | `07DD0B6A1C9E33B44DEA5C739CA49D8E9472175FF0DC6F3E96CEC2DD110174F4` |
+| Signed APK | `android/app/build/outputs/apk/release/app-release.apk` | 4,517,430 B | `DC405C5F92DA162D5E31A6BD1EEE8C760108A1B37AFDF8DF3F5A6373253F3CBA` |
+
+Verification:
+
+- `jarsigner -verify app-release.aab` → exit code 0.
+- `apksigner verify --verbose --print-certs app-release.apk` → verifies using APK
+  Signature Scheme v2; certificate DN `CN=Endemion Life, OU=Mobile, O=Endemion,
+  L=Unknown, ST=Unknown, C=US`.
+- Certificate SHA-256:
+  `FD:83:7D:9B:70:50:5E:9E:DB:8D:ED:09:57:C9:BD:71:96:BD:04:79:C4:9D:10:28:F2:D9:CF:9B:18:01:DB:A5`
+- Key: 2048-bit RSA, SHA384withRSA, valid until 2054-03-24.
+- `versionCode 1`, `versionName 1.0`, `minSdk 24`, `targetSdk 36`.
+
+This proves a signed, verifiable Android artifact can be built. It does **not** prove a
+Play Console upload, Play App Signing enrollment, device installation, or store review.
+
+## 8. Verdict update
+
+Release signing is no longer the blocker. Remaining Android blockers are Play Console
+listing/compliance, data-safety and account-deletion declarations, CI signing-secret
+provisioning, and a physical-device or emulator smoke test. The signed artifacts must
+not be described as an approved store release until those are complete.

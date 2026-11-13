@@ -184,3 +184,20 @@ Only if Stage 06 shows a real problem.
 ## STAGE 01 reconciliation (2026-11-13)
 
 Capacitor **8.6.2** is now pinned in the root manifest/lockfile; the native project exists and `cap sync android` is reproducible. Build with **JDK 21** (`C:\Program Files\Microsoft\jdk-21.0.13.21-hotspot`); Android Studio's bundled Java 25 fails AGP with class-file major 69. SDK path: `E:\ASGG`; compile/target SDK 36, minSdk 24. `gradlew assembleDebug` built a 5,800,876-byte APK and `bundleRelease` built a 4,342,869-byte **unsigned** AAB in STAGE 01. Signing, Play Console listing, data-safety/account-deletion compliance, device/emulator installation, deep links, push and offline cache remain blockers.
+
+## Signing reconciliation (2026-11-14)
+
+Upload-key material is available outside the repository at `G:\II\EndemionLife_keys`.
+Using JDK 21 and SDK 36, the release signing environment variables from
+`android/app/build.gradle` produced:
+
+- `app-release.aab` — 4,370,349 bytes, SHA-256 `07DD0B6A1C9E33B44DEA5C739CA49D8E9472175FF0DC6F3E96CEC2DD110174F4`;
+- `app-release.apk` — 4,517,430 bytes, SHA-256 `DC405C5F92DA162D5E31A6BD1EEE8C760108A1B37AFDF8DF3F5A6373253F3CBA`.
+
+`jarsigner -verify` exits 0 for the AAB; `apksigner verify` reports APK Signature
+Scheme v2 with certificate SHA-256
+`FD:83:7D:9B:70:50:5E:9E:DB:8D:ED:09:57:C9:BD:71:96:BD:04:79:C4:9D:10:28:F2:D9:CF:9B:18:01:DB:A5`.
+
+The keystore, passwords, and PEM are not in git. CI signing-secret provisioning, Play
+Console upload, Play App Signing enrollment, data-safety/account-deletion declarations,
+and a physical-device install remain outstanding.
