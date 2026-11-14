@@ -39,7 +39,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | STAGE 03 (Dynasty & Legacy) | Relics, continuity, heir agency, six laws, long-run soak | **COMPLETE; deployed, schema 14** — см. `docs/stage-03/STAGE_03_REPORT.md` |
 | STAGE 04 (Living Worlds) | Shared world, deterministic season tick, replay, web panel | **COMPLETE; deployed, schema 14, migration 11** — см. `docs/stage-04/RELEASE_RECORD.md` |
 | STAGE 05 (Multiplayer Foundation) | Account gate, presence/SSE, contributions, export/delete, reports | **COMPLETE; deployed, schema 14, migration 12** — см. `docs/stage-05/STAGE_05_REPORT.md` |
-| STAGE 06.1 (Guild Foundation) | Guilds, roles, requests, projects, reputation, audit | **IMPLEMENTED & VERIFIED LOCALLY; not committed/deployed** — см. `docs/stage-06/STAGE_06_1_REPORT.md` |
+| STAGE 06.1 (Guild Foundation) | Guilds, roles, requests, projects, reputation, audit | **COMMITTED & PUSHED; deploy pending, migration 13** — см. `docs/stage-06/STAGE_06_1_REPORT.md` |
 
 ## Portal ↔ Life (ACTIVE in production)
 
@@ -67,7 +67,7 @@ STAGE 05 добавляет account boundary для общих систем: г�
 - Release: закоммичен (`b6db176` → `9daaec2`), CI/Security success, развёрнут с миграцией 2026-11-13 23:04 UTC; backup `endemion_life-manual-20261113T224407Z.dump` проверен trial restore. Portal остаётся вне релиза.
 - Production smoke: `/api/health` 200, `/api/world` 200, SSE route returns 401 without account, 12 migrations. Полный двухаккаунтный smoke не выполнен: production password registration отключён (`410 USE_ENDEMION_ID`), нужен Endemion ID тест-аккаунт.
 
-## STAGE 06.1 — Guild Foundation (локально, не развёрнут)
+## STAGE 06.1 — Guild Foundation (committed, deploy pending)
 
 Узкий гильдейский слой: гильдии по мирам, роли leader/officer/member, публичное вступление или заявка, лимит 30 участников, одна гильдия на игрока в мире, проекты с серверным прогрессом, вклад с `actionId`-идемпотентностью, репутация за завершение, audit log и web-панель на `/social`.
 
@@ -75,7 +75,7 @@ STAGE 05 добавляет account boundary для общих систем: г�
 - Данные: 13-я аддитивная миграция `20261115090000_stage06_guilds`; save schema остаётся **14**.
 - Проверки: API e2e **141/141**, API unit 74/74, game-core 775/775, shared 18/18, web 25/25; typecheck/build/lint pass (1 старое warning).
 - Ограничения: нет казны, торговли, чата, альянсов, приглашений и админ-модерации; web-панель без отдельного render-теста.
-- Release: commit/push/CI и отдельный deploy с backup и миграцией. См. `docs/stage-06/STAGE_06_1_REPORT.md`.
+- Release: код запушен (`ab983f3` → `72c1d42` → `51b1431`); CI/Security проверяются; deploy с backup и миграцией ожидает одобрения.
 
 ## STAGE 04 — Living Worlds (deployed, 2026-11-14)
 

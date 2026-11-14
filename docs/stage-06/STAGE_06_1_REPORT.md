@@ -1,6 +1,6 @@
 # Stage 06.1 — Guild Foundation
 
-**Status:** implemented and verified locally; not committed or deployed.
+**Status:** committed and pushed (`ab983f3` → `72c1d42` → `51b1431`); verified locally; **not deployed**.
 **Save schema:** 14 unchanged.
 **DB migration:** 13th additive migration `20261115090000_stage06_guilds`.
 **Scope:** guilds only. No treasury, player trading, chat, shared property or cross-account inheritance.
@@ -71,7 +71,7 @@ All guild deletes cascade memberships/projects/requests/audits. Player deletion 
 | web unit | **25/25**, 8 files |
 | web build | pass, 12 routes |
 | Typecheck | pass |
-| Lint | pending final rerun after one assertion fix |
+| Lint | 0 errors, 1 pre-existing warning (`play-screen.tsx:173`) |
 
 Stage 06 e2e covers guest denial, duplicate name, public join, request/accept, role denial, kick, project idempotency, reputation once, transfer/leave/disband and audit.
 
@@ -88,9 +88,9 @@ Stage 06 e2e covers guest denial, duplicate name, public join, request/accept, r
 
 ## 7. Release plan
 
-1. Run final lint/typecheck and full test matrix.
-2. Commit Stage 06.1 with additive migration and docs.
-3. Push; verify CI and Security.
+1. ~~Run final lint/typecheck and full test matrix.~~
+2. ~~Commit Stage 06.1 with additive migration and docs.~~
+3. ~~Push; verify CI and Security.~~
 4. Fresh backup and trial restore before migration.
 5. Deploy with `allow_migrations=true`; verify 13 migrations, health, guild route account gate, and one create/join/project smoke.
 6. Rollback: application rollback is safe; additive guild tables can remain.
