@@ -1,12 +1,12 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-15 (R1.1 First Life Guide deployed)<br>
+**Обновлено:** 2026-11-15 (R1.2 first-life analytics implemented locally)<br>
 **Ветка:** `main`  
-**HEAD:** `68b4390` (R1.1 First Life Guide)<br>
-**Production:** R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime/production checkout `68b4390`, deployed 2026-11-14 18:57 UTC; migrations **15** (guild 13, market 14, profile 15)<br>
+**HEAD:** `84db808` (R1.1 docs)<br>
+**Production:** R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime code `68b4390`, docs checkout `84db808`, deployed 2026-11-14 18:57 UTC; migrations **15** (guild 13, market 14, profile 15)<br>
 **Production code:** `68b4390`; DB migrations **15**, additive<br>
 **Rollback:** `f1a829f`; profile migration 15 is additive and ignored by previous code. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
-**Рабочее дерево:** R1.1 deployed; untracked Stage 11 reports/docx preserved.
+**Рабочее дерево:** R1.2 analytics on disk; untracked Stage 11 reports/docx preserved.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
 
@@ -47,6 +47,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | STAGE 06.2 (Player Market) | Offers, atomic goods/gold settlement, ledger, restore guard, succession cancel | **COMPLETE; deployed, schema 14, migration 14** - см. `docs/stage-06/STAGE_06_2_PLAYER_MARKET.md` |
 | STAGE 06.3 (Player Profile) | Public/private profile, stats, badges, recent lives, guilds, data export/delete | **COMPLETE; deployed, schema 14, migration 15** - см. `docs/stage-06/STAGE_06_3_PLAYER_PROFILE.md` |
 | R1.1 (First Life Guide) | Adaptive chapter guide, goal progress, first-life checklist | **COMPLETE; deployed, no schema/API changes** - см. `docs/planning/R1_1_FIRST_LIFE_GUIDE.md` |
+| R1.2 (First-Life Analytics) | Guide signals + server-derived first-life funnel | **IMPLEMENTED; deployed in this release; no save/DB migration** - см. `docs/planning/R1_2_FIRST_LIFE_ANALYTICS.md` |
 
 ## Design (Living Chronicle)
 
@@ -224,3 +225,16 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 
 - Deployment: commit `68b4390`, Deploy run `43629174412` success; history `18:57:24Z deploy-start 68b4390 from f1a829f` → `18:57:53Z deploy 68b4390 ok`.
 - Production verification: HEAD `68b4390`, clean tree, seven healthy containers, `/api/health` 200 DB/Redis up, `/play/:id` 200, CSP active.
+
+
+## R1.2 — First-life analytics (deployed 2026-11-15)
+
+- Client signal: `POST /api/insights/guide` with `{ lifeId, event }`; events `view | advance | event | dossier | dismiss`.
+- The server checks life ownership, reads world and age from the database, and deduplicates by `lifeId:event:age`.
+- No names, emails, free-form text or IP are stored in the signal. Failure never blocks play.
+- Server-derived funnel: `GET /api/insights/funnel?days=30`, ops-only via `x-live-ops`.
+- Counts: lives created, distinct players, reached age 18, made at least one decision, completed life, continued lineage; guide counters and per-world creation counts.
+- Admin `/insights` now loads the funnel alongside the existing facts summary.
+- No save schema change and no database migration; guide facts use the existing 90-day `insights` table.
+- Verification: API e2e **156/156**, new R1.2 API tests **2/2**, game-core **775/775**, web **30/30**, guide/design e2e **14/14**, typecheck PASS, build PASS, lint 0 errors (pre-existing `play-screen.tsx:175` warning).
+- Known limitation: `LIVE_OPS_TOKEN` is absent from production compose by default, so the funnel UI remains closed until the token is supplied.

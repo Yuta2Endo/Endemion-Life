@@ -4,6 +4,7 @@ import { STAGE_INFO, type LocalizedText } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
 import { Button, Panel } from "@endemion/ui";
 import { useEffect, useState } from "react";
+import { trackGuide } from "@/lib/guide-analytics";
 import { useI18n } from "../locale-provider";
 
 const GOAL_LABELS: Readonly<Record<string, LocalizedText>> = {
@@ -124,6 +125,10 @@ export function LifeGuide({
     return () => window.clearTimeout(timer);
   }, [life.id]);
 
+  useEffect(() => {
+    trackGuide(life.id, "view");
+  }, [life.id]);
+
   function remember(patch: Partial<GuideMemory>) {
     setMemory((previous) => {
       const next = { ...previous, ...patch };
@@ -175,6 +180,7 @@ export function LifeGuide({
             <Button
               variant="primary"
               onClick={() => {
+                trackGuide(life.id, "event");
                 remember({ eventSeen: true });
                 onEvent();
               }}
@@ -183,11 +189,19 @@ export function LifeGuide({
               {copy.event}
             </Button>
           ) : dead ? (
-            <Button variant="ghost" onClick={onDossier} data-testid="guide-dossier">
+            <Button variant="ghost" onClick={() => { trackGuide(life.id, "dossier"); onDossier(); }} data-testid="guide-dossier">
               {copy.dead}
             </Button>
           ) : (
-            <Button variant="primary" onClick={onAdvance} disabled={busy || life.autoMode !== "manual"} data-testid="guide-next">
+            <Button
+              variant="primary"
+              onClick={() => {
+                trackGuide(life.id, "advance");
+                onAdvance();
+              }}
+              disabled={busy || life.autoMode !== "manual"}
+              data-testid="guide-next"
+            >
               {copy.advance}
             </Button>
           )}
@@ -195,6 +209,7 @@ export function LifeGuide({
             <Button
               variant="ghost"
               onClick={() => {
+                trackGuide(life.id, "dossier");
                 remember({ dossierOpened: true });
                 onDossier();
               }}
@@ -224,7 +239,7 @@ export function LifeGuide({
           <div data-testid="guide-checklist">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-medium text-bone-400">{copy.checklist}</p>
-              <button type="button" className="text-[11px] text-bone-500 underline decoration-line underline-offset-2 hover:text-bone-300" onClick={() => remember({ dismissed: true })}>
+              <button type="button" className="text-[11px] text-bone-500 underline decoration-line underline-offset-2 hover:text-bone-300" onClick={() => { trackGuide(life.id, "dismiss"); remember({ dismissed: true }); }}>
                 {copy.skip}
               </button>
             </div>

@@ -111,4 +111,62 @@ describe("Stage 16: факты", () => {
     await client.get("/api/insights?days=365").set("x-live-ops", TOKEN).expect(400);
     await client.get("/api/insights?days=0").set("x-live-ops", TOKEN).expect(400);
   });
+
+  it("R1.2: сигнал гида принимается только для своей жизни и не дублируется", async () => {
+    const client = agent();
+    await guest(client);
+    const life = await lifeOf(client);
+
+    await client
+      .post("/api/insights/guide")
+      .set("Origin", ORIGIN)
+      .send({ lifeId: life.id, event: "view" })
+      .expect(200);
+    await client
+      .post("/api/insights/guide")
+      .set("Origin", ORIGIN)
+      .send({ lifeId: life.id, event: "view" })
+      .expect(200);
+    await client
+      .post("/api/insights/guide")
+      .set("Origin", ORIGIN)
+      .send({ lifeId: life.id, event: "advance" })
+      .expect(200);
+    expect(await t.prisma.client.insight.count({ where: { name: "guide.view", ref: `${life.id}:view:0` } })).toBe(1);
+    expect(await t.prisma.client.insight.count({ where: { name: "guide.advance", ref: `${life.id}:advance:0` } })).toBe(1);
+
+    await client.post("/api/insights/guide").set("Origin", ORIGIN).send({ lifeId: life.id, event: "nope" }).expect(400);
+    await request(t.app.getHttpServer())
+      .post("/api/insights/guide")
+      .set("Origin", ORIGIN)
+      .send({ lifeId: life.id, event: "view" })
+      .expect(401);
+
+    const other = agent();
+    await guest(other);
+    await other
+      .post("/api/insights/guide")
+      .set("Origin", ORIGIN)
+      .send({ lifeId: life.id, event: "view" })
+      .expect(404);
+  });
+
+  it("R1.2: воронка первой жизни считается по серверным данным", async () => {
+    const client = agent();
+    await guest(client);
+    const life = await lifeOf(client);
+    await t.prisma.client.life.update({ where: { id: life.id }, data: { age: 18, status: "dead" } });
+    await t.prisma.client.historyEntry.create({
+      data: { lifeId: life.id, seq: 999, age: 18, kind: "event", data: {} }
+    });
+    await client.post("/api/insights/guide").set("Origin", ORIGIN).send({ lifeId: life.id, event: "view" }).expect(200);
+
+    await client.get("/api/insights/funnel?days=30").expect(404);
+    const funnel = await client.get("/api/insights/funnel?days=30").set("x-live-ops", TOKEN).expect(200);
+    expect(funnel.body.lives).toMatchObject({ created: 1, players: 1, adults: 1, decisions: 1, deaths: 1, successors: 0 });
+    expect(funnel.body.rates.adult).toBe(1);
+    expect(funnel.body.guide.view).toBe(1);
+    expect(funnel.body.byWorld[0]).toMatchObject({ world: "murim", created: 1 });
+    expect(JSON.stringify(funnel.body)).not.toContain(life.id);
+  });
 });

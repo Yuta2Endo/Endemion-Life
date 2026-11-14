@@ -11,7 +11,12 @@ export const INSIGHT_NAMES = [
   "market.trade",
   "live.joined",
   "live.claimed",
-  "action.rejected"
+  "action.rejected",
+  "guide.view",
+  "guide.advance",
+  "guide.event",
+  "guide.dossier",
+  "guide.dismiss"
 ] as const;
 
 export type InsightName = (typeof INSIGHT_NAMES)[number];

@@ -22,22 +22,49 @@ interface Summary {
   thin: boolean;
 }
 
+interface Funnel {
+  days: number;
+  keptDays: number;
+  generatedAt: string;
+  lives: { created: number; players: number; adults: number; decisions: number; deaths: number; successors: number };
+  rates: { adult: number; decision: number; death: number; successor: number };
+  guide: Record<string, number>;
+  byWorld: { world: string; created: number }[];
+}
+
 /** Stage 16: сводка фактов. Токен не сохраняется. Пустой ответ не дорисовывается */
 export function InsightsPanel() {
   const { t } = useI18n();
   const [token, setToken] = useState("");
   const [days, setDays] = useState(30);
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [funnel, setFunnel] = useState<Funnel | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const guideLabel = (event: string): string => {
+    if (event === "view") return t("insights.guide.view");
+    if (event === "advance") return t("insights.guide.advance");
+    if (event === "event") return t("insights.guide.event");
+    if (event === "dossier") return t("insights.guide.dossier");
+    if (event === "dismiss") return t("insights.guide.dismiss");
+    return event;
+  };
 
   async function load() {
     setBusy(true);
     setNotice(null);
     try {
-      setSummary(await apiFetch<Summary>(`/api/insights?days=${days}`, { headers: { "x-live-ops": token } }));
+      const headers = { "x-live-ops": token };
+      const [nextSummary, nextFunnel] = await Promise.all([
+        apiFetch<Summary>(`/api/insights?days=${days}`, { headers }),
+        apiFetch<Funnel>(`/api/insights/funnel?days=${days}`, { headers })
+      ]);
+      setSummary(nextSummary);
+      setFunnel(nextFunnel);
     } catch (error) {
       setSummary(null);
+      setFunnel(null);
       setNotice(error instanceof ClientError ? error.message : t("error.generic"));
     } finally {
       setBusy(false);
@@ -102,6 +129,24 @@ export function InsightsPanel() {
                   : t("insights.quiet", { name: note.name, n: note.sample })}
               </p>
             ))}
+        </div>
+      )}
+      {funnel && (
+        <div className="mt-5 border-t border-line pt-4 text-sm text-bone-200" data-testid="insights-funnel">
+          <p className="font-medium text-bone-100">{t("insights.funnelTitle")}</p>
+          <dl className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
+            <div><dt className="text-bone-500">{t("insights.funnelCreated")}</dt><dd>{funnel.lives.created}</dd></div>
+            <div><dt className="text-bone-500">{t("insights.funnelAdult")}</dt><dd>{funnel.lives.adults} · {Math.round(funnel.rates.adult * 100)}%</dd></div>
+            <div><dt className="text-bone-500">{t("insights.funnelDecision")}</dt><dd>{funnel.lives.decisions} · {Math.round(funnel.rates.decision * 100)}%</dd></div>
+            <div><dt className="text-bone-500">{t("insights.funnelDeath")}</dt><dd>{funnel.lives.deaths} · {Math.round(funnel.rates.death * 100)}%</dd></div>
+            <div><dt className="text-bone-500">{t("insights.funnelSuccessor")}</dt><dd>{funnel.lives.successors} · {Math.round(funnel.rates.successor * 100)}%</dd></div>
+            <div><dt className="text-bone-500">{t("insights.funnelPlayers")}</dt><dd>{funnel.lives.players}</dd></div>
+          </dl>
+          <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-bone-400">
+            {Object.entries(funnel.guide).map(([event, count]) => (
+              <li key={event}>{guideLabel(event)}: {count}</li>
+            ))}
+          </ul>
         </div>
       )}
     </Panel>

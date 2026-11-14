@@ -10,7 +10,9 @@ import {
   type InsightFact,
   type InsightName
 } from "@endemion/game-core";
+import { GUIDE_EVENTS, type FunnelView, type GuideEvent, type GuideTelemetryRequest } from "@endemion/shared";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { ApiError } from "../common/api-error.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 const SWEEP_GAP_MS = 60 * 60 * 1000;
@@ -50,6 +52,82 @@ export class InsightsService {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return;
       this.logger.warn({ msg: "факт не записан" });
     }
+  }
+
+  /** R1.2: first-life guide usage. The server owns world and age; the client sends only the event. */
+  async guide(playerId: string, input: GuideTelemetryRequest): Promise<{ ok: true }> {
+    const life = await this.prisma.client.life.findFirst({
+      where: { id: input.lifeId, playerId },
+      select: { universeId: true, age: true }
+    });
+    if (!life) throw new ApiError(404, "NOT_FOUND", "Жизнь не найдена.");
+    await this.note({
+      name: `guide.${input.event}` as InsightName,
+      world: life.universeId,
+      age: life.age,
+      level: 0,
+      amount: 1,
+      ref: `${input.lifeId}:${input.event}:${life.age}`
+    });
+    return { ok: true };
+  }
+
+  /** R1.2: server-derived first-life funnel. No names, emails or free-form input. */
+  async funnel(days: number): Promise<FunnelView> {
+    await this.sweep();
+    const since = new Date(Date.now() - days * 86_400_000);
+    const [created, players, adults, deaths, successors, decisions, guideRows, worlds] = await Promise.all([
+      this.prisma.client.life.count({ where: { createdAt: { gte: since } } }),
+      this.prisma.client.life.groupBy({ by: ["playerId"], where: { createdAt: { gte: since } } }),
+      this.prisma.client.life.count({ where: { createdAt: { gte: since }, age: { gte: 18 } } }),
+      this.prisma.client.life.count({ where: { createdAt: { gte: since }, status: "dead" } }),
+      this.prisma.client.life.count({ where: { createdAt: { gte: since }, successor: { isNot: null } } }),
+      this.prisma.client.historyEntry.groupBy({
+        by: ["lifeId"],
+        where: { kind: "event", life: { is: { createdAt: { gte: since } } } }
+      }),
+      this.prisma.client.insight.groupBy({
+        by: ["name"],
+        where: { createdAt: { gte: since }, name: { in: GUIDE_EVENTS.map((event) => `guide.${event}`) } },
+        _count: { _all: true }
+      }),
+      this.prisma.client.life.groupBy({
+        by: ["universeId"],
+        where: { createdAt: { gte: since } },
+        _count: { _all: true }
+      })
+    ]);
+
+    const guide = Object.fromEntries(GUIDE_EVENTS.map((event) => [event, 0])) as Record<GuideEvent, number>;
+    for (const row of guideRows) {
+      const event = row.name.replace("guide.", "") as GuideEvent;
+      if (event in guide) guide[event] = row._count._all;
+    }
+    const ratio = (part: number, whole: number): number => (whole === 0 ? 0 : Math.round((part / whole) * 100) / 100);
+
+    return {
+      days,
+      keptDays: INSIGHT_KEEP_DAYS,
+      generatedAt: new Date().toISOString(),
+      lives: {
+        created,
+        players: players.length,
+        adults,
+        decisions: decisions.length,
+        deaths,
+        successors
+      },
+      rates: {
+        adult: ratio(adults, created),
+        decision: ratio(decisions.length, created),
+        death: ratio(deaths, created),
+        successor: ratio(successors, deaths)
+      },
+      guide,
+      byWorld: worlds
+        .map((row) => ({ world: row.universeId, created: row._count._all }))
+        .sort((a, b) => b.created - a.created)
+    };
   }
 
   async summary(days: number): Promise<InsightSummary> {
