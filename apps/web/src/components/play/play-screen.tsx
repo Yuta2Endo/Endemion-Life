@@ -437,13 +437,13 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
           />
 
           <div className="hidden lg:block">
-            {wide && <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} />}
+            {wide && <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onRefresh={() => void load()} />}
           </div>
         </section>
 
         {/* На телефоне досье — отдельная вкладка */}
         <section className={tab === "people" ? "block lg:hidden" : "hidden"}>
-          <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} />
+          <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onRefresh={() => void load()} />
         </section>
 
         <aside className={shown("timeline")}>

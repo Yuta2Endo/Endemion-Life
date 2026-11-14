@@ -7,6 +7,7 @@ import { ageLabel } from "@/lib/format";
 import { useI18n } from "../locale-provider";
 import { EstatePanel } from "./estate-panel";
 import { MarketPanel } from "./market-panel";
+import { PlayerMarketPanel } from "./player-market-panel";
 
 const BAND = { low: "region.bandLow", enough: "region.bandEnough", high: "region.bandHigh" } as const;
 
@@ -91,7 +92,7 @@ function Society({ life }: { life: LifeView }) {
  * Stage 04: хозяйство персонажа — золото, состояние экономики мира, доходы и расходы последнего прожитого года,
  * налог и стоимость жизни, нехватка денег. Все суммы считает сервер; здесь только показ
  */
-export function EconomyPanel({ life, busy, onTrade }: { life: LifeView; busy: boolean; onTrade: (goodId: string, side: TradeSide, qty: number) => void }) {
+export function EconomyPanel({ life, busy, onTrade, onRefresh }: { life: LifeView; busy: boolean; onTrade: (goodId: string, side: TradeSide, qty: number) => void; onRefresh: () => void | Promise<void> }) {
   const { locale, l, t } = useI18n();
   const e = life.economy;
   const last = e.last;
@@ -181,6 +182,8 @@ export function EconomyPanel({ life, busy, onTrade }: { life: LifeView; busy: bo
       <Society life={life} />
 
       <MarketPanel life={life} busy={busy} onTrade={onTrade} />
+
+      <PlayerMarketPanel life={life} onRefresh={onRefresh} />
 
       <RegionPanel life={life} />
 

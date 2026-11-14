@@ -14,6 +14,8 @@ import { GuildController } from "./guild/guild.controller.js";
 import { GuildService } from "./guild/guild.service.js";
 import { LivesController } from "./lives/lives.controller.js";
 import { LivesService } from "./lives/lives.service.js";
+import { MarketController } from "./market/market.controller.js";
+import { MarketService } from "./market/market.service.js";
 import { InsightsController } from "./insights/insights.controller.js";
 import { InsightsService } from "./insights/insights.service.js";
 import { LiveController } from "./live/live.controller.js";
@@ -39,7 +41,7 @@ import { WorldController } from "./world/world.controller.js";
 import { WorldService } from "./world/world.service.js";
 
 @Module({
-  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, SocialController, GuildController, LiveController, InsightsController, PortalController, PresenceController, WorldController],
+  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, MarketController, SocialController, GuildController, LiveController, InsightsController, PortalController, PresenceController, WorldController],
   providers: [
     { provide: APP_CONFIG, useFactory: (): AppConfig => readConfig() },
     PrismaService,
@@ -50,6 +52,7 @@ import { WorldService } from "./world/world.service.js";
     AuthThrottle,
     AuthService,
     LivesService,
+    MarketService,
     SocialService,
     GuildService,
     LiveService,

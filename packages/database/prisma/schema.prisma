@@ -43,6 +43,10 @@ model Player {
   guildLeaderships   Guild[]             @relation("GuildLeader")
   guildContributions GuildContribution[]
   guildJoinRequests  GuildJoinRequest[]
+  marketOffers       MarketOffer[]
+  marketSales        MarketTrade[]      @relation("MarketSellerPlayer")
+  marketPurchases    MarketTrade[]      @relation("MarketBuyerPlayer")
+  marketLedger       MarketLedger[]
 
   @@index([idDisplayName])
   @@index([idUsername])
@@ -186,6 +190,10 @@ model Life {
   snapshots LifeSnapshot[]
   history   HistoryEntry[]
   actions   GameAction[]
+  marketOffers MarketOffer[]  @relation("MarketOfferSellerLife")
+  marketSales  MarketTrade[]  @relation("MarketSellerLife")
+  marketBuys   MarketTrade[]  @relation("MarketBuyerLife")
+  marketLedger MarketLedger[]
 
   predecessor Life? @relation("Succession", fields: [predecessorId], references: [id], onDelete: SetNull)
   successor   Life? @relation("Succession")
@@ -630,6 +638,83 @@ model GuildAudit {
 
   @@index([guildId, createdAt])
   @@map("guild_audits")
+}
+
+model MarketOffer {
+  id              String    @id @default(uuid()) @db.Uuid
+  sellerPlayerId  String    @map("seller_player_id") @db.Uuid
+  sellerLifeId    String    @map("seller_life_id") @db.Uuid
+  universeId      String    @map("universe_id") @db.VarChar(32)
+  goodId          String    @map("good_id") @db.VarChar(48)
+  qty             Int
+  unitPrice       Int
+  status          String    @default("active") @db.VarChar(16)
+  actionId        String    @map("action_id") @db.Uuid
+  sellerVersion   Int       @map("seller_version")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  expiresAt       DateTime  @map("expires_at") @db.Timestamptz(3)
+  soldAt          DateTime? @map("sold_at") @db.Timestamptz(3)
+
+  seller     Player      @relation(fields: [sellerPlayerId], references: [id], onDelete: Cascade)
+  sellerLife Life        @relation("MarketOfferSellerLife", fields: [sellerLifeId], references: [id], onDelete: Cascade)
+  trade      MarketTrade?
+
+  @@unique([sellerLifeId, actionId])
+  @@index([universeId, status, createdAt])
+  @@index([sellerLifeId, status])
+  @@index([status, expiresAt])
+  @@map("market_offers")
+}
+
+model MarketTrade {
+  id                 String   @id @default(uuid()) @db.Uuid
+  offerId            String   @unique @map("offer_id") @db.Uuid
+  universeId         String   @map("universe_id") @db.VarChar(32)
+  goodId             String   @map("good_id") @db.VarChar(48)
+  qty                Int
+  unitPrice          Int      @map("unit_price")
+  total              Int
+  sellerPlayerId     String   @map("seller_player_id") @db.Uuid
+  sellerLifeId       String   @map("seller_life_id") @db.Uuid
+  buyerPlayerId      String   @map("buyer_player_id") @db.Uuid
+  buyerLifeId        String   @map("buyer_life_id") @db.Uuid
+  buyerActionId      String   @map("buyer_action_id") @db.Uuid
+  sellerVersionAfter Int      @map("seller_version_after")
+  buyerVersionAfter  Int      @map("buyer_version_after")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  offer      MarketOffer   @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  seller     Player        @relation("MarketSellerPlayer", fields: [sellerPlayerId], references: [id], onDelete: Cascade)
+  buyer      Player        @relation("MarketBuyerPlayer", fields: [buyerPlayerId], references: [id], onDelete: Cascade)
+  sellerLife Life          @relation("MarketSellerLife", fields: [sellerLifeId], references: [id], onDelete: Cascade)
+  buyerLife  Life          @relation("MarketBuyerLife", fields: [buyerLifeId], references: [id], onDelete: Cascade)
+  ledger     MarketLedger[]
+
+  @@unique([buyerLifeId, buyerActionId])
+  @@index([sellerLifeId, createdAt])
+  @@index([buyerLifeId, createdAt])
+  @@index([universeId, createdAt])
+  @@map("market_trades")
+}
+
+model MarketLedger {
+  id           String   @id @default(uuid()) @db.Uuid
+  tradeId      String   @map("trade_id") @db.Uuid
+  playerId     String   @map("player_id") @db.Uuid
+  lifeId       String   @map("life_id") @db.Uuid
+  kind         String   @db.VarChar(8)
+  amount       Int
+  balanceAfter Int      @map("balance_after")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  trade  MarketTrade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  player Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  life   Life        @relation(fields: [lifeId], references: [id], onDelete: Cascade)
+
+  @@unique([tradeId, playerId, kind])
+  @@index([lifeId, createdAt])
+  @@map("market_ledger")
 }
 
 model Insight {

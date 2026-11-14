@@ -578,7 +578,8 @@ export function Dossier({
   jump,
   onInteract,
   onTrade,
-  onVenture
+  onVenture,
+  onRefresh
 }: {
   life: LifeView;
   busy: boolean;
@@ -588,6 +589,7 @@ export function Dossier({
   onInteract: (npcId: string, interaction: InteractionId) => void;
   onTrade: (goodId: string, side: TradeSide, qty: number) => void;
   onVenture: (action: { adventureId?: string; choiceId?: string; abandon?: boolean }) => void;
+  onRefresh: () => void | Promise<void>;
 }) {
   const { locale, l, t } = useI18n();
   const [section, setSection] = useState<Section>(requested ?? "bio");
@@ -682,7 +684,7 @@ export function Dossier({
       {section === "family" && <FamilyTree life={life} />}
       {section === "lineage" && <LineagePanel life={life} store={store} />}
       {section === "world" && <WorldPanel life={life} />}
-      {section === "economy" && <EconomyPanel life={life} busy={busy} onTrade={onTrade} />}
+      {section === "economy" && <EconomyPanel life={life} busy={busy} onTrade={onTrade} onRefresh={onRefresh} />}
       {section === "adventure" && (
         <>
         <MasteryPanel life={life} />

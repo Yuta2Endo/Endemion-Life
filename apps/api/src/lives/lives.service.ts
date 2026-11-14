@@ -25,6 +25,7 @@ import {
 import { Inject, Injectable } from "@nestjs/common";
 import { ApiError } from "../common/api-error.js";
 import { InsightsService } from "../insights/insights.service.js";
+import { MarketService } from "../market/market.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 /** Сколько последних версий сохранения хранится у жизни */
@@ -107,7 +108,8 @@ export class LivesService {
 
   constructor(
     @Inject(PrismaService) prisma: PrismaService,
-    @Inject(InsightsService) private readonly insights: InsightsService
+    @Inject(InsightsService) private readonly insights: InsightsService,
+    @Inject(MarketService) private readonly market: MarketService
   ) {
     this.db = prisma.client;
   }
@@ -273,6 +275,7 @@ export class LivesService {
       // Случайная соль сервера: seed наследника нельзя вычислить из сохранения предка
       const result = succeed(stateOf(row), request.heirId, randomUUID());
 
+      await this.market.cancelOffersForLife(tx, lifeId);
       const updated = await tx.life.update({ where: { id: lifeId }, data: lifeColumns(result.previous) });
       await this.writeSnapshot(tx, lifeId, result.previous, "action");
       const created = await tx.life.create({
@@ -463,6 +466,7 @@ export class LivesService {
       const snapshot = await tx.lifeSnapshot.findUnique({ where: { lifeId_version: { lifeId, version: request.version } } });
       if (!snapshot) throw new ApiError(404, "NOT_FOUND", "Такой версии сохранения нет");
 
+      await this.market.assertRestorable(tx, lifeId, request.version);
       const target = parseSave(snapshot.state);
       const { state, entries } = restoreState(target, row.version);
       await this.preserveClaims(tx, lifeId, state);
