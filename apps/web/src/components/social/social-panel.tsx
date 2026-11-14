@@ -85,7 +85,7 @@ export function SocialPanel() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t("social.name")}
-            className="w-full rounded-md border border-line bg-ink-950 px-3 py-2 text-sm text-bone-100"
+            className="min-h-11 w-full rounded-sm border border-line bg-ink-950 px-3 py-2 text-sm text-bone-100"
             data-testid="social-search"
           />
           <Button onClick={() => void search()} disabled={busy || query.trim().length < 3} data-testid="social-search-go">

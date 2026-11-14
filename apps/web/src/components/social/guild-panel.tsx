@@ -4,6 +4,7 @@ import { Button, Panel } from "@endemion/ui";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ClientError } from "@/lib/api";
 import { useI18n } from "../locale-provider";
+import { GuildHeraldry } from "./guild-heraldry";
 
 interface Member {
   playerId: string;
@@ -127,16 +128,17 @@ export function GuildPanel() {
   return (
     <Panel className="space-y-5" data-testid="guild-panel">
       <div>
-        <h2 className="font-display text-2xl text-gilded">{t("guild.title")}</h2>
-        <p className="mt-1 text-sm text-bone-400">{t("guild.lead")}</p>
+        <p className="eyebrow text-gold-300">{t("social.houses")}</p>
+        <h2 className="mt-1 font-display text-3xl text-bone-100">{t("guild.title")}</h2>
+        <p className="mt-2 max-w-2xl text-sm text-bone-400">{t("guild.lead")}</p>
       </div>
 
       {notice && <p className="rounded-md border border-blood-500/40 bg-blood-600/10 px-3 py-2 text-sm text-blood-300" role="alert">{notice}</p>}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <input className="min-h-11 rounded-md border border-bone-700 bg-ink-900 px-3 text-sm" placeholder={t("guild.name")} value={name} maxLength={40} onChange={(event) => setName(event.target.value)} />
-        <input className="min-h-11 rounded-md border border-bone-700 bg-ink-900 px-3 text-sm" placeholder={t("guild.description")} value={description} maxLength={500} onChange={(event) => setDescription(event.target.value)} />
-        <select className="min-h-11 rounded-md border border-bone-700 bg-ink-900 px-3 text-sm" value={visibility} onChange={(event) => setVisibility(event.target.value as "public" | "request")}>
+        <input className="min-h-11 rounded-sm border border-line bg-ink-950 px-3 text-sm" placeholder={t("guild.name")} value={name} maxLength={40} onChange={(event) => setName(event.target.value)} />
+        <input className="min-h-11 rounded-sm border border-line bg-ink-950 px-3 text-sm" placeholder={t("guild.description")} value={description} maxLength={500} onChange={(event) => setDescription(event.target.value)} />
+        <select className="min-h-11 rounded-sm border border-line bg-ink-950 px-3 text-sm" value={visibility} onChange={(event) => setVisibility(event.target.value as "public" | "request")}>
           <option value="public">{t("guild.public")}</option>
           <option value="request">{t("guild.request")}</option>
         </select>
@@ -146,20 +148,26 @@ export function GuildPanel() {
       {guilds && guilds.length === 0 && <p className="text-sm text-bone-500">{t("guild.empty")}</p>}
       <div className="grid gap-2 sm:grid-cols-2">
         {guilds?.map((guild) => (
-          <button key={guild.id} type="button" className="min-h-11 rounded-md border border-bone-800 px-3 py-2 text-left text-sm hover:border-gilded/60" onClick={() => void open(guild.id)}>
-            <span className="block font-medium text-bone-100">{guild.name}</span>
-            <span className="text-xs text-bone-500">{guild.universeId} · {guild.memberCount} · {guild.myRole ?? t("guild.join")}</span>
+          <button key={guild.id} type="button" className="flex min-h-16 items-center gap-3 rounded-sm border border-line px-3 py-2 text-left text-sm transition-colors hover:border-gold-500/60" onClick={() => void open(guild.id)} data-testid="guild-card">
+            <GuildHeraldry guildId={guild.id} name={guild.name} size={36} />
+            <span className="min-w-0">
+              <span className="block truncate font-medium text-bone-100">{guild.name}</span>
+              <span className="block truncate text-xs text-bone-500">{guild.universeId} · {guild.memberCount} · {guild.myRole ?? t("guild.join")}</span>
+            </span>
           </button>
         ))}
       </div>
 
       {selected && (
-        <div className="space-y-4 border-t border-bone-800 pt-4" data-testid="guild-detail">
+        <div className="space-y-4 border-t border-line pt-4" data-testid="guild-detail">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 className="font-display text-2xl text-gilded">{selected.name}</h3>
-              <p className="text-sm text-bone-400">{selected.description || selected.universeId}</p>
-              <p className="text-xs text-bone-500">{t("guild.reputation", { n: selected.reputation })}</p>
+            <div className="flex min-w-0 items-start gap-4">
+              <GuildHeraldry guildId={selected.id} name={selected.name} size={64} />
+              <div className="min-w-0">
+                <h3 className="font-display text-3xl text-bone-100">{selected.name}</h3>
+                <p className="mt-1 text-sm text-bone-400">{selected.description || selected.universeId}</p>
+                <p className="mt-1 text-xs text-bone-500">{t("guild.reputation", { n: selected.reputation })}</p>
+              </div>
             </div>
             {!selected.myRole && selected.visibility === "public" && (
               <Button type="button" disabled={busy} onClick={() => void act(`/api/guilds/${selected.id}/join`)}>{t("guild.join")}</Button>
@@ -196,12 +204,12 @@ export function GuildPanel() {
           <div className="space-y-2">
             <h4 className="text-sm font-semibold text-bone-200">{t("guild.projects")}</h4>
             {selected.projects.map((project) => (
-              <div key={project.id} className="rounded-md border border-bone-800 p-3 text-sm">
+              <div key={project.id} className="rounded-sm border border-line p-3 text-sm">
                 <div className="flex justify-between gap-2"><span>{project.title}</span><span>{project.progress}/{project.target}</span></div>
                 <p className="text-xs text-bone-500">{project.status === "completed" ? t("guild.done") : project.description}</p>
                 {project.status === "active" && selected.myRole && (
                   <div className="mt-2 flex gap-2">
-                    <input className="min-h-11 w-24 rounded-md border border-bone-700 bg-ink-900 px-2 text-sm" inputMode="numeric" value={amounts[project.id] ?? "10"} onChange={(event) => setAmounts({ ...amounts, [project.id]: event.target.value })} />
+                    <input className="min-h-11 w-24 rounded-sm border border-line bg-ink-950 px-2 text-sm" inputMode="numeric" value={amounts[project.id] ?? "10"} onChange={(event) => setAmounts({ ...amounts, [project.id]: event.target.value })} />
                     <Button type="button" disabled={busy} onClick={() => void contribute(selected, project)}>{t("guild.contribute")}</Button>
                   </div>
                 )}
@@ -209,8 +217,8 @@ export function GuildPanel() {
             ))}
             {(selected.myRole === "leader" || selected.myRole === "officer") && (
               <div className="grid gap-2 sm:grid-cols-3">
-                <input className="min-h-11 rounded-md border border-bone-700 bg-ink-900 px-3 text-sm" placeholder={t("guild.project")} value={projectTitle} maxLength={80} onChange={(event) => setProjectTitle(event.target.value)} />
-                <input className="min-h-11 rounded-md border border-bone-700 bg-ink-900 px-3 text-sm" inputMode="numeric" value={target} onChange={(event) => setTarget(event.target.value)} />
+                <input className="min-h-11 rounded-sm border border-line bg-ink-950 px-3 text-sm" placeholder={t("guild.project")} value={projectTitle} maxLength={80} onChange={(event) => setProjectTitle(event.target.value)} />
+                <input className="min-h-11 rounded-sm border border-line bg-ink-950 px-3 text-sm" inputMode="numeric" value={target} onChange={(event) => setTarget(event.target.value)} />
                 <Button type="button" disabled={busy || projectTitle.trim().length < 3} onClick={() => void run(async () => {
                   await apiFetch(`/api/guilds/${selected.id}/projects`, { method: "POST", body: JSON.stringify({ title: projectTitle, target: Math.max(100, Math.min(10000, Number(target) || 500)) }) });
                   setProjectTitle("");

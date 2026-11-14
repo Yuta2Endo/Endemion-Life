@@ -519,6 +519,7 @@ export const M = {
   "nav.signIn": t("Войти", "Sign in"),
 
   "auth.title": t("Аккаунт", "Account"),
+  "auth.eyebrow": t("Регистр", "Register"),
   "auth.lead": t(
     "Аккаунт хранит жизни на сервере и открывает их на любом устройстве. Жизни, начатые без аккаунта, перейдут в него при входе.",
     "An account keeps your lives on the server and opens them on any device. Lives started without an account move into it when you sign in."
@@ -837,8 +838,12 @@ export const M = {
   "home.continued": t("род продолжен", "carried on"),
 
   "social.title": t("Игроки", "Players"),
+  "social.eyebrow": t("Общий зал", "The Great Hall"),
   "social.lead": t("Найдите игрока по имени, примите запрос или закройте связь.", "Find a player by name, accept a request or close a tie."),
   "social.closed": t("Общей доски пока нет. Найти можно только того, кто уже играет.", "There is no public board yet. You can only find someone who is already playing."),
+  "social.now": t("Сейчас в мире", "Happening now"),
+  "social.houses": t("Дома и союзы", "Houses and guilds"),
+  "social.ties": t("Связи", "Ties"),
   "social.find": t("Поиск", "Search"),
   "social.name": t("Имя", "Name"),
   "social.search": t("Найти", "Find"),

@@ -2,14 +2,14 @@
 
 import type { AccountView, AuthConfigView, MeResponse, SessionView } from "@endemion/shared";
 import { PASSWORD_MIN_LENGTH, VERIFY_CODE_LENGTH } from "@endemion/shared";
-import { Button, buttonClass, Ornament, Panel } from "@endemion/ui";
+import { Button, buttonClass, Panel } from "@endemion/ui";
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ClientError } from "@/lib/api";
 import { authApi, endemionIdLoginUrl } from "@/lib/auth";
 import { useI18n } from "../locale-provider";
 
 const INPUT =
-  "w-full rounded-md border border-line bg-ink-950/70 px-4 py-2.5 text-bone-100 placeholder:text-bone-500 focus:border-gold-400/70 focus:outline-none";
+  "w-full rounded-sm border border-line bg-ink-950/70 px-4 py-2.5 text-bone-100 placeholder:text-bone-500 focus:border-gold-400/70 focus:outline-none";
 
 function errorText(error: unknown, fallback: string): string {
   return error instanceof ClientError && error.code !== "INTERNAL" && error.code !== "NETWORK" ? error.message : fallback;
@@ -18,7 +18,7 @@ function errorText(error: unknown, fallback: string): string {
 function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[11px] uppercase tracking-[0.22em] text-gold-400">{label}</span>
+      <span className="mb-1.5 block text-xs font-medium text-bone-400">{label}</span>
       {children}
       {hint && <span className="mt-1 block text-xs text-bone-500">{hint}</span>}
     </label>
@@ -92,7 +92,7 @@ function SignIn({ onDone }: { onDone: (me: MeResponse, info: string | null, veri
           <p className="mt-1 text-sm text-bone-300">{t("auth.forgotLead")}</p>
         </div>
       ) : (
-        <div className="mb-5 flex rounded-md border border-line bg-ink-950/70 p-1">
+        <div className="mb-5 flex rounded-sm border border-line bg-ink-950/70 p-1">
           {tab("login", t("auth.tabLogin"))}
           {tab("register", t("auth.tabRegister"))}
         </div>
@@ -274,7 +274,7 @@ function Devices({ onSignedOut }: { onSignedOut: () => void }) {
       ) : (
         <ul className="mt-4 space-y-2" data-testid="session-list">
           {sessions.map((session) => (
-            <li key={session.id} className="flex items-center justify-between gap-3 rounded-lg border border-line bg-ink-900/70 px-4 py-3" data-testid="session-item">
+            <li key={session.id} className="flex items-center justify-between gap-3 rounded-sm border border-line bg-ink-900/70 px-4 py-3" data-testid="session-item">
               <span className="min-w-0">
                 <span className="block truncate text-sm text-bone-100">
                   {deviceName(session.userAgent, t("auth.unknownDevice"))}
@@ -371,9 +371,9 @@ function EndemionIdAccount({ me, accountUrl, onSignedOut }: { me: MeResponse; ac
           <div className="flex min-w-0 items-center gap-4">
             {profile.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- аватар с auth.endemion.online, оптимизатор Next.js не нужен
-              <img src={profile.avatarUrl} alt="" width={56} height={56} className="h-14 w-14 shrink-0 rounded-full border border-gold-400/50 object-cover" />
+              <img src={profile.avatarUrl} alt="" width={56} height={56} className="h-14 w-14 shrink-0 rounded-sm border border-gold-400/50 object-cover" />
             ) : (
-              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-gold-400/50 font-display text-2xl text-gilded" aria-hidden="true">
+              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-sm border border-gold-400/50 font-display text-2xl text-gilded" aria-hidden="true">
                 {name.charAt(0).toUpperCase()}
               </span>
             )}
@@ -397,7 +397,6 @@ function EndemionIdAccount({ me, accountUrl, onSignedOut }: { me: MeResponse; ac
           </div>
         </div>
       </Panel>
-      <Ornament />
       <Devices onSignedOut={onSignedOut} />
     </div>
   );
@@ -524,7 +523,6 @@ export function AccountPanel() {
       {!account.emailVerified && (
         <VerifyEmail account={account} sentInitially={verificationSent} onVerified={(updated) => setMe({ ...me, account: updated })} />
       )}
-      <Ornament />
       <Devices onSignedOut={() => void load()} />
     </div>
   );

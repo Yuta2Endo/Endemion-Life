@@ -31,7 +31,7 @@ export async function SiteHeader() {
             {t("home.start")}
           </Link>
           <span className="hidden min-[360px]:inline-flex"><AccountLink /></span>
-          <span className="hidden min-[360px]:inline-flex"><StoreBadge /></span>
+          <span className="hidden min-[480px]:inline-flex"><StoreBadge /></span>
           <span className="hidden min-[480px]:inline-flex"><LanguageSwitch /></span>
         </nav>
       </div>
