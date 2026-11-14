@@ -23,7 +23,7 @@ export default async function HomePage() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6">
-      <section className="grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16">
+      <section className="animate-rise grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16">
         <div>
           <p className="eyebrow text-gold-400">{t("home.kicker")}</p>
           <h1 className="mt-5 max-w-2xl font-display text-5xl font-semibold leading-[1.02] text-bone-50 sm:text-6xl lg:text-7xl">

@@ -3,6 +3,7 @@
 import { getUniverse, STAGE_INFO } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
 import { ageLabel } from "@/lib/format";
+import { HealthIcon, SkillIcon, WealthIcon } from "../icons";
 import { useI18n } from "../locale-provider";
 
 /** Верхняя строка жизни: кто, где и в каком состоянии — до чтения хроники. */
@@ -37,19 +38,28 @@ export function LifeDeskHeader({ life }: { life: LifeView }) {
 
         <dl className="grid grid-cols-3 gap-x-5 gap-y-1 sm:gap-x-8">
           <div>
-            <dt className="text-[11px] text-bone-500">{t("health.title")}</dt>
+            <dt className="flex items-center gap-1.5 text-[11px] text-bone-500">
+              <HealthIcon className="h-3.5 w-3.5" />
+              {t("health.title")}
+            </dt>
             <dd className="font-display text-2xl tabular-nums text-bone-100" data-testid="desk-health">
               {life.health.value}
             </dd>
           </div>
           <div>
-            <dt className="text-[11px] text-bone-500">{t("sheet.wealth")}</dt>
+            <dt className="flex items-center gap-1.5 text-[11px] text-bone-500">
+              <WealthIcon className="h-3.5 w-3.5" />
+              {t("sheet.wealth")}
+            </dt>
             <dd className="font-display text-2xl tabular-nums text-gold-200" data-testid="desk-wealth">
               {life.character.wealth}
             </dd>
           </div>
           <div>
-            <dt className="text-[11px] text-bone-500">{t("sheet.level", { n: life.character.level })}</dt>
+            <dt className="flex items-center gap-1.5 text-[11px] text-bone-500">
+              <SkillIcon className="h-3.5 w-3.5" />
+              {t("sheet.level", { n: life.character.level })}
+            </dt>
             <dd className="font-display text-2xl tabular-nums text-bone-100" data-testid="desk-level">
               {life.character.level}
             </dd>

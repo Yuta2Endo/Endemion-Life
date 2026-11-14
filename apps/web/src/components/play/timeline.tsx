@@ -62,7 +62,7 @@ export function Timeline({
           return (
             <li key={entry.seq} className="grid grid-cols-[40px_minmax(0,1fr)] gap-3" data-testid="timeline-entry" data-kind={entry.kind}>
               <div className="pt-0.5 text-right">
-                <span className={`font-display text-xl leading-none tabular-nums ${selected ? "text-gold-200" : "text-bone-300"}`}>{entry.age}</span>
+                <span className={`font-display text-xl leading-none tabular-nums transition-colors ${selected ? "text-gold-200" : "text-bone-300"}`}>{entry.age}</span>
                 <span className="mt-1 block text-[10px] text-bone-600">{t("play.yearShort")}</span>
               </div>
               <button
@@ -75,7 +75,9 @@ export function Timeline({
                 aria-label={`${t("play.inspect")}: ${l(entry.title)}`}
               >
                 <span
-                  className={`absolute -left-[4px] top-1 flex h-2 w-2 items-center justify-center rounded-full ${
+                  className={`absolute -left-[4px] top-1 flex h-2 w-2 items-center justify-center rounded-full transition-transform duration-200 ${
+                    selected ? "scale-125 " : ""
+                  }${
                     entry.kind === "event" || entry.kind === "quest" || entry.kind === "legacy"
                       ? "bg-gold-400"
                       : entry.kind === "consequence"

@@ -1,8 +1,10 @@
 import type { Locale, UniverseSummary } from "@endemion/game-core";
 import Link from "next/link";
 import { msg } from "@/lib/messages";
+import { LifespanIcon } from "./icons";
 import { BornNow } from "./born-now";
 import { WorldEmblem } from "./world-emblem";
+import { WorldPlateArt } from "./world-plate-art";
 
 /** Карточка мира. detailed — законы и механики спрятаны в раскрытие */
 export function WorldCard({ universe, locale, detailed = false }: { universe: UniverseSummary; locale: Locale; detailed?: boolean }) {
@@ -14,6 +16,10 @@ export function WorldCard({ universe, locale, detailed = false }: { universe: Un
       data-testid={`world-${universe.id}`}
     >
       <div className="absolute inset-x-0 top-0 h-0.5" style={{ background: accent }} aria-hidden="true" />
+      <div className="relative -mx-5 -mt-5 mb-5 h-28 overflow-hidden border-b border-line bg-ink-950/40 sm:-mx-6 sm:-mt-6 sm:h-32">
+        <WorldPlateArt id={universe.id} accent={accent} />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/20 to-transparent" />
+      </div>
       <div className="relative flex items-start gap-4">
         <WorldEmblem id={universe.id} accent={accent} size={detailed ? 84 : 64} />
         <div className="min-w-0">
@@ -23,7 +29,10 @@ export function WorldCard({ universe, locale, detailed = false }: { universe: Un
             <ul className="mt-2 space-y-1 text-xs text-bone-400">
               <li>{msg(locale, "worlds.path")}: {universe.track.name[locale]}</li>
               <li>{universe.mechanics[0]?.name[locale]}</li>
-              <li>{msg(locale, "worlds.lifespan", { years: universe.lifespan })}</li>
+              <li className="flex items-center gap-1.5">
+                <LifespanIcon className="h-3.5 w-3.5" />
+                {msg(locale, "worlds.lifespan", { years: universe.lifespan })}
+              </li>
             </ul>
           )}
         </div>
