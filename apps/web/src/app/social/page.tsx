@@ -2,6 +2,7 @@ import { Ornament } from "@endemion/ui";
 import type { Metadata } from "next";
 import { LiveBoard } from "@/components/social/live-board";
 import { SocialPanel } from "@/components/social/social-panel";
+import { GuildPanel } from "@/components/social/guild-panel";
 import { getServerI18n } from "@/lib/locale-server";
 
 export const metadata: Metadata = { title: "People", robots: { index: false } };
@@ -18,6 +19,7 @@ export default async function SocialPage() {
       </header>
       <div className="mt-10 space-y-8">
         <LiveBoard />
+        <GuildPanel />
         <SocialPanel />
       </div>
     </main>

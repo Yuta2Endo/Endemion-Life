@@ -13,32 +13,36 @@ datasource db {
 /// Владелец игровых жизней. Гость — игрок без аккаунта; после регистрации у игрока появляется Account.
 /// Все проверки доступа к жизням идут по player_id сессии
 model Player {
-  id         String   @id @default(uuid()) @db.Uuid
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  lastSeenAt DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  id            String   @id @default(uuid()) @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt    DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(3)
   /// Endemion ID (claim sub). Прогресс привязан к игроку, игрок — к sub: смена username или почты его не меняет
-  endemionSub   String? @unique @map("endemion_sub") @db.Uuid
+  endemionSub   String?  @unique @map("endemion_sub") @db.Uuid
   /// Профиль из Endemion ID для показа в игре, обновляется при сверке сессии.
   /// Поиск без учёта регистра идёт по индексам ниже: PostgreSQL берёт их для lower(column) = lower($1)
-  idUsername    String? @map("id_username") @db.VarChar(24)
-  idDisplayName String? @map("id_display_name") @db.VarChar(40)
-  idAvatarUrl   String? @map("id_avatar_url") @db.VarChar(512)
-  idEmail       String? @map("id_email") @db.VarChar(254)
+  idUsername    String?  @map("id_username") @db.VarChar(24)
+  idDisplayName String?  @map("id_display_name") @db.VarChar(40)
+  idAvatarUrl   String?  @map("id_avatar_url") @db.VarChar(512)
+  idEmail       String?  @map("id_email") @db.VarChar(254)
 
-  lives    Life[]
-  actions  GameAction[]
-  sessions Session[]
-  account  Account?
+  lives              Life[]
+  actions            GameAction[]
+  sessions           Session[]
+  account            Account?
   /// Stage 07: связи, где игрок стоит первым в паре (меньший id)
-  tiesAsA  Tie[]    @relation("TieA")
+  tiesAsA            Tie[]               @relation("TieA")
   /// Связи, где игрок стоит вторым
-  tiesAsB  Tie[]    @relation("TieB")
+  tiesAsB            Tie[]               @relation("TieB")
   /// Stage 15: вклады игрока в живые окна
-  liveParts LivePart[]
+  liveParts          LivePart[]
   /// Stage 05: вклад в общий мир
   worldContributions WorldContribution[]
-  reportsMade       PlayerReport[]       @relation("ReportReporter")
-  reportsReceived   PlayerReport[]       @relation("ReportTarget")
+  reportsMade        PlayerReport[]      @relation("ReportReporter")
+  reportsReceived    PlayerReport[]      @relation("ReportTarget")
+  guildMemberships   GuildMember[]
+  guildLeaderships   Guild[]             @relation("GuildLeader")
+  guildContributions GuildContribution[]
+  guildJoinRequests  GuildJoinRequest[]
 
   @@index([idDisplayName])
   @@index([idUsername])
@@ -69,14 +73,14 @@ model Tie {
 /// Сессия (устройство). В cookie лежит случайный токен, здесь — только его SHA-256.
 /// Отозванная или просроченная сессия не даёт доступа
 model Session {
-  id         String    @id @default(uuid()) @db.Uuid
-  tokenHash  String    @unique @map("token_hash") @db.Char(64)
-  playerId   String    @map("player_id") @db.Uuid
-  userAgent  String?   @map("user_agent") @db.VarChar(256)
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  lastSeenAt DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
-  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
-  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
+  id           String    @id @default(uuid()) @db.Uuid
+  tokenHash    String    @unique @map("token_hash") @db.Char(64)
+  playerId     String    @map("player_id") @db.Uuid
+  userAgent    String?   @map("user_agent") @db.VarChar(256)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt   DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(3)
   /// Вход через Endemion ID: зашифрованный refresh token (AES-GCM) и время сверок с провайдером
   refreshToken String?   @map("refresh_token") @db.Text
   refreshedAt  DateTime? @map("refreshed_at") @db.Timestamptz(3)
@@ -154,42 +158,42 @@ enum LifeStatus {
 
 /// Жизнь персонажа. state — полное состояние игры (GameState из game-core), version растёт с каждым действием
 model Life {
-  id         String     @id @default(uuid()) @db.Uuid
-  playerId   String     @map("player_id") @db.Uuid
-  universeId String     @map("universe_id") @db.VarChar(32)
-  name       String     @db.VarChar(64)
-  seed       String     @db.VarChar(64)
-  status     LifeStatus @default(alive)
-  version    Int
-  age        Int
+  id            String     @id @default(uuid()) @db.Uuid
+  playerId      String     @map("player_id") @db.Uuid
+  universeId    String     @map("universe_id") @db.VarChar(32)
+  name          String     @db.VarChar(64)
+  seed          String     @db.VarChar(64)
+  status        LifeStatus @default(alive)
+  version       Int
+  age           Int
   /// Версия формата сохранения в state (SAVE_SCHEMA_VERSION). Жизни Stage 01 (1) переводятся в новый формат при следующем действии
-  schemaVersion Int      @default(1) @map("schema_version")
+  schemaVersion Int        @default(1) @map("schema_version")
   /// Stage 03: род. Все поколения одного рода имеют один lineage_id (id жизни основателя). NULL — жизнь до Stage 03, род — она сама
-  lineageId     String?  @map("lineage_id") @db.Uuid
+  lineageId     String?    @map("lineage_id") @db.Uuid
   /// Поколение рода: 1 — основатель
-  generation    Int      @default(1)
+  generation    Int        @default(1)
   /// Жизнь, после которой эта продолжила род. Уникально: у одной жизни не бывает двух наследников
-  predecessorId String?  @unique @map("predecessor_id") @db.Uuid
+  predecessorId String?    @unique @map("predecessor_id") @db.Uuid
   /// Stage 04: откуда жизнь. server — создана и прожита на сервере; local-import — перенесена из браузера (прошлые исходы не проверены)
-  origin        String   @default("server") @db.VarChar(16)
+  origin        String     @default("server") @db.VarChar(16)
   /// Stage 04: ключ переноса от клиента. Повтор с тем же ключом возвращает ту же жизнь
-  importId      String?  @map("import_id") @db.Uuid
-  state      Json
-  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  importId      String?    @map("import_id") @db.Uuid
+  state         Json
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   player    Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
   snapshots LifeSnapshot[]
   history   HistoryEntry[]
   actions   GameAction[]
 
-  predecessor Life?  @relation("Succession", fields: [predecessorId], references: [id], onDelete: SetNull)
-  successor   Life?  @relation("Succession")
+  predecessor Life? @relation("Succession", fields: [predecessorId], references: [id], onDelete: SetNull)
+  successor   Life? @relation("Succession")
 
+  @@unique([playerId, importId])
   @@index([playerId, updatedAt(sort: Desc)])
   @@index([schemaVersion])
   @@index([lineageId, generation])
-  @@unique([playerId, importId])
   @@map("lives")
 }
 
@@ -257,31 +261,31 @@ model GameAction {
 /// draft — черновик, scheduled — ждёт срока, active — идёт, completed — срок вышел,
 /// cancelled — снято, archived — убрано из доски
 model LiveWindow {
-  id         String    @id @default(uuid()) @db.Uuid
+  id         String   @id @default(uuid()) @db.Uuid
   /// Шаблон из кода. Пустое — окно задано вручную
-  templateId String?   @map("template_id") @db.VarChar(40)
+  templateId String?  @map("template_id") @db.VarChar(40)
   /// Ключ слота шаблона: повтор того же дня или недели находит эту строку
-  slotKey    String?   @unique @map("slot_key") @db.VarChar(80)
-  titleRu    String    @map("title_ru") @db.VarChar(80)
-  titleEn    String    @map("title_en") @db.VarChar(80)
-  textRu     String    @map("text_ru") @db.VarChar(400)
-  textEn     String    @map("text_en") @db.VarChar(400)
-  status     String    @db.VarChar(16)
+  slotKey    String?  @unique @map("slot_key") @db.VarChar(80)
+  titleRu    String   @map("title_ru") @db.VarChar(80)
+  titleEn    String   @map("title_en") @db.VarChar(80)
+  textRu     String   @map("text_ru") @db.VarChar(400)
+  textEn     String   @map("text_en") @db.VarChar(400)
+  status     String   @db.VarChar(16)
   /// Пусто — все шесть миров. Иначе id через запятую
-  worlds     String    @default("") @db.VarChar(80)
-  minAge     Int       @default(10) @map("min_age")
+  worlds     String   @default("") @db.VarChar(80)
+  minAge     Int      @default(10) @map("min_age")
   goal       Int
   /// Сколько раз одна жизнь может вложиться
-  perLife    Int       @default(1) @map("per_life")
+  perLife    Int      @default(1) @map("per_life")
   /// Золото награды. Новой валюты нет
-  gold       Int       @default(0)
+  gold       Int      @default(0)
   /// Флаг в жизни после выдачи: live.<id окна>
-  flag       String    @db.VarChar(40)
-  progress   Int       @default(0)
-  startsAt   DateTime  @map("starts_at") @db.Timestamptz(3)
-  endsAt     DateTime  @map("ends_at") @db.Timestamptz(3)
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  flag       String   @db.VarChar(40)
+  progress   Int      @default(0)
+  startsAt   DateTime @map("starts_at") @db.Timestamptz(3)
+  endsAt     DateTime @map("ends_at") @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   parts LivePart[]
   log   LiveLog[]
@@ -292,16 +296,16 @@ model LiveWindow {
 
 /// Вклад одной жизни в одно окно. Повтор в тот же год жизни не считается
 model LivePart {
-  id         String   @id @default(uuid()) @db.Uuid
-  windowId   String   @map("window_id") @db.Uuid
-  playerId   String   @map("player_id") @db.Uuid
-  lifeId     String   @map("life_id") @db.Uuid
-  count      Int      @default(0)
+  id        String    @id @default(uuid()) @db.Uuid
+  windowId  String    @map("window_id") @db.Uuid
+  playerId  String    @map("player_id") @db.Uuid
+  lifeId    String    @map("life_id") @db.Uuid
+  count     Int       @default(0)
   /// Год жизни, в котором уже вложились. Пусто — ещё не вкладывались
-  lastAge    Int?     @map("last_age")
+  lastAge   Int?      @map("last_age")
   /// Когда награда записана. Повтор не выдаёт золото второй раз
-  claimedAt  DateTime? @map("claimed_at") @db.Timestamptz(3)
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  claimedAt DateTime? @map("claimed_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   window LiveWindow @relation(fields: [windowId], references: [id], onDelete: Cascade)
   player Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
@@ -344,12 +348,12 @@ model World {
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  seasons     WorldSeason[]
-  settlements Settlement[]
-  factions    Faction[]
-  events      WorldEvent[]
-  commands    WorldCommand[]
-  audits      WorldAudit[]
+  seasons       WorldSeason[]
+  settlements   Settlement[]
+  factions      Faction[]
+  events        WorldEvent[]
+  commands      WorldCommand[]
+  audits        WorldAudit[]
   contributions WorldContribution[]
 
   @@map("worlds")
@@ -405,16 +409,16 @@ model Settlement {
 
 /// Нормализованная проекция фракции. Источник истины — worlds.state
 model Faction {
-  id         String   @id @default(uuid()) @db.Uuid
-  worldId    String   @map("world_id") @db.Uuid
-  factionId  String   @map("faction_id") @db.VarChar(48)
-  nameRu     String   @map("name_ru") @db.VarChar(120)
-  nameEn     String   @map("name_en") @db.VarChar(120)
-  power      Int
-  influence  Int
-  standing   Int
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id        String   @id @default(uuid()) @db.Uuid
+  worldId   String   @map("world_id") @db.Uuid
+  factionId String   @map("faction_id") @db.VarChar(48)
+  nameRu    String   @map("name_ru") @db.VarChar(120)
+  nameEn    String   @map("name_en") @db.VarChar(120)
+  power     Int
+  influence Int
+  standing  Int
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
 
@@ -523,6 +527,111 @@ model PlayerReport {
 
 /// Stage 16: факт хода. Не состояние игры. Игрок, почта и текст сюда не пишутся.
 /// ref уникален вместе с name: повтор того же хода не двоит счётчик
+/// Stage 06.1: guild / association foundation. No treasury or player trading yet.
+model Guild {
+  id          String   @id @default(uuid()) @db.Uuid
+  universeId  String   @map("universe_id") @db.VarChar(32)
+  name        String   @db.VarChar(40)
+  nameKey     String   @map("name_key") @db.VarChar(40)
+  description String   @default("") @db.VarChar(500)
+  visibility  String   @default("public") @db.VarChar(10)
+  leaderId    String   @map("leader_id") @db.Uuid
+  reputation  Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  leader   Player             @relation("GuildLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  members  GuildMember[]
+  projects GuildProject[]
+  requests GuildJoinRequest[]
+  audits   GuildAudit[]
+
+  @@unique([universeId, nameKey])
+  @@index([universeId, visibility, reputation])
+  @@map("guilds")
+}
+
+model GuildMember {
+  id          String   @id @default(uuid()) @db.Uuid
+  guildId     String   @map("guild_id") @db.Uuid
+  playerId    String   @map("player_id") @db.Uuid
+  universeId  String   @map("universe_id") @db.VarChar(32)
+  role        String   @default("member") @db.VarChar(10)
+  contributed Int      @default(0)
+  joinedAt    DateTime @default(now()) @map("joined_at") @db.Timestamptz(3)
+
+  guild  Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, universeId])
+  @@index([guildId, role])
+  @@map("guild_members")
+}
+
+model GuildJoinRequest {
+  id        String    @id @default(uuid()) @db.Uuid
+  guildId   String    @map("guild_id") @db.Uuid
+  playerId  String    @map("player_id") @db.Uuid
+  status    String    @default("pending") @db.VarChar(10)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  decidedAt DateTime? @map("decided_at") @db.Timestamptz(3)
+
+  guild  Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, playerId])
+  @@index([guildId, status, createdAt])
+  @@map("guild_join_requests")
+}
+
+model GuildProject {
+  id          String    @id @default(uuid()) @db.Uuid
+  guildId     String    @map("guild_id") @db.Uuid
+  title       String    @db.VarChar(80)
+  description String    @default("") @db.VarChar(500)
+  target      Int
+  progress    Int       @default(0)
+  status      String    @default("active") @db.VarChar(10)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(3)
+
+  guild         Guild               @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  contributions GuildContribution[]
+
+  @@index([guildId, status, createdAt])
+  @@map("guild_projects")
+}
+
+model GuildContribution {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @map("project_id") @db.Uuid
+  playerId  String   @map("player_id") @db.Uuid
+  actionId  String   @map("action_id") @db.Uuid
+  amount    Int
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  project GuildProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  player  Player       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, actionId])
+  @@index([projectId, createdAt])
+  @@map("guild_contributions")
+}
+
+model GuildAudit {
+  id        String   @id @default(uuid()) @db.Uuid
+  guildId   String   @map("guild_id") @db.Uuid
+  actorId   String   @map("actor_id") @db.Uuid
+  action    String   @db.VarChar(32)
+  detail    Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, createdAt])
+  @@map("guild_audits")
+}
+
 model Insight {
   id        String   @id @default(uuid()) @db.Uuid
   name      String   @db.VarChar(24)
