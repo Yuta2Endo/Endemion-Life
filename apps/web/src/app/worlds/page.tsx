@@ -1,7 +1,5 @@
 import { universeCatalog } from "@endemion/game-core";
-import { Ornament } from "@endemion/ui";
 import type { Metadata } from "next";
-import { BornNow } from "@/components/born-now";
 import { SharedWorldPanel } from "@/components/world/shared-world-panel";
 import { WorldCard } from "@/components/world-card";
 import { getServerI18n } from "@/lib/locale-server";
@@ -20,30 +18,28 @@ export default async function WorldsPage() {
   const { locale, t } = await getServerI18n();
   return (
     <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-      <header className="text-center">
-        <h1 className="font-display text-4xl text-gilded sm:text-5xl">{t("worlds.title")}</h1>
-        <p className="mx-auto mt-4 max-w-2xl text-bone-300">{t("worlds.lead")}</p>
-        <Ornament className="mx-auto mt-8 max-w-sm" />
+      <header className="max-w-2xl">
+        <p className="eyebrow">{t("worlds.atlas")}</p>
+        <h1 className="mt-3 font-display text-4xl text-bone-100 sm:text-6xl">{t("worlds.title")}</h1>
+        <p className="mt-4 max-w-xl text-bone-300">{t("worlds.lead")}</p>
       </header>
-      <SharedWorldPanel />
-      <ul id="compare" className="mt-10 scroll-mt-20 divide-y divide-line rounded-xl border border-line">
-        {universeCatalog().map((universe) => (
-          <li key={universe.id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="font-display text-xl text-bone-100">{universe.name[locale]}</p>
-              <p className="mt-1 text-sm text-bone-300">
-                {universe.track.name[locale]} · {universe.mechanics[0]?.name[locale]} · {t("worlds.lifespan", { years: universe.lifespan })}
-              </p>
-            </div>
-            <BornNow universeId={universe.id} />
-          </li>
-        ))}
-      </ul>
-      <div className="mt-10 grid gap-5 lg:grid-cols-2">
-        {universeCatalog().map((universe) => (
-          <WorldCard key={universe.id} universe={universe} locale={locale} detailed />
-        ))}
-      </div>
+
+      <section id="compare" className="mt-10 scroll-mt-24">
+        <div className="grid gap-5 lg:grid-cols-2">
+          {universeCatalog().map((universe) => (
+            <WorldCard key={universe.id} universe={universe} locale={locale} detailed />
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-16 border-t border-line pt-10">
+        <p className="eyebrow">{t("worlds.living")}</p>
+        <h2 className="mt-3 font-display text-3xl text-bone-100">{t("worlds.sharedTitle")}</h2>
+        <p className="mt-2 max-w-2xl text-sm text-bone-400">{t("worlds.sharedLead")}</p>
+        <div className="mt-6">
+          <SharedWorldPanel />
+        </div>
+      </section>
     </main>
   );
 }

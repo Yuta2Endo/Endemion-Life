@@ -1,18 +1,12 @@
 import { universeCatalog } from "@endemion/game-core";
-import { Ornament } from "@endemion/ui";
+import { buttonClass } from "@endemion/ui";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import { LifeFolio } from "@/components/life-folio";
 import { LivesList } from "@/components/lives-list";
 import { WorldCard } from "@/components/world-card";
 import { YearDemo } from "@/components/year-demo";
 import { getServerI18n } from "@/lib/locale-server";
-
-const PILLARS = [
-  { title: "home.pillar1.title", text: "home.pillar1.text", mark: "I" },
-  { title: "home.pillar2.title", text: "home.pillar2.text", mark: "II" },
-  { title: "home.pillar3.title", text: "home.pillar3.text", mark: "III" }
-] as const;
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getServerI18n();
@@ -29,67 +23,54 @@ export default async function HomePage() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6">
-      <section className="relative flex flex-col items-center overflow-hidden py-16 text-center sm:py-20">
-        <div
-          className="pointer-events-none absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-500/10 blur-[120px] animate-glow"
-          aria-hidden="true"
-        />
-        <p className="relative animate-rise text-[11px] uppercase tracking-[0.35em] text-gold-400">{t("home.kicker")}</p>
-        <h1 className="relative mt-6 max-w-4xl animate-rise font-display text-5xl font-semibold leading-[1.05] text-gilded sm:text-7xl">
-          {t("home.title")}
-        </h1>
-        <p className="relative mt-6 max-w-2xl animate-rise text-base leading-relaxed text-bone-300 sm:text-lg">{t("home.lead")}</p>
-        <p className="relative mt-3 max-w-2xl text-sm leading-relaxed text-bone-400">{t("home.loop")}</p>
-        <p className="relative mt-2 max-w-2xl text-sm leading-relaxed text-bone-400">{t("home.heir")}</p>
-        <div className="relative mt-8 flex animate-rise flex-col gap-3 sm:flex-row">
-          <Link
-            href="/worlds"
-            className="inline-flex min-h-11 items-center justify-center rounded-md border border-gold-400/70 bg-linear-to-b from-gold-400/25 to-gold-600/10 px-7 py-3 font-medium tracking-wide text-gold-100 shadow-[0_0_32px_-8px_var(--color-gold-400)] transition hover:border-gold-300 hover:from-gold-400/35"
-            data-testid="start-life"
-          >
-            {t("home.start")}
-          </Link>
-          <a href="/worlds#compare" className="inline-flex min-h-11 items-center justify-center rounded-md border border-line bg-ink-900/60 px-7 py-3 text-bone-100 transition hover:border-gold-500/60 hover:text-gold-200">
-            {t("home.explore")}
-          </a>
+      <section className="grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16">
+        <div>
+          <p className="eyebrow text-gold-400">{t("home.kicker")}</p>
+          <h1 className="mt-5 max-w-2xl font-display text-5xl font-semibold leading-[1.02] text-bone-50 sm:text-6xl lg:text-7xl">
+            {t("home.title")}
+          </h1>
+          <p className="mt-6 max-w-xl text-base leading-relaxed text-bone-300 sm:text-lg">{t("home.lead")}</p>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-bone-400">{t("home.loop")}</p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link href="/worlds" className={buttonClass({ variant: "primary", size: "lg" })} data-testid="start-life">
+              {t("home.start")}
+            </Link>
+            <a href="/worlds#compare" className={buttonClass({ variant: "ghost", size: "lg" })}>
+              {t("home.explore")}
+            </a>
+          </div>
+          <p className="mt-5 max-w-md text-xs leading-relaxed text-bone-500">{t("home.heir")}</p>
         </div>
-        <div className="relative mt-10 w-full max-w-xl text-left">
-          <YearDemo />
-        </div>
+        <LifeFolio locale={locale} />
       </section>
 
       <LivesList />
 
-      <section id="worlds" className="mt-16 scroll-mt-20">
-        <h2 className="text-center font-display text-4xl text-gilded">{t("home.worldsTitle")}</h2>
-        <Ornament className="mx-auto my-6 max-w-sm" />
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <section id="worlds" className="mt-20 scroll-mt-24 sm:mt-28">
+        <div className="max-w-2xl">
+          <p className="eyebrow text-bone-500">{locale === "ru" ? "Атлас" : "Atlas"}</p>
+          <h2 className="mt-2 font-display text-4xl text-bone-100 sm:text-5xl">{t("home.worldsTitle")}</h2>
+          <p className="mt-3 text-bone-400">{locale === "ru" ? "Шесть миров, одна книга. Выберите, где начнётся ваша хроника." : "Six worlds, one binding. Choose where your chronicle begins."}</p>
+        </div>
+        <div className="mt-8 grid gap-4 lg:grid-cols-2">
           {universes.map((universe) => (
             <WorldCard key={universe.id} universe={universe} locale={locale} />
           ))}
         </div>
       </section>
 
-      <section className="mt-16 grid items-center gap-8 lg:grid-cols-2">
+      <section className="mt-20 grid items-start gap-8 border-t border-line pt-12 sm:mt-28 lg:grid-cols-[0.8fr_1.2fr]">
         <div>
-          <h2 className="font-display text-4xl text-gilded">{t("home.shotEnding")}</h2>
-          <p className="mt-4 text-bone-300">{t("home.heir")}</p>
+          <p className="eyebrow text-gold-400">{locale === "ru" ? "Один год" : "One year"}</p>
+          <h2 className="mt-2 font-display text-4xl text-bone-100">{locale === "ru" ? "Решение меняет всё" : "A choice changes everything"}</h2>
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-bone-400">
+            {locale === "ru"
+              ? "Каждый год — событие, выбор и последствие. Не спешите: хроника запомнит и то, что вы выбрали, и то, что отложили."
+              : "Every year is an event, a choice, a consequence. Take your time: the chronicle remembers what you chose and what you left undone."}
+          </p>
         </div>
-        <figure className="overflow-hidden rounded-xl border border-line bg-ink-900/70">
-          <Image src="/shot-ending.png" alt={t("home.shotEnding")} width={880} height={720} sizes="(min-width: 1024px) 50vw, 100vw" className="h-auto w-full" />
-        </figure>
+        <YearDemo />
       </section>
-
-      <section className="mt-16 grid gap-4 md:grid-cols-3">
-        {PILLARS.map((pillar) => (
-          <div key={pillar.mark} className="rounded-xl border border-line bg-ink-900/60 p-6">
-            <span className="font-display text-sm tracking-[0.3em] text-gold-500">{pillar.mark}</span>
-            <h2 className="mt-2 font-display text-2xl text-bone-100">{t(pillar.title)}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-bone-300">{t(pillar.text)}</p>
-          </div>
-        ))}
-      </section>
-
     </main>
   );
 }

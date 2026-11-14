@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Manrope } from "next/font/google";
+import { Alegreya, Golos_Text } from "next/font/google";
 import type { ReactNode } from "react";
 import { LocaleProvider } from "@/components/locale-provider";
 import { SiteHeader } from "@/components/site-header";
 import { getServerI18n } from "@/lib/locale-server";
 import "./globals.css";
 
-const display = Cormorant_Garamond({
-  variable: "--font-cormorant",
+const display = Alegreya({
+  variable: "--font-alegreya",
   subsets: ["latin", "cyrillic"],
   weight: ["500", "600", "700"],
   display: "swap",
@@ -15,9 +15,10 @@ const display = Cormorant_Garamond({
   adjustFontFallback: true
 });
 
-const sans = Manrope({
-  variable: "--font-manrope",
+const sans = Golos_Text({
+  variable: "--font-golos",
   subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600"],
   display: "swap",
   preload: true,
   adjustFontFallback: true

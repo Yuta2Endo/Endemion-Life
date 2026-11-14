@@ -91,6 +91,10 @@ export const M = {
 
   "worlds.title": t("Выберите мир рождения", "Choose a world to be born in"),
   "worlds.lead": t("Мир определяет, кем вы можете стать. Изменить его после рождения нельзя.", "The world decides who you can become. It cannot be changed after birth."),
+  "worlds.atlas": t("Атлас", "Atlas"),
+  "worlds.living": t("Общий мир", "Living world"),
+  "worlds.sharedTitle": t("Мир меняется без вас", "The world moves without you"),
+  "worlds.sharedLead": t("Сезоны, поселения и фракции живут общей хроникой. Ваша жизнь оставляет в ней след.", "Seasons, settlements and factions share one chronicle. Your life leaves a mark in it."),
   "worlds.born": t("Родиться здесь", "Be born here"),
   "worlds.path": t("Путь силы", "Path of power"),
   "worlds.rules": t("Законы мира", "Laws of the world"),

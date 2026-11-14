@@ -8,67 +8,55 @@
   }
 }
 
-/* Компоненты общего пакета UI тоже используют классы Tailwind */
 @source "../../../../packages/ui/src";
 
 @theme {
-  --font-display: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
-  --font-sans: var(--font-manrope), "Manrope", system-ui, sans-serif;
+  --font-display: var(--font-alegreya), "Alegreya", "Lora", Georgia, serif;
+  --font-sans: var(--font-golos), "Golos Text", "Manrope", system-ui, sans-serif;
 
-  --color-ink-950: #060608;
-  --color-ink-900: #0c0c10;
-  --color-ink-800: #14141a;
-  --color-ink-700: #1d1d25;
-  --color-ink-600: #282832;
-  --color-line: #2c2a33;
+  --color-ink-950: #08090b;
+  --color-ink-900: #101217;
+  --color-ink-800: #171a20;
+  --color-ink-700: #292c34;
+  --color-ink-600: #353943;
+  --color-line: #2a2d35;
 
-  --color-gold-100: #f7ebcb;
-  --color-gold-200: #eed9a4;
-  --color-gold-300: #e0c07a;
-  --color-gold-400: #c9a25a;
-  --color-gold-500: #a8843f;
-  --color-gold-600: #7a5f2e;
+  --color-gold-100: #eadfc8;
+  --color-gold-200: #d8c8a8;
+  --color-gold-300: #c9b184;
+  --color-gold-400: #b9924f;
+  --color-gold-500: #96733a;
+  --color-gold-600: #6e5328;
 
-  --color-bone-100: #ece6da;
-  --color-bone-300: #b8b1a4;
-  --color-bone-400: #a39c90;
-  --color-bone-500: #8d867a;
+  --color-bone-100: #e9e2d4;
+  --color-bone-300: #c2baab;
+  --color-bone-400: #a9a194;
+  --color-bone-500: #928b7e;
 
-  --color-blood-300: #e5a093;
-  --color-blood-400: #cc6552;
-  --color-blood-500: #a54331;
-  --color-blood-600: #7a2b1f;
+  --color-blood-300: #d9a096;
+  --color-blood-400: #c26b5a;
+  --color-blood-500: #b24b37;
+  --color-blood-600: #7d3025;
 
-  --color-jade-300: #a3d6b8;
-  --color-jade-400: #72b68f;
-  --color-jade-500: #519672;
-  --color-jade-600: #366c51;
+  --color-jade-300: #a7ccb5;
+  --color-jade-400: #6fa98a;
+  --color-jade-500: #4f8468;
+  --color-jade-600: #355b47;
 
-  --color-azure-400: #84b6d6;
-  --color-azure-500: #5d92b8;
-  --color-azure-600: #3e6d90;
+  --color-azure-400: #8bb4c9;
+  --color-azure-500: #648fa8;
+  --color-azure-600: #44687d;
 
-  --animate-rise: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  --animate-glow: glow 6s ease-in-out infinite;
+  --animate-rise: rise 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 
   @keyframes rise {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(6px);
     }
     to {
       opacity: 1;
       transform: translateY(0);
-    }
-  }
-
-  @keyframes glow {
-    0%,
-    100% {
-      opacity: 0.55;
-    }
-    50% {
-      opacity: 0.9;
     }
   }
 }
@@ -76,7 +64,7 @@
 :root {
   color-scheme: dark;
   --accent: var(--color-gold-400);
-  --accent-glow: rgba(201, 162, 90, 0.3);
+  --accent-glow: rgba(185, 146, 79, 0.18);
 }
 
 html {
@@ -88,44 +76,51 @@ body {
   overflow-x: clip;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
-  background:
-    radial-gradient(1200px 600px at 50% -10%, rgba(201, 162, 90, 0.09), transparent 60%),
-    radial-gradient(900px 500px at 100% 100%, rgba(122, 43, 31, 0.08), transparent 60%),
-    var(--color-ink-950);
+  background: var(--color-ink-950);
   color: var(--color-bone-100);
   font-family: var(--font-sans);
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Лёгкое зерно поверх фона: глубина без картинок */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.05;
+  opacity: 0.025;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 ::selection {
-  background: rgba(201, 162, 90, 0.35);
-  color: var(--color-gold-100);
+  background: rgba(185, 146, 79, 0.28);
+  color: var(--color-bone-100);
 }
 
 .font-display {
   font-family: var(--font-display);
-  letter-spacing: 0.01em;
+  letter-spacing: 0.005em;
 }
 
 .text-gilded {
-  background: linear-gradient(180deg, var(--color-gold-100) 0%, var(--color-gold-300) 55%, var(--color-gold-500) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--color-gold-200);
 }
 
-/* Тонкая прокрутка хронологии */
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: none;
+  color: var(--color-bone-500);
+}
+
+.rule {
+  height: 1px;
+  border: 0;
+  background: var(--color-line);
+}
+
 .scroll-thin {
   scrollbar-width: thin;
   scrollbar-color: var(--color-ink-600) transparent;

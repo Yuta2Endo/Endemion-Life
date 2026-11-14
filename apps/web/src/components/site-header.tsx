@@ -1,3 +1,4 @@
+import { buttonClass } from "@endemion/ui";
 import Link from "next/link";
 import { getServerI18n } from "@/lib/locale-server";
 import { AccountLink } from "./account-link";
@@ -19,15 +20,15 @@ export async function SiteHeader() {
           <NavLink href="/" className={`${link} hidden sm:inline`}>
             {t("nav.home")}
           </NavLink>
-          <NavLink href="/worlds" className={link}>
+          <NavLink href="/worlds" className={`${link} hidden min-[360px]:inline-flex`}>
             {t("nav.worlds")}
           </NavLink>
-          <a href="https://endemion.online" className={`hidden sm:inline ${link}`}>
-            Endemion
-          </a>
-          <AccountLink />
+          <Link href="/worlds" className={buttonClass({ variant: "primary", size: "md", className: "px-3 text-xs sm:px-4 sm:text-sm" })} data-testid="header-begin">
+            {t("home.start")}
+          </Link>
+          <span className="hidden min-[360px]:inline-flex"><AccountLink /></span>
           <StoreBadge />
-          <LanguageSwitch />
+          <span className="hidden min-[360px]:inline-flex"><LanguageSwitch /></span>
         </nav>
       </div>
     </header>

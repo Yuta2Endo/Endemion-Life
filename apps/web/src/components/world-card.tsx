@@ -9,15 +9,11 @@ export function WorldCard({ universe, locale, detailed = false }: { universe: Un
   const accent = universe.theme.accent;
   return (
     <article
-      className="group relative flex flex-col overflow-hidden rounded-xl border border-line bg-ink-900/80 p-6 transition duration-300 hover:-translate-y-0.5 hover:border-[var(--world-accent)]"
+      className="group relative flex flex-col overflow-hidden rounded-sm border border-line bg-ink-900 p-5 transition-colors duration-200 hover:border-[var(--world-accent)] sm:p-6"
       style={{ "--world-accent": `${accent}99` } as React.CSSProperties}
       data-testid={`world-${universe.id}`}
     >
-      <div
-        className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full opacity-60 blur-3xl transition duration-500 group-hover:opacity-100"
-        style={{ background: universe.theme.glow }}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-x-0 top-0 h-0.5" style={{ background: accent }} aria-hidden="true" />
       <div className="relative flex items-start gap-4">
         <WorldEmblem id={universe.id} accent={accent} size={detailed ? 84 : 64} />
         <div className="min-w-0">
@@ -35,11 +31,11 @@ export function WorldCard({ universe, locale, detailed = false }: { universe: Un
 
       {detailed && (
         <details className="relative mt-5 text-sm">
-          <summary className="cursor-pointer text-xs uppercase tracking-[0.18em] text-gold-300">{msg(locale, "worlds.more")}</summary>
+          <summary className="cursor-pointer text-xs font-medium text-gold-300">{msg(locale, "worlds.more")}</summary>
           <div className="mt-4 space-y-4">
           <p className="leading-relaxed text-bone-300">{universe.description[locale]}</p>
           <div>
-            <h4 className="mb-2 text-[11px] uppercase tracking-[0.2em]" style={{ color: accent }}>
+            <h4 className="mb-2 text-xs font-medium" style={{ color: accent }}>
               {msg(locale, "worlds.rules")}
             </h4>
             <ul className="space-y-1.5 text-bone-300">
@@ -52,13 +48,13 @@ export function WorldCard({ universe, locale, detailed = false }: { universe: Un
             </ul>
           </div>
           <div>
-            <h4 className="mb-2 text-[11px] uppercase tracking-[0.2em]" style={{ color: accent }}>
+            <h4 className="mb-2 text-xs font-medium" style={{ color: accent }}>
               {msg(locale, "worlds.path")}: {universe.track.name[locale]}
             </h4>
             <p className="text-bone-300">{universe.track.ranks.map((rank) => rank.name[locale]).join(" → ")}</p>
           </div>
           <div>
-            <h4 className="mb-2 text-[11px] uppercase tracking-[0.2em]" style={{ color: accent }}>
+            <h4 className="mb-2 text-xs font-medium" style={{ color: accent }}>
               {msg(locale, "worlds.mechanics")}
             </h4>
             <ul className="space-y-2 text-bone-300" data-testid="world-mechanics">
