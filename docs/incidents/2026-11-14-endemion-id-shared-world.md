@@ -1,7 +1,7 @@
 # Endemion ID users blocked from the shared world
 
 Date: 2026-11-14
-Status: fixed locally, pending release
+Status: fixed and deployed
 Severity: P1 (wrong account gate on all shared-world actions)
 
 ## Report
@@ -43,6 +43,19 @@ Guest players without a local account or `endemionSub` remain solo-only.
 - `pnpm test:api`: 149/149 passed.
 - Web unit tests: 28/28 passed.
 - API and web typecheck passed; web production build passed.
+
+## Release
+
+- Commit: `d9313dd` (`fix: treat endemion id as a shared-world account`).
+- CI run `43611917140`: success. Security run `43611917037`: success.
+- Deploy run `43612503324`: success.
+- Production HEAD: `d9313dd`, previous release `0d98323`.
+- Deploy history: `15:55:50Z deploy-start` → `15:56:19Z deploy ok`.
+- Pre-deploy backup: `endemion_life-manual-20261114T155304Z.dump`, trial restore passed
+  with 14 migrations, 19 players, 59 lives, 2,209 snapshots, 9,257 history entries,
+  6,272 actions.
+- Post-deploy checks: `/api/health` 200 with database/Redis up, `/worlds` 200,
+  all seven containers healthy.
 
 ## Security notes
 

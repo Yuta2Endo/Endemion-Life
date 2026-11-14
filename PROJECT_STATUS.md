@@ -1,12 +1,14 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-14 (Stage 06.2 player market deployed)<br>
+**Обновлено:** 2026-11-14 (Endemion ID shared-world hotfix deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `0661018` (Stage 06.2 player market)<br>
-**Production:** STAGE 06.2 + design phases 0-8, save schema **14**; production code `0661018`, deployed 2026-11-14 15:14 UTC; guild migration 13 and market migration 14 applied<br>
-**Production code:** `0661018`; DB migrations **14**<br>
-**Rollback:** `db44e82` безопасен до появления market-данных; миграция 14 additive, таблицы рынка можно оставить. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
+**HEAD:** `d9313dd` (Endemion ID shared-world fix)<br>
+**Production:** STAGE 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; production code `d9313dd`, deployed 2026-11-14 15:56 UTC; guild migration 13 and market migration 14 applied<br>
+**Production code:** `d9313dd`; DB migrations **14**<br>
+**Rollback:** `0d98323` (docs/Stage 06.2) или `0661018` (market code); миграция 14 additive. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
 **Рабочее дерево:** clean, кроме untracked Stage 11 reports/docx.
+
+**Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
 
 **Stage 06.2 player market (deployed):** публичная доска объявлений по мирам, account-only создание/покупка/отмена, атомарный обмен товара и золота, append-only ledger, история и snapshots обоих персонажей, защита restore после сделки и отмена offer при succession. Save schema остаётся **14**; БД-миграция **14** additive. Deploy run `43608818425` success, production `0661018`, 14 миграций. См. `docs/stage-06/STAGE_06_2_PLAYER_MARKET.md`.
 
