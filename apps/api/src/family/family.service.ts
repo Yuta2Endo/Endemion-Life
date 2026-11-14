@@ -554,7 +554,7 @@ export class FamilyService {
         data: { version: state.version, state: state as unknown as Prisma.InputJsonValue }
       });
       await tx.historyEntry.create({
-        data: { lifeId: life.id, seq, age: state.life.age, kind: "legacy", data: entry as unknown as Prisma.InputJsonValue }
+        data: { lifeId: life.id, seq, age: state.life.age, kind: "legacy", data: entry }
       });
       await tx.lifeSnapshot.create({
         data: { lifeId: life.id, version: state.version, age: state.life.age, reason: "action", state: state as unknown as Prisma.InputJsonValue }

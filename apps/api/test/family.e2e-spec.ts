@@ -192,7 +192,7 @@ describe("семьи игроков", () => {
     const stored = await t.prisma.client.life.findUniqueOrThrow({ where: { id: life.id } });
     const state = stored.state as { character: { wealth: number } };
     state.character.wealth = 100;
-    await t.prisma.client.life.update({ where: { id: life.id }, data: { state: state as object } });
+    await t.prisma.client.life.update({ where: { id: life.id }, data: { state } });
     const before = 100;
     const deposited = await post(friend.client, `/api/families/${family.id}/treasury`, {
       actionId: randomUUID(),
