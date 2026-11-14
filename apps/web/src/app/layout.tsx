@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Alegreya, Golos_Text } from "next/font/google";
 import type { ReactNode } from "react";
 import { LocaleProvider } from "@/components/locale-provider";
+import { LanguageSwitch } from "@/components/language-switch";
 import { SiteHeader } from "@/components/site-header";
 import { getServerI18n } from "@/lib/locale-server";
 import "./globals.css";
@@ -67,6 +68,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               <a href="https://endemion.online/terms" className="hover:text-gold-200">{t("footer.terms")}</a>
               <a href="https://endemion.online/community" className="hover:text-gold-200">{t("nav.people")}</a>
               <a href="mailto:endemion@internet.ru" className="hover:text-gold-200">endemion@internet.ru</a>
+              <span className="inline-flex min-[480px]:hidden"><LanguageSwitch /></span>
             </nav>
           </footer>
         </LocaleProvider>

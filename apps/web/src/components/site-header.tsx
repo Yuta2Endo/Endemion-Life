@@ -17,18 +17,22 @@ export async function SiteHeader() {
           <span className="hidden text-[10px] uppercase tracking-[0.4em] text-bone-500 transition group-hover:text-gold-300 sm:inline">Life</span>
         </Link>
         <nav className="flex min-w-0 items-center gap-0.5 sm:gap-5" aria-label={t("nav.primary")}>
-          <NavLink href="/" className={`${link} hidden sm:inline`}>
-            {t("nav.home")}
-          </NavLink>
-          <NavLink href="/worlds" className={`${link} hidden min-[360px]:inline-flex`}>
-            {t("nav.worlds")}
-          </NavLink>
+          <span className="hidden sm:inline-flex">
+            <NavLink href="/" className={link}>
+              {t("nav.home")}
+            </NavLink>
+          </span>
+          <span className="hidden min-[480px]:inline-flex">
+            <NavLink href="/worlds" className={link}>
+              {t("nav.worlds")}
+            </NavLink>
+          </span>
           <Link href="/worlds" className={buttonClass({ variant: "primary", size: "md", className: "px-3 text-xs sm:px-4 sm:text-sm" })} data-testid="header-begin">
             {t("home.start")}
           </Link>
           <span className="hidden min-[360px]:inline-flex"><AccountLink /></span>
-          <StoreBadge />
-          <span className="hidden min-[360px]:inline-flex"><LanguageSwitch /></span>
+          <span className="hidden min-[360px]:inline-flex"><StoreBadge /></span>
+          <span className="hidden min-[480px]:inline-flex"><LanguageSwitch /></span>
         </nav>
       </div>
     </header>

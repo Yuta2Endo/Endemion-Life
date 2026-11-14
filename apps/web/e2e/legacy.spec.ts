@@ -14,6 +14,7 @@ async function openTab(page: Page, tab: "event" | "character" | "people" | "time
 async function createWithSeed(page: Page, world: string, seed: string) {
   await page.goto(`/create/${world}`);
   await page.getByTestId("create-choose").click();
+  await page.getByTestId("create-step-3").click();
   await page.getByTestId("create-advanced").click();
   await page.getByTestId("seed-input").fill(seed);
   await page.getByTestId("create-submit").click();

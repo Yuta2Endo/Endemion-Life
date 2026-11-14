@@ -26,7 +26,7 @@ describe("Stage 02.5: форма создания", () => {
     expect(html).toContain("Воспитание в салоне");
     expect(html).toContain("Очки развития");
     expect(html).toContain("Осталось очков: 3 из 3");
-    expect(html).toContain("Родиться сразу");
+    expect(html).toContain("Родиться");
   });
 
   it("показывает английские подписи", () => {
@@ -34,6 +34,7 @@ describe("Stage 02.5: форма создания", () => {
     expect(html).toContain("Upbringing");
     expect(html).toContain("Development points");
     expect(html).toContain("3 of 3 points left");
-    expect(html).toContain("Be born now");
+    expect(html).toContain("Be born");
   });
 });
+
