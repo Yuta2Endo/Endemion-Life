@@ -1,9 +1,11 @@
 # R2.1 — Player Families
 
-**Status:** implemented locally, verified, not committed, not deployed  
+**Status:** deployed to production  
+**Release commit:** `5a0010a`  
 **Save schema:** 14 (unchanged)  
 **DB migration:** 16, additive  
-**Production baseline:** runtime `fa85733`, docs `ff59cb2`, 15 migrations
+**Production:** runtime `5a0010a`, 16 migrations, deployed 2026-11-14 21:05 UTC  
+**Rollback:** `ff59cb2`; additive family tables may remain
 
 ## 1. Scope
 
@@ -107,6 +109,15 @@ Features:
 - No dedicated anti-abuse limits beyond account auth, global rate limit, member cap, invite uniqueness and audit.
 - `reputation`/`treasury` are foundation columns only.
 
-## 8. Rollback
+## 8. Deployment
+
+- Code commit and production HEAD: `5a0010a`.
+- CI run `43639405025` success; Security success.
+- Backup `endemion_life-manual-20261114T205202Z.dump` trial-restored before deploy.
+- Manual Deploy run `43639822446` with `allow_migrations=true` succeeded.
+- Deploy history: `21:04:49Z deploy-start 5a0010a from ff59cb2` → `21:05:19Z deploy 5a0010a ok from ff59cb2`.
+- Production has 16 applied migrations, `public.families` exists, all seven containers healthy, `/api/health` 200 and `/api/families` 401 without a session.
+
+## 9. Rollback
 
 Application rollback is safe: migration 16 is additive, save schema is unchanged, and the previous release ignores the new tables. Do not drop family tables during rollback.
