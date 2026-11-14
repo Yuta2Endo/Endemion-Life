@@ -20,6 +20,7 @@ import { TravelPanel } from "./travel-panel";
 import { EventCard, OutcomeCard } from "./event-card";
 import { LifeSummary } from "./life-summary";
 import { LifeDeskHeader } from "./life-desk-header";
+import { LifeGuide } from "./life-guide";
 import { LocalLifeBanner } from "./local-life-banner";
 import { SavesDialog } from "./saves-dialog";
 import { Timeline } from "./timeline";
@@ -313,6 +314,13 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
         )}
       </div>
       {store.kind === "local" && <LocalLifeBanner lifeId={lifeId} disabled={busy} />}
+      <LifeGuide
+        life={life}
+        busy={busy}
+        onAdvance={() => void perform({ type: "advance" })}
+        onEvent={() => setTab("event")}
+        onDossier={() => setTab("character")}
+      />
       <div className="relative mb-4" aria-live="polite">
         {event && tab !== "event" && (
           <button
