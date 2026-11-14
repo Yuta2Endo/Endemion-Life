@@ -2,9 +2,9 @@
 
 **Обновлено:** 2026-11-14 (Endemion ID shared-world hotfix deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `d9313dd` (Endemion ID shared-world fix)<br>
-**Production:** STAGE 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; production code `d9313dd`, deployed 2026-11-14 15:56 UTC; guild migration 13 and market migration 14 applied<br>
-**Production code:** `d9313dd`; DB migrations **14**<br>
+**HEAD:** `fbc0a69` (Endemion ID shared-world fix + docs)<br>
+**Production:** STAGE 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime code `d9313dd`, production checkout/docs `fbc0a69`, deployed 2026-11-14 16:05 UTC; guild migration 13 and market migration 14 applied<br>
+**Production code:** `d9313dd` (same application code as `fbc0a69`); DB migrations **14**<br>
 **Rollback:** `0d98323` (docs/Stage 06.2) или `0661018` (market code); миграция 14 additive. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
 **Рабочее дерево:** clean, кроме untracked Stage 11 reports/docx.
 
