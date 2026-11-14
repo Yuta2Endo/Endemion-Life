@@ -1,14 +1,14 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-14 (Stage 06.2 player market, локально)<br>
+**Обновлено:** 2026-11-14 (Stage 06.2 player market deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `db44e82` (design QA gate)<br>
-**Production:** STAGE 06.1 + design phases 0-8, save schema **14**; production code `db44e82`, deployed 2026-11-14 13:43 UTC; guild migration 13 applied<br>
-**Production code:** `db44e82`; DB migrations **13**<br>
-**Rollback:** `3f35fdc` (Stage 05) безопасен — миграция Stage 06.1 additive, таблицы гильдий можно оставить. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
-**Рабочее дерево:** Stage 06.2 player market не закоммичен; также untracked Stage 11 reports/docx.
+**HEAD:** `0661018` (Stage 06.2 player market)<br>
+**Production:** STAGE 06.2 + design phases 0-8, save schema **14**; production code `0661018`, deployed 2026-11-14 15:14 UTC; guild migration 13 and market migration 14 applied<br>
+**Production code:** `0661018`; DB migrations **14**<br>
+**Rollback:** `db44e82` безопасен до появления market-данных; миграция 14 additive, таблицы рынка можно оставить. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
+**Рабочее дерево:** clean, кроме untracked Stage 11 reports/docx.
 
-**Stage 06.2 player market (локально):** публичная доска объявлений по мирам, account-only создание/покупка/отмена, атомарный обмен товара и золота, append-only ledger, история и snapshots обоих персонажей, защита restore после сделки и отмена offer при succession. Save schema остаётся **14**; БД-миграция **14** additive, применена локально, в production — 13. См. `docs/stage-06/STAGE_06_2_PLAYER_MARKET.md`.
+**Stage 06.2 player market (deployed):** публичная доска объявлений по мирам, account-only создание/покупка/отмена, атомарный обмен товара и золота, append-only ledger, история и snapshots обоих персонажей, защита restore после сделки и отмена offer при succession. Save schema остаётся **14**; БД-миграция **14** additive. Deploy run `43608818425` success, production `0661018`, 14 миграций. См. `docs/stage-06/STAGE_06_2_PLAYER_MARKET.md`.
 
 **Stage 05 (2026-11-14):** account boundary, Redis presence, SSE, идемпотентный вклад в общий мир, export/delete аккаунта, reports, web-панель и Nginx SSE реализованы, проверены, закоммичены (`b6db176` → `9daaec2`) и развёрнуты. Production работает на `9daaec2`, 12 миграций. См. `docs/stage-05/STAGE_05_REPORT.md` и `docs/stage-05/RELEASE_RECORD.md`.
 
@@ -42,7 +42,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | STAGE 04 (Living Worlds) | Shared world, deterministic season tick, replay, web panel | **COMPLETE; deployed, schema 14, migration 11** — см. `docs/stage-04/RELEASE_RECORD.md` |
 | STAGE 05 (Multiplayer Foundation) | Account gate, presence/SSE, contributions, export/delete, reports | **COMPLETE; deployed, schema 14, migration 12** — см. `docs/stage-05/STAGE_05_REPORT.md` |
 | STAGE 06.1 (Guild Foundation) | Guilds, roles, requests, projects, reputation, audit | **COMPLETE; deployed, schema 14, migration 13** — см. `docs/stage-06/STAGE_06_1_REPORT.md` |
-| STAGE 06.2 (Player Market) | Offers, atomic goods/gold settlement, ledger, restore guard, succession cancel | **IMPLEMENTED LOCALLY; schema 14, migration 14 local only** — см. `docs/stage-06/STAGE_06_2_PLAYER_MARKET.md` |
+| STAGE 06.2 (Player Market) | Offers, atomic goods/gold settlement, ledger, restore guard, succession cancel | **COMPLETE; deployed, schema 14, migration 14** — см. `docs/stage-06/STAGE_06_2_PLAYER_MARKET.md` |
 
 ## Design (Living Chronicle)
 

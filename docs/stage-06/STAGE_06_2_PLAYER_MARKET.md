@@ -1,9 +1,9 @@
 # Stage 06.2 — Player Market
 
-**Status:** implemented and verified locally; not deployed.
+**Status:** deployed to production 2026-11-14 15:14 UTC.
 **Save schema:** 14 (unchanged). The market is server-owned data and is not part of `GameState`.
 **Database migration:** 14 (`20261114150000_stage06_player_market`), additive.
-**Production at implementation:** `db44e82`, save schema 14, 13 applied migrations.
+**Production:** `0661018`, save schema 14, 14 applied migrations.
 
 ## Scope
 
@@ -116,9 +116,19 @@ The new `stage06-market.e2e-spec.ts` covers guest access, a public board, an ato
 - Active offers are capped at eight per character and quantity at five per offer.
 - No notification or live update for a new listing or a sale.
 - No web E2E test specifically drives the market panel; API E2E covers the settlement rules.
-- Production remains on 13 migrations and does not have the market tables until a separately approved deploy runs migration 14.
 - The buyer and seller characters must both be alive and adult; the seller's account is not otherwise checked at purchase time.
+- The public board returns at most 50 active offers per universe and performs lazy expiry; there is no pagination yet.
+
+## Production deployment
+
+- Code and migration: `0661018b9d6513643180cc0df687bd03f4e21c9b`.
+- Previous production release: `db44e82`.
+- Deploy workflow run: `43608818425`, manual dispatch with `allow_migrations=true`; both jobs succeeded.
+- Deploy history: `2026-11-14T15:14:04Z deploy-start 0661018 from db44e82` → `2026-11-14T15:14:33Z deploy 0661018 ok from db44e82`.
+- PostgreSQL: 14 applied migrations; `market_offers`, `market_trades`, and `market_ledger` exist.
+- Public `GET /api/market?universeId=hunter` returns 200; unauthenticated `POST /api/market/offers` returns 401; `/api/health` reports database and Redis up.
+- Pre-deploy backup `endemion_life-manual-20261114T151034Z.dump` (12 MB) passed checksum, table-of-contents, and full trial restore, and was uploaded externally.
 
 ## Rollback
 
-The migration is additive. Before any market data exists, rolling back the application leaves three unused tables. After trades exist, rolling back removes the API surface and web panel; trade and ledger rows remain as an audit record. Rolling back the database migration itself would destroy that record and is not part of the release plan.
+The migration is additive. Rolling back to `db44e82` before any market data exists leaves three unused tables. After trades exist, rolling back removes the API surface and web panel; trade and ledger rows remain as an audit record. Rolling back the database migration itself would destroy that record and is not part of the release plan.
