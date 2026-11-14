@@ -206,12 +206,13 @@ export function CreateForm({ universe, temperaments }: { universe: UniverseSumma
               <label className="mt-6 block max-w-xl">
                 <span className="mb-2 block text-sm font-medium text-bone-200">{t("create.name")}</span>
                 <input
+                  name="characterName"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   maxLength={NAME_MAX_LENGTH}
                   placeholder={t("create.namePlaceholder")}
                   autoComplete="off"
-                  className="min-h-12 w-full border border-line bg-ink-900 px-4 py-3 text-lg text-bone-50 placeholder:text-bone-500 focus:border-gold-400 focus:outline-none"
+                  className="min-h-12 w-full border border-line bg-ink-900 px-4 py-3 text-lg text-bone-50 placeholder:text-bone-500 focus:border-gold-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300"
                   aria-describedby="create-name-hint"
                   data-testid="name-input"
                 />
@@ -297,11 +298,12 @@ export function CreateForm({ universe, temperaments }: { universe: UniverseSumma
                 <label className="mt-4 block max-w-md">
                   <span className="mb-2 block text-sm font-medium text-bone-200">{t("create.seed")}</span>
                   <input
+                    name="seed"
                     value={seed}
                     onChange={(e) => setSeed(e.target.value)}
                     maxLength={SEED_MAX_LENGTH}
                     autoComplete="off"
-                    className="min-h-11 w-full border border-line bg-ink-900 px-4 py-2.5 font-mono text-sm text-bone-100 focus:border-gold-400 focus:outline-none"
+                    className="min-h-11 w-full border border-line bg-ink-900 px-4 py-2.5 font-mono text-sm text-bone-100 focus:border-gold-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300"
                     data-testid="seed-input"
                   />
                   <span className="mt-2 block text-xs text-bone-500">{t("create.seedHint")}</span>

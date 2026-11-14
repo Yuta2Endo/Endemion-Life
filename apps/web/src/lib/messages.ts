@@ -23,6 +23,7 @@ export const M = {
   "nav.people": t("Игроки", "Players"),
   "nav.language": t("Язык", "Language"),
   "nav.primary": t("Разделы", "Sections"),
+  "a11y.skip": t("Перейти к содержимому", "Skip to content"),
 
   "store.cloud": t("Облачные сохранения", "Cloud saves"),
   "store.local": t("Локальное сохранение", "Local save"),

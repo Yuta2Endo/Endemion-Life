@@ -56,10 +56,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang={locale} className={`${display.variable} ${sans.variable}`}>
       <body className="relative overflow-x-clip">
+        <a href="#main-content" className="skip-link">
+          {t("a11y.skip")}
+        </a>
         <LocaleProvider locale={locale}>
           <SiteHeader />
           {/* Выше подвала: фиксированная панель вкладок на телефоне не должна уходить под него */}
-          <div className="relative z-20">{children}</div>
+          <div id="main-content" tabIndex={-1} className="relative z-20 outline-none">{children}</div>
           <footer className="relative z-10 mt-20 overflow-x-clip border-t border-line/60 py-8 pb-24 text-center text-xs text-bone-500 lg:pb-8">
             <p>Endemion Life · {new Date().getFullYear()}</p>
             <nav className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2" aria-label="Endemion">

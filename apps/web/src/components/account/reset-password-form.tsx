@@ -52,13 +52,14 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
           <label className="block">
             <span className="mb-1.5 block text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("auth.newPassword")}</span>
             <input
+              name="newPassword"
               type="password"
               required
               minLength={PASSWORD_MIN_LENGTH}
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-line bg-ink-950/70 px-4 py-2.5 text-bone-100 focus:border-gold-400/70 focus:outline-none"
+              className="w-full rounded-md border border-line bg-ink-950/70 px-4 py-2.5 text-bone-100 focus:border-gold-400/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300"
               data-testid="reset-password"
             />
             <span className="mt-1 block text-xs text-bone-500">{t("auth.passwordHint")}</span>

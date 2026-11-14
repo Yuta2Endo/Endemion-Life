@@ -9,7 +9,7 @@ import { authApi, endemionIdLoginUrl } from "@/lib/auth";
 import { useI18n } from "../locale-provider";
 
 const INPUT =
-  "w-full rounded-sm border border-line bg-ink-950/70 px-4 py-2.5 text-bone-100 placeholder:text-bone-500 focus:border-gold-400/70 focus:outline-none";
+  "w-full rounded-sm border border-line bg-ink-950/70 px-4 py-2.5 text-bone-100 placeholder:text-bone-500 focus:border-gold-400/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300";
 
 function errorText(error: unknown, fallback: string): string {
   return error instanceof ClientError && error.code !== "INTERNAL" && error.code !== "NETWORK" ? error.message : fallback;
@@ -100,6 +100,7 @@ function SignIn({ onDone }: { onDone: (me: MeResponse, info: string | null, veri
       <form onSubmit={submit} className="space-y-4" noValidate>
         <Field label={t("auth.email")}>
           <input
+            name="email"
             type="email"
             required
             autoComplete="email"
@@ -112,6 +113,7 @@ function SignIn({ onDone }: { onDone: (me: MeResponse, info: string | null, veri
         {mode !== "forgot" && (
           <Field label={t("auth.password")} hint={mode === "register" ? t("auth.passwordHint") : undefined}>
             <input
+              name="password"
               type="password"
               required
               minLength={mode === "register" ? PASSWORD_MIN_LENGTH : undefined}
@@ -184,6 +186,7 @@ function VerifyEmail({ account, sentInitially, onVerified }: { account: AccountV
         <div className="flex-1">
           <Field label={t("auth.code")}>
             <input
+              name="code"
               inputMode="numeric"
               autoComplete="one-time-code"
               pattern="\d*"
