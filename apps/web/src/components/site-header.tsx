@@ -12,7 +12,7 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-line/70 bg-ink-950/80 pt-[env(safe-area-inset-top)] backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6">
-        <Link href="/" className="group flex min-w-0 items-baseline gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300" aria-label="Endemion Life">
+        <Link href="/" className="group flex min-w-0 items-baseline gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300">
           <span className="truncate font-display text-sm font-semibold tracking-normal text-gilded sm:text-xl sm:tracking-[0.2em]">ENDEMION</span>
           <span className="hidden text-[10px] uppercase tracking-[0.4em] text-bone-500 transition group-hover:text-gold-300 sm:inline">Life</span>
         </Link>

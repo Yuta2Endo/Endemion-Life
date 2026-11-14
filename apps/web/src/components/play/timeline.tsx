@@ -72,7 +72,6 @@ export function Timeline({
                 }`}
                 onClick={() => onSelect?.(entry.seq)}
                 aria-current={selected ? "true" : undefined}
-                aria-label={`${t("play.inspect")}: ${l(entry.title)}`}
               >
                 <span
                   className={`absolute -left-[4px] top-1 flex h-2 w-2 items-center justify-center rounded-full transition-transform duration-200 ${

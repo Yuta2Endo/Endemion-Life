@@ -27,7 +27,7 @@ export function LanguageSwitch() {
           disabled={pending}
           aria-pressed={code === locale}
           aria-current={code === locale ? "true" : undefined}
-          className={`rounded px-1 py-1 uppercase tracking-widest transition sm:px-2 ${code === locale ? "bg-gold-500/20 text-gold-100 ring-1 ring-gold-400/70" : "text-bone-500 hover:text-bone-100"}`}
+          className={`inline-flex min-h-6 min-w-6 items-center justify-center rounded px-1 py-1 uppercase tracking-widest transition sm:px-2 ${code === locale ? "bg-gold-500/20 text-gold-100 ring-1 ring-gold-400/70" : "text-bone-500 hover:text-bone-100"}`}
         >
           {code}
         </button>
