@@ -2,7 +2,7 @@
 
 import type { CurrentLifeSummaryView, HeirView, LifeSummaryView } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
-import { Button, Meter, Ornament, Panel } from "@endemion/ui";
+import { Button, Meter, Panel } from "@endemion/ui";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ageLabel } from "@/lib/format";
@@ -22,13 +22,13 @@ function Signed({ value }: { value: number }) {
 function HeirCard({ heir, controlAge, busy, onChoose }: { heir: HeirView; controlAge: number; busy: boolean; onChoose: (heir: HeirView) => void }) {
   const { l, t } = useI18n();
   return (
-    <li className={`rounded-lg border p-3 ${heir.available ? "border-line bg-ink-950/60" : "border-line/50 bg-ink-950/30 opacity-60"}`} data-testid="heir" data-heir={heir.id} data-name={heir.name} data-available={heir.available}>
+    <li className={`border p-3 ${heir.available ? "border-line bg-ink-950/60" : "border-line/50 bg-ink-950/30 opacity-60"} ${heir.primary ? "border-t-2 border-t-gold-400" : ""}`} data-testid="heir" data-heir={heir.id} data-name={heir.name} data-available={heir.available}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-base text-bone-100">
           {heir.name}
           <span className="ml-2 text-[10px] uppercase tracking-wider text-bone-500">{l(heir.relationName)}</span>
         </p>
-        {heir.primary && <span className="rounded border border-gold-500/50 px-1.5 py-0.5 text-[10px] text-gold-200">{t("heir.primary")}</span>}
+        {heir.primary && <span className="border border-gold-500/50 px-1.5 py-0.5 text-[10px] text-gold-200">◆ {t("heir.primary")}</span>}
       </div>
       {heir.primaryReason && (
         <p className="mt-1 text-[11px] leading-snug text-gold-300/90" data-testid="heir-primary-reason">
@@ -126,7 +126,7 @@ function Summary({ summary }: { summary: LifeSummaryView }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
-        <div className="mx-auto flex h-28 w-28 flex-col items-center justify-center rounded-full border border-gold-500/50 bg-gold-500/5" data-testid="life-score" data-score={summary.score}>
+        <div className="mx-auto flex h-28 w-28 flex-col items-center justify-center border border-gold-500/50 bg-gold-500/5" data-testid="life-score" data-score={summary.score}>
           <span className="font-display text-4xl text-gilded tabular-nums">{summary.score}</span>
           <span className="text-[10px] uppercase tracking-wider text-bone-500">/ 100</span>
         </div>
@@ -145,8 +145,7 @@ function Summary({ summary }: { summary: LifeSummaryView }) {
         ))}
       </div>
 
-      <Ornament />
-      <dl className="grid gap-3 text-sm sm:grid-cols-2">
+      <dl className="grid gap-3 border-t border-line pt-4 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("summary.world")}</dt>
           <dd className="text-bone-100">{l(summary.world)}</dd>

@@ -384,7 +384,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
           )}
 
           {!dead && (
-            <Panel className="flex flex-wrap items-center justify-between gap-3">
+            <Panel className="flex scroll-mt-24 flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap gap-2">
                 <Button variant="primary" onClick={() => void perform({ type: "advance" })} disabled={!canAdvance} data-testid="advance-1">
                   {t("play.advance1")}

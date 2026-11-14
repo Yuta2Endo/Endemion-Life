@@ -32,13 +32,13 @@ function TreeNode({ node, zoom, selected, related, onSelect }: { node: TreeNodeV
         onClick={() => onSelect(node.id)}
         aria-pressed={selected}
         aria-label={`${node.name}, ${l(node.relation ?? node.roleName)}, ${node.alive ? t("dossier.age", { n: node.age }) : l(NPC_STATUS_NAMES.deceased)}`}
-        className={`${size.node} relative rounded-md border text-center transition focus-visible:outline-2 focus-visible:outline-gold-300 ${tone} ${selected ? "ring-2 ring-gold-300" : related ? "ring-1 ring-gold-500/50" : ""} ${node.alive || node.isSelf ? "" : "opacity-60"}`}
+        className={`${size.node} relative rounded-none border text-center transition focus-visible:outline-2 focus-visible:outline-gold-300 ${tone} ${node.heir ? "border-t-2 border-t-jade-400/80" : ""} ${selected ? "ring-2 ring-gold-300" : related ? "ring-1 ring-gold-500/50" : ""} ${node.alive || node.isSelf ? "" : "opacity-60"}`}
         data-testid={node.isSelf ? "tree-you" : "tree-node"}
         data-node={node.id}
         data-alive={node.alive}
         data-heir={node.heir}
       >
-        <span className={`block truncate uppercase tracking-wider text-bone-500 ${size.meta}`}>{node.isSelf ? t("lineage.you") : l(node.relation ?? node.roleName)}</span>
+        <span className={`block truncate text-bone-500 ${size.meta}`}>{node.isSelf ? t("lineage.you") : l(node.relation ?? node.roleName)}</span>
         <span className={`block truncate ${size.name} ${node.isSelf ? "text-gold-100" : "text-bone-100"}`}>
           {!node.alive && <span aria-hidden="true">✝ </span>}
           {node.name}
@@ -219,17 +219,21 @@ function Chronicle({ lineage }: { lineage: LineageView }) {
   return (
     <div className="space-y-3" data-testid="family-chronicle">
       {lineage.generation > 1 && (
-        <label className="flex items-center gap-2 text-xs text-bone-300">
-          {t("lineage.generation", { n: "" }).trim()}
-          <select value={gen} onChange={(e) => setGen(e.target.value === "all" ? "all" : Number(e.target.value))} className="rounded border border-line bg-ink-950 px-2 py-1 text-bone-100" data-testid="chronicle-gen">
-            <option value="all">{t("lineage.allGens")}</option>
-            {gens.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="scroll-thin flex gap-1 overflow-x-auto" role="group" aria-label={t("lineage.generation", { n: "" }).trim()} data-testid="chronicle-gen">
+          {(["all", ...gens] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setGen(value === "all" ? "all" : Number(value))}
+              aria-pressed={gen === value}
+              className={`shrink-0 border px-2.5 py-1 text-xs transition focus-visible:outline-2 focus-visible:outline-gold-300 ${
+                gen === value ? "border-gold-500/60 bg-gold-500/10 text-gold-100" : "border-line text-bone-400 hover:text-bone-100"
+              }`}
+            >
+              {value === "all" ? t("lineage.allGens") : t("lineage.generation", { n: value })}
+            </button>
+          ))}
+        </div>
       )}
       {entries.length === 0 ? (
         <p className="text-xs text-bone-500">{t("lineage.empty")}</p>
@@ -551,15 +555,23 @@ export function LineagePanel({ life, store }: { life: LifeView; store: GameStore
   const familyActivities = life.world.activities.filter((activity) => activity.kind === "family");
   return (
     <div className="space-y-4" data-testid="lineage-panel">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-display text-lg text-bone-100">
-          {life.legacy.lineageName} · <span className="text-gold-300">{t("lineage.generation", { n: life.legacy.generation })}</span>
-        </p>
-        <div className="w-40">
-          <Meter label={t("lineage.renown")} value={life.legacy.renown + 100} max={200} tone={life.legacy.renown >= 0 ? "gold" : "blood"} caption={String(life.legacy.renown)} />
+      <header className="border-b border-line pb-4">
+        <p className="eyebrow text-gold-300">{t("dossier.lineage")}</p>
+        <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="font-display text-3xl leading-none text-bone-100">{life.legacy.lineageName}</p>
+            <p className="mt-2 text-sm text-bone-400">
+              {t("lineage.generation", { n: life.legacy.generation })}
+              <span className="text-bone-600"> · </span>
+              {t("lineage.renown")}: <span className="tabular-nums text-gold-200">{life.legacy.renown}</span>
+            </p>
+          </div>
+          <div className="w-full max-w-48">
+            <Meter label={t("lineage.renown")} value={life.legacy.renown + 100} max={200} tone={life.legacy.renown >= 0 ? "gold" : "blood"} caption={String(life.legacy.renown)} />
+          </div>
         </div>
-      </div>
-      <div className="flex flex-wrap gap-1" role="tablist" aria-label={t("dossier.lineage")}>
+      </header>
+      <div className="scroll-thin flex gap-1 overflow-x-auto border-b border-line pb-px" role="tablist" aria-label={t("dossier.lineage")}>
         {sections.map((item) => (
           <button
             key={item.id}
@@ -567,7 +579,9 @@ export function LineagePanel({ life, store }: { life: LifeView; store: GameStore
             role="tab"
             aria-selected={section === item.id}
             onClick={() => setSection(item.id)}
-            className={`rounded px-2.5 py-1 text-xs transition focus-visible:outline-2 focus-visible:outline-gold-300 ${section === item.id ? "bg-gold-500/20 text-gold-100" : "text-bone-300 hover:text-bone-100"}`}
+            className={`shrink-0 border-b-2 px-3 py-2 text-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${
+              section === item.id ? "border-gold-400 text-gold-100" : "border-transparent text-bone-400 hover:text-bone-100"
+            }`}
             data-testid={`lineage-tab-${item.id}`}
           >
             {item.label}
