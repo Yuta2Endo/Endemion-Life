@@ -9,7 +9,7 @@ CREATE TABLE "guilds" (
     "leader_id" UUID NOT NULL,
     "reputation" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
     CONSTRAINT "guilds_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "guilds_universe_id_name_key_key" UNIQUE ("universe_id", "name_key"),
     CONSTRAINT "guilds_leader_id_fkey" FOREIGN KEY ("leader_id") REFERENCES "players"("id") ON DELETE CASCADE ON UPDATE CASCADE
