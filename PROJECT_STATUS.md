@@ -1,11 +1,11 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-15 (R2.2 family estate backend, local)<br>
+**Обновлено:** 2026-11-15 (R2.2 family estate deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `5a0010a` (R2.1 player families)<br>
-**Production:** R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `5a0010a`, deployed 2026-11-14 21:05 UTC; migrations **16** (guild 13, market 14, profile 15, families 16)<br>
-**Production code:** `5a0010a`; DB migrations **16**, additive<br>
-**Rollback:** `ff59cb2` (R1.2 docs/runtime `fa85733`); migration 16 is additive and family tables may remain.<br>
+**HEAD:** `f17e96f` (R2.2 family estate)<br>
+**Production:** R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `f17e96f`, deployed 2026-11-14 23:36 UTC; migrations **17** (guild 13, market 14, profile 15, families 16, treasury 17)<br>
+**Production code:** `f17e96f`; DB migrations **17**, additive<br>
+**Rollback:** `5a0010a` (R2.1 families); migration 17 is additive and treasury tables may remain.<br>
 **Рабочее дерево:** docs record being updated; unrelated Android/itch/lockfile changes preserved; 74 Stage 11 reports/docx untracked.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
@@ -49,7 +49,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R1.1 (First Life Guide) | Adaptive chapter guide, goal progress, first-life checklist | **COMPLETE; deployed, no schema/API changes** - см. `docs/planning/R1_1_FIRST_LIFE_GUIDE.md` |
 | R1.2 (First-Life Analytics) | Guide signals + server-derived first-life funnel | **COMPLETE; deployed, no save/DB migration** - см. `docs/planning/R1_2_FIRST_LIFE_ANALYTICS.md` |
 | R2.1 (Player Families) | Account-level family, roles, invitations/consent, audit, Web UI | **COMPLETE; deployed, schema 14, migration 16** - см. `docs/planning/R2_1_FAMILIES.md` |
-| R2.2 (Family Estate) | Treasury ledger, inheritance consent, cross-account succession backend + web UI | **IMPLEMENTED LOCALLY; release pending; migration 17 additive** - см. `docs/planning/R2_2_FAMILY_ESTATE.md` |
+| R2.2 (Family Estate) | Treasury ledger, inheritance consent, cross-account succession backend + web UI | **COMPLETE; deployed, schema 14, migration 17** - см. `docs/planning/R2_2_FAMILY_ESTATE.md` |
 
 ## Design (Living Chronicle)
 

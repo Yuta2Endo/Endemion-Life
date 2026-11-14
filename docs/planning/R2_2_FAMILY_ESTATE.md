@@ -1,9 +1,9 @@
 # R2.2 — Family Estate, Treasury and Cross-Account Inheritance
 
-**Status:** backend foundation implemented and tested locally; web UI and release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-14 23:36 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** 17, additive  
-**Production:** unchanged at runtime `5a0010a`, 16 migrations
+**Production:** runtime `f17e96f`, **17 migrations**, all containers healthy
 
 ## 1. Delivered backend
 
@@ -87,7 +87,16 @@ Fault-injection 500/503 logs in the full API run are intentional reliability tes
 - `recipientPlayerId` is passed through `LifeSummary` → `continueAs` → cloud store → succession API.
 - Web typecheck and production build pass.
 
-Still pending: dedicated browser e2e for cross-account succession, cross-account API test, and production deploy.
+A dedicated API test now covers cross-account succession end to end. Browser e2e for the treasury and recipient picker remains future work.
+
+## 5. Deployment
+
+- Code commit `09703f1` plus lint fix `f17e96f`; production runtime **`f17e96f`**.
+- Manual Deploy run **43653759129** with `allow_migrations=true`, succeeded.
+- Deploy history: `2026-11-14T23:36:22Z deploy-start` → `23:36:53Z deploy ok`.
+- Backup `endemion_life-manual-20261114T230905Z.dump` trial-restored at 16 migrations, 19 players, 59 lives.
+- Production now has **17 migrations**, `family_treasury_entries` table, `/api/families/mine` returns 401 unauthenticated, health 200 DB/Redis up.
+- Rollback target `5a0010a` while migration 17 tables remain additive.
 
 ## 5. Risks / notes
 
