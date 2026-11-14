@@ -118,13 +118,17 @@ server `.env` (mode 600, backed up root-only outside the repository).
 | Life health | `/api/health` 200, DB/Redis up |
 | Life portal route, no token | `401 UNAUTHORIZED`, `Cache-Control: private, no-store` |
 | Life portal route, malformed token | `401 INVALID_TOKEN`, no-store |
+| Life portal route, valid signed assertion | `200`, body `{profile:{displayName,exists,lives}}`, `Cache-Control: private, no-store` |
 | API logs | `PortalController {/api/portal}` mapped; expected `portal.auth.failed` reasons `missing_authorization`, `malformed`; no config/JWKS/startup errors |
 | Containers | all seven `endemion-life-prod-*` healthy |
 
-The full `200` profile response was **not** smoke-tested with a real Endemion ID session
-because no disposable production identity was available. The 401/404/429 contract is
-covered by unit and AppModule e2e tests; a joint 200 smoke remains an operational
-follow-up.
+The `200` profile path was verified with a short-lived ES256 assertion signed on the
+Portal server for an existing `players.endemion_sub`. Only status, cache header, and
+field names were recorded; no display name, life count, subject, JWT, or private key
+was printed. This verifies Life signature/JWKS/claim validation and the profile lookup.
+The full browser flow (Portal cookie session → assertion issuance → Life) has **not**
+been exercised end-to-end; that remains an operational smoke test with a designated
+Endemion ID account. The 401/404/429 contract is covered by unit and AppModule e2e tests.
 
 ### Historical prerequisites (all completed)
 
@@ -157,4 +161,5 @@ follow-up.
 - Write operations, life creation, or character control from the Portal.
 - Single-use `jti` replay protection.
 - Staging environment.
-- A verified production `200` profile smoke with a disposable Endemion ID session.
+- A verified production `200` profile smoke through the full Portal browser session
+  (Life-side assertion verification is verified; browser issuance is not).

@@ -74,7 +74,12 @@ Verified:
 - all seven Life containers are healthy and `/api/health` is 200;
 - API logs show the portal controller mapped and only expected auth-failure reasons.
 
-Not verified: a real `200` response with a live Endemion ID session. No private key,
-`.env` value, or JWT was written to the repository. Rollback remains a Life config flag
-change and API restart. Option C is superseded by this activation record.
+Verified: a short-lived ES256 assertion signed on the Portal server for an existing
+`players.endemion_sub` returns `200` with only `profile.displayName/exists/lives` and
+`Cache-Control: private, no-store`; no values or subject were logged. The full browser
+flow (Portal cookie session → assertion → Life) remains an operational smoke.
+
+No private key, `.env` value, or JWT was written to the repository. Rollback remains a
+Life config flag change and API restart. Option C is superseded by this activation
+record.
 

@@ -49,7 +49,8 @@ Life-side API портала (`apps/api/src/portal/*`) зарегистриро�
 - Защита: фиксированный JWKS URL, allow-list EC P-256/ES256/use=sig, timeout/cache/min-refresh, blocked kids, per-`sub` limit, отсутствие raw `sub`/токенов в логах.
 - Проверки: API unit 74/74 (включая 39 portal-тестов), API e2e 135/135, typecheck/build/lint pass.
 - Production: JWKS `200`, `kid=life-2026-11`, no `d`; Life `401`/`INVALID_TOKEN` и no-store проверены; все семь контейнеров healthy.
-- Не проверено: `200`-профиль с реальной Endemion ID сессией (нет одноразового production-аккаунта).
+- `200`-профиль проверен короткоживущим ES256 assertion, подписанным на Portal-сервере для существующего `players.endemion_sub`: `200`, поля `profile.displayName/exists/lives`, no-store. Значения и subject не логировались.
+- Не проверен полный браузерный flow Portal cookie session → assertion → Life; это остаётся operational smoke.
 - Документация: `docs/portal/INTEGRATION.md`.
 
 ## STAGE 05 — Multiplayer Foundation (deployed, 2026-11-14)
@@ -161,7 +162,7 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 ## Открытые блокеры
 
 - Production smoke Stage 05: публичные health/world проверены, SSE без аккаунта корректно возвращает 401; полный двухаккаунтный presence/SSE smoke требует Endemion ID тест-аккаунта (password registration в production отключён, `410 USE_ENDEMION_ID`).
-- Portal: интеграция **ACTIVE**; JWKS 200, Life 401/INVALID_TOKEN проверены. Осталось: `200`-smoke с реальной Endemion ID сессией и мониторинг `portal.auth.*`/Portal `life.*`.
+- Portal: интеграция **ACTIVE**; JWKS 200, Life 401/INVALID_TOKEN и 200-profile через server-signed assertion проверены. Осталось: полный браузерный flow Portal → Life и мониторинг `portal.auth.*`/Portal `life.*`.
 - Android: Play Console listing/upload, Play App Signing enrollment, data-safety/account-deletion compliance, CI signing-secret provisioning, device install. Release signing itself завершён.
 - 2 moderate Dependabot alerts.
 - Баланс: бизнес слишком редко проваливается (1.4%), murim имеет тяжёлый нижний хвост смертности, доступ к education tier 2+ сильно различается по мирам.
