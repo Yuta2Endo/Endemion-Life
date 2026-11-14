@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Panel } from "@endemion/ui";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, ClientError } from "@/lib/api";
 import { useI18n } from "../locale-provider";
@@ -96,7 +97,7 @@ export function SocialPanel() {
         <ul className="mt-3 space-y-2">
           {found.map((player) => (
             <li key={player.id} className="flex items-center justify-between gap-2" data-testid="social-found">
-              <span className="text-sm text-bone-100">{player.name}</span>
+              <Link href={`/players/${player.id}`} className="text-sm text-bone-100 hover:text-gold-200">{player.name}</Link>
               <Button onClick={() => void run(() => apiFetch("/api/social/requests", { method: "POST", body: JSON.stringify({ playerId: player.id }) }))} disabled={busy}>
                 {t("social.add")}
               </Button>
@@ -129,7 +130,7 @@ export function SocialPanel() {
         <ul className="mt-3 space-y-2" data-testid="social-friends">
           {board?.friends.map((tie) => (
             <li key={tie.id} className="flex items-center justify-between gap-2">
-              <span className="text-sm text-bone-100">{tie.player.name}</span>
+              <Link href={`/players/${tie.player.id}`} className="text-sm text-bone-100 hover:text-gold-200">{tie.player.name}</Link>
               <span className="flex gap-2">
                 <Button variant="quiet" onClick={() => void run(() => apiFetch("/api/social/block", { method: "POST", body: JSON.stringify({ playerId: tie.player.id }) }))} disabled={busy}>
                   {t("social.block")}

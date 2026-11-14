@@ -24,6 +24,12 @@ model Player {
   idDisplayName String?  @map("id_display_name") @db.VarChar(40)
   idAvatarUrl   String?  @map("id_avatar_url") @db.VarChar(512)
   idEmail       String?  @map("id_email") @db.VarChar(254)
+  /// Stage 06.3: player-authored profile. Endemion ID remains the source of name, avatar and email.
+  headline      String   @default("") @db.VarChar(48)
+  bio           String   @default("") @db.VarChar(280)
+  favoriteUniverseId String? @map("favorite_universe_id") @db.VarChar(32)
+  profileVisibility  String @default("public") @map("profile_visibility") @db.VarChar(10)
+  profileUpdatedAt   DateTime @default(now()) @map("profile_updated_at") @db.Timestamptz(3)
 
   lives              Life[]
   actions            GameAction[]

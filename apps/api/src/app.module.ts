@@ -22,6 +22,8 @@ import { LiveController } from "./live/live.controller.js";
 import { LiveService } from "./live/live.service.js";
 import { PresenceController } from "./presence/presence.controller.js";
 import { PresenceService } from "./presence/presence.service.js";
+import { ProfileController } from "./profile/profile.controller.js";
+import { ProfileService } from "./profile/profile.service.js";
 import { MailService } from "./mail/mail.service.js";
 import { PortalAuditService } from "./portal/portal-audit.service.js";
 import { PortalAuthGuard } from "./portal/portal-auth.guard.js";
@@ -41,7 +43,7 @@ import { WorldController } from "./world/world.controller.js";
 import { WorldService } from "./world/world.service.js";
 
 @Module({
-  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, MarketController, SocialController, GuildController, LiveController, InsightsController, PortalController, PresenceController, WorldController],
+  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, MarketController, ProfileController, SocialController, GuildController, LiveController, InsightsController, PortalController, PresenceController, WorldController],
   providers: [
     { provide: APP_CONFIG, useFactory: (): AppConfig => readConfig() },
     PrismaService,
@@ -53,6 +55,7 @@ import { WorldService } from "./world/world.service.js";
     AuthService,
     LivesService,
     MarketService,
+    ProfileService,
     SocialService,
     GuildService,
     LiveService,

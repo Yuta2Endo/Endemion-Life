@@ -1,4 +1,5 @@
 export * from "./auth.js";
+export * from "./profile.js";
 export * from "./schemas.js";
 export * from "./views.js";
 

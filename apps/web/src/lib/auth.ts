@@ -22,5 +22,7 @@ export const authApi = {
   resetPassword: (token: string, password: string) => postJson<OkResponse>("/api/auth/reset-password", { token, password }),
   sessions: async () => (await apiFetch<{ sessions: SessionView[] }>("/api/auth/sessions")).sessions,
   revokeSession: (sessionId: string) => postJson<OkResponse>("/api/auth/sessions/revoke", { sessionId }),
-  revokeOthers: () => postJson<{ revoked: number }>("/api/auth/sessions/revoke-others", {})
+  revokeOthers: () => postJson<{ revoked: number }>("/api/auth/sessions/revoke-others", {}),
+  exportAccount: () => apiFetch<Record<string, unknown>>("/api/auth/export"),
+  deleteAccount: () => apiFetch<OkResponse>("/api/auth/account", { method: "DELETE", body: JSON.stringify({ confirm: "DELETE" }) })
 };

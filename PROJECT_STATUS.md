@@ -1,12 +1,12 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-14 (Endemion ID shared-world hotfix deployed)<br>
+**Обновлено:** 2026-11-15 (Stage 06.3 profile hub, not deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `fbc0a69` (Endemion ID shared-world fix + docs)<br>
+**HEAD:** `6eee520` (docs sync after Endemion ID hotfix)<br>
 **Production:** STAGE 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime code `d9313dd`, production checkout/docs `fbc0a69`, deployed 2026-11-14 16:05 UTC; guild migration 13 and market migration 14 applied<br>
 **Production code:** `d9313dd` (same application code as `fbc0a69`); DB migrations **14**<br>
 **Rollback:** `0d98323` (docs/Stage 06.2) или `0661018` (market code); миграция 14 additive. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
-**Рабочее дерево:** clean, кроме untracked Stage 11 reports/docx.
+**Рабочее дерево:** Stage 06.3 profile changes on disk; untracked Stage 11 reports/docx preserved.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
 
@@ -44,7 +44,8 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | STAGE 04 (Living Worlds) | Shared world, deterministic season tick, replay, web panel | **COMPLETE; deployed, schema 14, migration 11** — см. `docs/stage-04/RELEASE_RECORD.md` |
 | STAGE 05 (Multiplayer Foundation) | Account gate, presence/SSE, contributions, export/delete, reports | **COMPLETE; deployed, schema 14, migration 12** — см. `docs/stage-05/STAGE_05_REPORT.md` |
 | STAGE 06.1 (Guild Foundation) | Guilds, roles, requests, projects, reputation, audit | **COMPLETE; deployed, schema 14, migration 13** — см. `docs/stage-06/STAGE_06_1_REPORT.md` |
-| STAGE 06.2 (Player Market) | Offers, atomic goods/gold settlement, ledger, restore guard, succession cancel | **COMPLETE; deployed, schema 14, migration 14** — см. `docs/stage-06/STAGE_06_2_PLAYER_MARKET.md` |
+| STAGE 06.2 (Player Market) | Offers, atomic goods/gold settlement, ledger, restore guard, succession cancel | **COMPLETE; deployed, schema 14, migration 14** - см. `docs/stage-06/STAGE_06_2_PLAYER_MARKET.md` |
+| STAGE 06.3 (Player Profile) | Public/private profile, stats, badges, recent lives, guilds, data export/delete | **IMPLEMENTED LOCALLY; not deployed; DB migration 15 additive** - см. `docs/stage-06/STAGE_06_3_PLAYER_PROFILE.md` |
 
 ## Design (Living Chronicle)
 
@@ -192,3 +193,17 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 - Баланс: бизнес слишком редко проваливается (1.4%), murim имеет тяжёлый нижний хвост смертности, доступ к education tier 2+ сильно различается по мирам.
 - Stage 03 развёрнут; естественное вымирание рода в soak 76,7% — балансовый риск для следующего этапа.
 - Rollback на schema 8 невозможен без восстановления БД из backup.
+
+
+## STAGE 06.3 — Player Profile (implemented locally, not deployed)
+
+- Profile hub on `/account`: Endemion ID/identity header, editable headline (48), bio (280), favourite world, visibility `public | friends | private`.
+- Server-computed statistics: lives, alive/dead, generations, best age, worlds, guilds, friends, trades, shared-world contributions, chronicle entries.
+- Ten badges with progress: first life, dynasty, elder, worldwalker, merchant, house founder, social, world-shaker, chronicler, lineage keeper.
+- Recent lives and guild memberships, with links to play and social.
+- Public profile page `/players/[id]`; public/friends/private access enforced server-side; owner email is never exposed to other players.
+- Account data controls: JSON export of player/lives/sessions via `GET /api/auth/export`; irreversible account deletion with typed `DELETE` confirmation via `DELETE /api/auth/account`.
+- API: `GET /api/profile/me`, `PATCH /api/profile/me`, `GET /api/profile/:playerId`.
+- DB: additive migration `20261114170000_stage06_player_profile` adds `headline`, `bio`, `favorite_universe_id`, `profile_visibility`, `profile_updated_at` to `players`; save schema stays **14**.
+- Verification: API e2e **154/154** (5 new profile tests); web production build PASS; profile UI e2e **2/2** desktop+mobile; account+design e2e **18/18**; full web suite 73/76 with 3 transient create-life failures in the shared full run that passed 16/16 on targeted rerun.
+- Known limitations: avatar/name remain Endemion ID-owned; no avatar upload; no activity feed beyond recent lives; friend-only visibility is implemented server-side but has no dedicated browser test.

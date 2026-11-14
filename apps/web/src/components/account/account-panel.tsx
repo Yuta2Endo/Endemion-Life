@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import { ClientError } from "@/lib/api";
 import { authApi, endemionIdLoginUrl } from "@/lib/auth";
 import { useI18n } from "../locale-provider";
+import { ProfileDashboard } from "../profile/profile-dashboard";
 
 const INPUT =
   "w-full rounded-sm border border-line bg-ink-950/70 px-4 py-2.5 text-bone-100 placeholder:text-bone-500 focus:border-gold-400/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300";
@@ -320,22 +321,6 @@ function EndemionIdAccount({ me, accountUrl, onSignedOut }: { me: MeResponse; ac
   const { t } = useI18n();
   // Компонент появляется только после загрузки данных в браузере (на сервере — заглушка), поэтому window уже есть
   const [error] = useState<IdError | null>(() => (typeof window === "undefined" ? null : readIdError()));
-  const [busy, setBusy] = useState(false);
-
-  async function logout() {
-    setBusy(true);
-    try {
-      const res = await authApi.logout();
-      // На страницу выхода уходим только к своему провайдеру: адрес приходит из API, но проверяется и здесь
-      if (res.redirect && new URL(res.redirect).origin === new URL(accountUrl).origin) {
-        window.location.assign(res.redirect);
-        return;
-      }
-    } finally {
-      setBusy(false);
-    }
-    onSignedOut();
-  }
 
   const profile = me.endemionId;
   if (!profile) {
@@ -366,40 +351,9 @@ function EndemionIdAccount({ me, accountUrl, onSignedOut }: { me: MeResponse; ac
     );
   }
 
-  const name = profile.displayName ?? profile.username ?? profile.email ?? "Endemion";
   return (
-    <div className="space-y-6" data-testid="account-view">
-      <Panel accent>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
-            {profile.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- аватар с auth.endemion.online, оптимизатор Next.js не нужен
-              <img src={profile.avatarUrl} alt="" width={56} height={56} className="h-14 w-14 shrink-0 rounded-sm border border-gold-400/50 object-cover" />
-            ) : (
-              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-sm border border-gold-400/50 font-display text-2xl text-gilded" aria-hidden="true">
-                {name.charAt(0).toUpperCase()}
-              </span>
-            )}
-            <div className="min-w-0">
-              <p className="truncate font-display text-2xl text-bone-100" data-testid="id-name">
-                {name}
-              </p>
-              {profile.username && <p className="truncate text-sm text-bone-300" data-testid="id-username">@{profile.username}</p>}
-              <p className="mt-1 truncate text-xs text-bone-500" data-testid="id-number">
-                {t("auth.idNumber", { id: profile.id })}
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <a href={accountUrl} rel="noopener" className={buttonClass()} data-testid="id-manage">
-              {t("auth.idManage")}
-            </a>
-            <Button variant="ghost" onClick={logout} disabled={busy} data-testid="logout">
-              {t("auth.logout")}
-            </Button>
-          </div>
-        </div>
-      </Panel>
+    <div className="space-y-6">
+      <ProfileDashboard me={me} accountUrl={accountUrl} onSignedOut={onSignedOut} />
       <Devices onSignedOut={onSignedOut} />
     </div>
   );
@@ -407,7 +361,7 @@ function EndemionIdAccount({ me, accountUrl, onSignedOut }: { me: MeResponse; ac
 
 /** Страница аккаунта: вход/регистрация для гостя, состояние и устройства для владельца аккаунта */
 export function AccountPanel() {
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [idConfig, setIdConfig] = useState<AuthConfigView | null>(null);
   const [failed, setFailed] = useState(false);
@@ -436,15 +390,6 @@ export function AccountPanel() {
       active = false;
     };
   }, []);
-
-  async function logout() {
-    try {
-      await authApi.logout();
-    } finally {
-      setInfo(null);
-      await load();
-    }
-  }
 
   if (failed) {
     return (
@@ -496,36 +441,17 @@ export function AccountPanel() {
   }
 
   const account = me.account;
-  const since = new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(new Date(account.createdAt));
   return (
-    <div className="space-y-6" data-testid="account-view">
+    <div className="space-y-6">
       {info && (
         <Notice tone="good" testId="auth-info">
           {info}
         </Notice>
       )}
-      <Panel accent>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="truncate font-display text-2xl text-bone-100" data-testid="account-email">
-              {account.email}
-            </p>
-            <p className="mt-1 text-sm text-bone-500">
-              <span className={account.emailVerified ? "text-jade-300" : "text-gold-400"} data-testid="account-verified" data-verified={account.emailVerified}>
-                {account.emailVerified ? t("auth.verified") : t("auth.notVerified")}
-              </span>
-              {" · "}
-              {t("auth.since", { date: since })}
-            </p>
-          </div>
-          <Button variant="ghost" onClick={logout} data-testid="logout">
-            {t("auth.logout")}
-          </Button>
-        </div>
-      </Panel>
       {!account.emailVerified && (
         <VerifyEmail account={account} sentInitially={verificationSent} onVerified={(updated) => setMe({ ...me, account: updated })} />
       )}
+      <ProfileDashboard key={`${account.email}-${account.emailVerified}`} me={me} onSignedOut={() => void load()} />
       <Devices onSignedOut={() => void load()} />
     </div>
   );
