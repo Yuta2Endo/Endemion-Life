@@ -55,8 +55,10 @@ export function WorldParticipation({ universeId, season, world, onWorldChanged }
     };
   }, []);
 
+  const signedIn = Boolean(me?.account || me?.endemionId);
+
   useEffect(() => {
-    if (!me?.account) return;
+    if (!signedIn) return;
     let alive = true;
     const beat = async (): Promise<void> => {
       try {
@@ -91,7 +93,7 @@ export function WorldParticipation({ universeId, season, world, onWorldChanged }
       clearInterval(timer);
       stream.close();
     };
-  }, [me?.account, universeId, onWorldChanged]);
+  }, [signedIn, universeId, onWorldChanged]);
 
   const contribute = async (): Promise<void> => {
     if (!target) return;
@@ -139,7 +141,7 @@ export function WorldParticipation({ universeId, season, world, onWorldChanged }
             : t("world.presence.unavailable")}
         </Tag>
       </div>
-      {me.account ? (
+      {signedIn ? (
         <>
           {presence && presence.count > 0 ? (
             <ul className="mt-2 flex flex-wrap gap-1.5" data-testid="world-presence-list">

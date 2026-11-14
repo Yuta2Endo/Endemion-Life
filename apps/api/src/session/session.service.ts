@@ -18,6 +18,8 @@ const USER_AGENT_MAX = 256;
 export interface Player {
   id: string;
   createdAt: Date;
+  endemionSub: string | null;
+  idEmail: string | null;
 }
 
 export interface CurrentSession {
@@ -75,7 +77,15 @@ export class SessionService {
     if (now - session.lastSeenAt.getTime() > TOUCH_INTERVAL_MS) {
       await this.prisma.client.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date(now) } });
     }
-    return { sessionId: session.id, player: { id: session.player.id, createdAt: session.player.createdAt } };
+    return {
+      sessionId: session.id,
+      player: {
+        id: session.player.id,
+        createdAt: session.player.createdAt,
+        endemionSub: session.player.endemionSub,
+        idEmail: session.player.idEmail
+      }
+    };
   }
 
   /** Игрок по cookie или null */
@@ -103,8 +113,20 @@ export class SessionService {
       where: { playerId: session.player.id },
       select: { id: true, email: true, emailVerifiedAt: true }
     });
-    if (!account) throw new ApiError(403, "ACCOUNT_REQUIRED", "Для общего мира нужен аккаунт");
-    return { session, player: session.player, account };
+    if (account) return { session, player: session.player, account };
+    // Endemion ID is a full account even though it has no local password Account row.
+    if (session.player.endemionSub) {
+      return {
+        session,
+        player: session.player,
+        account: {
+          id: session.player.id,
+          email: session.player.idEmail ?? "",
+          emailVerifiedAt: session.player.idEmail ? session.player.createdAt : null
+        }
+      };
+    }
+    throw new ApiError(403, "ACCOUNT_REQUIRED", "Для общего мира нужен аккаунт");
   }
 
   /**
@@ -145,7 +167,10 @@ export class SessionService {
       return { player: created, token: session.token };
     });
     this.setCookie(response, token);
-    return { player: { id: player.id, createdAt: player.createdAt }, created: true };
+    return {
+      player: { id: player.id, createdAt: player.createdAt, endemionSub: player.endemionSub, idEmail: player.idEmail },
+      created: true
+    };
   }
 
   async revoke(db: Db, sessionId: string): Promise<void> {

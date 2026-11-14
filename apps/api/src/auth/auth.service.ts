@@ -66,7 +66,15 @@ export class AuthService {
     ]);
     return {
       player: { id: current.player.id, createdAt: current.player.createdAt.toISOString() },
-      account: account ? accountView(account) : null,
+      account: account
+        ? accountView(account)
+        : player.endemionSub
+          ? {
+              email: player.idEmail ?? "",
+              emailVerified: player.idEmail !== null,
+              createdAt: player.createdAt.toISOString()
+            }
+          : null,
       endemionId: player.endemionSub
         ? { id: player.endemionSub, username: player.idUsername, displayName: player.idDisplayName, avatarUrl: player.idAvatarUrl, email: player.idEmail }
         : null

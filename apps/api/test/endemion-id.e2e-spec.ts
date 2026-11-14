@@ -274,4 +274,20 @@ describe("Вход через Endemion ID", () => {
     expect(redirect.searchParams.get("post_logout_redirect_uri")).toBe(`${ORIGIN}/`);
     expect((await me(client)).player).toBeNull();
   });
+
+  it("Endemion ID is a full account for shared-world presence", async () => {
+    const account = newAccount();
+    id.accounts.set(account.sub, account);
+    const client = agent();
+    await signIn(client, idBrowser(id.issuer), account.sub);
+
+    const before = await me(client);
+    expect(before.player).not.toBeNull();
+    expect(before.endemionId?.id).toBe(account.sub);
+    expect(before.account).not.toBeNull();
+    expect(before.account?.email).toBe(account.email);
+
+    const beat = await post(client, "/api/presence/heartbeat", { universeId: "hunter" }).expect(201);
+    expect((beat.body as { available: boolean }).available).toBe(true);
+  });
 });
