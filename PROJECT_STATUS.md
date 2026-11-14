@@ -2,9 +2,9 @@
 
 **Обновлено:** 2026-11-14 (Portal integration ACTIVE)<br>
 **Ветка:** `main`  
-**HEAD:** `d63d405` (Stage 06.1)<br>
-**Production:** STAGE 06.1, save schema **14**; guild migration 13 applied, deployed 2026-11-14 09:53 UTC<br>
-**Production code:** `d63d405`; DB migrations **13**<br>
+**HEAD:** `d91b579` (design QA gate)<br>
+**Production:** STAGE 06.1 + design phases 0-8, save schema **14**; production code `42a572c`, deployed 2026-11-14 12:59 UTC; guild migration 13 applied<br>
+**Production code:** `42a572c`; DB migrations **13**<br>
 **Rollback:** `3f35fdc` (Stage 05) безопасен — миграция Stage 06.1 additive, таблицы гильдий можно оставить. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
 **Рабочее дерево:** clean, кроме untracked Stage 11 reports/docx.
 
@@ -40,6 +40,14 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | STAGE 04 (Living Worlds) | Shared world, deterministic season tick, replay, web panel | **COMPLETE; deployed, schema 14, migration 11** — см. `docs/stage-04/RELEASE_RECORD.md` |
 | STAGE 05 (Multiplayer Foundation) | Account gate, presence/SSE, contributions, export/delete, reports | **COMPLETE; deployed, schema 14, migration 12** — см. `docs/stage-05/STAGE_05_REPORT.md` |
 | STAGE 06.1 (Guild Foundation) | Guilds, roles, requests, projects, reputation, audit | **COMPLETE; deployed, schema 14, migration 13** — см. `docs/stage-06/STAGE_06_1_REPORT.md` |
+
+## Design (Living Chronicle)
+
+- Дизайн-фазы 0–8 реализованы и задеплоены: production `42a572c`, schema 14, миграции 13.
+- QA-гейт: `d91b579`; axe WCAG 2.2 AA, структурная проверка 320/390/1440 и transfer budget.
+- Измеренный transfer: JS 477 KB, CSS 11 KB, fonts 127 KB, документ 25 KB — около 640 KB.
+- Гейт: JS < 600 KB, всего < 750 KB. Цель плана 300 KB пока не достигнута; code-splitting — future work.
+- Открыто: Lighthouse CI, screen-reader/200% zoom, Android WebView smoke, pixel baselines.
 
 ## Portal ↔ Life (ACTIVE in production)
 
