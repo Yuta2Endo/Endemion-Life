@@ -2,10 +2,10 @@
 
 **Обновлено:** 2026-11-14 (Portal integration ACTIVE)<br>
 **Ветка:** `main`  
-**HEAD:** `3f35fdc` (infra: pass portal settings; code `4c786d6`, docs `d0420db`)<br>
-**Production:** STAGE 05, save schema **14**; общий мир season 1, deployed 2026-11-13 23:04 UTC<br>
-**Production code:** `3f35fdc`; DB migrations **12**<br>
-**Rollback:** `cf7d098` (Stage 04) безопасен — миграция Stage 05 additive. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
+**HEAD:** `d63d405` (Stage 06.1)<br>
+**Production:** STAGE 06.1, save schema **14**; guild migration 13 applied, deployed 2026-11-14 09:53 UTC<br>
+**Production code:** `d63d405`; DB migrations **13**<br>
+**Rollback:** `3f35fdc` (Stage 05) безопасен — миграция Stage 06.1 additive, таблицы гильдий можно оставить. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
 **Рабочее дерево:** clean, кроме untracked Stage 11 reports/docx.
 
 **Stage 05 (2026-11-14):** account boundary, Redis presence, SSE, идемпотентный вклад в общий мир, export/delete аккаунта, reports, web-панель и Nginx SSE реализованы, проверены, закоммичены (`b6db176` → `9daaec2`) и развёрнуты. Production работает на `9daaec2`, 12 миграций. См. `docs/stage-05/STAGE_05_REPORT.md` и `docs/stage-05/RELEASE_RECORD.md`.
@@ -39,7 +39,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | STAGE 03 (Dynasty & Legacy) | Relics, continuity, heir agency, six laws, long-run soak | **COMPLETE; deployed, schema 14** — см. `docs/stage-03/STAGE_03_REPORT.md` |
 | STAGE 04 (Living Worlds) | Shared world, deterministic season tick, replay, web panel | **COMPLETE; deployed, schema 14, migration 11** — см. `docs/stage-04/RELEASE_RECORD.md` |
 | STAGE 05 (Multiplayer Foundation) | Account gate, presence/SSE, contributions, export/delete, reports | **COMPLETE; deployed, schema 14, migration 12** — см. `docs/stage-05/STAGE_05_REPORT.md` |
-| STAGE 06.1 (Guild Foundation) | Guilds, roles, requests, projects, reputation, audit | **COMMITTED & PUSHED; deploy pending, migration 13** — см. `docs/stage-06/STAGE_06_1_REPORT.md` |
+| STAGE 06.1 (Guild Foundation) | Guilds, roles, requests, projects, reputation, audit | **COMPLETE; deployed, schema 14, migration 13** — см. `docs/stage-06/STAGE_06_1_REPORT.md` |
 
 ## Portal ↔ Life (ACTIVE in production)
 
@@ -67,7 +67,7 @@ STAGE 05 добавляет account boundary для общих систем: г�
 - Release: закоммичен (`b6db176` → `9daaec2`), CI/Security success, развёрнут с миграцией 2026-11-13 23:04 UTC; backup `endemion_life-manual-20261113T224407Z.dump` проверен trial restore. Portal остаётся вне релиза.
 - Production smoke: `/api/health` 200, `/api/world` 200, SSE route returns 401 without account, 12 migrations. Полный двухаккаунтный smoke не выполнен: production password registration отключён (`410 USE_ENDEMION_ID`), нужен Endemion ID тест-аккаунт.
 
-## STAGE 06.1 — Guild Foundation (committed, deploy pending)
+## STAGE 06.1 — Guild Foundation (deployed, 2026-11-14)
 
 Узкий гильдейский слой: гильдии по мирам, роли leader/officer/member, публичное вступление или заявка, лимит 30 участников, одна гильдия на игрока в мире, проекты с серверным прогрессом, вклад с `actionId`-идемпотентностью, репутация за завершение, audit log и web-панель на `/social`.
 
@@ -75,7 +75,7 @@ STAGE 05 добавляет account boundary для общих систем: г�
 - Данные: 13-я аддитивная миграция `20261115090000_stage06_guilds`; save schema остаётся **14**.
 - Проверки: API e2e **141/141**, API unit 74/74, game-core 775/775, shared 18/18, web 25/25; typecheck/build/lint pass (1 старое warning).
 - Ограничения: нет казны, торговли, чата, альянсов, приглашений и админ-модерации; web-панель без отдельного render-теста.
-- Release: код запушен (`ab983f3` → `72c1d42` → `51b1431`); CI/Security проверяются; deploy с backup и миграцией ожидает одобрения.
+- Release: production HEAD `d63d405`, deploy `09:52:24Z` → `09:53:03Z ok`, 13 миграций, `/api/guilds` возвращает 401 без сессии, все 7 контейнеров healthy. См. `docs/stage-06/STAGE_06_1_REPORT.md`.
 
 ## STAGE 04 — Living Worlds (deployed, 2026-11-14)
 
