@@ -1,12 +1,12 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-15 (R1.1 First Life Guide implemented locally)<br>
+**Обновлено:** 2026-11-15 (R1.1 First Life Guide deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `f1a829f` (Stage 06.3 deployment record)<br>
-**Production:** STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime/production checkout `f1a829f`, deployed 2026-11-14 17:37 UTC; migrations **15** (guild 13, market 14, profile 15)<br>
-**Production code:** `f1a829f`; DB migrations **15**, additive<br>
-**Rollback:** `6eee520` / runtime `d9313dd`; profile migration 15 is additive and ignored by previous code. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
-**Рабочее дерево:** R1.1 First Life Guide on disk; untracked Stage 11 reports/docx preserved.
+**HEAD:** `68b4390` (R1.1 First Life Guide)<br>
+**Production:** R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime/production checkout `68b4390`, deployed 2026-11-14 18:57 UTC; migrations **15** (guild 13, market 14, profile 15)<br>
+**Production code:** `68b4390`; DB migrations **15**, additive<br>
+**Rollback:** `f1a829f`; profile migration 15 is additive and ignored by previous code. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
+**Рабочее дерево:** R1.1 deployed; untracked Stage 11 reports/docx preserved.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
 
@@ -46,7 +46,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | STAGE 06.1 (Guild Foundation) | Guilds, roles, requests, projects, reputation, audit | **COMPLETE; deployed, schema 14, migration 13** — см. `docs/stage-06/STAGE_06_1_REPORT.md` |
 | STAGE 06.2 (Player Market) | Offers, atomic goods/gold settlement, ledger, restore guard, succession cancel | **COMPLETE; deployed, schema 14, migration 14** - см. `docs/stage-06/STAGE_06_2_PLAYER_MARKET.md` |
 | STAGE 06.3 (Player Profile) | Public/private profile, stats, badges, recent lives, guilds, data export/delete | **COMPLETE; deployed, schema 14, migration 15** - см. `docs/stage-06/STAGE_06_3_PLAYER_PROFILE.md` |
-| R1.1 (First Life Guide) | Adaptive chapter guide, goal progress, first-life checklist | **IMPLEMENTED LOCALLY; no schema/API changes; not deployed** - см. `docs/planning/R1_1_FIRST_LIFE_GUIDE.md` |
+| R1.1 (First Life Guide) | Adaptive chapter guide, goal progress, first-life checklist | **COMPLETE; deployed, no schema/API changes** - см. `docs/planning/R1_1_FIRST_LIFE_GUIDE.md` |
 
 ## Design (Living Chronicle)
 
@@ -213,7 +213,7 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 - Production verification: HEAD `66aab0a`, clean tree, migrations `15`, all seven containers healthy, `/api/health` 200 DB/Redis up, `/api/profile/me` 401 unauthenticated, public `/api/profile/:id` returned `access=public`, 12 lives, 10 badges and `account=null` for a real public player.
 
 
-## R1.1 — First Life Guide (implemented locally)
+## R1.1 — First Life Guide (deployed 2026-11-14 18:57 UTC)
 
 - Adaptive guide at the top of the life desk: chapter title, concrete next action, life goal/progress, first-life checklist.
 - Checklist is local-only per life: first decision, adulthood, dossier opened; it can be hidden.
@@ -221,3 +221,6 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 - Files: `apps/web/src/components/play/life-guide.tsx`, `apps/web/src/components/play/life-guide.test.tsx`, `apps/web/e2e/guide.spec.ts`, `play-screen.tsx`.
 - Verification: web unit **30/30**, guide e2e **2/2**, game+design e2e **44/44**, production build PASS, typecheck PASS.
 - Master plan for the wider program: `docs/planning/GAME_IMPROVEMENT_MASTER_PLAN.md`.
+
+- Deployment: commit `68b4390`, Deploy run `43629174412` success; history `18:57:24Z deploy-start 68b4390 from f1a829f` → `18:57:53Z deploy 68b4390 ok`.
+- Production verification: HEAD `68b4390`, clean tree, seven healthy containers, `/api/health` 200 DB/Redis up, `/play/:id` 200, CSP active.

@@ -1,8 +1,8 @@
 # R1.1 — First Life Guide
 
-**Status:** implemented locally, verified, not deployed<br>
+**Status:** deployed on 2026-11-14 18:57 UTC<br>
 **Scope:** onboarding and first-life guidance; no save-schema change<br>
-**Baseline:** production `66aab0a` / docs `f1a829f`, save schema 14
+**Production:** `68b4390`, save schema 14, 15 DB migrations
 
 ## 1. Problem
 
@@ -65,7 +65,14 @@ localStorage["endemion-life-guide:<lifeId>"] = {
 - A dedicated Playwright test for checklist persistence is still pending.
 - Life goal is set by the existing adulthood logic; before that the guide explains that the goal will form later.
 
-## 7. Next slices
+## 7. Deployment
+
+- Code commit `68b4390`; Deploy run `43629174412` success.
+- History: `18:57:24Z deploy-start 68b4390 from f1a829f` → `18:57:53Z deploy 68b4390 ok`.
+- Production HEAD `68b4390`, clean tree, seven healthy containers, `/api/health` 200, `/play/:id` 200, CSP active.
+- No database migration was required.
+
+## 8. Next slices
 
 - R1.2: first-life completion metric and funnel events.
 - R1.3: health/career/relationship chapter prompts tied to actual choices.
