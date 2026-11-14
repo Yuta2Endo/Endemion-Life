@@ -19,6 +19,7 @@ import { NowPanel } from "./now-panel";
 import { TravelPanel } from "./travel-panel";
 import { EventCard, OutcomeCard } from "./event-card";
 import { LifeSummary } from "./life-summary";
+import { LifeDeskHeader } from "./life-desk-header";
 import { LocalLifeBanner } from "./local-life-banner";
 import { SavesDialog } from "./saves-dialog";
 import { Timeline } from "./timeline";
@@ -293,7 +294,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
       data-version={life.version}
       aria-busy={busy}
     >
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-80 opacity-70 blur-3xl" style={{ background: `radial-gradient(600px 200px at 50% 0%, ${universe.theme.glow}, transparent)` }} aria-hidden="true" />
+      <LifeDeskHeader life={life} />
 
       <div className="sticky top-14 z-20 -mx-3 mb-3 flex items-center justify-between gap-3 border-b border-line bg-ink-950/95 px-3 py-2 text-xs backdrop-blur-md lg:hidden" data-testid="mobile-now">
         <span className="min-w-0 truncate text-bone-100" title={l(life.location.name)}>

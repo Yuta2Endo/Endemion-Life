@@ -211,6 +211,7 @@ export const M = {
   "play.consequenceFrom": t("Последствие решения", "Consequence of decision"),
   "play.selected": t("Выбранная запись", "Selected entry"),
   "play.timelineEmpty": t("Хроника начнётся с рождения.", "The chronicle begins at birth."),
+  "play.yearShort": t("год", "yr"),
   "chronicle.category.birth": t("Рождение", "Birth"),
   "chronicle.category.childhood": t("Детство", "Childhood"),
   "chronicle.category.education": t("Учёба", "Education"),

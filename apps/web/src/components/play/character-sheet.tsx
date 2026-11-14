@@ -2,7 +2,7 @@
 
 import { getUniverse, STAGE_INFO, STAT_INFO, STAT_KEYS, TEMPERAMENTS, xpForLevel } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
-import { Meter, Ornament, Panel } from "@endemion/ui";
+import { Meter, Panel } from "@endemion/ui";
 import { ageLabel } from "@/lib/format";
 import type { MessageKey } from "@/lib/messages";
 import { useI18n } from "../locale-provider";
@@ -87,7 +87,7 @@ export function CharacterSheet({ life }: { life: LifeView }) {
 
       <div className="rounded-md border border-line bg-ink-950/40 p-3" data-testid="health-panel">
         <div className="mb-2 flex items-baseline justify-between gap-2">
-          <h3 className="text-[10px] uppercase tracking-[0.2em] text-gold-400">{t("health.title")}</h3>
+          <h3 className="text-xs text-gold-300">{t("health.title")}</h3>
           <span className="font-display text-lg tabular-nums text-bone-100" data-testid="health-value">
             {life.health.value}
             <span className="text-xs text-bone-500">/100</span>
@@ -127,10 +127,8 @@ export function CharacterSheet({ life }: { life: LifeView }) {
         )}
       </div>
 
-      <Ornament />
-
       <div>
-        <h3 className="mb-3 text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("sheet.stats")}</h3>
+        <h3 className="mb-3 text-xs text-gold-300">{t("sheet.stats")}</h3>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2" data-testid="stats">
           {STAT_KEYS.map((key) => {
             const bonus = s.stats[key] - s.baseStats[key];
@@ -148,7 +146,7 @@ export function CharacterSheet({ life }: { life: LifeView }) {
       </div>
 
       <div>
-        <h3 className="mb-2 text-[11px] uppercase tracking-[0.22em]" style={{ color: universe.theme.accent }}>
+        <h3 className="mb-2 text-xs" style={{ color: universe.theme.accent }}>
           {l(universe.track.name)}
         </h3>
         <p className="font-display text-xl text-bone-100">{l(s.rankName)}</p>
@@ -172,7 +170,7 @@ export function CharacterSheet({ life }: { life: LifeView }) {
       </div>
 
       <div>
-        <h3 className="mb-2 text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("sheet.standing")}</h3>
+        <h3 className="mb-2 text-xs text-gold-300">{t("sheet.standing")}</h3>
         <dl className="grid grid-cols-3 gap-2 text-center">
           <div className="rounded-md border border-line bg-ink-950/50 p-2">
             <dt className="text-[10px] uppercase tracking-wider text-bone-500">{t("sheet.reputation")}</dt>
@@ -196,7 +194,7 @@ export function CharacterSheet({ life }: { life: LifeView }) {
       </div>
 
       <div>
-        <h3 className="mb-2 text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("sheet.abilities")}</h3>
+        <h3 className="mb-2 text-xs text-gold-300">{t("sheet.abilities")}</h3>
         {c.abilities.length === 0 ? (
           <p className="text-xs text-bone-500">{t("sheet.noAbilities")}</p>
         ) : (
