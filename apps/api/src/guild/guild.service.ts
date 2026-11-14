@@ -219,7 +219,8 @@ export class GuildService {
   }
 
   async join(playerId: string, guildId: string): Promise<GuildView> {
-    await this.prisma.client.$transaction(async (tx) => {
+    try {
+      await this.prisma.client.$transaction(async (tx) => {
       await this.lockGuild(tx, guildId);
       const guild = await tx.guild.findUnique({ where: { id: guildId } });
       if (!guild) throw new ApiError(404, "NOT_FOUND", "Гильдия не найдена");
@@ -238,8 +239,14 @@ export class GuildService {
       }
       await tx.guildMember.create({ data: { guildId, playerId, universeId: guild.universeId, role: "member" } });
       await this.audit(tx, guildId, playerId, "member.join");
-    });
-    return this.detail(playerId, guildId);
+      });
+      return this.detail(playerId, guildId);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        throw new ApiError(409, "ALREADY_IN_GUILD", "Вы уже состоите в гильдии этого мира");
+      }
+      throw error;
+    }
   }
 
   async decide(playerId: string, guildId: string, requestId: string, accept: boolean): Promise<GuildView> {
