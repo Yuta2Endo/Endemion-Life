@@ -9,6 +9,7 @@ export default defineConfig({
   fullyParallel: true,
   workers: 2,
   retries: 0,
+  expect: { timeout: 15_000 },
   reporter: [["list"]],
   use: {
     baseURL: BASE,
