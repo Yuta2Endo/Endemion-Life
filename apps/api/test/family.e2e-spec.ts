@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createTestApp, ORIGIN, resetDatabase, type TestApp } from "./helpers.js";
@@ -174,5 +175,78 @@ describe("семьи игроков", () => {
     expect(actions).toContain("family.create");
     expect(actions).toContain("invite.send");
     expect(actions).toContain("invite.accept");
+  });
+
+  it("член семьи даёт согласие на наследование и пополняет общую казну из жизни", async () => {
+    const founder = await account("Основатель");
+    const friend = await account("Наследник");
+    const family = await createFamily(founder.client);
+    await post(founder.client, `/api/families/${family.id}/invites`, { playerId: friend.playerId }).expect(201);
+    const inviteId = (await friend.client.get("/api/families/invites").expect(200)).body.invites[0].id as string;
+    await post(friend.client, `/api/families/invites/${inviteId}/accept`).expect(200);
+
+    const consent = await post(friend.client, `/api/families/${family.id}/consent`, { accepts: true }).expect(200);
+    expect(consent.body.members.find((m: { playerId: string }) => m.playerId === friend.playerId).acceptsInheritance).toBe(true);
+
+    const life = (await post(friend.client, "/api/lives", { universeId: "dark-fantasy", seed: "family-treasury-life" }).expect(201)).body.life;
+    const stored = await t.prisma.client.life.findUniqueOrThrow({ where: { id: life.id } });
+    const state = stored.state as { character: { wealth: number } };
+    state.character.wealth = 100;
+    await t.prisma.client.life.update({ where: { id: life.id }, data: { state: state as object } });
+    const before = 100;
+    const deposited = await post(friend.client, `/api/families/${family.id}/treasury`, {
+      actionId: randomUUID(),
+      lifeId: life.id,
+      direction: "deposit",
+      amount: 10,
+      note: "Вклад в дом"
+    }).expect(200);
+    expect(deposited.body.treasury).toBe(10);
+    expect(deposited.body.treasuryEntries[0]).toMatchObject({ direction: "deposit", amount: 10, balanceAfter: 10 });
+
+    const updatedLife = await friend.client.get(`/api/lives/${life.id}`).expect(200);
+    expect(updatedLife.body.life.character.wealth).toBe(before - 10);
+  });
+
+  it("передаёт наследника другому аккаунту только с согласием семьи", async () => {
+    const founder = await account("Основатель");
+    const friend = await account("Наследник");
+    const family = (await post(founder.client, "/api/families", {
+      universeId: "hunter",
+      name: "Дом Наследников",
+      visibility: "invite"
+    }).expect(201)).body as { id: string };
+    await post(founder.client, `/api/families/${family.id}/invites`, { playerId: friend.playerId }).expect(201);
+    const inviteId = (await friend.client.get("/api/families/invites").expect(200)).body.invites[0].id as string;
+    await post(friend.client, `/api/families/invites/${inviteId}/accept`).expect(200);
+    await post(friend.client, `/api/families/${family.id}/consent`, { accepts: true }).expect(200);
+
+    let dead = (await post(founder.client, "/api/lives", { universeId: "hunter", seed: "e2e-legacy-hunter-244" }).expect(201)).body.life;
+    for (let i = 0; i < 200 && dead.status === "alive"; i++) {
+      const action = dead.pendingEvent
+        ? { type: "choose", choiceId: dead.pendingEvent.choices.find((choice: { available: boolean }) => choice.available).id }
+        : { type: "advance", years: 10 };
+      dead = (await post(founder.client, `/api/lives/${dead.id}/actions`, {
+        actionId: randomUUID(),
+        expectedVersion: dead.version,
+        action
+      }).expect(200)).body.life;
+    }
+    expect(dead.status).toBe("dead");
+    const heir = dead.legacy.summary.heirs.find((candidate: { available: boolean }) => candidate.available);
+    expect(heir).toBeTruthy();
+
+    const result = await post(founder.client, `/api/lives/${dead.id}/succession`, {
+      actionId: randomUUID(),
+      expectedVersion: dead.version,
+      heirId: heir.id,
+      recipientPlayerId: friend.playerId
+    }).expect(200);
+    expect(result.body.life.id).toBeTruthy();
+
+    const successor = await t.prisma.client.life.findUniqueOrThrow({ where: { predecessorId: dead.id } });
+    expect(successor.playerId).toBe(friend.playerId);
+    const friendLives = await friend.client.get("/api/lives").expect(200);
+    expect(friendLives.body.lives.map((life: { id: string }) => life.id)).toContain(successor.id);
   });
 });

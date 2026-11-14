@@ -18,7 +18,7 @@ export interface GameStore {
   saves(id: string): Promise<SaveView[]>;
   restore(id: string, version: number, expectedVersion: number, actionId?: string): Promise<ActionResponse>;
   /** Stage 03: продолжить род за наследника. Ответ — закрытая жизнь и новая жизнь наследника */
-  succeed(id: string, expectedVersion: number, heirId: string, actionId: string): Promise<SuccessionResponse>;
+  succeed(id: string, expectedVersion: number, heirId: string, actionId: string, recipientPlayerId?: string): Promise<SuccessionResponse>;
   /** Stage 03: род — хроника, древо, достижения */
   lineage(id: string): Promise<LineageView>;
 }

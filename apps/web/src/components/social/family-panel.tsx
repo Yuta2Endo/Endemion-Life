@@ -18,6 +18,7 @@ interface FamilySummary {
   leaderName: string;
   memberCount: number;
   reputation: number;
+  treasury: number;
   myRole: "leader" | "elder" | "member" | null;
   createdAt: string;
 }
@@ -26,7 +27,17 @@ interface FamilyMember {
   name: string;
   role: "leader" | "elder" | "member";
   contribution: number;
+  acceptsInheritance: boolean;
   joinedAt: string;
+}
+interface FamilyTreasuryEntry {
+  id: string;
+  direction: "deposit" | "withdraw";
+  amount: number;
+  balanceAfter: number;
+  note: string;
+  actorName: string;
+  createdAt: string;
 }
 interface FamilyInvite {
   id: string;
@@ -38,6 +49,7 @@ interface FamilyInvite {
 interface FamilyDetail extends FamilySummary {
   members: FamilyMember[];
   invites: FamilyInvite[];
+  treasuryEntries: FamilyTreasuryEntry[];
 }
 interface IncomingInvite {
   id: string;
@@ -186,6 +198,10 @@ export function FamilyPanel() {
   const [form, setForm] = useState({ name: "", motto: "", description: "", universeId: "dark-fantasy" as UniverseId, visibility: "public" as "public" | "invite" });
   const [searchName, setSearchName] = useState("");
   const [found, setFound] = useState<SocialPlayer[]>([]);
+  const [meId, setMeId] = useState<string | null>(null);
+  const [lives, setLives] = useState<Array<{ id: string; name: string; universeId: string; status: string }>>([]);
+  const [treasuryLife, setTreasuryLife] = useState("");
+  const [treasuryAmount, setTreasuryAmount] = useState("10");
   const [audit, setAudit] = useState<Array<{ id: string; action: string; actor: string; createdAt: string }>>([]);
 
   const load = useCallback(async () => {
@@ -211,6 +227,21 @@ export function FamilyPanel() {
     const handle = setTimeout(() => void load(), 0);
     return () => clearTimeout(handle);
   }, [load]);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      apiFetch<{ player: { id: string } | null }>("/api/auth/me").catch(() => ({ player: null })),
+      apiFetch<{ lives: Array<{ id: string; name: string; universeId: string; status: string }> }>("/api/lives").catch(() => ({ lives: [] }))
+    ]).then(([me, list]) => {
+      if (!active) return;
+      setMeId(me.player?.id ?? null);
+      setLives(list.lives.filter((life) => life.status === "alive"));
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function run(action: () => Promise<void>, success?: string) {
     setBusy(true);
@@ -350,6 +381,28 @@ export function FamilyPanel() {
     });
   }
 
+  async function consent(accepts: boolean) {
+    if (!selected) return;
+    await run(async () => {
+      setSelected(await apiFetch<FamilyDetail>(`/api/families/${selected.id}/consent`, {
+        method: "POST",
+        body: JSON.stringify({ accepts })
+      }));
+    });
+  }
+
+  async function treasury(direction: "deposit" | "withdraw") {
+    if (!selected || !treasuryLife) return;
+    const amount = Number(treasuryAmount);
+    if (!Number.isInteger(amount) || amount < 1) return;
+    await run(async () => {
+      setSelected(await apiFetch<FamilyDetail>(`/api/families/${selected.id}/treasury`, {
+        method: "POST",
+        body: JSON.stringify({ actionId: crypto.randomUUID(), lifeId: treasuryLife, direction, amount })
+      }));
+    });
+  }
+
   if (guest) {
     return (
       <Panel data-testid="family-guest">
@@ -485,7 +538,10 @@ export function FamilyPanel() {
                   <li key={member.playerId} className="flex items-center justify-between gap-2 py-2 text-sm">
                     <span className="min-w-0">
                       <Link href={`/players/${member.playerId}`} className="block truncate text-bone-100 hover:text-gold-200">{member.name}</Link>
-                      <span className="text-xs text-bone-500">{roleLabel(member.role, c)}</span>
+                      <span className="text-xs text-bone-500">
+                        {roleLabel(member.role, c)}
+                        {member.acceptsInheritance ? " · наследование разрешено" : ""}
+                      </span>
                     </span>
                     {selected.myRole === "leader" && member.playerId !== selected.leaderId && (
                       <span className="flex gap-1">
@@ -496,6 +552,48 @@ export function FamilyPanel() {
                   </li>
                 ))}
               </ul>
+              {meId && selected.members.some((member) => member.playerId === meId) && (
+                <div className="mt-4 border-t border-line pt-3">
+                  <h5 className="text-xs text-bone-400">Наследование между аккаунтами</h5>
+                  <p className="mt-1 text-xs text-bone-500">
+                    Разрешить передачу наследника другому участнику семьи.
+                  </p>
+                  <Button
+                    variant="quiet"
+                    className="mt-2"
+                    onClick={() => void consent(!selected.members.find((member) => member.playerId === meId)?.acceptsInheritance)}
+                    disabled={busy}
+                    data-testid="family-consent"
+                  >
+                    {selected.members.find((member) => member.playerId === meId)?.acceptsInheritance
+                      ? "Отозвать согласие"
+                      : "Разрешить наследование"}
+                  </Button>
+                </div>
+              )}
+              <div className="mt-4 border-t border-line pt-3" data-testid="family-treasury">
+                <h5 className="text-xs text-bone-400">Общая казна: {selected.treasury}</h5>
+                <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                  <select className={INPUT} value={treasuryLife} onChange={(event) => setTreasuryLife(event.target.value)}>
+                    <option value="">Жизнь</option>
+                    {lives.filter((life) => life.universeId === selected.universeId).map((life) => (
+                      <option key={life.id} value={life.id}>{life.name}</option>
+                    ))}
+                  </select>
+                  <input className={INPUT} inputMode="numeric" value={treasuryAmount} onChange={(event) => setTreasuryAmount(event.target.value.replace(/\D/g, ""))} />
+                  <div className="flex gap-2">
+                    <Button variant="quiet" onClick={() => void treasury("deposit")} disabled={busy || !treasuryLife}>Внести</Button>
+                    <Button variant="quiet" onClick={() => void treasury("withdraw")} disabled={busy || !treasuryLife || (selected.myRole !== "leader" && selected.myRole !== "elder")}>Взять</Button>
+                  </div>
+                </div>
+                {selected.treasuryEntries.length > 0 && (
+                  <ul className="mt-2 space-y-1 text-xs text-bone-500">
+                    {selected.treasuryEntries.slice(0, 5).map((entry) => (
+                      <li key={entry.id}>{entry.actorName}: {entry.direction === "deposit" ? "+" : "−"}{entry.amount} · {entry.balanceAfter}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
               {(selected.myRole === "leader" || selected.myRole === "elder") && (
                 <div className="mt-4 border-t border-line pt-3">
                   <h5 className="text-xs text-bone-400">{c.invitePlayer}</h5>

@@ -6,6 +6,7 @@ import { Button, Meter, Panel } from "@endemion/ui";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ageLabel } from "@/lib/format";
+import { apiFetch } from "@/lib/api";
 import { useI18n } from "../locale-provider";
 import { AchievementList } from "./lineage";
 
@@ -355,9 +356,27 @@ function Epitaph({ name, age, title }: { name: string; age: number; title: strin
  * Экран после смерти: итоги жизни, достижения, наследство по закону мира и выбор наследника.
  * Нет наследников — предложение начать новую жизнь; эта жизнь остаётся в списке
  */
-export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: boolean; onSucceed: (heirId: string) => void }) {
+export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: boolean; onSucceed: (heirId: string, recipientPlayerId?: string) => void }) {
   const { locale, l, t } = useI18n();
   const [confirm, setConfirm] = useState<HeirView | null>(null);
+  const [recipient, setRecipient] = useState("");
+  const [recipients, setRecipients] = useState<Array<{ playerId: string; name: string }>>([]);
+
+  useEffect(() => {
+    let active = true;
+    apiFetch<{ family: { members: Array<{ playerId: string; name: string; acceptsInheritance: boolean }> } | null }>(
+      `/api/families/mine?universeId=${encodeURIComponent(life.universeId)}`
+    )
+      .then((res) => {
+        if (!active || !res.family) return;
+        setRecipients(res.family.members.filter((member) => member.acceptsInheritance));
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [life.universeId]);
+
   const summary = life.legacy.summary;
   if (!summary) return life.legacy.current ? <Panel accent className="animate-rise"><CurrentSummary current={life.legacy.current} /></Panel> : null;
   const heirs = summary.heirs;
@@ -388,6 +407,26 @@ export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: b
               <summary className="cursor-pointer text-xs text-gold-300">{t("summary.lawMore")}: {l(summary.law.name)}</summary>
               <p className="mt-1 text-xs text-bone-500">{l(summary.law.description)}</p>
             </details>
+            {recipients.length > 0 && (
+              <label className="mt-4 block max-w-md">
+                <span className="mb-1.5 block text-xs font-medium text-bone-400">
+                  {locale === "ru" ? "Передать наследнику семьи" : "Pass to a family heir"}
+                </span>
+                <select
+                  className="min-h-11 w-full rounded-sm border border-line bg-ink-950 px-3 text-sm text-bone-100"
+                  value={recipient}
+                  onChange={(event) => setRecipient(event.target.value)}
+                  data-testid="succession-recipient"
+                >
+                  <option value="">{locale === "ru" ? "Оставить в своём аккаунте" : "Keep in my account"}</option>
+                  {recipients.map((member) => (
+                    <option key={member.playerId} value={member.playerId}>
+                      {member.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <ul className="mt-4 grid gap-3 lg:grid-cols-2">
               {heirs.map((heir) => (
                 <HeirCard key={heir.id} heir={heir} controlAge={summary.law.controlAge} busy={busy} onChoose={setConfirm} />
@@ -426,7 +465,7 @@ export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: b
         busy={busy}
         onCancel={() => setConfirm(null)}
         onConfirm={() => {
-          if (confirm) onSucceed(confirm.id);
+          if (confirm) onSucceed(confirm.id, recipient || undefined);
         }}
       />
     </Panel>

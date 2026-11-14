@@ -175,15 +175,15 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
   }, [life, busy]);
 
   /** Продолжить род: сервер создаёт жизнь наследника, страница переходит к ней. Повтор после обрыва связи — с тем же actionId */
-  async function continueAs(heirId: string) {
+  async function continueAs(heirId: string, recipientPlayerId?: string) {
     if (!life || busy) return;
-    const key = JSON.stringify([life.version, "succeed", heirId]);
+    const key = JSON.stringify([life.version, "succeed", heirId, recipientPlayerId ?? ""]);
     if (pendingAction.current?.key !== key) pendingAction.current = { key, actionId: newUuid() };
     const { actionId } = pendingAction.current;
     setBusy(true);
     setNotice(null);
     try {
-      const result = await store.succeed(life.id, life.version, heirId, actionId);
+      const result = await store.succeed(life.id, life.version, heirId, actionId, recipientPlayerId);
       pendingAction.current = null;
       router.push(`/play/${result.life.id}`);
     } catch (error) {

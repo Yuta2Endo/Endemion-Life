@@ -52,8 +52,14 @@ export const cloudStore: GameStore = {
     }
   },
 
-  async succeed(id, expectedVersion, heirId, actionId) {
-    const send = () => postJson<SuccessionResponse>(`/api/lives/${encodeURIComponent(id)}/succession`, { actionId, expectedVersion, heirId });
+  async succeed(id, expectedVersion, heirId, actionId, recipientPlayerId) {
+    const send = () =>
+      postJson<SuccessionResponse>(`/api/lives/${encodeURIComponent(id)}/succession`, {
+        actionId,
+        expectedVersion,
+        heirId,
+        ...(recipientPlayerId ? { recipientPlayerId } : {})
+      });
     try {
       return await send();
     } catch (error) {

@@ -25,6 +25,7 @@ import {
 import { Inject, Injectable } from "@nestjs/common";
 import { ApiError } from "../common/api-error.js";
 import { InsightsService } from "../insights/insights.service.js";
+import { FamilyService } from "../family/family.service.js";
 import { MarketService } from "../market/market.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
@@ -109,7 +110,8 @@ export class LivesService {
   constructor(
     @Inject(PrismaService) prisma: PrismaService,
     @Inject(InsightsService) private readonly insights: InsightsService,
-    @Inject(MarketService) private readonly market: MarketService
+    @Inject(MarketService) private readonly market: MarketService,
+    @Inject(FamilyService) private readonly families: FamilyService
   ) {
     this.db = prisma.client;
   }
@@ -255,8 +257,14 @@ export class LivesService {
 
       const previous = await tx.gameAction.findUnique({ where: { lifeId_actionId: { lifeId, actionId: request.actionId } } });
       if (previous) {
-        const payload = previous.payload as { type?: string; heirId?: string };
-        if (previous.type !== "succeed" || previous.fromVersion !== request.expectedVersion || payload.heirId !== request.heirId) {
+        const payload = previous.payload as { type?: string; heirId?: string; recipientPlayerId?: string };
+        const requestedRecipient = request.recipientPlayerId ?? playerId;
+        if (
+          previous.type !== "succeed" ||
+          previous.fromVersion !== request.expectedVersion ||
+          payload.heirId !== request.heirId ||
+          (payload.recipientPlayerId ?? playerId) !== requestedRecipient
+        ) {
           throw new ApiError(409, "ACTION_ID_REUSED", "Этот actionId уже использован для другого действия");
         }
         const successor = await tx.life.findUnique({ where: { predecessorId: lifeId } });
@@ -270,17 +278,22 @@ export class LivesService {
       }
 
       this.checkVersion(row, request.expectedVersion);
-      const alive = await tx.life.count({ where: { playerId, status: "alive" } });
+      const dead = stateOf(row);
+      const recipientId = request.recipientPlayerId ?? playerId;
+      if (recipientId !== playerId) {
+        await this.families.assertInheritanceRecipient(tx, playerId, recipientId, dead.character.universeId);
+      }
+      const alive = await tx.life.count({ where: { playerId: recipientId, status: "alive" } });
       if (alive >= MAX_ALIVE_LIVES) throw new ApiError(409, "LIMIT_REACHED", `Одновременно можно вести не больше ${MAX_ALIVE_LIVES} жизней`);
       // Случайная соль сервера: seed наследника нельзя вычислить из сохранения предка
-      const result = succeed(stateOf(row), request.heirId, randomUUID());
+      const result = succeed(dead, request.heirId, randomUUID());
 
       await this.market.cancelOffersForLife(tx, lifeId);
       const updated = await tx.life.update({ where: { id: lifeId }, data: lifeColumns(result.previous) });
       await this.writeSnapshot(tx, lifeId, result.previous, "action");
       const created = await tx.life.create({
         data: {
-          playerId,
+          playerId: recipientId,
           universeId: result.state.character.universeId,
           seed: result.state.seed,
           lineageId: row.lineageId ?? row.id,
@@ -297,7 +310,7 @@ export class LivesService {
           playerId,
           actionId: request.actionId,
           type: "succeed",
-          payload: json({ type: "succeed", heirId: request.heirId }),
+          payload: json({ type: "succeed", heirId: request.heirId, recipientPlayerId: recipientId }),
           fromVersion: row.version,
           toVersion: result.previous.version,
           entries: json(result.entries)

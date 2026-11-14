@@ -26,6 +26,14 @@ const updateSchema = z.strictObject({
 });
 const targetSchema = z.strictObject({ playerId: z.uuid() });
 const listSchema = z.object({ universeId: z.string().trim().min(1).max(32).optional() });
+const consentSchema = z.strictObject({ accepts: z.boolean() });
+const treasurySchema = z.strictObject({
+  actionId: z.uuid(),
+  lifeId: z.uuid(),
+  direction: z.enum(["deposit", "withdraw"]),
+  amount: z.int().min(1).max(1_000_000_000),
+  note: z.string().trim().max(120).optional()
+});
 
 @Controller("families")
 export class FamilyController {
@@ -47,11 +55,35 @@ export class FamilyController {
     return { invites: await this.families.incoming(player.id) };
   }
 
+  @Get("mine")
+  async mine(@Req() request: Request, @Query() query: unknown) {
+    const { player } = await this.sessions.requireAccount(request);
+    const input = parseOrThrow(listSchema, query);
+    if (!input.universeId) throw new ApiError(400, "VALIDATION", "Укажите мир.");
+    return { family: await this.families.mine(player.id, input.universeId) };
+  }
+
   @Post()
   @HttpCode(201)
   async create(@Req() request: Request, @Body() body: unknown) {
     const { player } = await this.sessions.requireAccount(request);
     return this.families.create(player.id, parseOrThrow(createSchema, body));
+  }
+
+  @Post(":id/consent")
+  @HttpCode(200)
+  async consent(@Req() request: Request, @Param("id") id: string, @Body() body: unknown) {
+    const { player } = await this.sessions.requireAccount(request);
+    const input = parseOrThrow(consentSchema, body);
+    return this.families.consent(player.id, idOf(id), input.accepts);
+  }
+
+  @Post(":id/treasury")
+  @HttpCode(200)
+  async treasury(@Req() request: Request, @Param("id") id: string, @Body() body: unknown) {
+    const { player } = await this.sessions.requireAccount(request);
+    const input = parseOrThrow(treasurySchema, body);
+    return this.families.treasury(player.id, idOf(id), input);
   }
 
   @Get(":id")

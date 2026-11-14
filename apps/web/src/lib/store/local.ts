@@ -218,7 +218,8 @@ export const localStore: GameStore = {
     return { life: toLifeView(meta(updated), state), entries, replayed: false };
   },
 
-  async succeed(id, expectedVersion, heirId, actionId) {
+  async succeed(id, expectedVersion, heirId, actionId, recipientPlayerId?: string) {
+    void recipientPlayerId;
     const record = read(id);
     writable(record);
     if (record.state.version !== expectedVersion) throw new ClientError(409, "VERSION_CONFLICT", "Состояние жизни изменилось");

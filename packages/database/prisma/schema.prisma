@@ -58,6 +58,7 @@ model Player {
   familyInvitesReceived FamilyInvite[]  @relation("FamilyInviteInvitee")
   familyAudits       FamilyAudit[]
   familyLeaderships  Family[]           @relation("FamilyLeader")
+  familyTreasuryEntries FamilyTreasuryEntry[]
 
   @@index([idDisplayName])
   @@index([idUsername])
@@ -748,6 +749,7 @@ model Family {
   members FamilyMember[]
   invites FamilyInvite[]
   audits  FamilyAudit[]
+  treasuryEntries FamilyTreasuryEntry[]
 
   @@unique([universeId, nameKey])
   @@index([universeId, reputation])
@@ -761,6 +763,8 @@ model FamilyMember {
   universeId   String   @map("universe_id") @db.VarChar(32)
   role         String   @default("member") @db.VarChar(10)
   contribution Int      @default(0)
+  /// R2.2: explicit consent to receive a successor life from another family member.
+  acceptsInheritance Boolean @default(false) @map("accepts_inheritance")
   joinedAt     DateTime @default(now()) @map("joined_at") @db.Timestamptz(3)
 
   family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
@@ -803,6 +807,26 @@ model FamilyAudit {
 
   @@index([familyId, createdAt])
   @@map("family_audits")
+}
+
+/// R2.2: append-only family treasury movements, funded from a player life.
+model FamilyTreasuryEntry {
+  id          String   @id @default(uuid()) @db.Uuid
+  familyId    String   @map("family_id") @db.Uuid
+  actorId     String   @map("actor_id") @db.Uuid
+  actionId    String   @map("action_id") @db.Uuid
+  direction   String   @db.VarChar(8)
+  amount      Int
+  balanceAfter Int     @map("balance_after")
+  note        String   @default("") @db.VarChar(160)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  actor  Player @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, actionId])
+  @@index([familyId, createdAt])
+  @@map("family_treasury_entries")
 }
 
 model Insight {

@@ -89,7 +89,9 @@ export const successionSchema = z.strictObject({
   /** Повторная отправка с тем же actionId возвращает ту же новую жизнь */
   actionId: z.uuid(),
   expectedVersion: z.int().min(1),
-  heirId: z.string().regex(/^n[0-9]{1,6}$/, "Некорректный идентификатор")
+  heirId: z.string().regex(/^n[0-9]{1,6}$/, "Некорректный идентификатор"),
+  /** R2.2: optional family member who receives the new life. Requires consent. */
+  recipientPlayerId: z.uuid().optional()
 });
 export type SuccessionRequest = z.infer<typeof successionSchema>;
 
