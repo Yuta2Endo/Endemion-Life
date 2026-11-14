@@ -1,9 +1,9 @@
 # STAGE 06.3 — Player Profile
 
-**Status:** implemented locally, verified, not committed, not deployed<br>
+**Status:** deployed to production on 2026-11-14 17:18 UTC<br>
 **Save schema:** 14 (unchanged)<br>
 **DB migration:** 15, additive<br>
-**Production baseline:** `d9313dd` / docs `fbc0a69`, 14 migrations
+**Production:** `66aab0a`, 15 migrations, deploy run `43619988961`
 
 ## 1. What was added
 
@@ -77,6 +77,15 @@ No game save data changes. `SAVE_SCHEMA_VERSION` stays **14**. Rollback of the a
 - Public profile page is client-fetched; an SEO/server-rendered public profile is future work.
 - Profile badges are computed on each request; with a large account this adds aggregate queries. Current production scale is small.
 
-## 7. Rollback
+## 7. Deployment
 
-Application rollback is safe because the migration is additive and save schema is unchanged. Do not drop the profile columns during rollback; the previous release ignores them.
+- Code commit `66aab0a`; deploy run `43619988961` success.
+- History: `17:18:23Z deploy-start 66aab0a from 6eee520` → `17:18:52Z deploy 66aab0a ok`.
+- Pre-deploy backup `endemion_life-manual-20261114T170958Z.dump` passed checksum, table-of-contents and full trial restore (14 migrations, 19 players, 59 lives).
+- Production: HEAD `66aab0a`, clean tree, 15 migrations, seven healthy containers, `/api/health` 200.
+- Public production profile smoke on a real public player returned `access=public`, 12 lives, 10 badges, `account=null`.
+- `/api/profile/me` without a session returns 401 as designed.
+
+## 8. Rollback
+
+Application rollback is safe because the migration is additive and save schema is unchanged. Do not drop the profile columns during rollback; the previous release (`6eee520` / code `d9313dd`) ignores them.

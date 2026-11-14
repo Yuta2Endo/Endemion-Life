@@ -1,12 +1,12 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-15 (Stage 06.3 profile hub, not deployed)<br>
+**Обновлено:** 2026-11-15 (Stage 06.3 Player Profile deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `6eee520` (docs sync after Endemion ID hotfix)<br>
-**Production:** STAGE 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime code `d9313dd`, production checkout/docs `fbc0a69`, deployed 2026-11-14 16:05 UTC; guild migration 13 and market migration 14 applied<br>
-**Production code:** `d9313dd` (same application code as `fbc0a69`); DB migrations **14**<br>
-**Rollback:** `0d98323` (docs/Stage 06.2) или `0661018` (market code); миграция 14 additive. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
-**Рабочее дерево:** Stage 06.3 profile changes on disk; untracked Stage 11 reports/docx preserved.
+**HEAD:** `66aab0a` (Stage 06.3 profile hub)<br>
+**Production:** STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime/production checkout `66aab0a`, deployed 2026-11-14 17:18 UTC; migrations **15** (guild 13, market 14, profile 15)<br>
+**Production code:** `66aab0a`; DB migrations **15**, additive<br>
+**Rollback:** `6eee520` / runtime `d9313dd`; profile migration 15 is additive and ignored by previous code. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
+**Рабочее дерево:** Stage 06.3 deployed; untracked Stage 11 reports/docx preserved.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
 
@@ -45,7 +45,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | STAGE 05 (Multiplayer Foundation) | Account gate, presence/SSE, contributions, export/delete, reports | **COMPLETE; deployed, schema 14, migration 12** — см. `docs/stage-05/STAGE_05_REPORT.md` |
 | STAGE 06.1 (Guild Foundation) | Guilds, roles, requests, projects, reputation, audit | **COMPLETE; deployed, schema 14, migration 13** — см. `docs/stage-06/STAGE_06_1_REPORT.md` |
 | STAGE 06.2 (Player Market) | Offers, atomic goods/gold settlement, ledger, restore guard, succession cancel | **COMPLETE; deployed, schema 14, migration 14** - см. `docs/stage-06/STAGE_06_2_PLAYER_MARKET.md` |
-| STAGE 06.3 (Player Profile) | Public/private profile, stats, badges, recent lives, guilds, data export/delete | **IMPLEMENTED LOCALLY; not deployed; DB migration 15 additive** - см. `docs/stage-06/STAGE_06_3_PLAYER_PROFILE.md` |
+| STAGE 06.3 (Player Profile) | Public/private profile, stats, badges, recent lives, guilds, data export/delete | **COMPLETE; deployed, schema 14, migration 15** - см. `docs/stage-06/STAGE_06_3_PLAYER_PROFILE.md` |
 
 ## Design (Living Chronicle)
 
@@ -195,7 +195,7 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 - Rollback на schema 8 невозможен без восстановления БД из backup.
 
 
-## STAGE 06.3 — Player Profile (implemented locally, not deployed)
+## STAGE 06.3 — Player Profile (deployed 2026-11-14 17:18 UTC)
 
 - Profile hub on `/account`: Endemion ID/identity header, editable headline (48), bio (280), favourite world, visibility `public | friends | private`.
 - Server-computed statistics: lives, alive/dead, generations, best age, worlds, guilds, friends, trades, shared-world contributions, chronicle entries.
@@ -207,3 +207,6 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 - DB: additive migration `20261114170000_stage06_player_profile` adds `headline`, `bio`, `favorite_universe_id`, `profile_visibility`, `profile_updated_at` to `players`; save schema stays **14**.
 - Verification: API e2e **154/154** (5 new profile tests); web production build PASS; profile UI e2e **2/2** desktop+mobile; account+design e2e **18/18**; full web suite 73/76 with 3 transient create-life failures in the shared full run that passed 16/16 on targeted rerun.
 - Known limitations: avatar/name remain Endemion ID-owned; no avatar upload; no activity feed beyond recent lives; friend-only visibility is implemented server-side but has no dedicated browser test.
+
+- Deployment: commit `66aab0a`, deploy run `43619988961` success; history `17:18:23Z deploy-start 66aab0a from 6eee520` → `17:18:52Z deploy 66aab0a ok`. Backup `endemion_life-manual-20261114T170958Z.dump` passed checksum, table-of-contents and trial restore: 14 migrations, 19 players, 59 lives.
+- Production verification: HEAD `66aab0a`, clean tree, migrations `15`, all seven containers healthy, `/api/health` 200 DB/Redis up, `/api/profile/me` 401 unauthenticated, public `/api/profile/:id` returned `access=public`, 12 lives, 10 badges and `account=null` for a real public player.
