@@ -1,12 +1,12 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-15 (R1.2 first-life analytics implemented locally)<br>
+**Обновлено:** 2026-11-15 (R1.2 first-life analytics deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `84db808` (R1.1 docs)<br>
-**Production:** R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime code `68b4390`, docs checkout `84db808`, deployed 2026-11-14 18:57 UTC; migrations **15** (guild 13, market 14, profile 15)<br>
-**Production code:** `68b4390`; DB migrations **15**, additive<br>
-**Rollback:** `f1a829f`; profile migration 15 is additive and ignored by previous code. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
-**Рабочее дерево:** R1.2 analytics on disk; untracked Stage 11 reports/docx preserved.
+**HEAD:** `fa85733` (R1.2 + CI wait stabilization)<br>
+**Production:** R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime/docs `fa85733`, deployed 2026-11-14 19:56 UTC; migrations **15** (guild 13, market 14, profile 15)<br>
+**Production code:** `fa85733`; DB migrations **15**, additive<br>
+**Rollback:** `84db808` (R1.1 docs); R1.2 is additive and safe to roll back. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
+**Рабочее дерево:** R1.2 deployed; untracked Stage 11 reports/docx preserved.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
 
@@ -47,7 +47,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | STAGE 06.2 (Player Market) | Offers, atomic goods/gold settlement, ledger, restore guard, succession cancel | **COMPLETE; deployed, schema 14, migration 14** - см. `docs/stage-06/STAGE_06_2_PLAYER_MARKET.md` |
 | STAGE 06.3 (Player Profile) | Public/private profile, stats, badges, recent lives, guilds, data export/delete | **COMPLETE; deployed, schema 14, migration 15** - см. `docs/stage-06/STAGE_06_3_PLAYER_PROFILE.md` |
 | R1.1 (First Life Guide) | Adaptive chapter guide, goal progress, first-life checklist | **COMPLETE; deployed, no schema/API changes** - см. `docs/planning/R1_1_FIRST_LIFE_GUIDE.md` |
-| R1.2 (First-Life Analytics) | Guide signals + server-derived first-life funnel | **IMPLEMENTED; deployed in this release; no save/DB migration** - см. `docs/planning/R1_2_FIRST_LIFE_ANALYTICS.md` |
+| R1.2 (First-Life Analytics) | Guide signals + server-derived first-life funnel | **COMPLETE; deployed, no save/DB migration** - см. `docs/planning/R1_2_FIRST_LIFE_ANALYTICS.md` |
 
 ## Design (Living Chronicle)
 
@@ -238,3 +238,4 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 - No save schema change and no database migration; guide facts use the existing 90-day `insights` table.
 - Verification: API e2e **156/156**, new R1.2 API tests **2/2**, game-core **775/775**, web **30/30**, guide/design e2e **14/14**, typecheck PASS, build PASS, lint 0 errors (pre-existing `play-screen.tsx:175` warning).
 - Known limitation: `LIVE_OPS_TOKEN` is absent from production compose by default, so the funnel UI remains closed until the token is supplied.
+- Deployment: commits `24bd586` + `fa85733`, CI 43633271755 success, Security 43633271915 success, Deploy 43633594162 success; history `19:56:11Z deploy-start fa85733 from 84db808` → `19:56:39Z deploy fa85733 ok`; backup `endemion_life-manual-20261114T193932Z.dump` trial-restored; production `/api/health` 200 and play page 200.

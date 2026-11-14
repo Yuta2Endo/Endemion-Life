@@ -1,6 +1,6 @@
 # R1.2 — First-Life Analytics and Funnel
 
-**Status:** implemented locally, verified, not deployed<br>
+**Status:** deployed to production, verified<br>
 **Save schema:** 14 (unchanged)<br>
 **DB migration:** none — uses existing `insight` and life/history tables
 
@@ -92,6 +92,16 @@ The two new API tests cover ownership, event validation, deduplication, session 
 - `LIVE_OPS_TOKEN` is absent in production compose by default, so the admin endpoint and `/insights` page are closed until the token is supplied.
 - No chart library or export; the panel is deliberately text-first.
 
-## 7. Rollback
+## 7. Deployment record
+
+- Code commit **`24bd586`** (`r1.2: add first-life analytics and funnel`), test-stability commit **`fa85733`**.
+- CI run **43633271755 success**, Security **43633271915 success**.
+- Deploy run **43633594162 success**; history `19:56:11Z deploy-start fa85733 from 84db808` → `19:56:39Z deploy fa85733 ok from 84db808`.
+- Pre-deploy backup `endemion_life-manual-20261114T193932Z.dump` (12 MB), trial restore passed: 15 migrations, 19 players, 59 lives, 2,209 snapshots, 9,257 history, 6,272 actions.
+- Production HEAD **`fa85733`**, clean, all seven containers healthy, `/api/health` 200, `/play/:id` 200, CSP present.
+- Production checks: unauthenticated `POST /api/insights/guide` → **401**; `GET /api/insights/funnel` without ops token → **404**.
+- Rollback target **`84db808`**; no database migration, so rollback is safe.
+
+## 8. Rollback
 
 No database migration. Reverting the code removes the endpoint and the guide signals; existing insight rows remain harmless and expire after 90 days.
