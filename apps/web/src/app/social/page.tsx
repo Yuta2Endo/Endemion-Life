@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { LiveBoard } from "@/components/social/live-board";
 import { SocialPanel } from "@/components/social/social-panel";
 import { GuildPanel } from "@/components/social/guild-panel";
+import { FamilyPanel } from "@/components/social/family-panel";
 import { getServerI18n } from "@/lib/locale-server";
 
 export const metadata: Metadata = { title: "People", robots: { index: false } };
@@ -19,6 +20,7 @@ export default async function SocialPage() {
       <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <div className="space-y-8">
           <LiveBoard />
+          <FamilyPanel />
           <GuildPanel />
         </div>
         <aside className="space-y-4 lg:sticky lg:top-24" aria-labelledby="social-ties">

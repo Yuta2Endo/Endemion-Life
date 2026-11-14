@@ -53,6 +53,11 @@ model Player {
   marketSales        MarketTrade[]      @relation("MarketSellerPlayer")
   marketPurchases    MarketTrade[]      @relation("MarketBuyerPlayer")
   marketLedger       MarketLedger[]
+  familyMemberships  FamilyMember[]
+  familyInvitesSent  FamilyInvite[]     @relation("FamilyInviteInviter")
+  familyInvitesReceived FamilyInvite[]  @relation("FamilyInviteInvitee")
+  familyAudits       FamilyAudit[]
+  familyLeaderships  Family[]           @relation("FamilyLeader")
 
   @@index([idDisplayName])
   @@index([idUsername])
@@ -721,6 +726,83 @@ model MarketLedger {
   @@unique([tradeId, playerId, kind])
   @@index([lifeId, createdAt])
   @@map("market_ledger")
+}
+
+/// R2.1: player-created family inside one universe. Distinct from the deterministic
+/// dynasty stored inside a life save; this is the account-level social shell.
+model Family {
+  id          String   @id @default(uuid()) @db.Uuid
+  universeId  String   @map("universe_id") @db.VarChar(32)
+  name        String   @db.VarChar(40)
+  nameKey     String   @map("name_key") @db.VarChar(40)
+  motto       String   @default("") @db.VarChar(80)
+  description String   @default("") @db.VarChar(500)
+  visibility  String   @default("public") @db.VarChar(10)
+  leaderId    String   @map("leader_id") @db.Uuid
+  reputation  Int      @default(0)
+  treasury    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  leader  Player         @relation("FamilyLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  members FamilyMember[]
+  invites FamilyInvite[]
+  audits  FamilyAudit[]
+
+  @@unique([universeId, nameKey])
+  @@index([universeId, reputation])
+  @@map("families")
+}
+
+model FamilyMember {
+  id           String   @id @default(uuid()) @db.Uuid
+  familyId     String   @map("family_id") @db.Uuid
+  playerId     String   @map("player_id") @db.Uuid
+  universeId   String   @map("universe_id") @db.VarChar(32)
+  role         String   @default("member") @db.VarChar(10)
+  contribution Int      @default(0)
+  joinedAt     DateTime @default(now()) @map("joined_at") @db.Timestamptz(3)
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, universeId])
+  @@unique([familyId, playerId])
+  @@index([familyId, role])
+  @@map("family_members")
+}
+
+model FamilyInvite {
+  id         String    @id @default(uuid()) @db.Uuid
+  familyId   String    @map("family_id") @db.Uuid
+  inviterId  String    @map("inviter_id") @db.Uuid
+  inviteeId  String    @map("invitee_id") @db.Uuid
+  status     String    @default("pending") @db.VarChar(10)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  decidedAt  DateTime? @map("decided_at") @db.Timestamptz(3)
+
+  family  Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  inviter Player @relation("FamilyInviteInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee Player @relation("FamilyInviteInvitee", fields: [inviteeId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, inviteeId])
+  @@index([inviteeId, status, createdAt])
+  @@map("family_invites")
+}
+
+model FamilyAudit {
+  id        String   @id @default(uuid()) @db.Uuid
+  familyId  String   @map("family_id") @db.Uuid
+  actorId   String   @map("actor_id") @db.Uuid
+  action    String   @db.VarChar(32)
+  detail    Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  actor  Player @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([familyId, createdAt])
+  @@map("family_audits")
 }
 
 model Insight {

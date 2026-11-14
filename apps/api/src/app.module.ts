@@ -12,6 +12,8 @@ import { APP_CONFIG, readConfig, type AppConfig } from "./config.js";
 import { HealthController } from "./health/health.controller.js";
 import { GuildController } from "./guild/guild.controller.js";
 import { GuildService } from "./guild/guild.service.js";
+import { FamilyController } from "./family/family.controller.js";
+import { FamilyService } from "./family/family.service.js";
 import { LivesController } from "./lives/lives.controller.js";
 import { LivesService } from "./lives/lives.service.js";
 import { MarketController } from "./market/market.controller.js";
@@ -43,7 +45,7 @@ import { WorldController } from "./world/world.controller.js";
 import { WorldService } from "./world/world.service.js";
 
 @Module({
-  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, MarketController, ProfileController, SocialController, GuildController, LiveController, InsightsController, PortalController, PresenceController, WorldController],
+  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, MarketController, ProfileController, SocialController, GuildController, FamilyController, LiveController, InsightsController, PortalController, PresenceController, WorldController],
   providers: [
     { provide: APP_CONFIG, useFactory: (): AppConfig => readConfig() },
     PrismaService,
@@ -58,6 +60,7 @@ import { WorldService } from "./world/world.service.js";
     ProfileService,
     SocialService,
     GuildService,
+    FamilyService,
     LiveService,
     InsightsService,
     PresenceService,

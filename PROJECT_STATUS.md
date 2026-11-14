@@ -1,12 +1,12 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-15 (R1.2 first-life analytics deployed)<br>
+**Обновлено:** 2026-11-15 (R2.1 player families implemented locally, not deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `fa85733` (R1.2 + CI wait stabilization)<br>
-**Production:** R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime/docs `fa85733`, deployed 2026-11-14 19:56 UTC; migrations **15** (guild 13, market 14, profile 15)<br>
+**HEAD:** `ff59cb2` (R1.2 analytics docs)<br>
+**Production:** R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `fa85733`, docs `ff59cb2`, deployed 2026-11-14 19:56–20:05 UTC; migrations **15** (guild 13, market 14, profile 15)<br>
 **Production code:** `fa85733`; DB migrations **15**, additive<br>
 **Rollback:** `84db808` (R1.1 docs); R1.2 is additive and safe to roll back. Rollback на schema 13 (`0feb6d9`) требует восстановления БД после schema-14 записей.<br>
-**Рабочее дерево:** R1.2 deployed; untracked Stage 11 reports/docx preserved.
+**Рабочее дерево:** R2.1 family changes and migration 16 locally; unrelated Android/itch/lockfile changes preserved; 74 Stage 11 reports/docx untracked.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
 
@@ -48,6 +48,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | STAGE 06.3 (Player Profile) | Public/private profile, stats, badges, recent lives, guilds, data export/delete | **COMPLETE; deployed, schema 14, migration 15** - см. `docs/stage-06/STAGE_06_3_PLAYER_PROFILE.md` |
 | R1.1 (First Life Guide) | Adaptive chapter guide, goal progress, first-life checklist | **COMPLETE; deployed, no schema/API changes** - см. `docs/planning/R1_1_FIRST_LIFE_GUIDE.md` |
 | R1.2 (First-Life Analytics) | Guide signals + server-derived first-life funnel | **COMPLETE; deployed, no save/DB migration** - см. `docs/planning/R1_2_FIRST_LIFE_ANALYTICS.md` |
+| R2.1 (Player Families) | Account-level family, roles, invitations/consent, audit, Web UI | **IMPLEMENTED LOCALLY; not deployed; DB migration 16 additive** - см. `docs/planning/R2_1_FAMILIES.md` |
 
 ## Design (Living Chronicle)
 
@@ -239,3 +240,16 @@ STAGE 03.1–03.5 реализованы, проверены, закоммиче
 - Verification: API e2e **156/156**, new R1.2 API tests **2/2**, game-core **775/775**, web **30/30**, guide/design e2e **14/14**, typecheck PASS, build PASS, lint 0 errors (pre-existing `play-screen.tsx:175` warning).
 - Known limitation: `LIVE_OPS_TOKEN` is absent from production compose by default, so the funnel UI remains closed until the token is supplied.
 - Deployment: commits `24bd586` + `fa85733`, CI 43633271755 success, Security 43633271915 success, Deploy 43633594162 success; history `19:56:11Z deploy-start fa85733 from 84db808` → `19:56:39Z deploy fa85733 ok`; backup `endemion_life-manual-20261114T193932Z.dump` trial-restored; production `/api/health` 200 and play page 200.
+
+
+## R2.1 — Player Families (implemented locally, not deployed)
+
+- Account-level family foundation on `/social`: create a family in a universe, public or invite-only visibility, motto, description, members, roles (leader/elder/member), invitations with explicit consent, accept/decline, leave, kick, leadership transfer and disband.
+- One family per player per universe; unique family name per universe; cap 30 members; leader cannot leave while the family has other members.
+- Audit log records create, update, invite, accept, leave, kick, transfer and disband.
+- API: `GET/POST /api/families`, `GET/PATCH /api/families/:id`, invite/accept/decline/leave/kick/transfer/disband and `GET /api/families/:id/audit`; all account-only.
+- DB migration **16** `20261115120000_r2_1_families`: `families`, `family_members`, `family_invites`, `family_audits`; additive only. Save schema stays **14**.
+- Web: `family-panel.tsx` on `/social`; RU/EN; guest CTA; no horizontal overflow.
+- Verification: API e2e **162/162** (6 new family tests); family UI e2e **2/2** desktop+mobile; full web e2e **79 passed, 1 skipped**; web production build PASS; typecheck PASS; targeted lint clean (root lint blocked by unrelated dirty Android/itch files).
+- Not implemented in this slice: shared estate/treasury mechanics, cross-account inheritance, guardianship/regency, family chronicle, family chat. `treasury` and `reputation` columns exist as foundation but no transfer mechanics.
+- Rollback: application rollback is safe; migration 16 is additive. Do not drop family tables during rollback.
