@@ -1,9 +1,9 @@
 # R5.4 — Echoes of the Roads
 
-**Status:** implemented and verified locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 18:02 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none  
-**Production runtime:** unchanged (`bc7decb`; this work is not deployed)
+**Production runtime:** `2dc2b48`
 
 ## 1. What was added
 
@@ -93,8 +93,20 @@ No `fx.relic` call was added. The relic-gated path is an alternative reward, not
 - No new effect types, relics, save fields, API routes, UI components or database tables.
 - RU/EN text is lore only; no new art or audio.
 
-## 6. Rollback
+## 6. Deployment
+
+- Code commit `2dc2b48`; production runtime **`2dc2b48`**.
+- Deploy run **43744059075**, success; history `18:01:16Z deploy-start 2dc2b48 from bc7decb` -> `18:01:51Z deploy 2dc2b48 ok`.
+- No migration was required; production migration count stays **26**; save schema 14.
+- `/api/health` 200, database/redis up.
+- `/api/contracts?universeId=hunter` 200.
+- `/api/notifications` 401 for guests.
+- Web `/` 200.
+- CI **43743696449** success; Security **43743696405** success.
+- Rollback target `bc7decb`.
+
+## 7. Rollback
 
 No database migration, API contract or save-schema change was introduced. Rolling back means reverting the R5.4 content, the updated content-count tests, `test/stage26-echoes.test.ts`, this document and the PROJECT_STATUS row. Existing saves remain valid: `adventure.discovered`, `adventure.done` and `lineage.relics` are unchanged in shape.
 
-The current production rollback target remains `020a2ad` until this work is released; production runtime stays `bc7decb`.
+The production rollback target is `bc7decb`.
