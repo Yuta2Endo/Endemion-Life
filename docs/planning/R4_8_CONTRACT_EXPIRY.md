@@ -1,6 +1,6 @@
 # R4.8 — Contract Expiry and Escrow Return
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 13:33 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** 24, additive
 
@@ -33,6 +33,14 @@
 - No notification to seller.
 - Auctions and bids remain out of scope.
 
-## 4. Rollback
+## 4. Deployment
+
+- Code commit `185b659`; production runtime **`185b659`**.
+- Deploy run **43718667963**, success; history `13:32:40Z deploy-start` → `13:33:10Z deploy ok`.
+- Production now has **24 migrations**; save schema 14.
+- `/api/health` 200; `/api/contracts?universeId=hunter` 200.
+- Rollback target `538c157`; migration 24 only widens a check constraint.
+
+## 5. Rollback
 
 Migration 24 only widens a check constraint. Application rollback is safe.
