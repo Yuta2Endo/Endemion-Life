@@ -1,6 +1,6 @@
 # R4.12 - Social Notifications
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 16:01 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none
 
@@ -73,10 +73,12 @@ Test database reset now truncates `player_notifications`, so notification tests 
 
 ## 4. Deployment
 
-- Code commit: pending.
-- Production runtime: pending.
-- No migration is required; production migration count stays **26**.
-- Rollback target remains `15f9873`.
+- Code commit `e484c02`; production runtime **`e484c02`**.
+- Deploy run **43732408506**, success; history `16:00:30Z deploy-start` -> `16:01:06Z deploy ok`.
+- No migration was required; production migration count stays **26**; save schema 14.
+- `/api/health` 200; `/api/contracts?universeId=hunter` 200; `/api/notifications` 401 for guests; web `/` 200.
+- CI **43732075225** success; Security **43732075223** success.
+- Previous runtime `15f9873` is the rollback target.
 
 ## 5. Rollback
 
