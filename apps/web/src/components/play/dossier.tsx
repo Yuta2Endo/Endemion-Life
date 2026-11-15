@@ -698,7 +698,6 @@ export function Dossier({
               role="tab"
               data-tab={item.id}
               aria-selected={section === item.id}
-              aria-controls={`dossier-panel-${item.id}`}
               id={`dossier-tab-${item.id}`}
               tabIndex={section === item.id ? 0 : -1}
               onClick={() => setSection(item.id)}
