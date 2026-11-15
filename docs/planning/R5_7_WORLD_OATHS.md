@@ -1,11 +1,11 @@
 # R5.7 — World Oaths
 
-**Status:** implemented and verified locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 20:05 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none  
 **API routes:** unchanged (generic life action)  
-**Production runtime:** `aa23d34` (not changed by this local work)  
-**Rollback target:** `47593ac`
+**Production runtime:** `6915063`  
+**Rollback target:** `aa23d34`
 
 ## 1. What was added
 
@@ -86,7 +86,17 @@ Each oath has a visible goal, a 4–8 year limit, a reward and a penalty. Final 
 - No new save fields: completed ids already existed in `state.questsDone`; the profile exposes them additively.
 - No database or API changes, so there is no server-side oath list endpoint; the web client reads the pure game-core catalog.
 
-## 8. Rollback
+## 8. Deployment
+
+- Code commit `6915063` (`r5.7: add world oaths`), 22 files, +894/−31.
+- CI **43755274773** success; Security **43755274778** success.
+- Manual Deploy run **43755582143**, success; environment **26274376808** approved.
+- Deploy history: `20:03:49Z deploy-start 6915063 from aa23d34` -> `20:04:28Z deploy 6915063 ok`.
+- Production has **26 migrations**; save schema 14.
+- `/api/health` 200 with database/redis up; `/api/contracts?universeId=hunter` 200; `/api/notifications` guest 401; web `/` 200.
+- Rollback target `aa23d34`; no migration.
+
+## 9. Rollback
 
 No database migration, API contract or save-schema change was introduced. Rolling back means reverting:
 
