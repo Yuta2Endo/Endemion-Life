@@ -1,6 +1,6 @@
 # R5.2 — The Third Road
 
-**Status:** implemented and verified locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 17:18 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none
 
@@ -103,6 +103,18 @@ Tests were updated to reflect the expanded world.
 - The new roads reuse existing effect types and ability ids only.
 - No new save fields, API routes or database tables.
 
-## 7. Rollback
+## 7. Deployment
+
+- Code commit `020a2ad`; production runtime **`020a2ad`**.
+- Deploy run **43739958419**, success; history `17:17:29Z deploy-start` -> `17:18:05Z deploy ok`.
+- No migration was required; production migration count stays **26**; save schema 14.
+- `/api/health` 200, database/redis up.
+- `/api/contracts?universeId=hunter` 200.
+- `/api/notifications` 401 for guests.
+- Web `/` 200.
+- CI **43739574090** success; Security **43739574091** success.
+- Rollback target `4f074e8`.
+
+## 8. Rollback
 
 No database migration or API contract was added. Application rollback is safe; the third roads exist only in code and the web bundle.
