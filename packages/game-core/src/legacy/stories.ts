@@ -146,6 +146,48 @@ export const RELICS: Readonly<Record<string, RelicDefinition>> = {
     description: t("Карта, с которой исчезли все звёзды, кроме последней. Двор и Башня больше не могут решить, кому она принадлежит.", "A chart where every star but the last has vanished. The Court and the Tower can no longer agree who owns it."),
     effects: [fx.meter("court-favor", 10), fx.skill("arcana", 5)],
     universeId: "academy"
+  },
+  "oath-ember": {
+    id: "oath-ember",
+    name: t("Уголь последнего света", "Last Light Ember"),
+    description: t("Уголёк, который не гаснет под пеплом. Пока он в роду, клятва Ордена помнит своё последнее слово.", "An ember that will not die beneath the ash. While it remains in the line, the Order's oath remembers its final word."),
+    effects: [fx.meter("corruption", -10), fx.rep(5)],
+    universeId: "dark-fantasy"
+  },
+  "guild-seal": {
+    id: "guild-seal",
+    name: t("Печать Гильдии", "Guild Seal"),
+    description: t("Печать, которую Гильдия ставит только на контракты без срока. Её оттиск открывает двери, о которых не пишут в книгах.", "A seal the Guild uses only on contracts without a term. Its mark opens doors that never appear in the ledgers."),
+    effects: [fx.wealth(30), fx.faction("guild", 6)],
+    universeId: "isekai"
+  },
+  "nameless-blade": {
+    id: "nameless-blade",
+    name: t("Клинок без имени", "Nameless Blade"),
+    description: t("Клинок, на котором стёрли имя владельца. Он помнит не человека, а клятву, и потому не знает промаха.", "A blade whose owner's name has been erased. It remembers the oath, not the person, and so it never misses."),
+    effects: [fx.skill("martial-arts", 5), fx.meter("qi-deviation", -8)],
+    universeId: "murim"
+  },
+  "dao-feather": {
+    id: "dao-feather",
+    name: t("Перо Дао", "Dao Feather"),
+    description: t("Перо, упавшее с неба в тот миг, когда Дао было произнесено вслух. Оно не добавляет силы, но убирает страх перед ней.", "A feather that fell from the sky the moment the Dao was spoken aloud. It adds no power, only removes the fear of it."),
+    effects: [fx.meter("dao-heart", 12), fx.meter("karmic-debt", -8)],
+    universeId: "xianxia"
+  },
+  "red-gate-mark": {
+    id: "red-gate-mark",
+    name: t("Метка Красных Врат", "Red Gate Mark"),
+    description: t("Знак, который остаётся на коже после закрытия Красных Врат. Врата узнают его и больше не открываются рядом без нужды.", "A mark left on the skin after the Red Gate closes. Gates recognise it and no longer open nearby without need."),
+    effects: [fx.meter("gate-threat", -10), fx.meter("fame", 8)],
+    universeId: "hunter"
+  },
+  "court-star": {
+    id: "court-star",
+    name: t("Звезда двора", "Court Star"),
+    description: t("Звезда, которую Двор и Башня согласились считать одной на двоих. Пока она горит, ни один из них не решится на скандал.", "A star the Court and the Tower agreed to share. While it burns, neither will risk a scandal."),
+    effects: [fx.meter("court-favor", 10), fx.meter("scandal", -6)],
+    universeId: "academy"
   }
 };
 

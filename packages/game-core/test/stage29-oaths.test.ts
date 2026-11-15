@@ -16,6 +16,7 @@ import {
   type UniverseId
 } from "../src/index.js";
 import type { EngineContext } from "../src/engine/context.js";
+import { findRelic } from "../src/legacy/stories.js";
 import { questYearly } from "../src/world/quests.js";
 import { start } from "./helpers.js";
 
@@ -46,18 +47,37 @@ function codeOf(run: () => unknown): GameErrorCode | null {
 }
 
 describe("R5.7: обеты мира", () => {
-  it("у каждого мира есть три обета, цепочка и валидный контент", () => {
+  it("у каждого мира есть четыре обета, цепочка и валидный контент", () => {
     for (const universeId of UNIVERSE_IDS) {
       const oaths = getUniverse(universeId).oaths ?? [];
-      expect(oaths, universeId).toHaveLength(3);
+      expect(oaths, universeId).toHaveLength(4);
       expect(oaths[0]?.requires ?? [], `${universeId}:first`).toHaveLength(0);
       expect(oaths[1]?.requires, `${universeId}:second`).toEqual([oaths[0]!.id]);
       expect(oaths[2]?.requires, `${universeId}:third`).toEqual([oaths[1]!.id]);
+      expect(oaths[3]?.requires, `${universeId}:fourth`).toEqual([oaths[2]!.id]);
       expect(oaths[0]?.next, `${universeId}:next-1`).toBe(oaths[1]!.id);
       expect(oaths[1]?.next, `${universeId}:next-2`).toBe(oaths[2]!.id);
-      expect(oaths[2]?.next, `${universeId}:last`).toBeUndefined();
+      expect(oaths[2]?.next, `${universeId}:next-3`).toBe(oaths[3]!.id);
+      expect(oaths[3]?.next, `${universeId}:last`).toBeUndefined();
     }
     expect(oathProblems()).toEqual([]);
+  });
+
+  it("финальный обет каждого мира выдаёт свою реликвию", () => {
+    const expected: Record<UniverseId, string> = {
+      "dark-fantasy": "oath-ember",
+      isekai: "guild-seal",
+      murim: "nameless-blade",
+      xianxia: "dao-feather",
+      hunter: "red-gate-mark",
+      academy: "court-star"
+    };
+    for (const universeId of UNIVERSE_IDS) {
+      const capstone = (getUniverse(universeId).oaths ?? [])[3]!;
+      const relic = capstone.reward.find((effect) => effect.type === "relic");
+      expect(relic?.type === "relic" ? relic.id : null, universeId).toBe(expected[universeId]);
+      expect(findRelic(expected[universeId])?.universeId, universeId).toBe(universeId);
+    }
   });
 
   it("обет принимается вручную, второй нельзя взять поверх активного", () => {
@@ -93,8 +113,16 @@ describe("R5.7: обеты мира", () => {
     state.character.factions["order-of-ash"] = 20;
     yearly(state);
     expect(state.questsDone).toContain("df.q-cathedral");
+    expect(state.quest?.id).toBe("df.q-last-light");
+
+    state.character.skills.oathcraft = 25;
+    state.character.factions["order-of-ash"] = 35;
+    yearly(state);
+    expect(state.questsDone).toContain("df.q-last-light");
     expect(state.quest).toBeNull();
     expect(state.character.abilities).toContain("ember-ward");
+    expect(state.character.abilities).toContain("last-light");
+    expect(state.lineage.relics.map((relic) => relic.id)).toContain("oath-ember");
   });
 
   it("провал закрывает обет, накладывает штраф и не ведёт дальше", () => {
@@ -149,11 +177,11 @@ describe("R5.7: обеты мира", () => {
       quest: state.quest ? { id: state.quest.id } : null,
       questsDone: [...state.questsDone]
     });
-    expect(before.oaths).toHaveLength(3);
-    expect(before.oaths.map((oath) => oath.status)).toEqual(["active", "locked", "locked"]);
+    expect(before.oaths).toHaveLength(4);
+    expect(before.oaths.map((oath) => oath.status)).toEqual(["active", "locked", "locked", "locked"]);
     expect(before.oaths[1]?.blocked).toBe("requires");
     expect(before.progress.oathsDone).toBe(0);
-    expect(before.progress.oathsTotal).toBe(3);
+    expect(before.progress.oathsTotal).toBe(4);
 
     state.questsDone.push("hu.q-license");
     state.quest = { id: "hu.q-gate", since: 19 };

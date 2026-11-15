@@ -51,12 +51,12 @@ describe("R5.1: Атлас мира", () => {
       expect(view.description.en.length, universeId).toBeGreaterThan(0);
       expect(view.rules.length, universeId).toBeGreaterThan(0);
       expect(view.mechanics.length, universeId).toBeGreaterThan(0);
-      expect(view.relics.length, universeId).toBe(2);
+      expect(view.relics.length, universeId).toBe(3);
       expect(view.relics.every((relic) => !relic.owned), universeId).toBe(true);
-      expect(view.progress.relicsTotal, universeId).toBe(2);
+      expect(view.progress.relicsTotal, universeId).toBe(3);
       expect(view.progress.relicsOwned, universeId).toBe(0);
-      expect(view.oaths.length, universeId).toBe(3);
-      expect(view.progress.oathsTotal, universeId).toBe(3);
+      expect(view.oaths.length, universeId).toBe(4);
+      expect(view.progress.oathsTotal, universeId).toBe(4);
       expect(view.progress.oathsDone, universeId).toBe(0);
       expect(view.oaths[0]?.status, universeId).toBe("available");
       expect(view.oaths[1]?.status, universeId).toBe("locked");
@@ -140,7 +140,7 @@ describe("R5.1: Атлас мира", () => {
     expect(view.relics.find((item) => item.id === "drowned-bell")?.owned).toBe(true);
     expect(view.relics.find((item) => item.id === "drowned-toll")?.owned).toBe(false);
     expect(view.progress.relicsOwned).toBe(1);
-    expect(view.progress.relicsTotal).toBe(2);
+    expect(view.progress.relicsTotal).toBe(3);
   });
 
   it("показывает возрастные преграды, фракции и ранг пути", () => {

@@ -57,7 +57,21 @@ export const WORLD_OATHS: Readonly<Record<UniverseId, readonly QuestDefinition[]
       reward: [fx.xp(100), fx.faction("order-of-ash", 10), fx.rep(8), fx.ability("ember-ward")],
       penalty: [fx.health(-15), fx.faction("order-of-ash", -5)],
       minAge: 18,
-      requires: ["df.q-ash"]
+      requires: ["df.q-ash"],
+      next: "df.q-last-light"
+    },
+    {
+      id: "df.q-last-light",
+      issuer: DF_ISSUER,
+      arc: DF_ARC,
+      title: t("Последний свет", "The last light"),
+      text: t("Орден зовёт вас к последнему огню, который ещё не отдали пеплу. Кто донесёт его до Стены, тот произнесёт клятву за всех, кто уже не может говорить.", "The Order calls you to the last fire not yet given to the ash. Whoever carries it to the Wall will speak the oath for all who can no longer speak."),
+      goal: [when.skill("oathcraft", 25), when.faction("order-of-ash", 35)],
+      years: 10,
+      reward: [fx.xp(160), fx.relic("oath-ember"), fx.faction("order-of-ash", 12), fx.rep(10), fx.ability("last-light")],
+      penalty: [fx.health(-30), fx.faction("order-of-ash", -8), fx.meter("corruption", 10)],
+      minAge: 20,
+      requires: ["df.q-cathedral"]
     }
   ],
   isekai: [
@@ -99,7 +113,21 @@ export const WORLD_OATHS: Readonly<Record<UniverseId, readonly QuestDefinition[]
       reward: [fx.xp(100), fx.faction("guild", 10), fx.rep(8), fx.wealth(50)],
       penalty: [fx.rep(-5), fx.wealth(-30)],
       minAge: 18,
-      requires: ["is.q-ledger"]
+      requires: ["is.q-ledger"],
+      next: "is.q-contract"
+    },
+    {
+      id: "is.q-contract",
+      issuer: IS_ISSUER,
+      arc: IS_ARC,
+      title: t("Контракт без срока", "The contract without a term"),
+      text: t("Гильдия предлагает контракт, у которого нет конца, только подпись. Печать ляжет на бумагу лишь тогда, когда ваше имя станет дороже любого срока.", "The Guild offers a contract with no end, only a signature. The seal will touch the paper only when your name is worth more than any term."),
+      goal: [when.skill("guild-craft", 25), when.faction("guild", 35), when.reputation(40)],
+      years: 10,
+      reward: [fx.xp(160), fx.relic("guild-seal"), fx.faction("guild", 12), fx.wealth(100), fx.rep(10)],
+      penalty: [fx.wealth(-80), fx.faction("guild", -8)],
+      minAge: 20,
+      requires: ["is.q-name"]
     }
   ],
   murim: [
@@ -141,7 +169,21 @@ export const WORLD_OATHS: Readonly<Record<UniverseId, readonly QuestDefinition[]
       reward: [fx.xp(100), fx.faction("orthodox-alliance", 10), fx.rep(8), fx.ability("light-step")],
       penalty: [fx.health(-20), fx.faction("orthodox-alliance", -5)],
       minAge: 18,
-      requires: ["mu.q-debt"]
+      requires: ["mu.q-debt"],
+      next: "mu.q-oath"
+    },
+    {
+      id: "mu.q-oath",
+      issuer: MU_ISSUER,
+      arc: MU_ARC,
+      title: t("Клятва без имени", "The oath without a name"),
+      text: t("Союз просит произнести клятву, которую нельзя подписать именем. Клинок, у которого нет владельца, сам выберет, кому служить до конца.", "The Alliance asks for an oath that cannot be signed with a name. A blade without an owner will choose whom it serves to the end."),
+      goal: [when.skill("inner-cultivation", 25), when.skill("lightness", 20), when.faction("orthodox-alliance", 35)],
+      years: 10,
+      reward: [fx.xp(160), fx.relic("nameless-blade"), fx.faction("orthodox-alliance", 12), fx.rep(10), fx.skill("martial-arts", 5)],
+      penalty: [fx.health(-30), fx.meter("qi-deviation", 8)],
+      minAge: 20,
+      requires: ["mu.q-name"]
     }
   ],
   xianxia: [
@@ -183,7 +225,21 @@ export const WORLD_OATHS: Readonly<Record<UniverseId, readonly QuestDefinition[]
       reward: [fx.xp(100), fx.faction("cloud-peak", 10), fx.rep(8), fx.ability("spirit-sense")],
       penalty: [fx.health(-20), fx.meter("karmic-debt", 6)],
       minAge: 18,
-      requires: ["xi.q-heart"]
+      requires: ["xi.q-heart"],
+      next: "xi.q-dao"
+    },
+    {
+      id: "xi.q-dao",
+      issuer: XI_ISSUER,
+      arc: XI_ARC,
+      title: t("Слово Дао", "The word of the Dao"),
+      text: t("Облачный Пик хранит слово, которое Дао сказало до людей. Его нельзя выучить, но можно вынести из колодца, не расплескав.", "Cloud Peak keeps the word the Dao spoke before people. It cannot be learned, only carried out of the well without spilling."),
+      goal: [when.skill("cultivation", 25), when.meter("dao-heart", 70), when.faction("cloud-peak", 35)],
+      years: 10,
+      reward: [fx.xp(160), fx.relic("dao-feather"), fx.faction("cloud-peak", 12), fx.rep(10), fx.meter("dao-heart", 10)],
+      penalty: [fx.health(-25), fx.meter("karmic-debt", 10)],
+      minAge: 22,
+      requires: ["xi.q-sky"]
     }
   ],
   hunter: [
@@ -225,7 +281,21 @@ export const WORLD_OATHS: Readonly<Record<UniverseId, readonly QuestDefinition[]
       reward: [fx.xp(100), fx.faction("association", 10), fx.wealth(60), fx.rep(8), fx.ability("gate-sense")],
       penalty: [fx.health(-25), fx.meter("fame", -5)],
       minAge: 20,
-      requires: ["hu.q-gate"]
+      requires: ["hu.q-gate"],
+      next: "hu.q-zero"
+    },
+    {
+      id: "hu.q-zero",
+      issuer: HU_ISSUER,
+      arc: HU_ARC,
+      title: t("Нулевые врата", "Gate Zero"),
+      text: t("Ассоциация отрицает, что такие Врата существуют. Но в архиве есть ключ без номера, и он ждёт охотника, чьё имя уже не нуждается в лицензии.", "The Association denies such a Gate exists. Yet the archive holds a key without a number, waiting for a hunter whose name no longer needs a licence."),
+      goal: [when.skill("dungeon-combat", 25), when.meter("fame", 60), when.faction("association", 35)],
+      years: 9,
+      reward: [fx.xp(160), fx.relic("red-gate-mark"), fx.faction("association", 12), fx.wealth(100), fx.meter("fame", 10)],
+      penalty: [fx.health(-35), fx.meter("fame", -8)],
+      minAge: 22,
+      requires: ["hu.q-red"]
     }
   ],
   academy: [
@@ -267,7 +337,21 @@ export const WORLD_OATHS: Readonly<Record<UniverseId, readonly QuestDefinition[]
       reward: [fx.xp(100), fx.faction("imperial-court", 10), fx.rep(8), fx.wealth(40), fx.ability("charm-word")],
       penalty: [fx.meter("scandal", 6), fx.meter("court-favor", -5)],
       minAge: 20,
-      requires: ["ac.q-favor"]
+      requires: ["ac.q-favor"],
+      next: "ac.q-star"
+    },
+    {
+      id: "ac.q-star",
+      issuer: AC_ISSUER,
+      arc: AC_ARC,
+      title: t("Звезда над троном", "The star above the throne"),
+      text: t("Двор и Башня согласны на одну звезду, которую нельзя отдать никому. Встаньте под ней так, чтобы ни одна тень не легла на трон.", "The Court and the Tower agree on one star that cannot be given away. Stand beneath it so that no shadow falls on the throne."),
+      goal: [when.skill("etiquette", 25), when.faction("imperial-court", 35), when.meter("court-favor", 60)],
+      years: 9,
+      reward: [fx.xp(160), fx.relic("court-star"), fx.faction("imperial-court", 12), fx.meter("court-favor", 10), fx.rep(10), fx.ability("starfall")],
+      penalty: [fx.meter("scandal", 10), fx.meter("court-favor", -8)],
+      minAge: 22,
+      requires: ["ac.q-court"]
     }
   ]
 };

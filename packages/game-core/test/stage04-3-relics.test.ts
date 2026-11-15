@@ -36,9 +36,9 @@ function countChronicle(state: GameState, kind: string): number {
 }
 
 describe("Stage 04.3: каталог реликвий", () => {
-  it("все двенадцать реликвий доступны через каталог", () => {
+  it("все двадцать четыре реликвии доступны через каталог", () => {
     const ids = Object.keys(RELICS);
-    expect(ids).toHaveLength(18);
+    expect(ids).toHaveLength(24);
     for (const id of [
       "ancestral-blade",
       "system-crystal",
@@ -51,7 +51,13 @@ describe("Stage 04.3: каталог реликвий", () => {
       "iron-shrine-tablet",
       "star-well-cup",
       "red-gate-core",
-      "star-chart"
+      "star-chart",
+      "oath-ember",
+      "guild-seal",
+      "nameless-blade",
+      "dao-feather",
+      "red-gate-mark",
+      "court-star"
     ]) {
       const relic = findRelic(id);
       expect(relic).toBeDefined();

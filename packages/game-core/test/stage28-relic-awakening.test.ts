@@ -46,8 +46,8 @@ function withPending(state: GameState, eventId: string): GameState {
 }
 
 describe("R5.6: пробуждение реликвий", () => {
-  it("добавляет по две реликвии каждому миру и усиливает каталог до 18 предметов", () => {
-    expect(Object.keys(RELICS)).toHaveLength(18);
+  it("добавляет по три реликвии каждому миру и усиливает каталог до 24 предметов", () => {
+    expect(Object.keys(RELICS)).toHaveLength(24);
     for (const [universeId, { relicId, awakenedId }] of Object.entries(AWAKENINGS) as [UniverseId, { relicId: string; awakenedId: string }][]) {
       const base = findRelic(relicId);
       const awakened = findRelic(awakenedId);
