@@ -1,10 +1,10 @@
 # R5.6 — Relic Awakenings
 
-**Status:** implemented and verified locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 19:46 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none  
 **API routes:** unchanged  
-**Production runtime:** `47593ac` (not changed by this local work)  
+**Production runtime:** `aa23d34`  
 **Rollback target:** `47593ac`
 
 ## 1. What was added
@@ -57,7 +57,16 @@ R5.6 gives the six third-road relics a late-game continuation and makes them vis
 - `presentLegacy` and `presentLineage` guard missing `lineage.relics` with `?? []`, so old snapshots that predate the relic array still open.
 - Existing saves remain valid; relics already owned will make the new events eligible.
 
-## 5. Rollback
+## 5. Deployment
+
+- Code commit `aa23d34` (`r5.6: guard relics for old saves` on top of `788dd00` `r5.6: add relic awakenings`).
+- Deploy run **43753892637**, success; history `19:44:53Z deploy-start aa23d34 from 47593ac` -> `19:45:26Z deploy aa23d34 ok`.
+- CI **43752423713** success; Security **43752423707** success.
+- Production now has **26 migrations**; save schema 14.
+- `/api/health` 200, database/redis up; `/api/contracts?universeId=hunter` 200; `/api/notifications` guest 401; web `/` 200.
+- Rollback target `47593ac`; no migration.
+
+## 6. Rollback
 
 No database migration, API contract or save-schema change was introduced. Rolling back means reverting:
 
@@ -68,4 +77,4 @@ No database migration, API contract or save-schema change was introduced. Rollin
 - `apps/web/src/components/play/atlas-panel.tsx` and `apps/web/src/lib/messages.ts`;
 - the R5.6 tests, this document and the `PROJECT_STATUS.md` row.
 
-Existing saves remain valid. The production rollback target remains `47593ac`.
+The production rollback target remains `47593ac`.
