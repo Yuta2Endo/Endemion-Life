@@ -76,6 +76,9 @@ export interface PlayerContractView {
   price: number;
   total: number;
   status: "open" | "accepted" | "cancelled" | "expired";
+  kind: "fixed" | "auction";
+  currentBid: number | null;
+  auctionEndsAt: string | null;
   sellerName: string;
   sellerLifeId: string;
   sellerLifeName: string;
@@ -427,7 +430,7 @@ export class MarketService {
   /** Closes every live offer of a life whose owner died. Called from succession. */
   private async expireContracts(): Promise<void> {
     const candidates = await this.db.playerContract.findMany({
-      where: { status: "open", expiresAt: { lte: new Date() } },
+      where: { status: "open", kind: "fixed", expiresAt: { lte: new Date() } },
       select: { id: true },
       take: 20
     });
@@ -482,6 +485,9 @@ export class MarketService {
       price: row.price,
       total: row.qty * row.price,
       status: row.status as PlayerContractView["status"],
+      kind: row.kind === "auction" ? "auction" : "fixed",
+      currentBid: row.currentBid,
+      auctionEndsAt: row.auctionEndsAt?.toISOString() ?? null,
       sellerName: (row as { sellerPlayer: { idDisplayName: string | null; idUsername: string | null } }).sellerPlayer.idDisplayName?.trim() || (row as { sellerPlayer: { idUsername: string | null } }).sellerPlayer.idUsername?.trim() || "Endemion",
       sellerLifeId: row.sellerLifeId,
       sellerLifeName: (row as { sellerLife: { name: string } }).sellerLife.name,
@@ -492,7 +498,7 @@ export class MarketService {
     return { contracts: all, mine: all.filter((item) => item.mine) };
   }
 
-  async createContract(playerId: string, input: { actionId: string; lifeId: string; goodId: string; qty: number; price: number; expectedVersion: number; targetPlayerId?: string }) {
+  async createContract(playerId: string, input: { actionId: string; lifeId: string; goodId: string; qty: number; price: number; expectedVersion: number; targetPlayerId?: string; kind?: "fixed" | "auction"; minBid?: number; auctionHours?: number }) {
     return this.db.$transaction(async (tx) => {
       const replay = await tx.playerContract.findUnique({ where: { sellerLifeId_actionId: { sellerLifeId: input.lifeId, actionId: input.actionId } } });
       if (replay) return { contract: this.contractView(replay, playerId), replayed: true };
@@ -505,6 +511,7 @@ export class MarketService {
       if (!item) throw new ApiError(400, "UNKNOWN_GOOD", "Неизвестный товар.");
       if (input.qty < 1 || input.qty > MAX_TRADE_QTY) throw new ApiError(400, "VALIDATION", "Количество: 1-5.");
       if (input.price < 1 || input.price > 1_000_000_000) throw new ApiError(400, "VALIDATION", "Цена вне диапазона.");
+      if (input.kind === "auction" && (!input.minBid || input.minBid < 1)) throw new ApiError(400, "VALIDATION", "Нужна стартовая ставка.");
       const stock = state.economy.goods[input.goodId] ?? 0;
       if (stock < input.qty) throw new ApiError(409, "INSUFFICIENT_GOODS", "Не хватает товара.");
       state.economy.goods[input.goodId] = stock - input.qty;
@@ -529,7 +536,10 @@ export class MarketService {
           actionId: input.actionId,
           targetPlayerId: input.targetPlayerId ?? null,
           sellerVersionAfter: state.version,
-          expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000)
+          kind: input.kind ?? "fixed",
+          minBid: input.kind === "auction" ? input.minBid : null,
+          auctionEndsAt: input.kind === "auction" ? new Date(Date.now() + (input.auctionHours ?? 24) * 60 * 60 * 1000) : null,
+          expiresAt: new Date(Date.now() + (input.kind === "auction" ? (input.auctionHours ?? 24) : 72) * 60 * 60 * 1000)
         }
       });
       return { contract: this.contractView(created, playerId), replayed: false };
@@ -585,6 +595,81 @@ export class MarketService {
     });
   }
 
+  async bidContract(playerId: string, contractId: string, input: { bidderLifeId: string; amount: number }) {
+    return this.db.$transaction(async (tx) => {
+      const locked = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM player_contracts WHERE id = ${contractId}::uuid FOR UPDATE`;
+      if (locked.length === 0) throw new ApiError(404, "NOT_FOUND", "Аукцион не найден.");
+      const contract = await tx.playerContract.findUniqueOrThrow({ where: { id: contractId } });
+      if (contract.kind !== "auction") throw new ApiError(409, "VALIDATION", "Это не аукцион.");
+      if (contract.status !== "open") throw new ApiError(409, "OFFER_CLOSED", "Аукцион закрыт.");
+      if (!contract.auctionEndsAt || contract.auctionEndsAt.getTime() <= Date.now()) throw new ApiError(409, "OFFER_CLOSED", "Аукцион завершён.");
+      if (contract.sellerPlayerId === playerId) throw new ApiError(409, "SELF_TRADE", "Нельзя ставить на свой лот.");
+      if (input.amount < (contract.minBid ?? 1) || input.amount <= (contract.currentBid ?? 0)) throw new ApiError(409, "VALIDATION", "Ставка слишком мала.");
+      const row = await this.lockLife(tx, playerId, input.bidderLifeId);
+      const state = parseSave(row.state);
+      if (!state.life.alive || state.life.age < MARKET_AGE) throw new ApiError(409, "LIFE_NOT_ADULT", "Нужна взрослая жизнь.");
+      if (state.character.universeId !== contract.universeId) throw new ApiError(409, "VALIDATION", "Другой мир.");
+      if (state.character.wealth < input.amount) throw new ApiError(409, "INSUFFICIENT_WEALTH", "Недостаточно золота для ставки.");
+      await tx.playerContract.update({ where: { id: contract.id }, data: { currentBid: input.amount, currentBidderPlayerId: playerId, currentBidderLifeId: input.bidderLifeId } });
+      return { contract: this.contractView({ ...contract, currentBid: input.amount, currentBidderPlayerId: playerId }, playerId), replayed: false };
+    });
+  }
+
+  async settleAuction(playerId: string, contractId: string) {
+    return this.db.$transaction(async (tx) => {
+      const locked = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM player_contracts WHERE id = ${contractId}::uuid FOR UPDATE`;
+      if (locked.length === 0) throw new ApiError(404, "NOT_FOUND", "Аукцион не найден.");
+      const contract = await tx.playerContract.findUniqueOrThrow({ where: { id: contractId } });
+      if (contract.kind !== "auction") throw new ApiError(409, "VALIDATION", "Это не аукцион.");
+      if (contract.status !== "open") return { contract: this.contractView(contract, playerId), replayed: true };
+      if (!contract.auctionEndsAt || contract.auctionEndsAt.getTime() > Date.now()) throw new ApiError(409, "VALIDATION", "Аукцион ещё идёт.");
+      if (!contract.currentBidderPlayerId || !contract.currentBidderLifeId || !contract.currentBid) {
+        const row = await this.lockLife(tx, contract.sellerPlayerId, contract.sellerLifeId);
+        const state = parseSave(row.state);
+        const stock = state.economy.goods[contract.goodId] ?? 0;
+        if (state.life.alive && stock + contract.qty <= MAX_STOCK) {
+          state.economy.goods[contract.goodId] = stock + contract.qty;
+          state.version += 1;
+          await this.alignHistoryHead(tx, contract.sellerLifeId, state);
+          await tx.life.update({ where: { id: contract.sellerLifeId }, data: lifeColumns(state) });
+          await this.writeEntry(tx, contract.sellerLifeId, this.entry(state, this.entryText("Аукцион без ставок", "Auction without bids", `${contract.goodId} ? ${contract.qty} возвращены`, `${contract.goodId} ? ${contract.qty} returned`), [{ kind: "good", key: contract.goodId, delta: contract.qty }]));
+          await this.writeSnapshot(tx, contract.sellerLifeId, state);
+        }
+        await tx.playerContract.update({ where: { id: contract.id }, data: { status: "expired", cancelledAt: new Date() } });
+        return { contract: this.contractView({ ...contract, status: "expired" }, playerId), replayed: false };
+      }
+      const total = contract.currentBid;
+      const fee = feeOf(total);
+      const sellerNet = total - fee;
+      const buyerRow = await this.lockLife(tx, contract.currentBidderPlayerId, contract.currentBidderLifeId);
+      const buyer = parseSave(buyerRow.state);
+      if (!buyer.life.alive) throw new ApiError(409, "LIFE_ENDED", "Жизнь победителя завершена.");
+      if (buyer.character.wealth < total) throw new ApiError(409, "INSUFFICIENT_WEALTH", "У победителя недостаточно золота.");
+      const stock = buyer.economy.goods[contract.goodId] ?? 0;
+      if (stock + contract.qty > MAX_STOCK) throw new ApiError(409, "BUYER_STOCK_FULL", "Склад победителя полон.");
+      const sellerRow = await this.lockLife(tx, contract.sellerPlayerId, contract.sellerLifeId);
+      const seller = parseSave(sellerRow.state);
+      buyer.character.wealth -= total;
+      buyer.economy.goods[contract.goodId] = stock + contract.qty;
+      buyer.version += 1;
+      seller.character.wealth = Math.min(1_000_000_000, seller.character.wealth + sellerNet);
+      seller.version += 1;
+      await this.alignHistoryHead(tx, contract.currentBidderLifeId, buyer);
+      await this.alignHistoryHead(tx, contract.sellerLifeId, seller);
+      await tx.life.update({ where: { id: contract.currentBidderLifeId }, data: lifeColumns(buyer) });
+      await tx.life.update({ where: { id: contract.sellerLifeId }, data: lifeColumns(seller) });
+      await this.writeEntry(tx, contract.currentBidderLifeId, this.entry(buyer, this.entryText("Аукцион выигран", "Auction won", `${contract.goodId} ? ${contract.qty} за ${total}`, `${contract.goodId} ? ${contract.qty} for ${total}`), [{ kind: "wealth", delta: -total }, { kind: "good", key: contract.goodId, delta: contract.qty }]));
+      await this.writeEntry(tx, contract.sellerLifeId, this.entry(seller, this.entryText("Аукцион продан", "Auction sold", `${contract.goodId} ? ${contract.qty} за ${sellerNet}`, `${contract.goodId} ? ${contract.qty} for ${sellerNet}`), [{ kind: "wealth", delta: sellerNet }]));
+      await this.writeSnapshot(tx, contract.currentBidderLifeId, buyer);
+      await this.writeSnapshot(tx, contract.sellerLifeId, seller);
+      await tx.playerContract.update({
+        where: { id: contract.id },
+        data: { status: "accepted", buyerPlayerId: contract.currentBidderPlayerId, buyerLifeId: contract.currentBidderLifeId, buyerVersionAfter: buyer.version, sellerVersionAfter: seller.version, acceptedAt: new Date() }
+      });
+      return { contract: this.contractView({ ...contract, status: "accepted", buyerPlayerId: contract.currentBidderPlayerId, buyerLifeId: contract.currentBidderLifeId }, playerId), replayed: false };
+    });
+  }
+
   async cancelContract(playerId: string, contractId: string) {
     return this.db.$transaction(async (tx) => {
       const locked = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM player_contracts WHERE id = ${contractId}::uuid FOR UPDATE`;
@@ -610,7 +695,7 @@ export class MarketService {
     });
   }
 
-  private contractView(row: { id: string; universeId: string; goodId: string; qty: number; price: number; status: string; sellerPlayerId: string; sellerLifeId: string; createdAt: Date; buyerPlayerId?: string | null; buyerLifeId?: string | null; acceptActionId?: string | null }, playerId: string | null): PlayerContractView {
+  private contractView(row: { id: string; universeId: string; goodId: string; qty: number; price: number; status: string; kind?: string; currentBid?: number | null; auctionEndsAt?: Date | null; sellerPlayerId: string; sellerLifeId: string; createdAt: Date; buyerPlayerId?: string | null; buyerLifeId?: string | null; acceptActionId?: string | null; currentBidderPlayerId?: string | null }, playerId: string | null): PlayerContractView {
     return {
       id: row.id,
       universeId: row.universeId,
@@ -620,6 +705,9 @@ export class MarketService {
       price: row.price,
       total: row.qty * row.price,
       status: row.status as PlayerContractView["status"],
+      kind: row.kind === "auction" ? "auction" : "fixed",
+      currentBid: row.currentBid ?? null,
+      auctionEndsAt: row.auctionEndsAt?.toISOString() ?? null,
       sellerName: "",
       sellerLifeId: row.sellerLifeId,
       sellerLifeName: "",

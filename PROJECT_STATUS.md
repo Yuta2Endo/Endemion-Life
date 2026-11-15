@@ -63,6 +63,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R4.6 (Player Contracts) | Escrowed goods contracts, accept/cancel, reputation, web panel | **COMPLETE; deployed, schema 14, migration 22** - см. `docs/planning/R4_6_PLAYER_CONTRACTS.md` |
 | R4.7 (Private Contracts) | Private recipients, expiry, escrow restore guard | **COMPLETE; deployed, schema 14, migration 23** - см. `docs/planning/R4_7_CONTRACT_PRIVACY.md` |
 | R4.8 (Contract Expiry) | Lazy expiry, escrow return, status `expired` | **COMPLETE; deployed, schema 14, migration 24** - см. `docs/planning/R4_8_CONTRACT_EXPIRY.md` |
+| R4.9 (Contract Auctions) | Auction kind, bids, settlement, fee, escrow return | **IMPLEMENTED LOCALLY; release pending; migration 25 additive** - см. `docs/planning/R4_9_AUCTIONS.md` |
 
 ## Design (Living Chronicle)
 

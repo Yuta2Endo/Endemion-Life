@@ -14,9 +14,13 @@ const createSchema = z.strictObject({
   qty: z.int().min(1).max(5),
   price: z.int().min(1).max(1_000_000_000),
   expectedVersion: z.int().min(1),
-  targetPlayerId: uuid.optional()
+  targetPlayerId: uuid.optional(),
+  kind: z.enum(["fixed", "auction"]).optional(),
+  minBid: z.int().min(1).max(1_000_000_000).optional(),
+  auctionHours: z.int().min(1).max(168).optional()
 });
 const acceptSchema = z.strictObject({ actionId: uuid, buyerLifeId: uuid, expectedVersion: z.int().min(1) });
+const bidSchema = z.strictObject({ bidderLifeId: uuid, amount: z.int().min(1).max(1_000_000_000) });
 
 @Controller("contracts")
 export class ContractController {
@@ -49,6 +53,20 @@ export class ContractController {
   async accept(@Req() request: Request, @Param("id") id: string, @Body() body: unknown) {
     const { player } = await this.sessions.requireAccount(request);
     return this.market.acceptContract(player.id, this.idOf(id), parseOrThrow(acceptSchema, body));
+  }
+
+  @Post(":id/bid")
+  @HttpCode(200)
+  async bid(@Req() request: Request, @Param("id") id: string, @Body() body: unknown) {
+    const { player } = await this.sessions.requireAccount(request);
+    return this.market.bidContract(player.id, this.idOf(id), parseOrThrow(bidSchema, body));
+  }
+
+  @Post(":id/settle")
+  @HttpCode(200)
+  async settle(@Req() request: Request, @Param("id") id: string) {
+    const { player } = await this.sessions.requireAccount(request);
+    return this.market.settleAuction(player.id, this.idOf(id));
   }
 
   @Delete(":id")
