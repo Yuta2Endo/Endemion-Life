@@ -99,7 +99,7 @@ export function WorldHistoryPanel({ universeId }: { universeId: string }) {
         <h3 className="font-display text-xl text-bone-100">{c.seasons}</h3>
         <span className="text-xs text-bone-500">{c.events}</span>
       </div>
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label={c.seasons}>
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
         <button
           type="button"
           className={`min-h-10 shrink-0 rounded-sm border px-3 text-xs ${selected === null ? "border-gold-400 bg-gold-500/10 text-gold-100" : "border-line text-bone-300"}`}
