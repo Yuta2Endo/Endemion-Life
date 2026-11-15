@@ -1,6 +1,6 @@
 # R4.4 — Settlement Seasonal Orders
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 11:33 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** 20, additive
 
@@ -59,6 +59,14 @@ Migration `20261115210000_r4_4_world_orders`:
 - Orders are generated only when the board or fulfil endpoint is used.
 - No partial fulfilment.
 
-## 6. Rollback
+## 6. Deployment
+
+- Code commit `a9ef364`; production runtime **`a9ef364`**.
+- Deploy run **43708650916**, success; history `11:32:42Z deploy-start` → `11:33:27Z deploy ok`.
+- Production now has **20 migrations**, `world_orders` table and 6 generated orders for dark-fantasy season 13.
+- `/api/health` 200; `/api/world/dark-fantasy/orders` returns 6 orders.
+- Rollback target `a09ee65`; migration 20 is additive.
+
+## 7. Rollback
 
 Migration 20 is additive. Application rollback is safe; keep `world_orders`.
