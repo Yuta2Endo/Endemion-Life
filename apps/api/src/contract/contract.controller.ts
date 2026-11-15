@@ -13,7 +13,8 @@ const createSchema = z.strictObject({
   goodId: z.string().trim().min(1).max(48),
   qty: z.int().min(1).max(5),
   price: z.int().min(1).max(1_000_000_000),
-  expectedVersion: z.int().min(1)
+  expectedVersion: z.int().min(1),
+  targetPlayerId: uuid.optional()
 });
 const acceptSchema = z.strictObject({ actionId: uuid, buyerLifeId: uuid, expectedVersion: z.int().min(1) });
 

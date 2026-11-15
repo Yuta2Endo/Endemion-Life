@@ -519,6 +519,10 @@ model PlayerContract {
   buyerPlayerId    String?  @map("buyer_player_id") @db.Uuid
   buyerLifeId      String?  @map("buyer_life_id") @db.Uuid
   acceptActionId   String?  @map("accept_action_id") @db.Uuid
+  targetPlayerId   String?  @map("target_player_id") @db.Uuid
+  sellerVersionAfter Int    @default(0) @map("seller_version_after")
+  buyerVersionAfter  Int    @default(0) @map("buyer_version_after")
+  expiresAt        DateTime? @map("expires_at") @db.Timestamptz(3)
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   acceptedAt       DateTime? @map("accepted_at") @db.Timestamptz(3)
   cancelledAt      DateTime? @map("cancelled_at") @db.Timestamptz(3)

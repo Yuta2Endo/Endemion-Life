@@ -427,7 +427,14 @@ export class MarketService {
   /** Closes every live offer of a life whose owner died. Called from succession. */
   async contracts(playerId: string | null, universeId: string): Promise<{ contracts: PlayerContractView[]; mine: PlayerContractView[] }> {
     const rows = await this.db.playerContract.findMany({
-      where: { universeId, status: "open" },
+      where: {
+        universeId,
+        status: "open",
+        AND: [
+          { OR: [{ targetPlayerId: null }, ...(playerId ? [{ targetPlayerId: playerId }] : [])] },
+          { OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] }
+        ]
+      },
       orderBy: { createdAt: "desc" },
       take: 50,
       include: { sellerPlayer: { select: { id: true, idUsername: true, idDisplayName: true, idAvatarUrl: true } }, sellerLife: { select: { name: true } } }
@@ -451,7 +458,7 @@ export class MarketService {
     return { contracts: all, mine: all.filter((item) => item.mine) };
   }
 
-  async createContract(playerId: string, input: { actionId: string; lifeId: string; goodId: string; qty: number; price: number; expectedVersion: number }) {
+  async createContract(playerId: string, input: { actionId: string; lifeId: string; goodId: string; qty: number; price: number; expectedVersion: number; targetPlayerId?: string }) {
     return this.db.$transaction(async (tx) => {
       const replay = await tx.playerContract.findUnique({ where: { sellerLifeId_actionId: { sellerLifeId: input.lifeId, actionId: input.actionId } } });
       if (replay) return { contract: this.contractView(replay, playerId), replayed: true };
@@ -485,7 +492,10 @@ export class MarketService {
           goodId: input.goodId,
           qty: input.qty,
           price: input.price,
-          actionId: input.actionId
+          actionId: input.actionId,
+          targetPlayerId: input.targetPlayerId ?? null,
+          sellerVersionAfter: state.version,
+          expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000)
         }
       });
       return { contract: this.contractView(created, playerId), replayed: false };
@@ -500,6 +510,8 @@ export class MarketService {
       if (locked.length === 0) throw new ApiError(404, "NOT_FOUND", "Контракт не найден.");
       const contract = await tx.playerContract.findUniqueOrThrow({ where: { id: contractId } });
       if (contract.status !== "open") throw new ApiError(409, "OFFER_CLOSED", "Контракт уже закрыт.");
+      if (contract.expiresAt && contract.expiresAt.getTime() <= Date.now()) throw new ApiError(409, "OFFER_CLOSED", "Срок контракта истёк.");
+      if (contract.targetPlayerId && contract.targetPlayerId !== playerId) throw new ApiError(403, "FORBIDDEN", "Контракт адресован другому игроку.");
       if (contract.sellerPlayerId === playerId) throw new ApiError(409, "SELF_TRADE", "Нельзя принять свой контракт.");
       const buyerRow = await this.lockLife(tx, playerId, input.buyerLifeId);
       if (buyerRow.version !== input.expectedVersion) throw new ApiError(409, "VERSION_CONFLICT", "Версия жизни изменилась.");
@@ -531,7 +543,7 @@ export class MarketService {
       await this.writeSnapshot(tx, contract.sellerLifeId, seller);
       await tx.playerContract.update({
         where: { id: contract.id },
-        data: { status: "accepted", buyerPlayerId: playerId, buyerLifeId: input.buyerLifeId, acceptActionId: input.actionId, acceptedAt: new Date() }
+        data: { status: "accepted", buyerPlayerId: playerId, buyerLifeId: input.buyerLifeId, acceptActionId: input.actionId, buyerVersionAfter: buyer.version, sellerVersionAfter: seller.version, acceptedAt: new Date() }
       });
       const membership = await tx.familyMember.findUnique({ where: { playerId_universeId: { playerId: contract.sellerPlayerId, universeId: contract.universeId } } });
       if (membership) await tx.family.update({ where: { id: membership.familyId }, data: { reputation: { increment: 1 } } });
@@ -559,7 +571,7 @@ export class MarketService {
       await tx.life.update({ where: { id: contract.sellerLifeId }, data: lifeColumns(state) });
       await this.writeEntry(tx, contract.sellerLifeId, entry);
       await this.writeSnapshot(tx, contract.sellerLifeId, state);
-      await tx.playerContract.update({ where: { id: contract.id }, data: { status: "cancelled", cancelledAt: new Date() } });
+      await tx.playerContract.update({ where: { id: contract.id }, data: { status: "cancelled", sellerVersionAfter: state.version, cancelledAt: new Date() } });
       return { contract: this.contractView({ ...contract, status: "cancelled" }, playerId), replayed: false };
     });
   }
@@ -606,6 +618,18 @@ export class MarketService {
     });
     if (trade) {
       throw new ApiError(409, "MARKET_RESTORE_BLOCKED", "Нельзя откатить жизнь до завершённой сделки на рынке.");
+    }
+    const contract = await tx.playerContract.findFirst({
+      where: {
+        OR: [
+          { sellerLifeId: lifeId, sellerVersionAfter: { gt: targetVersion } },
+          { buyerLifeId: lifeId, buyerVersionAfter: { gt: targetVersion } }
+        ]
+      },
+      select: { id: true }
+    });
+    if (contract) {
+      throw new ApiError(409, "MARKET_RESTORE_BLOCKED", "Нельзя откатить жизнь из-за контракта с escrow.");
     }
   }
 
