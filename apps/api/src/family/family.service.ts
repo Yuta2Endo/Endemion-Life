@@ -2,6 +2,7 @@ import { Prisma } from "@endemion/database";
 import { isUniverseId, parseSave } from "@endemion/game-core";
 import { Inject, Injectable } from "@nestjs/common";
 import { ApiError } from "../common/api-error.js";
+import { NotificationService } from "../notification/notification.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 type Tx = Prisma.TransactionClient;
@@ -106,7 +107,10 @@ const memberSelect = {
 
 @Injectable()
 export class FamilyService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(NotificationService) private readonly notifications: NotificationService
+  ) {}
 
   private get db() {
     return this.prisma.client;
@@ -352,7 +356,7 @@ export class FamilyService {
     await this.db.$transaction(async (tx) => {
       await this.lockFamily(tx, familyId);
       await this.requireRole(tx, familyId, playerId, ["leader", "elder"]);
-      const family = await tx.family.findUnique({ where: { id: familyId }, select: { universeId: true } });
+      const family = await tx.family.findUnique({ where: { id: familyId }, select: { universeId: true, name: true } });
       if (!family) throw new ApiError(404, "NOT_FOUND", "Семья не найдена.");
       const target = await tx.player.findUnique({ where: { id: inviteeId }, select: { id: true } });
       if (!target) throw new ApiError(404, "NOT_FOUND", "Игрок не найден.");
@@ -363,10 +367,15 @@ export class FamilyService {
       await this.lockPlayer(tx, inviteeId);
       const current = await tx.familyInvite.findUnique({ where: { familyId_inviteeId: { familyId, inviteeId } } });
       if (current?.status === "pending") throw new ApiError(409, "FAMILY_INVITE_EXISTS", "Приглашение уже отправлено.");
-      await tx.familyInvite.upsert({
+      const invite = await tx.familyInvite.upsert({
         where: { familyId_inviteeId: { familyId, inviteeId } },
         create: { familyId, inviterId: playerId, inviteeId },
         update: { inviterId: playerId, status: "pending", decidedAt: null, createdAt: new Date() }
+      });
+      await this.notifications.notify(tx, inviteeId, "family_invite", null, {
+        familyId,
+        familyName: family.name,
+        inviteId: invite.id
       });
       await this.audit(tx, familyId, playerId, "invite.send", { inviteeId });
     });
@@ -406,7 +415,7 @@ export class FamilyService {
       if (!invite || invite.inviteeId !== playerId || invite.status !== "pending") {
         throw new ApiError(409, "FAMILY_INVITE_INVALID", "Приглашение недействительно.");
       }
-      const family = await tx.family.findUnique({ where: { id: invite.familyId }, select: { universeId: true } });
+      const family = await tx.family.findUnique({ where: { id: invite.familyId }, select: { universeId: true, name: true } });
       if (!family) throw new ApiError(404, "NOT_FOUND", "Семья не найдена.");
       const existing = await tx.familyMember.findUnique({
         where: { playerId_universeId: { playerId, universeId: family.universeId } }
@@ -416,6 +425,13 @@ export class FamilyService {
       if (count >= MAX_FAMILY_MEMBERS) throw new ApiError(409, "FAMILY_FULL", "В семье уже максимум участников.");
       await tx.familyMember.create({ data: { familyId: invite.familyId, playerId, universeId: family.universeId, role: "member" } });
       await tx.familyInvite.update({ where: { id: inviteId }, data: { status: "accepted", decidedAt: new Date() } });
+      const member = await tx.player.findUnique({ where: { id: playerId }, select: { idUsername: true, idDisplayName: true } });
+      await this.notifications.notify(tx, invite.inviterId, "family_invite_accepted", null, {
+        familyId: invite.familyId,
+        familyName: family.name,
+        inviteId,
+        memberName: member ? nameOf(member) : "Игрок"
+      });
       await this.audit(tx, invite.familyId, playerId, "invite.accept");
       return invite.familyId;
     });
@@ -423,11 +439,25 @@ export class FamilyService {
   }
 
   async decline(playerId: string, inviteId: string): Promise<{ declined: true }> {
-    const updated = await this.db.familyInvite.updateMany({
-      where: { id: inviteId, inviteeId: playerId, status: "pending" },
-      data: { status: "declined", decidedAt: new Date() }
+    await this.db.$transaction(async (tx) => {
+      const invite = await tx.familyInvite.findFirst({
+        where: { id: inviteId, inviteeId: playerId, status: "pending" }
+      });
+      if (!invite) throw new ApiError(409, "FAMILY_INVITE_INVALID", "Приглашение недействительно.");
+      await tx.familyInvite.update({ where: { id: invite.id }, data: { status: "declined", decidedAt: new Date() } });
+      const family = await tx.family.findUnique({ where: { id: invite.familyId }, select: { name: true } });
+      if (!family) return;
+      const member = await tx.player.findUnique({
+        where: { id: playerId },
+        select: { idUsername: true, idDisplayName: true }
+      });
+      await this.notifications.notify(tx, invite.inviterId, "family_invite_declined", null, {
+        familyId: invite.familyId,
+        familyName: family.name,
+        inviteId: invite.id,
+        memberName: member ? nameOf(member) : "Игрок"
+      });
     });
-    if (updated.count === 0) throw new ApiError(409, "FAMILY_INVITE_INVALID", "Приглашение недействительно.");
     return { declined: true };
   }
 

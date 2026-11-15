@@ -7,7 +7,18 @@ import { useI18n } from "../locale-provider";
 
 interface NotificationItem {
   id: string;
-  kind: "auction_outbid" | "auction_won" | "auction_sold" | "auction_ended";
+  kind:
+    | "auction_outbid"
+    | "auction_won"
+    | "auction_sold"
+    | "auction_ended"
+    | "family_invite"
+    | "family_invite_accepted"
+    | "family_invite_declined"
+    | "guild_request"
+    | "guild_request_accepted"
+    | "guild_request_rejected"
+    | "guild_project_completed";
   contractId: string | null;
   data: {
     goodId?: string;
@@ -16,6 +27,17 @@ interface NotificationItem {
     amount?: number;
     previousBid?: number;
     returned?: boolean;
+    familyId?: string;
+    familyName?: string;
+    inviteId?: string;
+    memberName?: string;
+    guildId?: string;
+    guildName?: string;
+    requestId?: string;
+    applicantName?: string;
+    projectId?: string;
+    projectTitle?: string;
+    target?: number;
   };
   readAt: string | null;
   createdAt: string;
@@ -111,6 +133,9 @@ export function NotificationsBell() {
   const text = (item: NotificationItem): string => {
     const good = item.data.goodName ? l(item.data.goodName) : (item.data.goodId ?? "");
     const qty = item.data.qty ?? 0;
+    const family = item.data.familyName ?? "";
+    const member = item.data.memberName ?? "";
+    const guild = item.data.guildName ?? "";
     switch (item.kind) {
       case "auction_outbid":
         return t("notifications.outbid", { good, qty, amount: item.data.amount ?? 0 });
@@ -120,6 +145,22 @@ export function NotificationsBell() {
         return t("notifications.sold", { good, qty, amount: item.data.amount ?? 0 });
       case "auction_ended":
         return item.data.returned ? t("notifications.endedReturned", { good, qty }) : t("notifications.endedLost", { good, qty });
+      case "family_invite":
+        return t("notifications.familyInvite", { family });
+      case "family_invite_accepted":
+        return t("notifications.familyAccepted", { family, member });
+      case "family_invite_declined":
+        return t("notifications.familyDeclined", { family, member });
+      case "guild_request":
+        return t("notifications.guildRequest", { guild, applicant: item.data.applicantName ?? "" });
+      case "guild_request_accepted":
+        return t("notifications.guildAccepted", { guild });
+      case "guild_request_rejected":
+        return t("notifications.guildRejected", { guild });
+      case "guild_project_completed":
+        return t("notifications.guildProject", { guild, project: item.data.projectTitle ?? "" });
+      default:
+        return t("notifications.empty");
     }
   };
 

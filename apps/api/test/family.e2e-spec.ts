@@ -116,6 +116,38 @@ describe("семьи игроков", () => {
     expect(inviteAgain.body.error.code).toBe("FAMILY_ALREADY_MEMBER");
   });
 
+  it("уведомляет о приглашении в семью и решении приглашённого", async () => {
+    const founder = await account("Илэн");
+    const friend = await account("Рэйна");
+    const other = await account("Тэо");
+    const family = await createFamily(founder.client);
+
+    await post(founder.client, `/api/families/${family.id}/invites`, { playerId: friend.playerId }).expect(201);
+    const invited = await friend.client.get("/api/notifications").expect(200);
+    expect(invited.body.unread).toBe(1);
+    expect(invited.body.notifications[0]).toMatchObject({
+      kind: "family_invite",
+      data: { familyId: family.id, familyName: family.name }
+    });
+
+    const inviteId = (await friend.client.get("/api/families/invites").expect(200)).body.invites[0].id as string;
+    await post(friend.client, `/api/families/invites/${inviteId}/accept`).expect(200);
+    const accepted = await founder.client.get("/api/notifications").expect(200);
+    expect(accepted.body.notifications[0]).toMatchObject({
+      kind: "family_invite_accepted",
+      data: { familyId: family.id, familyName: family.name, memberName: "Рэйна" }
+    });
+
+    await post(founder.client, `/api/families/${family.id}/invites`, { playerId: other.playerId }).expect(201);
+    const otherInvite = (await other.client.get("/api/families/invites").expect(200)).body.invites[0].id as string;
+    await post(other.client, `/api/families/invites/${otherInvite}/decline`).expect(200);
+    const declined = await founder.client.get("/api/notifications").expect(200);
+    expect(declined.body.notifications[0]).toMatchObject({
+      kind: "family_invite_declined",
+      data: { familyId: family.id, familyName: family.name, memberName: "Тэо" }
+    });
+  });
+
   it("участник не может управлять семьёй; глава передаёт главенство", async () => {
     const founder = await account("Илэн");
     const friend = await account("Рэйна");

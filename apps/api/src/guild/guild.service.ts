@@ -2,6 +2,7 @@ import { Prisma } from "@endemion/database";
 import { isUniverseId, type UniverseId } from "@endemion/game-core";
 import { Inject, Injectable } from "@nestjs/common";
 import { ApiError } from "../common/api-error.js";
+import { NotificationService } from "../notification/notification.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 const MAX_MEMBERS = 30;
@@ -81,7 +82,10 @@ interface GuildRow {
 
 @Injectable()
 export class GuildService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(NotificationService) private readonly notifications: NotificationService
+  ) {}
 
   private guildView(row: GuildRow, playerId: string): GuildView {
     const mine = row.members.find((member) => member.playerId === playerId);
@@ -229,11 +233,34 @@ export class GuildService {
       const count = await tx.guildMember.count({ where: { guildId } });
       if (count >= MAX_MEMBERS) throw new ApiError(409, "GUILD_FULL", "В гильдии нет свободных мест");
       if (guild.visibility === "request") {
-        await tx.guildJoinRequest.upsert({
+        const existingRequest = await tx.guildJoinRequest.findUnique({
+          where: { guildId_playerId: { guildId, playerId } }
+        });
+        const request = await tx.guildJoinRequest.upsert({
           where: { guildId_playerId: { guildId, playerId } },
           create: { guildId, playerId },
           update: { status: "pending", decidedAt: null, createdAt: new Date() }
         });
+        if (existingRequest?.status !== "pending") {
+          const [officers, applicant] = await Promise.all([
+            tx.guildMember.findMany({
+              where: { guildId, role: { in: ["leader", "officer"] } },
+              select: { playerId: true }
+            }),
+            tx.player.findUnique({
+              where: { id: playerId },
+              select: { idUsername: true, idDisplayName: true }
+            })
+          ]);
+          for (const officer of officers) {
+            await this.notifications.notify(tx, officer.playerId, "guild_request", null, {
+              guildId,
+              guildName: guild.name,
+              requestId: request.id,
+              applicantName: applicant ? nameOf(applicant) : "Игрок"
+            });
+          }
+        }
         await this.audit(tx, guildId, playerId, "join.request");
         return;
       }
@@ -256,8 +283,8 @@ export class GuildService {
       this.requireRole(actor?.role as Role | null, ["leader", "officer"]);
       const request = await tx.guildJoinRequest.findUnique({ where: { id: requestId } });
       if (!request || request.guildId !== guildId || request.status !== "pending") throw new ApiError(404, "NOT_FOUND", "Заявка не найдена");
+      const guild = await tx.guild.findUniqueOrThrow({ where: { id: guildId }, select: { universeId: true, name: true } });
       if (accept) {
-        const guild = await tx.guild.findUniqueOrThrow({ where: { id: guildId } });
         const existing = await tx.guildMember.findUnique({ where: { playerId_universeId: { playerId: request.playerId, universeId: guild.universeId } } });
         if (existing) throw new ApiError(409, "ALREADY_IN_GUILD", "Игрок уже состоит в гильдии этого мира");
         const count = await tx.guildMember.count({ where: { guildId } });
@@ -269,6 +296,11 @@ export class GuildService {
         await tx.guildJoinRequest.update({ where: { id: requestId }, data: { status: "rejected", decidedAt: new Date() } });
         await this.audit(tx, guildId, playerId, "member.reject", { playerId: request.playerId });
       }
+      await this.notifications.notify(tx, request.playerId, accept ? "guild_request_accepted" : "guild_request_rejected", null, {
+        guildId,
+        guildName: guild.name,
+        requestId
+      });
     });
     return this.detail(playerId, guildId);
   }
@@ -358,6 +390,7 @@ export class GuildService {
     let replayed = false;
     await this.prisma.client.$transaction(async (tx) => {
       await this.lockGuild(tx, guildId);
+      const guild = await tx.guild.findUniqueOrThrow({ where: { id: guildId }, select: { name: true } });
       const member = await tx.guildMember.findFirst({ where: { guildId, playerId } });
       if (!member) throw new ApiError(403, "FORBIDDEN", "Только участники гильдии могут вносить вклад");
       const project = await tx.guildProject.findUnique({ where: { id: projectId } });
@@ -374,7 +407,19 @@ export class GuildService {
       await tx.guildContribution.create({ data: { projectId, playerId, actionId, amount } });
       await tx.guildProject.update({ where: { id: projectId }, data: { progress: next, status: completed ? "completed" : "active", completedAt: completed ? new Date() : null } });
       await tx.guildMember.update({ where: { id: member.id }, data: { contributed: { increment: amount } } });
-      if (completed) await tx.guild.update({ where: { id: guildId }, data: { reputation: { increment: 10 } } });
+      if (completed) {
+        await tx.guild.update({ where: { id: guildId }, data: { reputation: { increment: 10 } } });
+        const members = await tx.guildMember.findMany({ where: { guildId }, select: { playerId: true } });
+        for (const guildMember of members) {
+          await this.notifications.notify(tx, guildMember.playerId, "guild_project_completed", null, {
+            guildId,
+            guildName: guild.name,
+            projectId,
+            projectTitle: project.title,
+            target: project.target
+          });
+        }
+      }
       await this.audit(tx, guildId, playerId, "project.contribute", { projectId, amount, completed });
     });
     return { ...(await this.detail(playerId, guildId)), replayed };

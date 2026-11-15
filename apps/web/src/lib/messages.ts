@@ -989,13 +989,20 @@ export const M = {
   "notifications.title": t("Уведомления", "Notifications"),
   "notifications.open": t("Открыть уведомления", "Open notifications"),
   "notifications.loading": t("Загрузка…", "Loading…"),
-  "notifications.empty": t("Пока тихо. Здесь появятся исходы аукционов.", "Nothing yet. Auction outcomes will appear here."),
+  "notifications.empty": t("Пока тихо. Здесь появятся исходы аукционов, приглашения и события семьи и гильдии.", "Nothing yet. Auction outcomes, invitations and family or guild events will appear here."),
   "notifications.markAll": t("Прочитать все", "Mark all read"),
   "notifications.outbid": t("Вашу ставку перебили: {good} × {qty}, новая ставка {amount}.", "You were outbid: {good} × {qty}, new bid {amount}."),
   "notifications.won": t("Аукцион выигран: {good} × {qty} за {amount}.", "Auction won: {good} × {qty} for {amount}."),
   "notifications.sold": t("Лот продан: {good} × {qty}, вам {amount}.", "Lot sold: {good} × {qty}, you receive {amount}."),
   "notifications.endedReturned": t("Аукцион без ставок: {good} × {qty} вернулись на склад.", "Auction ended without bids: {good} × {qty} returned to storage."),
   "notifications.endedLost": t("Аукцион без ставок: {good} × {qty} не удалось вернуть.", "Auction ended without bids: {good} × {qty} could not be returned."),
+  "notifications.familyInvite": t("Вас пригласили в семью «{family}».", "You were invited to the family \"{family}\"."),
+  "notifications.familyAccepted": t("{member} принял(а) приглашение в семью «{family}».", "{member} accepted the invitation to \"{family}\"."),
+  "notifications.familyDeclined": t("{member} отклонил(а) приглашение в семью «{family}».", "{member} declined the invitation to \"{family}\"."),
+  "notifications.guildRequest": t("{applicant} подал(а) заявку в гильдию «{guild}».", "{applicant} applied to join \"{guild}\"."),
+  "notifications.guildAccepted": t("Заявка в гильдию «{guild}» принята.", "Your application to \"{guild}\" was accepted."),
+  "notifications.guildRejected": t("Заявка в гильдию «{guild}» отклонена.", "Your application to \"{guild}\" was rejected."),
+  "notifications.guildProject": t("Гильдия «{guild}» завершила проект «{project}».", "\"{guild}\" completed the project \"{project}\"."),
   "common.years": t("{n} лет", "{n} years")
 } satisfies Record<string, LocalizedText>;
 

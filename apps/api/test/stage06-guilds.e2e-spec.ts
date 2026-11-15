@@ -18,6 +18,12 @@ async function account(client: Agent, email: string): Promise<{ playerId: string
   return { playerId: (res.body as { player: { id: string } }).player.id, cookie: sessionCookieOf(res)! };
 }
 
+async function namedAccount(client: Agent, email: string, name: string): Promise<{ playerId: string; cookie: string }> {
+  const result = await account(client, email);
+  await t.prisma.client.player.update({ where: { id: result.playerId }, data: { idDisplayName: name } });
+  return result;
+}
+
 async function createGuild(client: Agent, name = "Ashen Pack", visibility: "public" | "request" = "public") {
   const res = await post(client, "/api/guilds", { universeId: "dark-fantasy", name, visibility }).expect(201);
   return res.body as { id: string; name: string; myRole: string; memberCount: number; projects: Array<{ id: string; progress: number; target: number; status: string }>; requests: Array<{ id: string; playerId: string }> };
@@ -94,6 +100,40 @@ describe("Stage 06.1: guilds", () => {
     expect(kick.body.memberCount).toBe(2);
   });
 
+  it("notifies officers about requests and applicants about decisions", async () => {
+    const owner = agent();
+    const accepted = agent();
+    const rejected = agent();
+    await account(owner, "notice-owner@example.com");
+    await namedAccount(accepted, "notice-accepted@example.com", "Мира");
+    await namedAccount(rejected, "notice-rejected@example.com", "Кай");
+    const guild = await createGuild(owner, "Silent Choir", "request");
+
+    await post(accepted, `/api/guilds/${guild.id}/join`).expect(200);
+    const ownerNotices = await owner.get("/api/notifications").expect(200);
+    expect(ownerNotices.body.notifications[0]).toMatchObject({
+      kind: "guild_request",
+      data: { guildId: guild.id, guildName: "Silent Choir", applicantName: "Мира" }
+    });
+
+    const firstPending = await owner.get(`/api/guilds/${guild.id}`).expect(200);
+    await post(owner, `/api/guilds/${guild.id}/requests/${firstPending.body.requests[0]!.id}/accept`).expect(200);
+    const acceptedNotices = await accepted.get("/api/notifications").expect(200);
+    expect(acceptedNotices.body.notifications[0]).toMatchObject({
+      kind: "guild_request_accepted",
+      data: { guildId: guild.id, guildName: "Silent Choir" }
+    });
+
+    await post(rejected, `/api/guilds/${guild.id}/join`).expect(200);
+    const secondPending = await owner.get(`/api/guilds/${guild.id}`).expect(200);
+    await post(owner, `/api/guilds/${guild.id}/requests/${secondPending.body.requests[0]!.id}/reject`).expect(200);
+    const rejectedNotices = await rejected.get("/api/notifications").expect(200);
+    expect(rejectedNotices.body.notifications[0]).toMatchObject({
+      kind: "guild_request_rejected",
+      data: { guildId: guild.id, guildName: "Silent Choir" }
+    });
+  });
+
   it("project contribution is idempotent and completes reputation once", async () => {
     const owner = agent();
     await account(owner, "project-owner@example.com");
@@ -111,6 +151,23 @@ describe("Stage 06.1: guilds", () => {
     expect(done.body.reputation).toBe(10);
     const after = await post(owner, `/api/guilds/${guild.id}/projects/${projectId}/contribute`, { actionId: randomUUID(), amount: 1 }).expect(409);
     expect(after.body.error.code).toBe("VALIDATION");
+  });
+
+  it("notifies guild members when a project completes", async () => {
+    const owner = agent();
+    const member = agent();
+    await account(owner, "project-notice-owner@example.com");
+    await account(member, "project-notice-member@example.com");
+    const guild = await createGuild(owner);
+    await post(member, `/api/guilds/${guild.id}/join`).expect(200);
+    const project = await post(owner, `/api/guilds/${guild.id}/projects`, { title: "Mist Survey", target: 100 }).expect(201);
+    const projectId = project.body.projects[0]!.id as string;
+    await post(owner, `/api/guilds/${guild.id}/projects/${projectId}/contribute`, { actionId: randomUUID(), amount: 100 }).expect(200);
+    const notices = await member.get("/api/notifications").expect(200);
+    expect(notices.body.notifications[0]).toMatchObject({
+      kind: "guild_project_completed",
+      data: { guildId: guild.id, guildName: "Ashen Pack", projectId, projectTitle: "Mist Survey", target: 100 }
+    });
   });
 
   it("leader transfer, leave rules, disband and audit trail", async () => {

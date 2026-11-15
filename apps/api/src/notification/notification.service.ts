@@ -9,9 +9,16 @@ export type NotificationKind =
   | "auction_outbid"
   | "auction_won"
   | "auction_sold"
-  | "auction_ended";
+  | "auction_ended"
+  | "family_invite"
+  | "family_invite_accepted"
+  | "family_invite_declined"
+  | "guild_request"
+  | "guild_request_accepted"
+  | "guild_request_rejected"
+  | "guild_project_completed";
 
-/** Small localized payload so the client can render without a catalog lookup. */
+/** Small localized payload so the client can render without extra lookups. */
 export interface NotificationData {
   goodId?: string;
   goodName?: { ru: string; en: string };
@@ -19,6 +26,17 @@ export interface NotificationData {
   amount?: number;
   previousBid?: number;
   returned?: boolean;
+  familyId?: string;
+  familyName?: string;
+  inviteId?: string;
+  memberName?: string;
+  guildId?: string;
+  guildName?: string;
+  requestId?: string;
+  applicantName?: string;
+  projectId?: string;
+  projectTitle?: string;
+  target?: number;
 }
 
 export interface NotificationView {
