@@ -55,6 +55,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R3.2 (Season Chronicle) | Season list, event history API, season rail and event panel on `/worlds` | **COMPLETE; deployed, no migration** - см. `docs/planning/R3_2_SEASON_CHRONICLE.md` |
 | R3.3 (Season Goals) | Shared prosperity/stability/faction goals and settlement-map view | **COMPLETE; deployed, no migration** - см. `docs/planning/R3_3_SEASON_GOALS.md` |
 | R3.4 (Season Rewards) | Goal reward pool, claim to a life, idempotency, web claim panel | **COMPLETE; deployed, schema 14, migration 18** - см. `docs/planning/R3_4_SEASON_REWARDS.md` |
+| R4.1 (Market Fee) | 5% seller-side sink, dynamic shared prices | **IMPLEMENTED LOCALLY; release pending; migration 19 additive** - см. `docs/planning/R4_1_MARKET_FEE.md` |
 
 ## Design (Living Chronicle)
 

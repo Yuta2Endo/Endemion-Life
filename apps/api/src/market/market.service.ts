@@ -61,6 +61,7 @@ export interface MarketTradeView {
   qty: number;
   unitPrice: number;
   total: number;
+  fee: number;
   sellerLifeId: string;
   buyerLifeId: string;
   createdAt: string;
@@ -111,6 +112,8 @@ const json = (value: unknown): Prisma.InputJsonValue => value as Prisma.InputJso
 const nowIso = (): string => new Date().toISOString();
 
 const totalOf = (qty: number, unitPrice: number): number => qty * unitPrice;
+/** R4.1: 5% seller-side fee, burned as an economic sink. */
+const feeOf = (total: number): number => Math.ceil(total * 0.05);
 
 const offerStatus = (value: string): MarketOfferView["status"] =>
   value === "sold" || value === "cancelled" || value === "expired" ? value : "active";
@@ -297,6 +300,8 @@ export class MarketService {
       const stock = sellerState.economy.goods[offer.goodId] ?? 0;
       if (stock < offer.qty) throw new ApiError(409, "INSUFFICIENT_GOODS", "У продавца уже нет этого товара.");
       const total = totalOf(offer.qty, offer.unitPrice);
+      const fee = feeOf(total);
+      const sellerNet = total - fee;
       if (buyerState.character.wealth < total) {
         throw new ApiError(409, "INSUFFICIENT_WEALTH", "Недостаточно золота для покупки.");
       }
@@ -308,7 +313,7 @@ export class MarketService {
       sellerState.economy.goods[offer.goodId] = stock - offer.qty;
       buyerState.economy.goods[offer.goodId] = buyerStock + offer.qty;
       buyerState.character.wealth -= total;
-      sellerState.character.wealth = Math.min(1_000_000_000, sellerState.character.wealth + total);
+      sellerState.character.wealth = Math.min(1_000_000_000, sellerState.character.wealth + sellerNet);
       buyerState.version += 1;
       sellerState.version += 1;
 
@@ -323,6 +328,7 @@ export class MarketService {
           qty: offer.qty,
           unitPrice: offer.unitPrice,
           total,
+          fee,
           sellerPlayerId: offer.sellerPlayerId,
           sellerLifeId: offer.sellerLifeId,
           buyerPlayerId: playerId,
@@ -342,7 +348,7 @@ export class MarketService {
       const sellerEntry = this.entry(
         sellerState,
         this.entryText("Продажа на рынке", "Sale at the market", `${offer.goodId} × ${offer.qty} за ${total} золота`, `${offer.goodId} × ${offer.qty} for ${total} gold`),
-        [{ kind: "wealth", delta: total }, { kind: "good", key: offer.goodId, delta: -offer.qty }]
+        [{ kind: "wealth", delta: sellerNet }, { kind: "good", key: offer.goodId, delta: -offer.qty }]
       );
 
       await tx.marketOffer.update({
@@ -359,7 +365,7 @@ export class MarketService {
         data: [
           { tradeId: trade.id, playerId, lifeId: input.buyerLifeId, kind: "gold", amount: -total, balanceAfter: buyerState.character.wealth },
           { tradeId: trade.id, playerId, lifeId: input.buyerLifeId, kind: "goods", amount: offer.qty, balanceAfter: buyerState.economy.goods[offer.goodId] ?? 0 },
-          { tradeId: trade.id, playerId: offer.sellerPlayerId, lifeId: offer.sellerLifeId, kind: "gold", amount: total, balanceAfter: sellerState.character.wealth },
+          { tradeId: trade.id, playerId: offer.sellerPlayerId, lifeId: offer.sellerLifeId, kind: "gold", amount: sellerNet, balanceAfter: sellerState.character.wealth },
           { tradeId: trade.id, playerId: offer.sellerPlayerId, lifeId: offer.sellerLifeId, kind: "goods", amount: -offer.qty, balanceAfter: sellerState.economy.goods[offer.goodId] ?? 0 }
         ]
       });
@@ -531,6 +537,7 @@ export class MarketService {
     qty: number;
     unitPrice: number;
     total: number;
+    fee: number;
     sellerLifeId: string;
     buyerLifeId: string;
     createdAt: Date;
@@ -542,6 +549,7 @@ export class MarketService {
       qty: row.qty,
       unitPrice: row.unitPrice,
       total: row.total,
+      fee: row.fee,
       sellerLifeId: row.sellerLifeId,
       buyerLifeId: row.buyerLifeId,
       createdAt: row.createdAt.toISOString()

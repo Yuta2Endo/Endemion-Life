@@ -111,11 +111,11 @@ describe("Stage 06.2: рынок игроков", () => {
     }).expect(200);
     expect(bought.body.life.character.wealth).toBe(900);
     expect((bought.body.life.market.goods as Array<{ id: string; stock: number }>).find((g) => g.id === GOOD.id)?.stock).toBe(2);
-    expect(bought.body.trade).toMatchObject({ qty: 2, unitPrice: 50, total: 100 });
+    expect(bought.body.trade).toMatchObject({ qty: 2, unitPrice: 50, total: 100, fee: 5 });
 
     const sellerState = await t.prisma.client.life.findUniqueOrThrow({ where: { id: sellerLife.id } });
     const sellerSave = sellerState.state as { character: { wealth: number }; economy: { goods: Record<string, number> } };
-    expect(sellerSave.character.wealth).toBe(200);
+    expect(sellerSave.character.wealth).toBe(195);
     expect(sellerSave.economy.goods[GOOD.id]).toBe(3);
     expect(sellerState.version).toBe(sellerLife.version + 1);
 

@@ -693,6 +693,8 @@ model MarketTrade {
   qty                Int
   unitPrice          Int      @map("unit_price")
   total              Int
+  /// R4.1: рыночный сбор с продавца, сжигается как экономический сток.
+  fee                Int      @default(0)
   sellerPlayerId     String   @map("seller_player_id") @db.Uuid
   sellerLifeId       String   @map("seller_life_id") @db.Uuid
   buyerPlayerId      String   @map("buyer_player_id") @db.Uuid
