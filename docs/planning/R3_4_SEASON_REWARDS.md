@@ -1,6 +1,6 @@
 # R3.4 — Season Goal Rewards
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 09:20 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** 18, additive
 
@@ -64,6 +64,14 @@ Migration `20261115190000_r3_4_season_rewards`:
 - Reward targets a life, not a family treasury.
 - No notification beyond the UI response.
 
-## 6. Rollback
+## 6. Deployment
+
+- Code commit `02c2e6f`; production runtime **`02c2e6f`**.
+- Deploy run **43698479681**, success; history `09:20:22Z deploy-start` → `09:20:51Z deploy ok`.
+- Production now has **18 migrations**; save schema 14.
+- `/api/health` 200; `/api/world/dark-fantasy/rewards` returns 401 unauthenticated.
+- Rollback target `e564094`; migration 18 is additive.
+
+## 7. Rollback
 
 Migration 18 is additive. Application rollback is safe; keep the columns and contribution reward fields.
