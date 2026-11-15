@@ -1,6 +1,6 @@
 # R3.3 — Season Goals and Settlement Map
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 08:59 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none
 
@@ -44,6 +44,14 @@ The existing settlement cards remain the living map: population, prosperity, sta
 - No historical goal result; season snapshots retain the state needed for a future history.
 - Settlement map remains a card view, not a geographic canvas.
 
-## 5. Rollback
+## 5. Deployment
+
+- Code commit `e564094`; production runtime **`e564094`**.
+- Deploy run **43696391811**, success; history `08:59:06Z deploy-start` → `08:59:42Z deploy ok`.
+- No migration; DB remains **17** migrations, save schema 14.
+- Production `/api/world/dark-fantasy/goals` returns **season 5, 3 goals**; `/api/health` 200.
+- Rollback target `d242c86`.
+
+## 6. Rollback
 
 No migration. Reverting the application code removes the goals endpoint and panel.

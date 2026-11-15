@@ -1,11 +1,11 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-15 (R3.2 season chronicle deployed)<br>
+**Обновлено:** 2026-11-15 (R3.3 season goals deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `d242c86` (R3.2 season chronicle)<br>
-**Production:** R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `d242c86`, deployed 2026-11-15 08:41 UTC; migrations **17** (guild 13, market 14, profile 15, families 16, treasury 17)<br>
-**Production code:** `d242c86`; DB migrations **17**, additive<br>
-**Rollback:** `064d231`; no new migration in R3.2.<br>
+**HEAD:** `e564094` (R3.3 season goals)<br>
+**Production:** R3.3 + R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `e564094`, deployed 2026-11-15 08:59 UTC; migrations **17** (guild 13, market 14, profile 15, families 16, treasury 17)<br>
+**Production code:** `e564094`; DB migrations **17**, additive<br>
+**Rollback:** `d242c86`; no new migration in R3.3.<br>
 **Рабочее дерево:** docs record being updated; unrelated Android/itch/lockfile changes preserved; 74 Stage 11 reports/docx untracked.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
@@ -53,7 +53,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R2.3 (Family Chronicle) | Derived house chronicle: audits + member life milestones, API + web panel | **COMPLETE; deployed, no migration** - см. `docs/planning/R2_3_FAMILY_CHRONICLE.md` |
 | R3.1 (World Scheduler) | Automatic shared-world tick every 15 minutes, six universes | **COMPLETE; deployed, no migration** - см. `docs/planning/R3_1_WORLD_SCHEDULER.md` |
 | R3.2 (Season Chronicle) | Season list, event history API, season rail and event panel on `/worlds` | **COMPLETE; deployed, no migration** - см. `docs/planning/R3_2_SEASON_CHRONICLE.md` |
-| R3.3 (Season Goals) | Shared prosperity/stability/faction goals and settlement-map view | **IMPLEMENTED LOCALLY; release pending; no migration** - см. `docs/planning/R3_3_SEASON_GOALS.md` |
+| R3.3 (Season Goals) | Shared prosperity/stability/faction goals and settlement-map view | **COMPLETE; deployed, no migration** - см. `docs/planning/R3_3_SEASON_GOALS.md` |
 
 ## Design (Living Chronicle)
 
