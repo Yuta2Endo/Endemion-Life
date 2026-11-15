@@ -1,11 +1,11 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-15 (R4.2 price history deployed)<br>
+**Обновлено:** 2026-11-15 (R4.3 event prices deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `6b2aacd` (R4.2 price history)<br>
-**Production:** R4.2 + R4.1 + R3.4 + R3.3 + R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `6b2aacd`, deployed 2026-11-15 10:30 UTC; migrations **19** (guild 13, market 14, profile 15, families 16, treasury 17, rewards 18, fee 19)<br>
-**Production code:** `6b2aacd`; DB migrations **19**, additive<br>
-**Rollback:** `c834a72`; no migration in R4.2.<br>
+**HEAD:** `a09ee65` (R4.3 event prices)<br>
+**Production:** R4.3 + R4.2 + R4.1 + R3.4 + R3.3 + R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `a09ee65`, deployed 2026-11-15 10:54 UTC; migrations **19** (guild 13, market 14, profile 15, families 16, treasury 17, rewards 18, fee 19)<br>
+**Production code:** `a09ee65`; DB migrations **19**, additive<br>
+**Rollback:** `6b2aacd`; no migration in R4.3.<br>
 **Рабочее дерево:** docs record being updated; unrelated Android/itch/lockfile changes preserved; 74 Stage 11 reports/docx untracked.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
@@ -57,7 +57,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R3.4 (Season Rewards) | Goal reward pool, claim to a life, idempotency, web claim panel | **COMPLETE; deployed, schema 14, migration 18** - см. `docs/planning/R3_4_SEASON_REWARDS.md` |
 | R4.1 (Market Fee) | 5% seller-side sink, dynamic shared prices | **COMPLETE; deployed, schema 14, migration 19** - см. `docs/planning/R4_1_MARKET_FEE.md` |
 | R4.2 (Price History) | Season price history, changes, event influence panel | **COMPLETE; deployed, no migration** - см. `docs/planning/R4_2_PRICE_HISTORY.md` |
-| R4.3 (Event Prices) | World events apply one-season price pressure to settlements | **IMPLEMENTED LOCALLY; release pending; no migration** - см. `docs/planning/R4_3_EVENT_PRICES.md` |
+| R4.3 (Event Prices) | World events apply one-season price pressure to settlements | **COMPLETE; deployed, no migration** - см. `docs/planning/R4_3_EVENT_PRICES.md` |
 
 ## Design (Living Chronicle)
 

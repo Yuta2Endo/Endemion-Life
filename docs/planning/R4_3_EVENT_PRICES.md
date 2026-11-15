@@ -1,6 +1,6 @@
 # R4.3 — Event-Driven World Prices
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 10:54 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none
 
@@ -43,6 +43,14 @@ World events now directly move the prices of the affected settlement for one sea
 - Price pressure affects all goods in the target settlement equally.
 - UI already shows event and price history; no dedicated “event pressure” badge yet.
 
-## 4. Rollback
+## 4. Deployment
+
+- Code commit `a09ee65`; production runtime **`a09ee65`**.
+- Deploy run **43705518343**, success; history `10:54:13Z deploy-start` → `10:54:48Z deploy ok`.
+- No migration; DB remains **19** migrations, save schema 14.
+- Production `/api/world/dark-fantasy/prices?seasons=2` returns season 11; health 200.
+- Rollback target `6b2aacd`.
+
+## 5. Rollback
 
 No migration. Reverting the application code removes event influence; existing season snapshots retain their historical prices.
