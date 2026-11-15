@@ -387,6 +387,9 @@ model WorldSeason {
   season     Int
   checksum   String   @db.VarChar(32)
   state      Json
+  /// R3.4: сколько сезонных целей выполнено и пул награды за вклад.
+  goalsMet   Int      @default(0) @map("goals_met")
+  rewardPool Int      @default(0) @map("reward_pool")
   /// Длительность tick в миллисекундах. Для снимка, изменённого командой, не пересчитывается
   durationMs Int      @default(0) @map("duration_ms")
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -516,6 +519,9 @@ model WorldContribution {
   season     Int
   targetKind String   @map("target_kind") @db.VarChar(16)
   targetId   String   @map("target_id") @db.VarChar(48)
+  rewardClaimedAt DateTime? @map("reward_claimed_at") @db.Timestamptz(3)
+  rewardAmount Int @default(0) @map("reward_amount")
+  rewardActionId String? @map("reward_action_id") @db.Uuid
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   world  World  @relation(fields: [worldId], references: [id], onDelete: Cascade)

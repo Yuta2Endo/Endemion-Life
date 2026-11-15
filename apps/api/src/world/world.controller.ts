@@ -20,6 +20,12 @@ const textSchema = z.strictObject({
   en: z.string().trim().min(1).max(500)
 });
 
+const rewardClaimSchema = z.strictObject({
+  actionId: z.uuid(),
+  lifeId: z.uuid(),
+  expectedSeason: z.int().min(1)
+});
+
 const eventCommandSchema = z.strictObject({
   type: z.literal("event"),
   kind: z.enum(SHARED_WORLD_EVENT_KINDS),
@@ -116,6 +122,19 @@ export class WorldController {
   }
 
   /** Исторический снимок сезона */
+  @Get(":universeId/rewards")
+  async rewards(@Req() request: Request, @Param("universeId") universeId: string) {
+    const { player } = await this.sessions.requireAccount(request);
+    return this.world.rewards(player.id, assertUniverseId(universeId));
+  }
+
+  @Post(":universeId/rewards/claim")
+  @HttpCode(200)
+  async claimReward(@Req() request: Request, @Param("universeId") universeId: string, @Body() body: unknown) {
+    const { player } = await this.sessions.requireAccount(request);
+    return this.world.claimReward(player.id, assertUniverseId(universeId), parseOrThrow(rewardClaimSchema, body));
+  }
+
   @Get(":universeId/goals")
   async goals(@Param("universeId") universeId: string) {
     return this.world.goals(assertUniverseId(universeId));

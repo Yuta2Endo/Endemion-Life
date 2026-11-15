@@ -7,6 +7,7 @@ import { apiFetch, ClientError } from "@/lib/api";
 import type { MessageKey } from "@/lib/messages";
 import { useI18n } from "../locale-provider";
 import { WorldGoalsPanel } from "./world-goals-panel";
+import { WorldRewardPanel } from "./world-reward-panel";
 import { WorldHistoryPanel } from "./world-history-panel";
 import { WorldParticipation } from "./world-participation";
 
@@ -430,6 +431,7 @@ export function SharedWorldPanel() {
                   updatedAt={activeWorld.updatedAt}
                 />
                 <WorldGoalsPanel key={`goals-${activeWorld.world.universeId}`} universeId={activeWorld.world.universeId} />
+                <WorldRewardPanel key={`rewards-${activeWorld.world.universeId}`} universeId={activeWorld.world.universeId} />
                 <WorldHistoryPanel key={activeWorld.world.universeId} universeId={activeWorld.world.universeId} />
               </>
             )}

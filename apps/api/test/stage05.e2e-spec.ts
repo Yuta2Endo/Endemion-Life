@@ -254,6 +254,56 @@ describe("Stage 05: вклад в общий мир", () => {
     expect(current.world.settlements[1]!.stability).toBe(Math.min(100, settlement.stability + 3));
     expect(await t.prisma.client.worldContribution.count()).toBe(3);
   });
+
+  it("выдаёт награду за выполненную цель сезона один раз и идемпотентно", async () => {
+    const a = agent();
+    const acc = await account(a, "reward-a@example.com");
+    const created = await post(a, "/api/lives", { universeId: "hunter", seed: "reward-life" }).expect(201);
+    const life = created.body.life as { id: string; character: { wealth: number } };
+    const state = await world();
+    await contribute(a, {
+      actionId: randomUUID(),
+      expectedSeason: state.world.season,
+      targetKind: "settlement",
+      targetId: state.world.settlements[0]!.id
+    }).expect(200);
+
+    const worldRow = await t.prisma.client.world.findUniqueOrThrow({ where: { universeId: "hunter" } });
+    await t.prisma.client.worldSeason.upsert({
+      where: { worldId_season: { worldId: worldRow.id, season: state.world.season } },
+      update: { goalsMet: 1, rewardPool: 25 },
+      create: {
+        worldId: worldRow.id,
+        season: state.world.season,
+        checksum: worldRow.checksum,
+        state: worldRow.state as object,
+        goalsMet: 1,
+        rewardPool: 25
+      }
+    });
+
+    const before = await a.get("/api/world/hunter/rewards").expect(200);
+    expect(before.body).toMatchObject({ season: state.world.season, goalsMet: 1, rewardPool: 25, contributed: true, claimable: 25 });
+
+    const actionId = randomUUID();
+    const claimed = await post(a, "/api/world/hunter/rewards/claim", {
+      actionId,
+      lifeId: life.id,
+      expectedSeason: state.world.season
+    }).expect(200);
+    expect(claimed.body.reward).toBe(25);
+    expect(claimed.body.replayed).toBe(false);
+    const updatedLife = await a.get(`/api/lives/${life.id}`).expect(200);
+    expect(updatedLife.body.life.character.wealth).toBe(25);
+    expect(await t.prisma.client.worldContribution.count({ where: { playerId: acc.playerId, rewardClaimedAt: { not: null } } })).toBe(1);
+
+    const replay = await post(a, "/api/world/hunter/rewards/claim", {
+      actionId,
+      lifeId: life.id,
+      expectedSeason: state.world.season
+    }).expect(200);
+    expect(replay.body).toMatchObject({ reward: 25, replayed: true });
+  });
 });
 
 describe("Stage 05: модерация, экспорт и удаление", () => {

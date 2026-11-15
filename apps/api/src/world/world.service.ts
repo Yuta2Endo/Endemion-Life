@@ -235,6 +235,89 @@ export class WorldService {
     }));
   }
 
+  async rewards(playerId: string, universeId: UniverseId) {
+    const row = await this.ensureWorld(universeId);
+    const world = parseSharedWorldState(row.state);
+    const [contribution, season] = await Promise.all([
+      this.db.worldContribution.findUnique({
+        where: { worldId_playerId_season: { worldId: row.id, playerId, season: world.season } }
+      }),
+      this.db.worldSeason.findUnique({ where: { worldId_season: { worldId: row.id, season: world.season } } })
+    ]);
+    const goalsMet = season?.goalsMet ?? 0;
+    const rewardPool = season?.rewardPool ?? 0;
+    return {
+      universeId,
+      season: world.season,
+      goalsMet,
+      rewardPool,
+      contributed: contribution !== null,
+      claimedAt: contribution?.rewardClaimedAt?.toISOString() ?? null,
+      claimable: contribution && !contribution.rewardClaimedAt ? rewardPool : 0
+    };
+  }
+
+  async claimReward(playerId: string, universeId: UniverseId, input: { actionId: string; lifeId: string; expectedSeason: number }) {
+    return this.db.$transaction(async (tx) => {
+      const row = await this.lockWorld(tx, universeId);
+      const world = parseSharedWorldState(row.state);
+      if (input.expectedSeason !== world.season) throw new ApiError(409, "WORLD_CONFLICT", "Сезон уже изменился.");
+      const season = await tx.worldSeason.findUnique({ where: { worldId_season: { worldId: row.id, season: world.season } } });
+      if (!season || season.goalsMet <= 0 || season.rewardPool <= 0) {
+        throw new ApiError(409, "VALIDATION", "В этом сезоне награда ещё не открыта.");
+      }
+      const contribution = await tx.worldContribution.findUnique({
+        where: { worldId_playerId_season: { worldId: row.id, playerId, season: world.season } }
+      });
+      if (!contribution) throw new ApiError(403, "FORBIDDEN", "Нужен вклад в общий мир этого сезона.");
+      if (contribution.rewardClaimedAt) {
+        return { reward: contribution.rewardAmount, replayed: true as const };
+      }
+
+      const initial = await tx.life.findFirst({ where: { id: input.lifeId, playerId } });
+      if (!initial) throw new ApiError(404, "NOT_FOUND", "Жизнь не найдена.");
+      await tx.$queryRaw`SELECT id FROM lives WHERE id = ${input.lifeId}::uuid FOR UPDATE`;
+      const life = await tx.life.findUniqueOrThrow({ where: { id: input.lifeId } });
+      if (life.universeId !== universeId) throw new ApiError(409, "VALIDATION", "Жизнь принадлежит другому миру.");
+      const state = parseSave(life.state);
+      if (!state.life.alive) throw new ApiError(409, "LIFE_ENDED", "Награду можно получить только живой жизнью.");
+
+      const reward = season.rewardPool;
+      state.character.wealth = Math.min(1_000_000_000, state.character.wealth + reward);
+      state.version += 1;
+      const maxSeq = await tx.historyEntry.aggregate({ where: { lifeId: life.id }, _max: { seq: true } });
+      const seq = Math.max(state.nextSeq, (maxSeq._max.seq ?? 0) + 1);
+      state.nextSeq = seq + 1;
+      const entry = {
+        seq,
+        age: state.life.age,
+        kind: "legacy" as const,
+        title: { ru: "Награда сезона", en: "Season reward" },
+        text: { ru: `Вклад в общий мир отмечен наградой: ${reward}.`, en: `Contribution to the shared world rewarded: ${reward}.` },
+        changes: [{ kind: "wealth" as const, delta: reward }]
+      };
+      await tx.life.update({
+        where: { id: life.id },
+        data: { version: state.version, state: state as unknown as Prisma.InputJsonValue }
+      });
+      await tx.historyEntry.create({
+        data: { lifeId: life.id, seq, age: state.life.age, kind: "legacy", data: entry }
+      });
+      await tx.lifeSnapshot.create({
+        data: { lifeId: life.id, version: state.version, age: state.life.age, reason: "action", state: state as unknown as Prisma.InputJsonValue }
+      });
+      await tx.lifeSnapshot.deleteMany({ where: { lifeId: life.id, version: { lte: state.version - 50 } } });
+      await tx.worldContribution.update({
+        where: { id: contribution.id },
+        data: { rewardClaimedAt: new Date(), rewardAmount: reward, rewardActionId: input.actionId }
+      });
+      await tx.worldAudit.create({
+        data: { worldId: row.id, action: "player.reward", actor: playerId, detail: json({ season: world.season, lifeId: life.id, reward }) }
+      });
+      return { reward, replayed: false as const, life: { id: life.id, version: state.version, wealth: state.character.wealth } };
+    });
+  }
+
   async goals(universeId: UniverseId): Promise<{
     season: number;
     generatedAt: string;
@@ -776,6 +859,19 @@ export class WorldService {
   }
 
   /** Снимок сезона. Для tick — новая строка; для правки администратора — обновление текущей */
+  private goalStatus(world: SharedWorldState): { goalsMet: number; rewardPool: number } {
+    const average = (values: number[]) => (values.length === 0 ? 0 : Math.round(values.reduce((sum, value) => sum + value, 0) / values.length));
+    const prosperity = average(world.settlements.map((settlement) => settlement.prosperity));
+    const stability = average(world.settlements.map((settlement) => settlement.stability));
+    const factionPower = world.factions.length === 0 ? 0 : Math.max(...world.factions.map((faction) => faction.power));
+    const met = [
+      prosperity >= 55 + Math.min(10, world.season),
+      stability >= 50 + Math.min(5, Math.floor(world.season / 4)),
+      factionPower >= 60
+    ].filter(Boolean).length;
+    return { goalsMet: met, rewardPool: Math.min(75, met * 25) };
+  }
+
   private async writeSeason(
     tx: Tx,
     worldId: string,
@@ -783,18 +879,19 @@ export class WorldService {
     checksum: string,
     durationMs: number
   ): Promise<void> {
+    const status = this.goalStatus(state);
     const existing = await tx.worldSeason.findUnique({
       where: { worldId_season: { worldId, season: state.season } }
     });
     if (existing) {
       await tx.worldSeason.update({
         where: { id: existing.id },
-        data: { checksum, state: json(state) }
+        data: { checksum, state: json(state), goalsMet: status.goalsMet, rewardPool: status.rewardPool }
       });
       return;
     }
     await tx.worldSeason.create({
-      data: { worldId, season: state.season, checksum, state: json(state), durationMs }
+      data: { worldId, season: state.season, checksum, state: json(state), durationMs, goalsMet: status.goalsMet, rewardPool: status.rewardPool }
     });
   }
 
