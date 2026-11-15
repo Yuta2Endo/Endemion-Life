@@ -62,6 +62,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R4.5 (Family Enterprise) | Treasury-funded family enterprise, levels, seasonal income, web controls | **COMPLETE; deployed, schema 14, migration 21** - см. `docs/planning/R4_5_FAMILY_ENTERPRISE.md` |
 | R4.6 (Player Contracts) | Escrowed goods contracts, accept/cancel, reputation, web panel | **COMPLETE; deployed, schema 14, migration 22** - см. `docs/planning/R4_6_PLAYER_CONTRACTS.md` |
 | R4.7 (Private Contracts) | Private recipients, expiry, escrow restore guard | **COMPLETE; deployed, schema 14, migration 23** - см. `docs/planning/R4_7_CONTRACT_PRIVACY.md` |
+| R4.8 (Contract Expiry) | Lazy expiry, escrow return, status `expired` | **IMPLEMENTED LOCALLY; release pending; migration 24 additive** - см. `docs/planning/R4_8_CONTRACT_EXPIRY.md` |
 
 ## Design (Living Chronicle)
 

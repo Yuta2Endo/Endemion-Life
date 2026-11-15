@@ -296,5 +296,21 @@ describe("Stage 06.2: рынок игроков", () => {
     await seller.delete(`/api/contracts/${cancelContract.body.contract.id}`).set("Origin", ORIGIN).send({}).expect(200);
     const returned = await t.prisma.client.life.findUniqueOrThrow({ where: { id: second.id } });
     expect((returned.state as { economy: { goods: Record<string, number> } }).economy.goods[GOOD.id]).toBe(2);
+
+    const secondCurrent = await t.prisma.client.life.findUniqueOrThrow({ where: { id: second.id } });
+    const expiring = await post(seller, "/api/contracts", {
+      actionId: randomUUID(),
+      lifeId: second.id,
+      goodId: GOOD.id,
+      qty: 1,
+      price: 10,
+      expectedVersion: secondCurrent.version
+    }).expect(201);
+    await t.prisma.client.playerContract.update({ where: { id: expiring.body.contract.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
+    const boardAfter = await request(t.app.getHttpServer()).get("/api/contracts?universeId=hunter").expect(200);
+    expect((boardAfter.body.contracts as Array<{ id: string }>).some((item) => item.id === expiring.body.contract.id)).toBe(false);
+    expect(await t.prisma.client.playerContract.findUniqueOrThrow({ where: { id: expiring.body.contract.id } })).toMatchObject({ status: "expired" });
+    const restored = await t.prisma.client.life.findUniqueOrThrow({ where: { id: second.id } });
+    expect((restored.state as { economy: { goods: Record<string, number> } }).economy.goods[GOOD.id]).toBe(2);
   });
 });

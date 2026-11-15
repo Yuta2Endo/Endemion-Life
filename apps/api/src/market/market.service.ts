@@ -75,7 +75,7 @@ export interface PlayerContractView {
   qty: number;
   price: number;
   total: number;
-  status: "open" | "accepted" | "cancelled";
+  status: "open" | "accepted" | "cancelled" | "expired";
   sellerName: string;
   sellerLifeId: string;
   sellerLifeName: string;
@@ -425,7 +425,41 @@ export class MarketService {
   }
 
   /** Closes every live offer of a life whose owner died. Called from succession. */
+  private async expireContracts(): Promise<void> {
+    const candidates = await this.db.playerContract.findMany({
+      where: { status: "open", expiresAt: { lte: new Date() } },
+      select: { id: true },
+      take: 20
+    });
+    for (const candidate of candidates) {
+      await this.db.$transaction(async (tx) => {
+        const locked = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM player_contracts WHERE id = ${candidate.id}::uuid FOR UPDATE`;
+        if (locked.length === 0) return;
+        const contract = await tx.playerContract.findUniqueOrThrow({ where: { id: candidate.id } });
+        if (contract.status !== "open" || !contract.expiresAt || contract.expiresAt.getTime() > Date.now()) return;
+        let sellerVersionAfter = contract.sellerVersionAfter;
+        const row = await tx.life.findFirst({ where: { id: contract.sellerLifeId, playerId: contract.sellerPlayerId } });
+        if (row) {
+          const state = parseSave(row.state);
+          const stock = state.economy.goods[contract.goodId] ?? 0;
+          if (state.life.alive && stock + contract.qty <= MAX_STOCK) {
+            state.economy.goods[contract.goodId] = stock + contract.qty;
+            state.version += 1;
+            await this.alignHistoryHead(tx, contract.sellerLifeId, state);
+            const entry = this.entry(state, this.entryText("Контракт истёк", "Contract expired", `${contract.goodId} ? ${contract.qty} возвращены`, `${contract.goodId} ? ${contract.qty} returned`), [{ kind: "good", key: contract.goodId, delta: contract.qty }]);
+            await tx.life.update({ where: { id: contract.sellerLifeId }, data: lifeColumns(state) });
+            await this.writeEntry(tx, contract.sellerLifeId, entry);
+            await this.writeSnapshot(tx, contract.sellerLifeId, state);
+            sellerVersionAfter = state.version;
+          }
+        }
+        await tx.playerContract.update({ where: { id: contract.id }, data: { status: "expired", sellerVersionAfter, cancelledAt: new Date() } });
+      });
+    }
+  }
+
   async contracts(playerId: string | null, universeId: string): Promise<{ contracts: PlayerContractView[]; mine: PlayerContractView[] }> {
+    await this.expireContracts();
     const rows = await this.db.playerContract.findMany({
       where: {
         universeId,
