@@ -1,6 +1,6 @@
 # R5.10 — «Мир, который слышно»
 
-**Статус:** реализовано и проверено локально; релиз ожидает деплоя  
+**Статус:** COMPLETE AND DEPLOYED (2026-11-15 22:12 UTC)  
 **Save schema:** 14 (без изменений)  
 **DB migration:** нет  
 **Затронут только web**
@@ -47,7 +47,19 @@
 | Save schema | 14 |
 | DB migration | нет |
 
-## 4. Ограничения
+## 4. Деплой
+
+- Code commit **`7542757`**; production runtime **`7542757`**.
+- Deploy run **43767637700**, success; environment `26274376808` approved.
+- CI **43767063135** success; Security **43767063146** success.
+- Deploy history:
+  - `2026-11-15T22:11:57Z deploy-start 7542757... from db43727...`
+  - `2026-11-15T22:12:25Z deploy 7542757... ok from db43727...`
+- Production migrations remain **26**; save schema 14.
+- `/api/health` 200, database/redis up; `/api/contracts?universeId=hunter` 200; guest `/api/notifications` 401; web `/` 200.
+- Rollback target **`db43727`**.
+
+## 5. Ограничения
 
 - Звук синтезированный, без записанной музыки и без аудио-ассетов.
 - Нет отдельных SFX на события, выборы и переходы.
@@ -56,6 +68,6 @@
 - Браузерная политика autoplay требует жеста; после включения может понадобиться ещё один клик.
 - Нет Android WebView smoke и Lighthouse-проверки звука.
 
-## 5. Откат
+## 6. Откат
 
 Миграций нет. Достаточно откатить web-коммит R5.10; сохранения и API не затрагиваются.
