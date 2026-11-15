@@ -42,17 +42,18 @@ function walk(state: GameState): GameState {
 }
 
 describe("R5.2: третья дорога", () => {
-  it("у каждого мира три места и три дороги; третья требует вторую", () => {
+  it("у каждого мира четыре места и четыре дороги; четвёртая требует третью", () => {
     expect(contentProblems()).toEqual([]);
     for (const universeId of UNIVERSE_IDS) {
       const places = placesOf(universeId);
       const list = adventuresOf(universeId);
-      expect(places, universeId).toHaveLength(3);
-      expect(list, universeId).toHaveLength(3);
+      expect(places, universeId).toHaveLength(4);
+      expect(list, universeId).toHaveLength(4);
       expect(list[0]!.requires, list[0]!.id).toBeUndefined();
       expect(list[1]!.requires, list[1]!.id).toEqual([list[0]!.id]);
       expect(list[2]!.requires, list[2]!.id).toEqual([list[1]!.id]);
-      expect(places.some((place) => place.id === list[2]!.placeId), list[2]!.id).toBe(true);
+      expect(list[3]!.requires, list[3]!.id).toEqual([list[2]!.id]);
+      expect(places.some((place) => place.id === list[3]!.placeId), list[3]!.id).toBe(true);
     }
   });
 

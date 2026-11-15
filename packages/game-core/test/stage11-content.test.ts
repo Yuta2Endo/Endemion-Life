@@ -40,15 +40,17 @@ function withOne(adventure: AdventureDefinition): Readonly<Record<UniverseId, re
 }
 
 describe("Stage 11: контент", () => {
-  it("живой контент не содержит битых ссылок и повторов; у каждого мира три дороги", () => {
+  it("живой контент не содержит битых ссылок и повторов; у каждого мира четыре дороги", () => {
     expect(contentProblems()).toEqual([]);
     for (const universeId of UNIVERSE_IDS) {
       const list = adventuresOf(universeId);
-      expect(list.length, universeId).toBe(3);
+      expect(list.length, universeId).toBe(4);
       expect(list[1]!.requires, list[1]!.id).toEqual([list[0]!.id]);
       expect(list[2]!.requires, list[2]!.id).toEqual([list[1]!.id]);
+      expect(list[3]!.requires, list[3]!.id).toEqual([list[2]!.id]);
       expect(placesOf(universeId).some((place) => place.id === list[1]!.placeId), list[1]!.id).toBe(true);
       expect(placesOf(universeId).some((place) => place.id === list[2]!.placeId), list[2]!.id).toBe(true);
+      expect(placesOf(universeId).some((place) => place.id === list[3]!.placeId), list[3]!.id).toBe(true);
     }
   });
 

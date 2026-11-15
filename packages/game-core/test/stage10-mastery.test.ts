@@ -41,7 +41,7 @@ describe("Stage 10: освоение", () => {
 
   it("цель зачитывается один раз и не даёт золота, опыта и статов", () => {
     const state = adult();
-    state.adventure.discovered = ["df.ember-wall", "df.ash-cathedral", "df.sunken-bell"];
+    state.adventure.discovered = ["df.ember-wall", "df.ash-cathedral", "df.sunken-bell", "df.last-light"];
     const wealth = state.character.wealth;
     masteryYearly(state);
     expect(state.mastery.objectives).toContain("roads");
@@ -55,8 +55,8 @@ describe("Stage 10: освоение", () => {
 
   it("редкая цель требует все три условия, достижение пишется один раз и только в своём мире", () => {
     const state = adult();
-    state.adventure.discovered = ["df.ember-wall", "df.ash-cathedral", "df.sunken-bell"];
-    state.adventure.done = ["df.night-watch", "df.ash-relic", "df.bell-toll"];
+    state.adventure.discovered = ["df.ember-wall", "df.ash-cathedral", "df.sunken-bell", "df.last-light"];
+    state.adventure.done = ["df.night-watch", "df.ash-relic", "df.bell-toll", "df.last-vigil"];
     const skill = pathSkill(getUniverse("dark-fantasy"));
     state.character.skills[skill.id] = 80;
     const oneRoad = deepClone(state);
@@ -70,7 +70,7 @@ describe("Stage 10: освоение", () => {
     masteryYearly(missing);
     expect(missing.mastery.objectives).not.toContain("master-of-world");
 
-    state.adventure.discovered = ["df.ember-wall", "df.ash-cathedral", "df.sunken-bell"];
+    state.adventure.discovered = ["df.ember-wall", "df.ash-cathedral", "df.sunken-bell", "df.last-light"];
     const next = applyAction(state, { type: "advance" }).state;
     expect(next.mastery.skills).toContain(skill.id);
     expect(next.mastery.objectives).toContain("master-of-world");

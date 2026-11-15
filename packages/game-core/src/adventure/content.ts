@@ -14,32 +14,38 @@ const PLACES: Readonly<Record<UniverseId, readonly PlaceDefinition[]>> = {
   "dark-fantasy": [
     { id: "df.ember-wall", name: t("Тлеющая застава", "The Ember Wall"), text: t("Последняя стена перед Мглой. Фонари здесь не гасят никогда.", "The last wall before the Mist. The lamps here are never put out."), minAge: 14 },
     { id: "df.ash-cathedral", name: t("Собор Последнего Огня", "Cathedral of the Last Flame"), text: t("Пепел святых хранят под алтарём.", "The ashes of saints are kept beneath the altar."), minAge: 16 },
-    { id: "df.sunken-bell", name: t("Затонувшая звонница", "The Sunken Belfry"), text: t("Колокол под затопленной часовней звонит только в те ночи, когда Мгла отступает.", "The bell beneath the flooded chapel rings only on nights when the Mist recedes."), minAge: 18 }
+    { id: "df.sunken-bell", name: t("Затонувшая звонница", "The Sunken Belfry"), text: t("Колокол под затопленной часовней звонит только в те ночи, когда Мгла отступает.", "The bell beneath the flooded chapel rings only on nights when the Mist recedes."), minAge: 18 },
+    { id: "df.last-light", name: t("Последний огонь", "The Last Light"), text: t("Часовня на самом конце тракта, где лампа горит с той ночи, когда пришла Мгла.", "A chapel at the very end of the highway, where a lamp has burned since the night the Mist came."), minAge: 20 }
   ],
   isekai: [
     { id: "is.guild-hall", name: t("Зал Гильдии", "The Guild hall"), text: t("Доска контрактов, кружки эля и чужие карты подземелий.", "A contract board, mugs of ale and other people's dungeon maps."), minAge: 14 },
     { id: "is.whisper-wood", name: t("Шепчущий лес", "The Whispering Wood"), text: t("Лес, который Гильдия отмечает на картах красным.", "A wood the Guild marks in red on its maps."), minAge: 15 },
-    { id: "is.sunken-road", name: t("Затонувшая дорога", "The Sunken Road"), text: t("Старый тракт, который карты Гильдии до сих пор рисуют поверх болота.", "An old highway the Guild's maps still draw over the marsh."), minAge: 18 }
+    { id: "is.sunken-road", name: t("Затонувшая дорога", "The Sunken Road"), text: t("Старый тракт, который карты Гильдии до сих пор рисуют поверх болота.", "An old highway the Guild's maps still draw over the marsh."), minAge: 18 },
+    { id: "is.old-signpost", name: t("Старый указатель", "The old signpost"), text: t("Развилка, где сходятся три тракта и две карты Гильдии. Возчики говорят, что здесь дорога вспоминает, кем вы были.", "A fork where three highways and two Guild maps meet. Drivers say the road here remembers who you were."), minAge: 19 }
   ],
   murim: [
     { id: "mu.river-pass", name: t("Перевал Третьей реки", "The Third River pass"), text: t("Единственная тропа через горы, которую не стережёт таможня.", "The only mountain path the customs do not watch."), minAge: 14 },
     { id: "mu.beggar-yard", name: t("Двор Секты нищих", "The Beggars' yard"), text: t("Здесь знают всё, что происходит на дорогах.", "Here they know everything that happens on the roads."), minAge: 15 },
-    { id: "mu.iron-shrine", name: t("Железная кумирня", "The Iron Shrine"), text: t("Кумирня на перевале, где молятся не богам, а клинкам.", "A shrine on the pass where people pray not to gods but to blades."), minAge: 18 }
+    { id: "mu.iron-shrine", name: t("Железная кумирня", "The Iron Shrine"), text: t("Кумирня на перевале, где молятся не богам, а клинкам.", "A shrine on the pass where people pray not to gods but to blades."), minAge: 18 },
+    { id: "mu.sword-grave", name: t("Могила клинков", "The grave of swords"), text: t("Долина, где из земли торчат рукояти безымянных клинков. Сюда приходят те, кому нечего оставить после смерти.", "A valley where the hilts of nameless blades stand out of the earth. Those with nothing to leave behind come here."), minAge: 19 }
   ],
   xianxia: [
     { id: "xi.forbidden-path", name: t("Запретная тропа", "The forbidden path"), text: t("Тропа за дальним пиком, куда внешним ученикам ходить нельзя.", "A path beyond the far peak, forbidden to outer disciples."), minAge: 14 },
     { id: "xi.spirit-spring", name: t("Духовный источник", "The spirit spring"), text: t("Вода источника помнит всех, кто из неё пил.", "The spring's water remembers everyone who drank from it."), minAge: 16 },
-    { id: "xi.star-well", name: t("Звёздный колодец", "The star well"), text: t("Колодец на краю секты, в котором вода отражает небо не этого мира.", "A well at the sect's edge whose water reflects a sky not of this world."), minAge: 19 }
+    { id: "xi.star-well", name: t("Звёздный колодец", "The star well"), text: t("Колодец на краю секты, в котором вода отражает небо не этого мира.", "A well at the sect's edge whose water reflects a sky not of this world."), minAge: 19 },
+    { id: "xi.mirror-terrace", name: t("Зеркальная терраса", "The mirror terrace"), text: t("Терраса над облаками, где полированный камень отражает небо, которого нет над сектой.", "A terrace above the clouds, where polished stone reflects a sky that is not above the sect."), minAge: 20 }
   ],
   hunter: [
     { id: "hu.gate-d", name: t("Врата D у Мапхо", "The D-rank Gate at Mapo"), text: t("Синий разлом над пустырём. Ассоциация оценила его как D.", "A blue rift over a wasteland. The Association rated it D."), minAge: 16 },
     { id: "hu.association", name: t("Отделение Ассоциации", "The Association office"), text: t("Лицензии, ранги и очередь на регистрацию добычи.", "Licences, ranks and the queue to register loot."), minAge: 16 },
-    { id: "hu.red-gate", name: t("Красные Врата", "The Red Gate"), text: t("Разлом над Ханганом, который Ассоциация закрыла для всех, кроме S-ранга.", "A rift over the Han that the Association has closed to everyone but S-ranks."), minAge: 19 }
+    { id: "hu.red-gate", name: t("Красные Врата", "The Red Gate"), text: t("Разлом над Ханганом, который Ассоциация закрыла для всех, кроме S-ранга.", "A rift over the Han that the Association has closed to everyone but S-ranks."), minAge: 19 },
+    { id: "hu.gate-zero", name: t("Нулевые Врата", "Gate Zero"), text: t("Заброшенная станция метро, где стоят Врата, которые Ассоциация так и не смогла закрыть. По ночам они повторяют чужой рейд.", "An abandoned subway station where a Gate the Association could never close still stands. At night it replays someone else's raid."), minAge: 20 }
   ],
   academy: [
     { id: "ac.court-stair", name: t("Парадная лестница дворца", "The palace's grand stair"), text: t("По этой лестнице проходят только с приглашением.", "Only those with an invitation walk this stair."), minAge: 16 },
     { id: "ac.duelling-yard", name: t("Дуэльный двор", "The duelling yard"), text: t("Песок двора помнит больше крови, чем балов.", "The yard's sand remembers more blood than balls."), minAge: 16 },
-    { id: "ac.observatory", name: t("Башня обсерватории", "The observatory tower"), text: t("Верхняя башня академии, где карты звёзд сверяют с картами придворных.", "The academy's upper tower, where star charts are checked against court charts."), minAge: 19 }
+    { id: "ac.observatory", name: t("Башня обсерватории", "The observatory tower"), text: t("Верхняя башня академии, где карты звёзд сверяют с картами придворных.", "The academy's upper tower, where star charts are checked against court charts."), minAge: 19 },
+    { id: "ac.rooftop", name: t("Крыша академии", "The academy rooftop"), text: t("Плоская крыша над обсерваторией, где небо ближе, чем кажется, и ректор иногда читает его без приборов.", "A flat roof above the observatory, where the sky is closer than it seems and the rector sometimes reads it without instruments."), minAge: 20 }
   ]
 };
 
@@ -144,6 +150,47 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           ]
         }
       ]
+    },
+    {
+      id: "df.last-vigil",
+      placeId: "df.last-light",
+      requires: ["df.bell-toll"],
+      name: t("Последний дозор", "The last vigil"),
+      text: t("Сестра Эловен держит последнюю лампу на тракте. Орден хочет унести её за стену, но на дороге всё ещё теряются люди.", "Sister Elowen keeps the last lamp on the highway. The Order wants it carried behind the wall, but people are still lost on the road."),
+      minAge: 20,
+      steps: [
+        {
+          id: "arrival",
+          text: t("У часовни сестра Эловен поднимает лампу так, чтобы свет упал на ваше лицо.", "At the chapel Sister Elowen raises the lamp so its light falls on your face."),
+          choices: [
+            { id: "greet", text: t("Назвать себя и спросить о лампе", "Give your name and ask about the lamp"), success: { text: t("Она называет вас дозорным, хотя вы не давали клятвы, и отворяет дверь.", "She calls you a watcher, though you swore no oath, and opens the door."), effects: [fx.xp(10), fx.faction("order-of-ash", 2)], next: "talk" } }
+          ]
+        },
+        {
+          id: "talk",
+          text: t("Эловен рассказывает о сестре Мире, ушедшей по тракту в ночь, когда затонувший колокол звонил последний раз. Она слышит этот звон во сне.", "Elowen speaks of her sister Mira, who walked the highway on the night the sunken bell last rang. She hears that toll in her sleep."),
+          choices: [
+            { id: "listen", text: t("Слушать, пока она не назовёт имя", "Listen until she says the name"), check: check(["willpower", "wisdom"], 13, 0, { skill: "oathcraft" }), success: { text: t("Она называет Миру и отдаёт ключ от часовни: решать, где стоять огню, будете вы.", "She names Mira and gives you the chapel key: you will decide where the fire stands."), effects: [fx.xp(20), fx.skill("oathcraft", 2), fx.faction("order-of-ash", 2)], next: "test" }, failure: { text: t("Звон в её рассказе становится вашим. Вы приходите в себя на полу часовни.", "The toll in her story becomes yours. You come to on the chapel floor."), effects: [fx.health(-10), fx.meter("corruption", 4)], fail: true } },
+            { id: "vow", text: t("Повторить клятву дозора", "Repeat the watch's oath"), requires: [when.ability("hollow-mark")], success: { text: t("Эловен узнаёт метку и говорит без обиняков: лампа должна идти по дороге.", "Elowen recognises the mark and speaks plainly: the lamp must walk the road."), effects: [fx.xp(15), fx.faction("order-of-ash", 3)], next: "test" } }
+          ]
+        },
+        {
+          id: "test",
+          text: t("Со стороны Мглы идут огни: полые несут фонари, которых у них не было. Лампу нужно пронести по тракту до верстового камня и вернуть горящей.", "Lights come from the Mist: hollows carry lamps they never had. The lamp must be carried down the highway to the milestone and brought back burning."),
+          choices: [
+            { id: "carry", text: t("Понести лампу самому", "Carry the lamp yourself"), check: check(["willpower", "strength"], 14, 0, { skill: "oathcraft" }), success: { text: t("Огонь не гаснет. Полые отступают от света, и верстовой камень оказывается ближе, чем вы думали.", "The fire does not go out. The hollows retreat from the light, and the milestone is closer than you thought."), effects: [fx.xp(40), fx.skill("oathcraft", 3), fx.meter("ember", 8)], next: "choice" }, failure: { text: t("Ветер с Мглы задувает фитиль. Вы возвращаетесь с пустыми руками и обожжёнными ладонями.", "Wind from the Mist snuffs the wick. You return empty-handed, palms burned."), effects: [fx.health(-20), fx.meter("corruption", 5)], fail: true } },
+            { id: "drive", text: t("Погасить чужие фонари и идти в темноте", "Put out the strangers' lamps and walk in the dark"), check: check(["wisdom"], 13, 0, { skill: "hollow-hunting" }), success: { text: t("Вы гасите один фонарь за другим. Мгла теряет дорогу и откатывается от часовни.", "You snuff one lamp after another. The Mist loses the road and rolls back from the chapel."), effects: [fx.xp(30), fx.skill("hollow-hunting", 3), fx.meter("corruption", -4)], next: "choice" }, failure: { text: t("Фонари оказываются глазами. Вы едва успеваете отступить к часовне.", "The lamps turn out to be eyes. You barely retreat to the chapel."), effects: [fx.health(-15)], fail: true } }
+          ]
+        },
+        {
+          id: "choice",
+          text: t("На рассвете Эловен спрашивает, где лампа будет стоять дальше.", "At dawn Elowen asks where the lamp will stand from now on."),
+          choices: [
+            { id: "wall", text: t("Унести лампу за стену", "Carry the lamp behind the wall"), success: { text: t("Орден принимает огонь и ставит у него своих людей. Эловен остаётся на тракте одна, но лампа будет гореть ещё сто лет.", "The Order takes the fire and sets its own people by it. Elowen stays alone on the highway, but the lamp will burn another hundred years."), effects: [fx.xp(30), fx.faction("order-of-ash", 7), fx.rep(4), fx.wealth(15)], complete: true } },
+            { id: "road", text: t("Оставить лампу на тракте и позвонить в колокол", "Leave the lamp on the highway and ring the bell"), requires: [when.relic("drowned-bell")], success: { text: t("Вы вынимаете из-под плаща язык затонувшего колокола и вешаете его над дверью. Теперь лампа звонит тем, кто сбился с дороги, и Мгла обходит свет стороной.", "You take the drowned bell's clapper from under your cloak and hang it over the door. Now the lamp tolls for those who have lost the road, and the Mist goes around the light."), effects: [fx.xp(40), fx.faction("order-of-ash", 3), fx.rep(6), fx.meter("corruption", -6), fx.meter("ember", 10)], complete: true } }
+          ]
+        }
+      ]
     }
   ],
   isekai: [
@@ -242,6 +289,47 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           choices: [
             { id: "guild", text: t("Отдать журнал Гильдии", "Give the ledger to the Guild"), success: { text: t("Гильдия закрывает дело. Ваше имя вписывают в отчёт.", "The Guild closes the case. Your name goes into the report."), effects: [fx.xp(30), fx.wealth(30), fx.faction("guild", 6), fx.rep(4)], complete: true } },
             { id: "league", text: t("Продать журнал Лиге", "Sell the ledger to the League"), success: { text: t("Перед сделкой вы вырываете страницу со своей записью и оставляете её себе. Лига платит больше, чем Гильдия. Клерк не спрашивает, откуда журнал.", "Before the deal you tear out the page with your own entry and keep it. The League pays more than the Guild. The clerk does not ask where the ledger came from."), effects: [fx.xp(20), fx.wealth(45), fx.faction("merchant-league", 6), fx.faction("guild", -3), fx.relic("caravan-ledger")], complete: true } }
+          ]
+        }
+      ]
+    },
+    {
+      id: "is.road-home",
+      placeId: "is.old-signpost",
+      requires: ["is.lost-caravan"],
+      name: t("Дорога домой", "The road home"),
+      text: t("У старого указателя стоит фургон с гербом Лиги. Возчик Руй ждёт последнюю телегу, которой нет ни на одной карте.", "A wagon with the League's crest stands at the old signpost. Caravan master Rui waits for the last cart, which is on no map at all."),
+      minAge: 19,
+      steps: [
+        {
+          id: "arrival",
+          text: t("Руй держит вожжи обеими руками, хотя лошадей уже распрягли.", "Rui grips the reins with both hands, though the horses have already been unhitched."),
+          choices: [
+            { id: "hail", text: t("Окликнуть его по имени", "Call him by name"), success: { text: t("Он вздрагивает, потом кланяется: имя слышали в последний раз на затонувшей дороге.", "He flinches, then bows: the last time anyone said his name was on the sunken road."), effects: [fx.xp(10), fx.faction("merchant-league", 2)], next: "talk" } }
+          ]
+        },
+        {
+          id: "talk",
+          text: t("Руй рассказывает, как обоз вошёл в копию зала Гильдии. Люди вернулись, а книги Лиги говорят, что они никогда не уезжали. Его клеймо на руке ничего не доказывает.", "Rui tells how the caravan walked into a copy of the Guild hall. The people came back, but the League's books say they never left. The brand on his hand proves nothing."),
+          choices: [
+            { id: "listen", text: t("Слушать и сверять его рассказ с картой", "Listen and check his story against the map"), check: check(["intelligence", "wisdom"], 13, 0, { skill: "guild-craft" }), success: { text: t("На карте находится место, которого не было: развилка сдвинулась на полдня пути.", "The map shows a place that was not there: the fork has moved half a day's walk."), effects: [fx.xp(20), fx.skill("guild-craft", 2), fx.faction("merchant-league", 2)], next: "test" }, failure: { text: t("Чем дольше он говорит, тем меньше остаётся на карте. Вы отступаете, пока не поздно.", "The longer he speaks, the less remains on the map. You step back before it is too late."), effects: [fx.health(-10), fx.meter("system-favor", -3)], fail: true } },
+            { id: "brand", text: t("Показать печать Лиги", "Show the League's seal"), requires: [when.faction("merchant-league", 12)], success: { text: t("Руй видит печать и говорит быстрее: у него остался один фургон и одна ночь.", "Rui sees the seal and speaks faster: he has one wagon and one night left."), effects: [fx.xp(15), fx.faction("merchant-league", 3)], next: "test" } }
+          ]
+        },
+        {
+          id: "test",
+          text: t("Дорога под фургоном становится мягкой, как вода. Указатель показывает сразу на три стороны, и только одна из них ведёт к настоящему тракту.", "The road softens under the wagon like water. The signpost points three ways at once, and only one leads to the real highway."),
+          choices: [
+            { id: "lead", text: t("Вести фургон по следам колёс", "Lead the wagon along the wheel ruts"), check: check(["wisdom"], 13, 0, { skill: "survival" }), success: { text: t("Следы держатся твёрдо. К рассвету фургон стоит на настоящей дороге.", "The ruts hold firm. By dawn the wagon stands on the real road."), effects: [fx.xp(35), fx.skill("survival", 3)], next: "choice" }, failure: { text: t("Дорога уходит из-под колёс. Вы вытаскиваете фургон из трясины без груза.", "The road slips from under the wheels. You drag the wagon out of the mire empty."), effects: [fx.health(-15)], fail: true } },
+            { id: "measure", text: t("Измерить развилку и переставить указатель", "Measure the fork and move the signpost"), check: check(["intelligence"], 14, 0, { skill: "invention" }), success: { text: t("Указатель поворачивается с сухим щелчком. Фургон проходит там, где дорога настоящая.", "The signpost turns with a dry click. The wagon passes where the road is real."), effects: [fx.xp(35), fx.skill("invention", 3)], next: "choice" }, failure: { text: t("Стрелка ломается в руках. Приходится идти назад по памяти.", "The pointer breaks in your hands. You have to walk back from memory."), effects: [fx.health(-10), fx.meter("system-favor", -3)], fail: true } }
+          ]
+        },
+        {
+          id: "choice",
+          text: t("Настоящий тракт впереди. Руй спрашивает, куда везти последний фургон.", "The real highway lies ahead. Rui asks where the last wagon should go."),
+          choices: [
+            { id: "guild", text: t("Вернуть фургон Гильдии", "Bring the wagon back to the Guild"), success: { text: t("Клерк принимает груз и ставит печать на пустой лист. Руй получает долю, Гильдия — товар, а дорога — ещё одну запись.", "The clerk takes the load and stamps an empty sheet. Rui gets his share, the Guild the goods, and the road one more entry."), effects: [fx.xp(30), fx.wealth(25), fx.faction("guild", 7), fx.rep(4)], complete: true } },
+            { id: "home", text: t("Отдать Руй страницу из журнала и отпустить его", "Give Rui his page from the ledger and let him go"), requires: [when.relic("caravan-ledger")], success: { text: t("Вы находите в журнале страницу с его именем и отдаёте ему. Руй рвёт её над развилкой, и дорога отпускает фургон. Лига теряет возчика, но не человека.", "You find the page bearing his name in the ledger and give it to him. Rui tears it over the fork, and the road releases the wagon. The League loses a driver, but not a man."), effects: [fx.xp(40), fx.wealth(20), fx.faction("merchant-league", 5), fx.faction("guild", -2), fx.karma(5)], complete: true } }
           ]
         }
       ]
@@ -346,6 +434,47 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           ]
         }
       ]
+    },
+    {
+      id: "mu.nameless-blade",
+      placeId: "mu.sword-grave",
+      requires: ["mu.shrine-debt"],
+      name: t("Безымянный клинок", "The nameless blade"),
+      text: t("Хранитель кумирни, у которого сгорело имя, стережёт могилу клинков. Один из них начал звать его по ночам.", "The shrine keeper whose name burned with the tablets guards the grave of swords. One of them has begun calling him at night."),
+      minAge: 19,
+      steps: [
+        {
+          id: "arrival",
+          text: t("В долине из земли торчат рукояти. Хранитель сидит между ними и не поднимает головы.", "Hilts stand out of the earth across the valley. The keeper sits among them and does not raise his head."),
+          choices: [
+            { id: "bow", text: t("Поклониться клинкам и хранителю", "Bow to the blades and the keeper"), success: { text: t("Он отвечает на поклон и освобождает место у ближнего клинка.", "He returns the bow and makes room by the nearest blade."), effects: [fx.xp(10), fx.rep(2)], next: "talk" } }
+          ]
+        },
+        {
+          id: "talk",
+          text: t("Хранитель говорит, что имя его сгорело вместе с дощечками. Клинки помнят имена лучше людей, и один из них зовёт его каждую ночь.", "The keeper says his name burned with the tablets. Blades remember names better than people, and one of them calls him every night."),
+          choices: [
+            { id: "listen", text: t("Слушать клинок вместе с ним", "Listen to the blade with him"), check: check(["wisdom"], 13, 0, { skill: "inner-cultivation" }), success: { text: t("В звоне железа слышится слог. Хранитель вздрагивает: это начало его имени.", "A syllable sounds in the ring of iron. The keeper flinches: it is the beginning of his name."), effects: [fx.xp(20), fx.skill("inner-cultivation", 2)], next: "test" }, failure: { text: t("Звон идёт по меридианам не туда. Вас выносит на край долины.", "The ring runs the wrong way through your meridians. You are carried to the valley's edge."), effects: [fx.health(-10), fx.meter("qi-deviation", 4)], fail: true } },
+            { id: "debt", text: t("Назвать долг, который привёл вас сюда", "Name the debt that brought you here"), requires: [when.faction("orthodox-alliance", 15)], success: { text: t("Хранитель кивает: Союз всё ещё помнит кумирню. Он разрешает пройти к клинку.", "The keeper nods: the Alliance still remembers the shrine. He lets you pass to the blade."), effects: [fx.xp(15), fx.faction("orthodox-alliance", 3)], next: "test" } }
+          ]
+        },
+        {
+          id: "test",
+          text: t("Клинок выходит из земли на ладонь и поёт имя. Чтобы услышать его целиком, нужно пройти ряд, не обнажая стали.", "The blade rises a hand's width from the earth and sings a name. To hear it whole, one must walk the row without drawing steel."),
+          choices: [
+            { id: "walk", text: t("Пройти между клинками", "Walk between the blades"), check: check(["willpower", "agility"], 14, 0, { skill: "lightness" }), success: { text: t("Ни один клинок не поднимается против вас. Имя звучит целиком и остаётся в воздухе.", "No blade rises against you. The name sounds whole and stays in the air."), effects: [fx.xp(40), fx.skill("lightness", 3)], next: "choice" }, failure: { text: t("Один клинок всё-таки выходит из земли. Вы уходите с порезом от плеча до локтя.", "One blade leaves the earth after all. You walk away with a cut from shoulder to elbow."), effects: [fx.health(-20), fx.meter("qi-deviation", 5)], fail: true } },
+            { id: "pull", text: t("Выдернуть клинок и заставить его замолчать", "Pull the blade and make it silent"), check: check(["strength"], 14, 0, { skill: "martial-arts" }), success: { text: t("Клинок выходит с одного рывка. Имя остаётся на лезвии, как насечка.", "The blade comes free in one pull. The name stays on the steel like a notch."), effects: [fx.xp(35), fx.skill("martial-arts", 3)], next: "choice" }, failure: { text: t("Клинок не поддаётся. Отдача бьёт в ладони и в грудь.", "The blade will not yield. The recoil strikes your palms and chest."), effects: [fx.health(-20)], fail: true } }
+          ]
+        },
+        {
+          id: "choice",
+          text: t("Хранитель держит клинок и ждёт, кому его отдать.", "The keeper holds the blade and waits to hear whose it will be."),
+          choices: [
+            { id: "alliance", text: t("Отдать клинок Праведному союзу", "Give the blade to the Orthodox Alliance"), success: { text: t("Союз принимает клинок и записывает хранителя в свидетели. Имя остаётся у них, а не у него.", "The Alliance takes the blade and writes the keeper down as a witness. The name stays with them, not with him."), effects: [fx.xp(30), fx.faction("orthodox-alliance", 7), fx.rep(4), fx.wealth(15)], complete: true } },
+            { id: "nameless", text: t("Оставить клинок безымянным и вернуть имя хранителю", "Leave the blade nameless and give the keeper his name back"), requires: [when.relic("iron-shrine-tablet")], success: { text: t("Вы переворачиваете железную дощечку и вписываете на обороте имя, которое пропел клинок. Хранитель берёт клинок и впервые слышит своё имя — не ваше. Нищие запомнят, Союз — нет.", "You turn the iron tablet over and write on its back the name the blade sang. The keeper takes the blade and hears his own name for the first time — not yours. The beggars will remember; the Alliance will not."), effects: [fx.xp(40), fx.meter("qi-deviation", -6), fx.faction("beggars-sect", 4), fx.karma(4), fx.skill("martial-arts", 3)], complete: true } }
+          ]
+        }
+      ]
     }
   ],
   xianxia: [
@@ -442,6 +571,47 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           choices: [
             { id: "tell", text: t("Рассказать правду", "Tell the truth"), success: { text: t("Секта записывает вас в число тех, кого колодец признал. Чувство неба остаётся с вами.", "The sect writes you among those the well acknowledged. The sense of the sky stays with you."), effects: [fx.xp(30), fx.faction("cloud-peak", 7), fx.rep(4), fx.ability("spirit-sense")], complete: true } },
             { id: "keep", text: t("Оставить отражение себе", "Keep the reflection"), success: { text: t("Вы прячете чашу с отражением под одеждой и уносите чужое небо в груди. Секта не узнает, но Небеса — да.", "You hide the cup with the reflection under your robe and carry another sky in your chest. The sect will not know, but the Heavens will."), effects: [fx.xp(20), fx.track(8), fx.meter("karmic-debt", 6), fx.faction("cloud-peak", -3), fx.relic("star-well-cup")], complete: true } }
+          ]
+        }
+      ]
+    },
+    {
+      id: "xi.sky-beneath",
+      placeId: "xi.mirror-terrace",
+      requires: ["xi.star-trial"],
+      name: t("Небо под миром", "The sky beneath"),
+      text: t("Старейшина Бай ждёт на зеркальной террасе. Его отражение осталось в звёздном колодце много лет назад и теперь поднимается по камню навстречу.", "Elder Bai waits on the mirror terrace. His reflection stayed in the star well years ago and now climbs the stone to meet him."),
+      minAge: 20,
+      steps: [
+        {
+          id: "arrival",
+          text: t("Камень террасы тёплый, как вода. В нём отражается небо без единой звезды.", "The stone of the terrace is warm as water. It reflects a sky without a single star."),
+          choices: [
+            { id: "step", text: t("Ступить на террасу и поклониться старейшине", "Step onto the terrace and bow to the elder"), success: { text: t("Бай отвечает на поклон и указывает на своё отражение, стоящее в десяти шагах.", "Bai returns the bow and points to his reflection, standing ten paces away."), effects: [fx.xp(10), fx.faction("cloud-peak", 2)], next: "talk" } }
+          ]
+        },
+        {
+          id: "talk",
+          text: t("Бай говорит, что колодец показал небо под миром. Он вошёл в него первым и оставил там отражение, чтобы секта получила время. Теперь отражение хочет вернуться.", "Bai says the well showed a sky beneath the world. He entered first and left his reflection there so the sect would have time. Now the reflection wants to return."),
+          choices: [
+            { id: "listen", text: t("Слушать, что говорит отражение", "Listen to what the reflection says"), check: check(["wisdom", "willpower"], 14, 0, { skill: "cultivation" }), success: { text: t("Отражение говорит голосом Бая, но слова принадлежат небу. Вы понимаете, чего оно просит.", "The reflection speaks in Bai's voice, but the words belong to the sky. You understand what it asks."), effects: [fx.xp(20), fx.skill("cultivation", 2), fx.meter("dao-heart", 4)], next: "test" }, failure: { text: t("Голос заполняет меридианы. Вы приходите в себя у края террасы.", "The voice fills your meridians. You come to at the terrace's edge."), effects: [fx.health(-15), fx.meter("karmic-debt", 4)], fail: true } },
+            { id: "elder", text: t("Сослаться на волю старейшин", "Cite the will of the elders"), requires: [when.faction("cloud-peak", 25)], success: { text: t("Бай склоняет голову: воля секты сильнее его собственной. Он отходит от края.", "Bai bows his head: the sect's will is stronger than his own. He steps back from the edge."), effects: [fx.xp(15), fx.faction("cloud-peak", 3)], next: "test" } }
+          ]
+        },
+        {
+          id: "test",
+          text: t("Отражение стоит на дальнем краю. Камень под ним поднимается, и терраса начинает отражать верхнюю сторону неба.", "The reflection stands at the far edge. The stone rises beneath it, and the terrace begins to reflect the upper side of the sky."),
+          choices: [
+            { id: "cross", text: t("Пройти по камню, не встречаясь с отражением глазами", "Cross the stone without meeting the reflection's eyes"), check: check(["willpower"], 14, 0, { skill: "cultivation" }), success: { text: t("Вы доходите до края. Отражение отступает на полшага и ждёт.", "You reach the edge. The reflection retreats half a step and waits."), effects: [fx.xp(40), fx.skill("cultivation", 3)], next: "choice" }, failure: { text: t("Взгляд отражения останавливает вас на середине. Камень больше не держит.", "The reflection's gaze stops you halfway. The stone no longer holds."), effects: [fx.health(-20), fx.meter("karmic-debt", 6)], fail: true } },
+            { id: "seal", text: t("Закрепить край террасы талисманами", "Fix the terrace's edge with talismans"), check: check(["intelligence"], 13, 0, { skill: "talismans" }), success: { text: t("Четыре бумаги ложатся по углам. Небо под камнем перестаёт подниматься.", "Four papers settle at the corners. The sky beneath the stone stops rising."), effects: [fx.xp(35), fx.skill("talismans", 3)], next: "choice" }, failure: { text: t("Талисманы вспыхивают и обращаются пеплом. Бай оттаскивает вас от края.", "The talismans flare and turn to ash. Bai pulls you back from the edge."), effects: [fx.health(-10)], fail: true } }
+          ]
+        },
+        {
+          id: "choice",
+          text: t("Бай спрашивает, что делать с небом под миром и с тем, кто его сторожит.", "Bai asks what should be done with the sky beneath the world and the one who guards it."),
+          choices: [
+            { id: "sect", text: t("Закрыть террасу для секты", "Seal the terrace for the sect"), success: { text: t("Вы ставите печать на камень. Секта получает тихую террасу, Бай — отражение, которое больше не поднимается. Небо под миром остаётся непрочитанным.", "You set the seal on the stone. The sect gains a quiet terrace, Bai a reflection that no longer rises. The sky beneath the world stays unread."), effects: [fx.xp(30), fx.faction("cloud-peak", 7), fx.rep(4), fx.meter("dao-heart", 6)], complete: true } },
+            { id: "cup", text: t("Напоить отражение из чаши", "Give the reflection drink from the cup"), requires: [when.relic("star-well-cup")], success: { text: t("Вы поднимаете чашу звёздного колодца. Отражение пьёт и отпускает Бая. Небо под миром закрывается, и долг, который он нёс, гаснет вместе с ним.", "You raise the cup of the star well. The reflection drinks and releases Bai. The sky beneath the world closes, and the debt he carried goes out with it."), effects: [fx.xp(40), fx.meter("dao-heart", 10), fx.meter("karmic-debt", -8), fx.faction("cloud-peak", -2), fx.track(6)], complete: true } }
           ]
         }
       ]
@@ -544,6 +714,47 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           ]
         }
       ]
+    },
+    {
+      id: "hu.gate-remembers",
+      placeId: "hu.gate-zero",
+      requires: ["hu.red-gate-raid"],
+      name: t("Врата помнят", "The Gate remembers"),
+      text: t("Инспектор Со из Ассоциации стережёт Нулевые Врата. Каждую ночь они заново проигрывают рейд на Красные Врата — с теми же голосами и теми же телами.", "Association inspector Seo watches Gate Zero. Every night it replays the Red Gate raid — with the same voices and the same bodies."),
+      minAge: 20,
+      steps: [
+        {
+          id: "arrival",
+          text: t("На платформе пахнет озоном. Инспектор Со стоит у барьера с планшетом, на котором нет ни одной записи.", "The platform smells of ozone. Inspector Seo stands by the barrier with a tablet that holds no records at all."),
+          choices: [
+            { id: "show", text: t("Назвать себя и показать старый жетон", "Give your name and show the old token"), success: { text: t("Со сверяет жетон с памятью, а не с базой, и отступает от барьера.", "Seo checks the token against memory rather than the database and steps away from the barrier."), effects: [fx.xp(10), fx.faction("association", 2)], next: "talk" } }
+          ]
+        },
+        {
+          id: "talk",
+          text: t("Со говорит, что её брат был в первом рейде на Красные Врата. Врата отвечают его голосом, а отчёт Ассоциации утверждает, что не выжил никто. Она просит войти и понять, помнят Врата или копируют.", "Seo says her brother was in the first Red Gate raid. The Gate answers in his voice, while the Association's report says no one survived. She asks you to go in and learn whether the Gate remembers or copies."),
+          choices: [
+            { id: "listen", text: t("Слушать запись вместе с ней", "Listen to the recording with her"), check: check(["wisdom"], 13, 0, { skill: "mana-control" }), success: { text: t("Под помехами слышен второй голос — не брата, а самой Со. Запись сделана до её рождения.", "Beneath the static is a second voice — not her brother's, but Seo's own. The recording was made before she was born."), effects: [fx.xp(20), fx.skill("mana-control", 2), fx.faction("association", 2)], next: "test" }, failure: { text: t("Голос брата звучит слишком близко. Со выключает запись и выводит вас наверх.", "Her brother's voice sounds too close. Seo cuts the recording and walks you upstairs."), effects: [fx.health(-10), fx.meter("gate-threat", 5)], fail: true } },
+            { id: "badge", text: t("Показать допуск Ассоциации", "Show your Association clearance"), requires: [when.faction("association", 20)], success: { text: t("Со просматривает допуск и отдаёт вам ключ от служебного спуска.", "Seo checks the clearance and gives you the key to the service stair."), effects: [fx.xp(15), fx.faction("association", 3)], next: "test" } }
+          ]
+        },
+        {
+          id: "test",
+          text: t("Нулевые Врата открываются по расписанию. Внутри рейд повторяется с начала, и ядро записи находится там, где в прошлый раз стоял страж.", "Gate Zero opens on schedule. Inside, the raid starts over, and the recording core stands where the guardian stood last time."),
+          choices: [
+            { id: "enter", text: t("Войти и пробиться к ядру", "Enter and fight through to the core"), check: check(["strength", "agility"], 14, 0, { skill: "dungeon-combat" }), success: { text: t("Страж падает так же, как в прошлый раз. Ядро остаётся тёплым под ладонью.", "The guardian falls the same way as last time. The core stays warm under your palm."), effects: [fx.xp(40), fx.skill("dungeon-combat", 3), fx.meter("gate-threat", -5)], next: "choice" }, failure: { text: t("Петля начинается заново. Вас выносит на платформу вместе с прибывшей группой.", "The loop starts over. You are carried onto the platform with the arriving party."), effects: [fx.health(-25)], fail: true } },
+            { id: "trace", text: t("Проследить сигнал ядра снаружи", "Trace the core's signal from outside"), check: check(["intelligence"], 14, 0, { skill: "lore" }), success: { text: t("Сигнал ведёт не вглубь, а вверх: ядро закреплено под потолком платформы.", "The signal leads not deeper but up: the core is fixed beneath the platform ceiling."), effects: [fx.xp(35), fx.skill("lore", 3)], next: "choice" }, failure: { text: t("Сигнал обрывается, едва вы его находите. Барьер отвечает вспышкой.", "The signal cuts out as soon as you find it. The barrier answers with a flare."), effects: [fx.health(-15), fx.meter("gate-threat", 5)], fail: true } }
+          ]
+        },
+        {
+          id: "choice",
+          text: t("Ядро в руках. Со ждёт у барьера, а Ассоциация ждёт доклада.", "The core is in your hands. Seo waits at the barrier, and the Association waits for a report."),
+          choices: [
+            { id: "report", text: t("Закрыть Врата по протоколу", "Close the Gate by protocol"), success: { text: t("Вы сдаёте ядро и подписываете отчёт. Нулевые Врата гаснут, запись уходит в архив, а голос брата Со больше не звучит.", "You hand over the core and sign the report. Gate Zero goes dark, the recording goes to the archive, and Seo's brother's voice is heard no more."), effects: [fx.xp(30), fx.faction("association", 7), fx.meter("fame", 6), fx.rep(4), fx.wealth(20)], complete: true } },
+            { id: "remember", text: t("Вернуть ядро Вратам и записать имена", "Return the core to the Gate and record the names"), requires: [when.relic("red-gate-core")], success: { text: t("Вы вставляете осколок ядра в приёмник. Голоса замолкают, а на экране остаются имена — все, включая брата Со. Ассоциация получает отчёт, который не сможет вычеркнуть.", "You set the core's shard into the receiver. The voices fall silent, and names remain on the screen — all of them, including Seo's brother. The Association receives a report it cannot strike out."), effects: [fx.xp(40), fx.meter("gate-threat", -12), fx.karma(6), fx.rep(5), fx.faction("association", 3)], complete: true } }
+          ]
+        }
+      ]
     }
   ],
   academy: [
@@ -643,6 +854,47 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           choices: [
             { id: "court", text: t("Отдать карту двору", "Give the chart to the court"), success: { text: t("Двор принимает карту и не спрашивает о недостающей звезде.", "The court takes the chart and does not ask about the missing star."), effects: [fx.xp(30), fx.faction("imperial-court", 7), fx.meter("court-favor", 5), fx.rep(4)], complete: true } },
             { id: "tower", text: t("Отдать карту Магической башне", "Give the chart to the Mage Tower"), success: { text: t("Башня забирает карту и снимает для вас копию. Двор запомнит, что звезда пропала не сама.", "The Tower takes the chart and makes you a copy. The court will remember the star did not vanish on its own."), effects: [fx.xp(20), fx.faction("magic-tower", 7), fx.meter("court-favor", -3), fx.meter("scandal", 3), fx.relic("star-chart")], complete: true } }
+          ]
+        }
+      ]
+    },
+    {
+      id: "ac.unwritten-constellation",
+      placeId: "ac.rooftop",
+      requires: ["ac.star-chart"],
+      name: t("Ненаписанное созвездие", "The unwritten constellation"),
+      text: t("Ректор Аврелия зовёт на крышу: на пустой карте каждую ночь проступает созвездие, которого нет ни в одном каталоге. Двор и Башня уже спрашивают о нём.", "Rector Aurelia calls you to the roof: every night a constellation appears on a blank chart that is in no catalogue. The court and the Tower are already asking about it."),
+      minAge: 20,
+      steps: [
+        {
+          id: "arrival",
+          text: t("Винтовая лестница выходит на плоскую крышу. Аврелия стоит у телескопа, но смотрит не в него.", "The spiral stair opens onto a flat roof. Aurelia stands by the telescope but does not look into it."),
+          choices: [
+            { id: "climb", text: t("Подняться и назвать себя", "Climb up and give your name"), success: { text: t("Она отступает от телескопа и протягивает вам пустой лист, на котором уже проступают точки.", "She steps away from the telescope and hands you a blank sheet on which points are already appearing."), effects: [fx.xp(10), fx.meter("court-favor", 2)], next: "talk" } }
+          ]
+        },
+        {
+          id: "talk",
+          text: t("Аврелия признаётся: одна звезда на придворной карте была стёрта её рукой, чтобы защитить ученика. Теперь небо пишет её обратно, и ректор не знает, кто из них прав.", "Aurelia admits it: one star on the court chart was scraped away by her own hand to protect a student. Now the sky is writing it back, and the rector does not know which of them is right."),
+          choices: [
+            { id: "listen", text: t("Выслушать историю до конца", "Hear the story to the end"), check: check(["intelligence", "wisdom"], 13, 0, { skill: "arcana" }), success: { text: t("Она называет имя ученика и показывает, где звезда стояла. На пустом листе появляется та же точка.", "She names the student and shows where the star stood. The same point appears on the blank sheet."), effects: [fx.xp(20), fx.skill("arcana", 2), fx.meter("court-favor", 2)], next: "test" }, failure: { text: t("История путается в именах. Аврелия замолкает и прячет лист.", "The story tangles in its names. Aurelia falls silent and hides the sheet."), effects: [fx.meter("scandal", 4)], fail: true } },
+            { id: "council", text: t("Сослаться на решение Башни", "Cite the Tower's ruling"), requires: [when.faction("magic-tower", 15)], success: { text: t("Ректор принимает печать Башни и разрешает записать созвездие под её надзором.", "The rector accepts the Tower's seal and permits the constellation to be recorded under its watch."), effects: [fx.xp(15), fx.faction("magic-tower", 3)], next: "test" } }
+          ]
+        },
+        {
+          id: "test",
+          text: t("До рассвета созвездие нужно перенести на карту. Чернила не ложатся на точку, пока у звезды нет имени, а имя не пишется без свидетеля.", "Before dawn the constellation must be copied onto the chart. The ink will not take the point until the star has a name, and no name can be written without a witness."),
+          choices: [
+            { id: "draw", text: t("Чертить по памяти и назвать звезду самому", "Draw from memory and name the star yourself"), check: check(["intelligence"], 14, 0, { skill: "arcana" }), success: { text: t("Линия ложится ровно. Звезда получает имя, которое никто не сможет отнять.", "The line falls true. The star receives a name no one can take away."), effects: [fx.xp(40), fx.skill("arcana", 3)], next: "choice" }, failure: { text: t("Чернила стекают с листа и обжигают пальцы. Крыша начинает светиться.", "The ink runs off the sheet and burns your fingers. The roof begins to glow."), effects: [fx.health(-10), fx.meter("scandal", 3)], fail: true } },
+            { id: "wait", text: t("Ждать, пока небо само назовёт звезду", "Wait for the sky to name the star itself"), check: check(["willpower"], 13, 0, { skill: "arcana" }), success: { text: t("Перед самым рассветом точка вспыхивает и гаснет. Имя остаётся у вас в голове.", "Just before dawn the point flares and fades. The name stays in your head."), effects: [fx.xp(35), fx.meter("court-favor", 4)], next: "choice" }, failure: { text: t("Небо молчит до утра. На листе остаётся пустое место.", "The sky stays silent until morning. An empty place remains on the sheet."), effects: [fx.meter("scandal", 4)], fail: true } }
+          ]
+        },
+        {
+          id: "choice",
+          text: t("Солнце встаёт. Аврелия спрашивает, кому нести карту.", "The sun rises. Aurelia asks who should carry the chart."),
+          choices: [
+            { id: "court", text: t("Отдать карту двору", "Give the chart to the court"), success: { text: t("Двор принимает карту с новой звездой и записывает ваше имя рядом с именем ректора. Башня получает копию без подписи.", "The court takes the chart with the new star and writes your name beside the rector's. The Tower receives an unsigned copy."), effects: [fx.xp(30), fx.faction("imperial-court", 7), fx.meter("court-favor", 6), fx.rep(4)], complete: true } },
+            { id: "unwritten", text: t("Оставить небо ненаписанным", "Leave the sky unwritten"), requires: [when.relic("star-chart")], success: { text: t("Вы прикладываете копию Башни к пустой карте. Недостающая звезда проступает на обоих листах, и Аврелия впервые видит, кому она светила. Двор получает карту без звезды; Башня — с ней.", "You lay the Tower's copy against the blank chart. The missing star appears on both sheets, and Aurelia sees at last whom it shone for. The court gets a chart without the star; the Tower one with it."), effects: [fx.xp(40), fx.faction("magic-tower", 5), fx.meter("scandal", -5), fx.skill("arcana", 4)], complete: true } }
           ]
         }
       ]

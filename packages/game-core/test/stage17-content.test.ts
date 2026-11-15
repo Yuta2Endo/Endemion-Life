@@ -90,12 +90,12 @@ it("у каждого мира есть выбор с отложенным по�
 });
 
 describe("Stage 17: развилка второй дороги", () => {
-  it("контент цел, дорог три, у финала второй дороги два конца", () => {
+  it("контент цел, дорог четыре, у финала второй дороги два конца", () => {
     expect(contentProblems()).toEqual([]);
     expect(eventProblems()).toEqual([]);
     for (const universeId of UNIVERSE_IDS) {
       const list = adventuresOf(universeId);
-      expect(list, universeId).toHaveLength(3);
+      expect(list, universeId).toHaveLength(4);
       const last = list[1]!.steps.at(-1)!;
       const ids = last.choices.map((choice) => choice.id);
       expect(ids, list[1]!.id).toContain(FORK[universeId]);
