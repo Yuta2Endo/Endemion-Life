@@ -1,6 +1,6 @@
 # R4.10 — Auction UI, Automatic Settlement, Safer Stock Writes
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 14:37 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none (R4.9 columns reused)
 
@@ -68,6 +68,15 @@ Production and local databases currently contain **0** saved lives with zero-val
 - A permanently failing settlement stays open and hidden from the board while it keeps retrying.
 - No minimum bid increment beyond “one gold above the current bid”.
 
-## 4. Rollback
+## 4. Deployment
+
+- Code commit `b23ca79`; production runtime **`b23ca79`**.
+- Deploy run **43725118982**, success; history `14:37:26Z deploy-start` → `14:37:56Z deploy ok`.
+- Production has **25 migrations**; save schema 14; no new migration.
+- `/api/health` 200; `/api/contracts?universeId=hunter` 200; web `/` 200.
+- CI **43723629081** success; Security **43723629041** success.
+- Previous runtime `f74de0c` is the rollback target.
+
+## 5. Rollback
 
 No migration. Reverting the application commit is sufficient; the database keeps the R4.9 auction columns.
