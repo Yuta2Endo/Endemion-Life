@@ -1,6 +1,6 @@
 # R4.9 — Contract Auctions
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 13:55 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** 25, additive
 
@@ -53,6 +53,14 @@ Migration `20261116020000_r4_9_auctions`:
 - Bids do not reserve gold; settlement re-checks funds.
 - No bid history table; only the current highest bid is stored.
 
-## 5. Rollback
+## 5. Deployment
+
+- Code commit `f74de0c`; production runtime **`f74de0c`**.
+- Deploy run **43720614457**, success; history `13:54:59Z deploy-start` → `13:55:35Z deploy ok`.
+- Production now has **25 migrations**; save schema 14.
+- `/api/health` 200; `/api/contracts?universeId=hunter` 200.
+- Rollback target `185b659`; migration 25 is additive.
+
+## 6. Rollback
 
 Migration 25 is additive. Application rollback is safe; keep auction columns.

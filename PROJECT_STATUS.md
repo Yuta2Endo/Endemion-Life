@@ -1,11 +1,11 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-15 (R4.8 contract expiry deployed)<br>
+**Обновлено:** 2026-11-15 (R4.9 contract auctions deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `185b659` (R4.8 contract expiry)<br>
-**Production:** R4.8 + R4.7 + R4.6 + R4.5 + R4.4 + R4.3 + R4.2 + R4.1 + R3.4 + R3.3 + R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `185b659`, deployed 2026-11-15 13:33 UTC; migrations **24** (guild 13, market 14, profile 15, families 16, treasury 17, rewards 18, fee 19, orders 20, enterprise 21, contracts 22, privacy 23, expiry 24)<br>
-**Production code:** `185b659`; DB migrations **24**, additive<br>
-**Rollback:** `538c157`; migration 24 is additive.<br>
+**HEAD:** `f74de0c` (R4.9 contract auctions)<br>
+**Production:** R4.9 + R4.8 + R4.7 + R4.6 + R4.5 + R4.4 + R4.3 + R4.2 + R4.1 + R3.4 + R3.3 + R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `f74de0c`, deployed 2026-11-15 13:55 UTC; migrations **25** (guild 13, market 14, profile 15, families 16, treasury 17, rewards 18, fee 19, orders 20, enterprise 21, contracts 22, privacy 23, expiry 24, auctions 25)<br>
+**Production code:** `f74de0c`; DB migrations **25**, additive<br>
+**Rollback:** `185b659`; migration 25 is additive.<br>
 **Рабочее дерево:** docs record being updated; unrelated Android/itch/lockfile changes preserved; 74 Stage 11 reports/docx untracked.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
@@ -63,7 +63,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R4.6 (Player Contracts) | Escrowed goods contracts, accept/cancel, reputation, web panel | **COMPLETE; deployed, schema 14, migration 22** - см. `docs/planning/R4_6_PLAYER_CONTRACTS.md` |
 | R4.7 (Private Contracts) | Private recipients, expiry, escrow restore guard | **COMPLETE; deployed, schema 14, migration 23** - см. `docs/planning/R4_7_CONTRACT_PRIVACY.md` |
 | R4.8 (Contract Expiry) | Lazy expiry, escrow return, status `expired` | **COMPLETE; deployed, schema 14, migration 24** - см. `docs/planning/R4_8_CONTRACT_EXPIRY.md` |
-| R4.9 (Contract Auctions) | Auction kind, bids, settlement, fee, escrow return | **IMPLEMENTED LOCALLY; release pending; migration 25 additive** - см. `docs/planning/R4_9_AUCTIONS.md` |
+| R4.9 (Contract Auctions) | Auction kind, bids, settlement, fee, escrow return | **COMPLETE; deployed, schema 14, migration 25** - см. `docs/planning/R4_9_AUCTIONS.md` |
 
 ## Design (Living Chronicle)
 
