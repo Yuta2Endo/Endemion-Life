@@ -57,6 +57,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R3.4 (Season Rewards) | Goal reward pool, claim to a life, idempotency, web claim panel | **COMPLETE; deployed, schema 14, migration 18** - см. `docs/planning/R3_4_SEASON_REWARDS.md` |
 | R4.1 (Market Fee) | 5% seller-side sink, dynamic shared prices | **COMPLETE; deployed, schema 14, migration 19** - см. `docs/planning/R4_1_MARKET_FEE.md` |
 | R4.2 (Price History) | Season price history, changes, event influence panel | **COMPLETE; deployed, no migration** - см. `docs/planning/R4_2_PRICE_HISTORY.md` |
+| R4.3 (Event Prices) | World events apply one-season price pressure to settlements | **IMPLEMENTED LOCALLY; release pending; no migration** - см. `docs/planning/R4_3_EVENT_PRICES.md` |
 
 ## Design (Living Chronicle)
 

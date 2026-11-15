@@ -269,6 +269,7 @@ export {
 } from "./world/state.js";
 // Stage 04 — Living Worlds: общий мир сервера, сезонный tick, replay и сверка
 export {
+  applyEventPriceInfluence,
   applySharedWorldCommand,
   canonicalSharedWorldJson,
   MAX_SHARED_WORLD_EVENTS,

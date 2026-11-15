@@ -35,6 +35,17 @@ export const SHARED_BUY_MARKUP = 1.2;
 export const SHARED_SELL_DISCOUNT = 0.7;
 
 export const SHARED_WORLD_EVENT_KINDS = ["trade", "politics", "crisis", "discovery", "festival", "unrest", "admin"] as const;
+
+/** R4.3: temporary price influence of a world event. */
+export const SHARED_EVENT_PRICE_INFLUENCE: Record<SharedWorldEventKind, { buy: number; sell: number }> = {
+  trade: { buy: 0.95, sell: 1.05 },
+  politics: { buy: 1.05, sell: 0.95 },
+  crisis: { buy: 1.3, sell: 1.15 },
+  discovery: { buy: 0.92, sell: 1.08 },
+  festival: { buy: 0.9, sell: 1.1 },
+  unrest: { buy: 1.18, sell: 1.08 },
+  admin: { buy: 1, sell: 1 }
+};
 export type SharedWorldEventKind = (typeof SHARED_WORLD_EVENT_KINDS)[number];
 
 export interface SharedWorldGood {
@@ -465,7 +476,23 @@ function tickSharedWorld(source: SharedWorldState): SharedWorldState {
     event.settlementId = settlement.id;
   }
   pushEvent(state, event);
+  applyEventPriceInfluence(state, event);
   return state;
+}
+
+/** Applies one season of event pressure to the targeted settlement, or to all settlements. */
+export function applyEventPriceInfluence(state: SharedWorldState, event: SharedWorldEvent): void {
+  const influence = SHARED_EVENT_PRICE_INFLUENCE[event.kind] ?? { buy: 1, sell: 1 };
+  const targets = event.settlementId
+    ? state.settlements.filter((settlement) => settlement.id === event.settlementId)
+    : state.settlements;
+  for (const settlement of targets) {
+    for (const good of settlement.goods) {
+      good.buy = Math.max(1, Math.round(good.buy * influence.buy));
+      good.sell = Math.max(0, Math.round(good.sell * influence.sell));
+      if (good.sell >= good.buy) good.sell = Math.max(0, good.buy - 1);
+    }
+  }
 }
 
 function applySettlementCommand(

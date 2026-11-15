@@ -2,6 +2,7 @@
 // контрольная сумма, проверка формы и сверка с мирами отдельных жизней.
 import { describe, expect, it } from "vitest";
 import {
+  applyEventPriceInfluence,
   applySharedWorldCommand,
   canonicalSharedWorldJson,
   deepClone,
@@ -251,5 +252,25 @@ describe("Stage 04: общий мир", () => {
     expect(example.settlementId.length).toBeGreaterThan(0);
     expect(example.name.ru.length).toBeGreaterThan(0);
     expect(JSON.stringify(drifted)).not.toMatch(/"(playerId|lifeId|seed)"/);
+  });
+
+  it("событие мира меняет цены целевого поселения и сохраняет buy > sell", () => {
+    const state = newSharedWorld("hunter");
+    const target = state.settlements[0]!;
+    const before = target.goods.map((good) => good.buy);
+    applyEventPriceInfluence(state, {
+      id: "test-crisis",
+      season: state.season,
+      kind: "crisis",
+      title: { ru: "Кризис", en: "Crisis" },
+      text: { ru: "Кризис", en: "Crisis" },
+      settlementId: target.id,
+      severity: 4
+    });
+    expect(target.goods.map((good) => good.buy)).not.toEqual(before);
+    for (const good of target.goods) expect(good.buy).toBeGreaterThan(good.sell);
+    for (const other of state.settlements.slice(1)) {
+      expect(other.goods.every((good) => good.buy > good.sell)).toBe(true);
+    }
   });
 });
