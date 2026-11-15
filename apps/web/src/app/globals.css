@@ -166,6 +166,83 @@ body::before {
   scrollbar-color: var(--color-ink-600) transparent;
 }
 
+.world-atmosphere {
+  position: relative;
+  isolation: isolate;
+}
+
+.world-atmosphere::before,
+.world-atmosphere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-repeat: no-repeat;
+}
+
+.world-atmosphere::before {
+  opacity: 0.8;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 18% 8%, var(--world-a, transparent), transparent 70%),
+    radial-gradient(ellipse 55% 50% at 86% 32%, var(--world-b, transparent), transparent 72%),
+    repeating-linear-gradient(115deg, transparent 0 30px, var(--world-c, transparent) 31px 32px, transparent 33px 68px);
+  background-size: 130% 130%, 110% 110%, 180% 180%;
+  animation: world-drift 34s ease-in-out infinite alternate;
+}
+
+.world-atmosphere::after {
+  opacity: 0.45;
+  background-image: radial-gradient(circle at 50% 105%, var(--world-a, transparent), transparent 62%);
+  animation: world-breathe 19s ease-in-out infinite alternate;
+}
+
+.world-atmosphere[data-world="dark-fantasy"] {
+  --world-a: rgba(185, 146, 79, 0.14);
+  --world-b: rgba(128, 42, 36, 0.11);
+  --world-c: rgba(185, 146, 79, 0.04);
+}
+
+.world-atmosphere[data-world="isekai"] {
+  --world-a: rgba(96, 165, 250, 0.12);
+  --world-b: rgba(185, 146, 79, 0.09);
+  --world-c: rgba(96, 165, 250, 0.035);
+}
+
+.world-atmosphere[data-world="murim"] {
+  --world-a: rgba(74, 222, 128, 0.10);
+  --world-b: rgba(185, 66, 66, 0.09);
+  --world-c: rgba(74, 222, 128, 0.035);
+}
+
+.world-atmosphere[data-world="xianxia"] {
+  --world-a: rgba(147, 197, 253, 0.13);
+  --world-b: rgba(185, 146, 79, 0.08);
+  --world-c: rgba(147, 197, 253, 0.035);
+}
+
+.world-atmosphere[data-world="hunter"] {
+  --world-a: rgba(239, 68, 68, 0.11);
+  --world-b: rgba(96, 165, 250, 0.10);
+  --world-c: rgba(239, 68, 68, 0.035);
+}
+
+.world-atmosphere[data-world="academy"] {
+  --world-a: rgba(185, 146, 79, 0.13);
+  --world-b: rgba(96, 165, 250, 0.10);
+  --world-c: rgba(185, 146, 79, 0.04);
+}
+
+@keyframes world-drift {
+  from { transform: translate3d(-1.5%, -1%, 0) scale(1.02); }
+  to { transform: translate3d(1.5%, 1%, 0) scale(1.06); }
+}
+
+@keyframes world-breathe {
+  from { opacity: 0.28; transform: scale(1); }
+  to { opacity: 0.5; transform: scale(1.04); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

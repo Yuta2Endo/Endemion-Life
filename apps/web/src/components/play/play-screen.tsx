@@ -324,9 +324,10 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
 
   return (
     <main
-      className="mx-auto max-w-7xl px-3 pb-28 pt-3 sm:px-6 lg:pb-10 lg:pt-6"
+      className="world-atmosphere mx-auto max-w-7xl px-3 pb-28 pt-3 sm:px-6 lg:pb-10 lg:pt-6"
       style={{ "--accent": universe.theme.accent, "--accent-glow": universe.theme.glow } as React.CSSProperties}
       data-testid="play-screen"
+      data-world={life.universeId}
       data-version={life.version}
       aria-busy={busy}
     >

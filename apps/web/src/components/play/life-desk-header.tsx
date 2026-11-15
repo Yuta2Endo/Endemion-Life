@@ -6,6 +6,7 @@ import { ageLabel } from "@/lib/format";
 import { HealthIcon, SkillIcon, WealthIcon } from "../icons";
 import { useI18n } from "../locale-provider";
 import { NotificationsBell } from "./notifications-bell";
+import { SoundToggle } from "./sound-toggle";
 
 /** Верхняя строка жизни: кто, где и в каком состоянии — до чтения хроники. */
 export function LifeDeskHeader({ life }: { life: LifeView }) {
@@ -67,6 +68,7 @@ export function LifeDeskHeader({ life }: { life: LifeView }) {
               </dd>
             </div>
           </dl>
+          <SoundToggle universeId={life.universeId} />
           <NotificationsBell />
         </div>
       </div>

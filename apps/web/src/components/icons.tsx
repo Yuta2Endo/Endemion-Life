@@ -55,6 +55,26 @@ export function BellIcon({ className }: IconProps) {
   );
 }
 
+export function SoundIcon({ className }: IconProps) {
+  return (
+    <LineIcon className={className}>
+      <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+      <path d="M18 6a8 8 0 0 1 0 12" />
+    </LineIcon>
+  );
+}
+
+export function SoundOffIcon({ className }: IconProps) {
+  return (
+    <LineIcon className={className}>
+      <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+      <path d="m16 9 5 6" />
+      <path d="m21 9-5 6" />
+    </LineIcon>
+  );
+}
+
 export function SkillIcon({ className }: IconProps) {
   return (
     <LineIcon className={className}>

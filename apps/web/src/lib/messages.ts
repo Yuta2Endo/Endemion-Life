@@ -954,6 +954,8 @@ export const M = {
   "live.lead": t("Срок в UTC. Вклад — один раз за год жизни. Награду считает сервер.", "Times are UTC. One gift per year of life. The server counts the reward."),
   "live.empty": t("Сейчас окон нет.", "No windows right now."),
   "live.chooseLife": t("Выберите жизнь", "Choose a life"),
+  "sound.on": t("Звук мира включён", "World sound on"),
+  "sound.off": t("Звук мира выключен", "World sound off"),
   "live.progress": t("{n} из {goal}", "{n} of {goal}"),
   "live.until": t("до {time}", "until {time}"),
   "live.join": t("Вложить", "Give"),
