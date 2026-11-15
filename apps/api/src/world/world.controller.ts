@@ -135,6 +135,13 @@ export class WorldController {
     return this.world.claimReward(player.id, assertUniverseId(universeId), parseOrThrow(rewardClaimSchema, body));
   }
 
+  @Get(":universeId/prices")
+  async prices(@Param("universeId") universeId: string, @Query("seasons") seasons?: string) {
+    const value = seasons === undefined ? 6 : Number(seasons);
+    if (!Number.isInteger(value) || value < 1 || value > 24) throw new ApiError(400, "VALIDATION", "seasons должен быть от 1 до 24.");
+    return this.world.prices(assertUniverseId(universeId), value);
+  }
+
   @Get(":universeId/goals")
   async goals(@Param("universeId") universeId: string) {
     return this.world.goals(assertUniverseId(universeId));

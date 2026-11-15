@@ -318,6 +318,70 @@ export class WorldService {
     });
   }
 
+  async prices(universeId: UniverseId, seasons: number) {
+    const row = await this.ensureWorld(universeId);
+    const current = parseSharedWorldState(row.state);
+    const ids = current.settlements.flatMap((settlement) => settlement.goods.map((good) => good.id));
+    const uniqueIds = [...new Set(ids)];
+    const average = (values: number[]) => (values.length === 0 ? 0 : Math.round(values.reduce((sum, value) => sum + value, 0) / values.length));
+
+    const snapshots = await this.db.worldSeason.findMany({
+      where: { worldId: row.id },
+      orderBy: { season: "desc" },
+      take: seasons
+    });
+    const history = snapshots.map((snapshot) => {
+      const state = parseSharedWorldState(snapshot.state);
+      return {
+        season: snapshot.season,
+        goods: uniqueIds.map((id) => {
+          const items = state.settlements.flatMap((settlement) => settlement.goods.filter((good) => good.id === id));
+          return {
+            id,
+            name: items[0]?.name ?? { ru: id, en: id },
+            supply: average(items.map((good) => good.supply)),
+            buy: average(items.map((good) => good.buy)),
+            sell: average(items.map((good) => good.sell))
+          };
+        })
+      };
+    });
+    const currentGoods = uniqueIds.map((id) => {
+      const items = current.settlements.flatMap((settlement) => settlement.goods.filter((good) => good.id === id));
+      const buy = average(items.map((good) => good.buy));
+      const sell = average(items.map((good) => good.sell));
+      const previous = history.find((item) => item.season === current.season - 1)?.goods.find((good) => good.id === id);
+      return {
+        id,
+        name: items[0]?.name ?? { ru: id, en: id },
+        supply: average(items.map((good) => good.supply)),
+        buy,
+        sell,
+        previousBuy: previous?.buy ?? null,
+        previousSell: previous?.sell ?? null,
+        change: previous && previous.buy > 0 ? Math.round(((buy - previous.buy) / previous.buy) * 100) : 0
+      };
+    });
+    const events = await this.db.worldEvent.findMany({
+      where: { worldId: row.id, season: current.season, kind: { in: ["trade", "crisis", "unrest", "festival"] } },
+      orderBy: { createdAt: "desc" },
+      take: 8
+    });
+    return {
+      universeId,
+      season: current.season,
+      goods: currentGoods,
+      history,
+      events: events.map((event) => ({
+        id: event.id,
+        kind: event.kind,
+        title: { ru: event.titleRu, en: event.titleEn },
+        text: { ru: event.textRu, en: event.textEn },
+        createdAt: event.createdAt.toISOString()
+      }))
+    };
+  }
+
   async goals(universeId: UniverseId): Promise<{
     season: number;
     generatedAt: string;

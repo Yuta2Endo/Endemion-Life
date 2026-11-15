@@ -127,6 +127,12 @@ describe("Stage 04: общий мир", () => {
     expect(goals.body.season).toBe(2);
     expect(goals.body.goals).toHaveLength(3);
     expect(goals.body.goals.every((goal: { progress: number }) => goal.progress >= 0 && goal.progress <= 100)).toBe(true);
+    const prices = await client.get("/api/world/murim/prices?seasons=3").expect(200);
+    expect(prices.body.season).toBe(2);
+    expect(prices.body.goods).toHaveLength(3);
+    expect(prices.body.history.length).toBeGreaterThan(0);
+    expect(Array.isArray(prices.body.events)).toBe(true);
+    await client.get("/api/world/murim/prices?seasons=0").expect(400);
 
     const currentReplay = await client.get("/api/world/murim/replay").set("x-world-ops", TOKEN).expect(200);
     expect(currentReplay.body).toMatchObject({ commands: 1, valid: true, expectedChecksum: ticked.body.checksum });
