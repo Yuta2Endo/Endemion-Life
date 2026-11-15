@@ -566,7 +566,7 @@ export function presentLegacy(state: GameState): LegacyBrief {
     renown: state.lineage.renown,
     achievements: state.lineage.achievements.length,
     continuedBy: state.lineage.continuedBy,
-    relics: state.lineage.relics.map((relic) => {
+    relics: (state.lineage.relics ?? []).map((relic) => {
       const definition = findRelic(relic.id);
       return definition
         ? { id: definition.id, name: definition.name, description: definition.description }
@@ -942,7 +942,7 @@ export function presentLineage(state: GameState): LineageView {
     identity: dynastyIdentity(lineage),
     factionRecognition: factionRecognition(lineage, universe),
     factionRelations: dynastyFactionRelations(lineage, universe),
-    relics: lineage.relics.map((r) => {
+    relics: (lineage.relics ?? []).map((r) => {
       const relic = findRelic(r.id);
       return relic ? { id: relic.id, name: relic.name, description: relic.description } : { id: r.id, name: t(r.id, r.id), description: t("", "") };
     }),

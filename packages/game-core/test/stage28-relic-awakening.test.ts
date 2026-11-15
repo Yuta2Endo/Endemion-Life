@@ -6,6 +6,7 @@ import {
   findEvent,
   getUniverse,
   isEligible,
+  presentLegacy,
   RELIC_AWAKENING_EVENTS,
   type GameState,
   type UniverseId
@@ -92,6 +93,12 @@ describe("R5.6: пробуждение реликвий", () => {
       expect(sealedIds, `${universeId}: sealed`).toContain(relicId);
       expect(sealedIds, `${universeId}: sealed`).not.toContain(awakenedId);
     }
+  });
+
+  it("старый снимок без реликвий не роняет представление рода", () => {
+    const state = grown("dark-fantasy");
+    (state.lineage as { relics?: unknown }).relics = undefined;
+    expect(presentLegacy(state).relics).toEqual([]);
   });
 
   it("события проходят проверку контента и не повторяются в роду", () => {

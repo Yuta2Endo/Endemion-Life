@@ -35,11 +35,13 @@ R5.6 gives the six third-road relics a late-game continuation and makes them vis
 
 | Check | Result |
 |---|---|
-| Targeted: `stage28-relic-awakening`, `stage21-atlas`, `stage04-3-relics` | **3 files / 35 tests PASS** |
-| Full game-core suite | **58 files / 805 tests PASS** |
+| Targeted: `stage28-relic-awakening`, `stage21-atlas`, `stage04-3-relics` | **3 files / 36 tests PASS** |
+| Full game-core suite | **58 files / 806 tests PASS** |
 | `eventProblems()` | empty for all six worlds |
 | `presentAtlas` relic ownership and totals | PASS |
 | Event closed without relic / open with relic | PASS |
+| Old save without `lineage.relics` renders legacy safely | PASS |
+| Stage 04 API e2e (old save open + market) | **11/11 PASS** |
 | Awaken adds the stronger relic; seal does not | PASS |
 | Game-core build | PASS |
 | Web typecheck | PASS |
@@ -52,6 +54,7 @@ R5.6 gives the six third-road relics a late-game continuation and makes them vis
 - No new save field, database table, API endpoint or notification.
 - The Atlas shows relic lore and ownership but no separate relic art.
 - The awakened form is permanent for the dynasty; there is no downgrade or choice reversal.
+- `presentLegacy` and `presentLineage` guard missing `lineage.relics` with `?? []`, so old snapshots that predate the relic array still open.
 - Existing saves remain valid; relics already owned will make the new events eligible.
 
 ## 5. Rollback
