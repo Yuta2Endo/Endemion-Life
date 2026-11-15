@@ -63,7 +63,7 @@ Test database reset now truncates `player_notifications`, so notification tests 
 
 ## 3. Limitations
 
-- Season reward notifications are not included.
+- Season reward notifications were added in R4.13 and are documented separately.
 - No push, email or SSE delivery; the badge polls once a minute and refreshes on open.
 - Only the latest 50 notifications are returned.
 - There is no delete, archive or retention policy.

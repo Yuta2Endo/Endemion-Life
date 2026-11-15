@@ -305,6 +305,90 @@ describe("Stage 05: вклад в общий мир", () => {
     expect(replay.body).toMatchObject({ reward: 25, replayed: true });
   });
 
+  it("уведомляет о доступной награде сезона и о её получении", async () => {
+    const a = agent();
+    await account(a, "reward-notify-a@example.com");
+    const b = agent();
+    await account(b, "reward-notify-b@example.com");
+    const lifeA = (await post(a, "/api/lives", { universeId: "hunter", seed: "reward-notify-a" }).expect(201)).body.life as { id: string };
+    await post(b, "/api/lives", { universeId: "hunter", seed: "reward-notify-b" }).expect(201);
+
+    const current = await world();
+    const worldRow = await t.prisma.client.world.findUniqueOrThrow({ where: { universeId: "hunter" } });
+    const shared = worldRow.state as {
+      settlements: Array<{ id: string; prosperity: number; stability: number }>;
+      factions: Array<{ id: string; power: number }>;
+      season: number;
+    };
+
+    const setGoals = async (settlementLevel: number, factionPower: number) => {
+      shared.settlements = shared.settlements.map((settlement) => ({ ...settlement, prosperity: settlementLevel, stability: settlementLevel }));
+      if (shared.factions[0]) shared.factions[0].power = factionPower;
+      await t.prisma.client.world.update({ where: { id: worldRow.id }, data: { state: shared } });
+      await t.prisma.client.worldSeason.upsert({
+        where: { worldId_season: { worldId: worldRow.id, season: current.world.season } },
+        update: { goalsMet: 0, rewardPool: 0 },
+        create: {
+          worldId: worldRow.id,
+          season: current.world.season,
+          checksum: worldRow.checksum,
+          state: shared,
+          goalsMet: 0,
+          rewardPool: 0
+        }
+      });
+    };
+
+    await setGoals(0, 0);
+    await contribute(a, {
+      actionId: randomUUID(),
+      expectedSeason: current.world.season,
+      targetKind: "settlement",
+      targetId: current.world.settlements[0]!.id
+    }).expect(200);
+
+    await setGoals(100, 100);
+    await contribute(b, {
+      actionId: randomUUID(),
+      expectedSeason: current.world.season,
+      targetKind: "settlement",
+      targetId: current.world.settlements[0]!.id
+    }).expect(200);
+
+    const availableA = await a.get("/api/notifications").expect(200);
+    expect(availableA.body.unread).toBe(1);
+    expect(availableA.body.notifications[0]).toMatchObject({
+      kind: "season_reward_available",
+      data: { season: current.world.season, reward: 75 }
+    });
+    const availableB = await b.get("/api/notifications").expect(200);
+    expect(availableB.body.unread).toBe(1);
+    expect(availableB.body.notifications[0]).toMatchObject({
+      kind: "season_reward_available",
+      data: { season: current.world.season, reward: 75 }
+    });
+
+    const claimed = await post(a, "/api/world/hunter/rewards/claim", {
+      actionId: randomUUID(),
+      lifeId: lifeA.id,
+      expectedSeason: current.world.season
+    }).expect(200);
+    expect(claimed.body.reward).toBe(75);
+    const afterClaim = await a.get("/api/notifications").expect(200);
+    expect(afterClaim.body.unread).toBe(2);
+    expect(afterClaim.body.notifications[0]).toMatchObject({
+      kind: "season_reward_claimed",
+      data: { season: current.world.season, reward: 75 }
+    });
+
+    await post(a, "/api/world/hunter/rewards/claim", {
+      actionId: randomUUID(),
+      lifeId: lifeA.id,
+      expectedSeason: current.world.season
+    }).expect(200);
+    expect((await a.get("/api/notifications").expect(200)).body.unread).toBe(2);
+  });
+
   it("выполняет сезонный заказ поселения и выдаёт награду", async () => {
     const a = agent();
     await account(a, "order-a@example.com");

@@ -989,7 +989,7 @@ export const M = {
   "notifications.title": t("Уведомления", "Notifications"),
   "notifications.open": t("Открыть уведомления", "Open notifications"),
   "notifications.loading": t("Загрузка…", "Loading…"),
-  "notifications.empty": t("Пока тихо. Здесь появятся исходы аукционов, приглашения и события семьи и гильдии.", "Nothing yet. Auction outcomes, invitations and family or guild events will appear here."),
+  "notifications.empty": t("Пока тихо. Здесь появятся исходы аукционов, приглашения, события семьи и гильдии и награды.", "Nothing yet. Auction outcomes, invitations, family or guild events and rewards will appear here."),
   "notifications.markAll": t("Прочитать все", "Mark all read"),
   "notifications.outbid": t("Вашу ставку перебили: {good} × {qty}, новая ставка {amount}.", "You were outbid: {good} × {qty}, new bid {amount}."),
   "notifications.won": t("Аукцион выигран: {good} × {qty} за {amount}.", "Auction won: {good} × {qty} for {amount}."),
@@ -1003,6 +1003,8 @@ export const M = {
   "notifications.guildAccepted": t("Заявка в гильдию «{guild}» принята.", "Your application to \"{guild}\" was accepted."),
   "notifications.guildRejected": t("Заявка в гильдию «{guild}» отклонена.", "Your application to \"{guild}\" was rejected."),
   "notifications.guildProject": t("Гильдия «{guild}» завершила проект «{project}».", "\"{guild}\" completed the project \"{project}\"."),
+  "notifications.rewardAvailable": t("Награда сезона {season} доступна: {reward} золота.", "Season {season} reward is available: {reward} gold."),
+  "notifications.rewardClaimed": t("Награда сезона {season} получена: {reward} золота.", "Season {season} reward claimed: {reward} gold."),
   "common.years": t("{n} лет", "{n} years")
 } satisfies Record<string, LocalizedText>;
 

@@ -67,6 +67,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R4.10 (Auction UI) | Auction creation, bidding, auto settlement, cancel guard, zero-stock fix | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R4_10_AUCTION_UI.md` |
 | R4.11 (Player Notifications) | Durable auction notifications, unread badge, bell panel, read APIs | **COMPLETE; deployed, schema 14, migration 26** - см. `docs/planning/R4_11_NOTIFICATIONS.md` |
 | R4.12 (Social Notifications) | Family invites/decisions, guild requests/decisions, completed projects | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R4_12_SOCIAL_NOTIFICATIONS.md` |
+| R4.13 (Reward Notifications) | Season reward available and claimed notifications | **IMPLEMENTED LOCALLY; release pending; no migration** - см. `docs/planning/R4_13_REWARD_NOTIFICATIONS.md` |
 
 ## Design (Living Chronicle)
 

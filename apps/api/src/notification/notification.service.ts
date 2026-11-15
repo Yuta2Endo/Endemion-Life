@@ -16,7 +16,9 @@ export type NotificationKind =
   | "guild_request"
   | "guild_request_accepted"
   | "guild_request_rejected"
-  | "guild_project_completed";
+  | "guild_project_completed"
+  | "season_reward_available"
+  | "season_reward_claimed";
 
 /** Small localized payload so the client can render without extra lookups. */
 export interface NotificationData {
@@ -37,6 +39,8 @@ export interface NotificationData {
   projectId?: string;
   projectTitle?: string;
   target?: number;
+  season?: number;
+  reward?: number;
 }
 
 export interface NotificationView {
@@ -66,6 +70,20 @@ export class NotificationService {
   ): Promise<void> {
     await tx.playerNotification.create({
       data: { playerId, kind, contractId, data: data as Prisma.InputJsonValue }
+    });
+  }
+
+  async notifyMany(
+    tx: Prisma.TransactionClient,
+    playerIds: readonly string[],
+    kind: NotificationKind,
+    contractId: string | null,
+    data: NotificationData
+  ): Promise<void> {
+    const unique = [...new Set(playerIds)];
+    if (unique.length === 0) return;
+    await tx.playerNotification.createMany({
+      data: unique.map((playerId) => ({ playerId, kind, contractId, data: data as Prisma.InputJsonValue }))
     });
   }
 

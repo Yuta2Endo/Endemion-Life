@@ -18,7 +18,9 @@ interface NotificationItem {
     | "guild_request"
     | "guild_request_accepted"
     | "guild_request_rejected"
-    | "guild_project_completed";
+    | "guild_project_completed"
+    | "season_reward_available"
+    | "season_reward_claimed";
   contractId: string | null;
   data: {
     goodId?: string;
@@ -38,6 +40,8 @@ interface NotificationItem {
     projectId?: string;
     projectTitle?: string;
     target?: number;
+    season?: number;
+    reward?: number;
   };
   readAt: string | null;
   createdAt: string;
@@ -48,7 +52,7 @@ interface NotificationList {
   unread: number;
 }
 
-/** Bell with durable auction notifications. Hidden for guests. */
+/** Bell with durable player notifications. Hidden for guests. */
 export function NotificationsBell() {
   const { locale, l, t } = useI18n();
   const [status, setStatus] = useState<"loading" | "ready" | "hidden">("loading");
@@ -136,6 +140,8 @@ export function NotificationsBell() {
     const family = item.data.familyName ?? "";
     const member = item.data.memberName ?? "";
     const guild = item.data.guildName ?? "";
+    const season = item.data.season ?? 0;
+    const reward = item.data.reward ?? 0;
     switch (item.kind) {
       case "auction_outbid":
         return t("notifications.outbid", { good, qty, amount: item.data.amount ?? 0 });
@@ -159,6 +165,10 @@ export function NotificationsBell() {
         return t("notifications.guildRejected", { guild });
       case "guild_project_completed":
         return t("notifications.guildProject", { guild, project: item.data.projectTitle ?? "" });
+      case "season_reward_available":
+        return t("notifications.rewardAvailable", { season, reward });
+      case "season_reward_claimed":
+        return t("notifications.rewardClaimed", { season, reward });
       default:
         return t("notifications.empty");
     }

@@ -27,6 +27,7 @@ import {
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ApiError } from "../common/api-error.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { NotificationService } from "../notification/notification.service.js";
 import { PresenceService } from "../presence/presence.service.js";
 
 type Tx = Prisma.TransactionClient;
@@ -151,7 +152,8 @@ export class WorldService {
 
   constructor(
     @Inject(PrismaService) prisma: PrismaService,
-    @Inject(PresenceService) private readonly presence: PresenceService
+    @Inject(PresenceService) private readonly presence: PresenceService,
+    @Inject(NotificationService) private readonly notifications: NotificationService
   ) {
     this.db = prisma.client;
   }
@@ -310,6 +312,10 @@ export class WorldService {
       await tx.worldContribution.update({
         where: { id: contribution.id },
         data: { rewardClaimedAt: new Date(), rewardAmount: reward, rewardActionId: input.actionId }
+      });
+      await this.notifications.notify(tx, playerId, "season_reward_claimed", null, {
+        season: world.season,
+        reward
       });
       await tx.worldAudit.create({
         data: { worldId: row.id, action: "player.reward", actor: playerId, detail: json({ season: world.season, lifeId: life.id, reward }) }
@@ -738,7 +744,7 @@ export class WorldService {
           where: { id: row.id },
           data: { season: next.season, checksum, state: json(next) }
         });
-        await this.writeSeason(tx, row.id, next, checksum, 0);
+        const rewardPool = await this.writeSeason(tx, row.id, next, checksum, 0);
         await this.writeProjections(tx, row.id, next);
         await tx.worldCommand.create({
           data: {
@@ -770,6 +776,13 @@ export class WorldService {
             targetId: input.targetId
           }
         });
+        // writeSeason runs before this row exists, so the contributor who unlocks the pool is notified here.
+        if (rewardPool !== null) {
+          await this.notifications.notify(tx, playerId, "season_reward_available", null, {
+            season: before.season,
+            reward: rewardPool
+          });
+        }
         return {
           world: next,
           checksum,
@@ -1041,21 +1054,35 @@ export class WorldService {
     state: SharedWorldState,
     checksum: string,
     durationMs: number
-  ): Promise<void> {
+  ): Promise<number | null> {
     const status = this.goalStatus(state);
     const existing = await tx.worldSeason.findUnique({
       where: { worldId_season: { worldId, season: state.season } }
     });
+    const becameAvailable = status.goalsMet > 0 && status.rewardPool > 0 && (existing?.goalsMet ?? 0) <= 0;
     if (existing) {
       await tx.worldSeason.update({
         where: { id: existing.id },
         data: { checksum, state: json(state), goalsMet: status.goalsMet, rewardPool: status.rewardPool }
       });
-      return;
+    } else {
+      await tx.worldSeason.create({
+        data: { worldId, season: state.season, checksum, state: json(state), durationMs, goalsMet: status.goalsMet, rewardPool: status.rewardPool }
+      });
     }
-    await tx.worldSeason.create({
-      data: { worldId, season: state.season, checksum, state: json(state), durationMs, goalsMet: status.goalsMet, rewardPool: status.rewardPool }
+    if (!becameAvailable) return null;
+    const contributors = await tx.worldContribution.findMany({
+      where: { worldId, season: state.season },
+      select: { playerId: true }
     });
+    await this.notifications.notifyMany(
+      tx,
+      contributors.map((contribution) => contribution.playerId),
+      "season_reward_available",
+      null,
+      { season: state.season, reward: status.rewardPool }
+    );
+    return status.rewardPool;
   }
 
   private async writeProjections(tx: Tx, worldId: string, state: SharedWorldState): Promise<void> {
