@@ -1,9 +1,9 @@
 # R5.3 — Relics of the Third Road
 
-**Status:** implemented and verified locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 17:43 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none  
-**Production runtime:** `020a2ad` (not changed by this work)
+**Production runtime:** `bc7decb`
 
 ## 1. What was added
 
@@ -70,6 +70,18 @@ The other branches keep their existing rewards unchanged.
 - No new effect types, save fields, API routes or migrations.
 - Relics are inherited through the existing `lineage.relics` path and remain part of save schema 14.
 
-## 6. Rollback
+## 6. Deployment
 
-No database migration, API contract or save-schema change was introduced. Rolling back means reverting the R5.3 content, catalog, tests and this document; existing saves remain valid because `lineage.relics` and save schema 14 are unchanged. Production continues to run `020a2ad` until the release is reviewed and deployed; the standing rollback target remains `4f074e8`.
+- Code commit `bc7decb`; production runtime **`bc7decb`**.
+- Deploy run **43741642096**, success; history `17:42:18Z deploy-start` -> `17:42:48Z deploy ok`.
+- No migration was required; production migration count stays **26**; save schema 14.
+- `/api/health` 200, database/redis up.
+- `/api/contracts?universeId=hunter` 200.
+- `/api/notifications` 401 for guests.
+- Web `/` 200.
+- CI **43741257760** success; Security **43741257763** success.
+- Rollback target `020a2ad`.
+
+## 7. Rollback
+
+No database migration, API contract or save-schema change was introduced. Rolling back means reverting the R5.3 content, catalog, tests and this document; existing saves remain valid because `lineage.relics` and save schema 14 are unchanged.

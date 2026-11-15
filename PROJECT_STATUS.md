@@ -1,11 +1,11 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-15 (R5.2 Third Road deployed)<br>
+**Обновлено:** 2026-11-15 (R5.3 Road Relics deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `020a2ad` (R5.2 Third Road)<br>
-**Production:** R5.2 + R5.1 + R4.13 + R4.12 + R4.11 + R4.10 + R4.9 + R4.8 + R4.7 + R4.6 + R4.5 + R4.4 + R4.3 + R4.2 + R4.1 + R3.4 + R3.3 + R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `020a2ad`, deployed 2026-11-15 17:18 UTC; migrations **26** (guild 13, market 14, profile 15, families 16, treasury 17, rewards 18, fee 19, orders 20, enterprise 21, contracts 22, privacy 23, expiry 24, auctions 25, notifications 26)<br>
-**Production code:** `020a2ad`; DB migrations **26**, additive<br>
-**Rollback:** `4f074e8`; no new migration.<br>
+**HEAD:** `bc7decb` (R5.3 Road Relics)<br>
+**Production:** R5.3 + R5.2 + R5.1 + R4.13 + R4.12 + R4.11 + R4.10 + R4.9 + R4.8 + R4.7 + R4.6 + R4.5 + R4.4 + R4.3 + R4.2 + R4.1 + R3.4 + R3.3 + R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `bc7decb`, deployed 2026-11-15 17:43 UTC; migrations **26** (guild 13, market 14, profile 15, families 16, treasury 17, rewards 18, fee 19, orders 20, enterprise 21, contracts 22, privacy 23, expiry 24, auctions 25, notifications 26)<br>
+**Production code:** `bc7decb`; DB migrations **26**, additive<br>
+**Rollback:** `020a2ad`; no new migration.<br>
 **Рабочее дерево:** unrelated Android/itch/lockfile changes preserved; 74 Stage 11 reports/docx untracked.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
@@ -70,7 +70,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R4.13 (Reward Notifications) | Season reward available and claimed notifications | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R4_13_REWARD_NOTIFICATIONS.md` |
 | R5.1 (Atlas Codex) | Six-world codex: laws, mechanics, path, society, factions, places and roads, progress | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_1_ATLAS_CODEX.md` |
 | R5.2 (Third Road) | Third place and three-step adventure per world, chained after the second road | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_2_THIRD_ROAD.md` |
-| R5.3 (Road Relics) | One relic per world on a third-road final branch; other branch keeps its reward | **IMPLEMENTED LOCALLY; release pending; no migration** - см. `docs/planning/R5_3_ROAD_RELICS.md` |
+| R5.3 (Road Relics) | One relic per world on a third-road final branch; other branch keeps its reward | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_3_ROAD_RELICS.md` |
 
 ## Design (Living Chronicle)
 
