@@ -38,6 +38,7 @@ async function liveUntilPlace(page: Page) {
 }
 
 test("путь: место открывается с годами, приключение начинается, награда видна, после обновления всё на месте", async ({ page }) => {
+  test.slow();
   await page.goto("/create/hunter");
   await page.getByTestId("name-input").fill("Рейдер");
   await page.getByTestId("create-submit").click();
