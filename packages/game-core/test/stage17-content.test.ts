@@ -1,4 +1,4 @@
-// Stage 17: конец второй дороги — выбор, не единственная печать. Третьей дороги нет: цель «все дела» не сдвигается.
+// Stage 17: конец второй дороги — выбор, не единственная печать. Третья дорога продолжает цепь.
 import { describe, expect, it } from "vitest";
 import { adventuresOf, applyAction, contentProblems, eventProblems, findEvent, getUniverse, presentAdventure, presentEvent, UNIVERSE_IDS, type GameState, type UniverseId } from "../src/index.js";
 import { playLife, start } from "./helpers.js";
@@ -90,12 +90,12 @@ it("у каждого мира есть выбор с отложенным по�
 });
 
 describe("Stage 17: развилка второй дороги", () => {
-  it("контент цел, дорог по-прежнему две, у финала два конца", () => {
+  it("контент цел, дорог три, у финала второй дороги два конца", () => {
     expect(contentProblems()).toEqual([]);
     expect(eventProblems()).toEqual([]);
     for (const universeId of UNIVERSE_IDS) {
       const list = adventuresOf(universeId);
-      expect(list, universeId).toHaveLength(2);
+      expect(list, universeId).toHaveLength(3);
       const last = list[1]!.steps.at(-1)!;
       const ids = last.choices.map((choice) => choice.id);
       expect(ids, list[1]!.id).toContain(FORK[universeId]);

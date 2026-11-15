@@ -1,4 +1,4 @@
-// Stage 11: описания приключений сходятся, вторая дорога закрыта, пока не пройдена первая
+// Stage 11: описания приключений сходятся, каждая следующая дорога закрыта, пока не пройдена предыдущая
 import { describe, expect, it } from "vitest";
 import {
   adventuresOf,
@@ -40,13 +40,15 @@ function withOne(adventure: AdventureDefinition): Readonly<Record<UniverseId, re
 }
 
 describe("Stage 11: контент", () => {
-  it("живой контент не содержит битых ссылок и повторов; у каждого мира две дороги", () => {
+  it("живой контент не содержит битых ссылок и повторов; у каждого мира три дороги", () => {
     expect(contentProblems()).toEqual([]);
     for (const universeId of UNIVERSE_IDS) {
       const list = adventuresOf(universeId);
-      expect(list.length, universeId).toBe(2);
+      expect(list.length, universeId).toBe(3);
       expect(list[1]!.requires, list[1]!.id).toEqual([list[0]!.id]);
+      expect(list[2]!.requires, list[2]!.id).toEqual([list[1]!.id]);
       expect(placesOf(universeId).some((place) => place.id === list[1]!.placeId), list[1]!.id).toBe(true);
+      expect(placesOf(universeId).some((place) => place.id === list[2]!.placeId), list[2]!.id).toBe(true);
     }
   });
 

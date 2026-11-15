@@ -13,27 +13,33 @@ import type { AdventureDefinition, PlaceDefinition, StepOutcome } from "./types.
 const PLACES: Readonly<Record<UniverseId, readonly PlaceDefinition[]>> = {
   "dark-fantasy": [
     { id: "df.ember-wall", name: t("Тлеющая застава", "The Ember Wall"), text: t("Последняя стена перед Мглой. Фонари здесь не гасят никогда.", "The last wall before the Mist. The lamps here are never put out."), minAge: 14 },
-    { id: "df.ash-cathedral", name: t("Собор Последнего Огня", "Cathedral of the Last Flame"), text: t("Пепел святых хранят под алтарём.", "The ashes of saints are kept beneath the altar."), minAge: 16 }
+    { id: "df.ash-cathedral", name: t("Собор Последнего Огня", "Cathedral of the Last Flame"), text: t("Пепел святых хранят под алтарём.", "The ashes of saints are kept beneath the altar."), minAge: 16 },
+    { id: "df.sunken-bell", name: t("Затонувшая звонница", "The Sunken Belfry"), text: t("Колокол под затопленной часовней звонит только в те ночи, когда Мгла отступает.", "The bell beneath the flooded chapel rings only on nights when the Mist recedes."), minAge: 18 }
   ],
   isekai: [
     { id: "is.guild-hall", name: t("Зал Гильдии", "The Guild hall"), text: t("Доска контрактов, кружки эля и чужие карты подземелий.", "A contract board, mugs of ale and other people's dungeon maps."), minAge: 14 },
-    { id: "is.whisper-wood", name: t("Шепчущий лес", "The Whispering Wood"), text: t("Лес, который Гильдия отмечает на картах красным.", "A wood the Guild marks in red on its maps."), minAge: 15 }
+    { id: "is.whisper-wood", name: t("Шепчущий лес", "The Whispering Wood"), text: t("Лес, который Гильдия отмечает на картах красным.", "A wood the Guild marks in red on its maps."), minAge: 15 },
+    { id: "is.sunken-road", name: t("Затонувшая дорога", "The Sunken Road"), text: t("Старый тракт, который карты Гильдии до сих пор рисуют поверх болота.", "An old highway the Guild's maps still draw over the marsh."), minAge: 18 }
   ],
   murim: [
     { id: "mu.river-pass", name: t("Перевал Третьей реки", "The Third River pass"), text: t("Единственная тропа через горы, которую не стережёт таможня.", "The only mountain path the customs do not watch."), minAge: 14 },
-    { id: "mu.beggar-yard", name: t("Двор Секты нищих", "The Beggars' yard"), text: t("Здесь знают всё, что происходит на дорогах.", "Here they know everything that happens on the roads."), minAge: 15 }
+    { id: "mu.beggar-yard", name: t("Двор Секты нищих", "The Beggars' yard"), text: t("Здесь знают всё, что происходит на дорогах.", "Here they know everything that happens on the roads."), minAge: 15 },
+    { id: "mu.iron-shrine", name: t("Железная кумирня", "The Iron Shrine"), text: t("Кумирня на перевале, где молятся не богам, а клинкам.", "A shrine on the pass where people pray not to gods but to blades."), minAge: 18 }
   ],
   xianxia: [
     { id: "xi.forbidden-path", name: t("Запретная тропа", "The forbidden path"), text: t("Тропа за дальним пиком, куда внешним ученикам ходить нельзя.", "A path beyond the far peak, forbidden to outer disciples."), minAge: 14 },
-    { id: "xi.spirit-spring", name: t("Духовный источник", "The spirit spring"), text: t("Вода источника помнит всех, кто из неё пил.", "The spring's water remembers everyone who drank from it."), minAge: 16 }
+    { id: "xi.spirit-spring", name: t("Духовный источник", "The spirit spring"), text: t("Вода источника помнит всех, кто из неё пил.", "The spring's water remembers everyone who drank from it."), minAge: 16 },
+    { id: "xi.star-well", name: t("Звёздный колодец", "The star well"), text: t("Колодец на краю секты, в котором вода отражает небо не этого мира.", "A well at the sect's edge whose water reflects a sky not of this world."), minAge: 19 }
   ],
   hunter: [
     { id: "hu.gate-d", name: t("Врата D у Мапхо", "The D-rank Gate at Mapo"), text: t("Синий разлом над пустырём. Ассоциация оценила его как D.", "A blue rift over a wasteland. The Association rated it D."), minAge: 16 },
-    { id: "hu.association", name: t("Отделение Ассоциации", "The Association office"), text: t("Лицензии, ранги и очередь на регистрацию добычи.", "Licences, ranks and the queue to register loot."), minAge: 16 }
+    { id: "hu.association", name: t("Отделение Ассоциации", "The Association office"), text: t("Лицензии, ранги и очередь на регистрацию добычи.", "Licences, ranks and the queue to register loot."), minAge: 16 },
+    { id: "hu.red-gate", name: t("Красные Врата", "The Red Gate"), text: t("Разлом над Ханганом, который Ассоциация закрыла для всех, кроме S-ранга.", "A rift over the Han that the Association has closed to everyone but S-ranks."), minAge: 19 }
   ],
   academy: [
     { id: "ac.court-stair", name: t("Парадная лестница дворца", "The palace's grand stair"), text: t("По этой лестнице проходят только с приглашением.", "Only those with an invitation walk this stair."), minAge: 16 },
-    { id: "ac.duelling-yard", name: t("Дуэльный двор", "The duelling yard"), text: t("Песок двора помнит больше крови, чем балов.", "The yard's sand remembers more blood than balls."), minAge: 16 }
+    { id: "ac.duelling-yard", name: t("Дуэльный двор", "The duelling yard"), text: t("Песок двора помнит больше крови, чем балов.", "The yard's sand remembers more blood than balls."), minAge: 16 },
+    { id: "ac.observatory", name: t("Башня обсерватории", "The observatory tower"), text: t("Верхняя башня академии, где карты звёзд сверяют с картами придворных.", "The academy's upper tower, where star charts are checked against court charts."), minAge: 19 }
   ]
 };
 
@@ -104,6 +110,40 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           ]
         }
       ]
+    },
+    {
+      id: "df.bell-toll",
+      placeId: "df.sunken-bell",
+      requires: ["df.ash-relic"],
+      name: t("Звон под водой", "A toll beneath the water"),
+      text: t("Сёстры просят снять колокол до следующей ночи: его звон слышат не только живые.", "The sisters ask the bell be taken down before the next night: not only the living hear it."),
+      minAge: 20,
+      steps: [
+        {
+          id: "shore",
+          text: t("У затопленной паперти вода стоит по грудь. Сёстры ждут на берегу.", "Water stands chest-deep at the flooded steps. The sisters wait on the bank."),
+          choices: [
+            { id: "wade", text: t("Войти в воду с фонарём", "Wade in with the lamp"), check: check(["willpower"], 13, 0, { skill: "oathcraft" }), success: { text: t("Фонарь держит свет. Вы доходите до колокола.", "The lamp holds its light. You reach the bell."), effects: [fx.xp(15), fx.skill("oathcraft", 2)], next: "bell" }, failure: { text: t("Вода гасит фонарь. Сёстры вытаскивают вас на берег.", "The water puts out the lamp. The sisters drag you back to the bank."), effects: [fx.health(-10), fx.rep(-2)], fail: true } },
+            { id: "oath", text: t("Показать метку дозора", "Show the watch's mark"), requires: [when.ability("hollow-mark")], success: { text: t("Сёстры узнают отметку и отходят от воды.", "The sisters recognise the mark and step away from the water."), effects: [fx.faction("order-of-ash", 3)], next: "bell" } }
+          ]
+        },
+        {
+          id: "bell",
+          text: t("Колокол бьёт под водой. С каждым ударом пепел на руках темнеет.", "The bell tolls beneath the water. With every stroke the ash on your hands darkens."),
+          choices: [
+            { id: "cut", text: t("Перерубить колокольную цепь", "Cut the bell's chain"), check: check(["strength"], 14, 0, { skill: "hollow-hunting" }), success: { text: t("Цепь лопается. Колокол оседает в ил.", "The chain snaps. The bell settles into the silt."), effects: [fx.xp(40), fx.skill("hollow-hunting", 4), fx.meter("corruption", -5)], next: "toll" }, failure: { text: t("Цепь держит. Вода бьёт в лицо, и вы теряете опору.", "The chain holds. Water strikes your face and you lose your footing."), effects: [fx.health(-15)], fail: true } },
+            { id: "listen", text: t("Прислушаться к тому, что поёт колокол", "Listen to what the bell sings"), check: check(["intelligence"], 13, 0, { skill: "relic-lore" }), success: { text: t("В звоне слышна молитва. Вы находите, где цепь закреплена.", "A prayer lies in the toll. You find where the chain is fixed."), effects: [fx.xp(30), fx.skill("relic-lore", 4)], next: "toll" }, failure: { text: t("Звон заполняет голову. Вы приходите в себя на паперти.", "The toll fills your head. You come to on the steps."), effects: [fx.health(-15), fx.meter("corruption", 5)], fail: true } }
+          ]
+        },
+        {
+          id: "toll",
+          text: t("Колокол смолкает. Сёстры спрашивают, кому он будет звонить теперь.", "The bell falls silent. The sisters ask whom it will toll for now."),
+          choices: [
+            { id: "chapel", text: t("Оставить колокол сёстрам", "Leave the bell to the sisters"), success: { text: t("Сёстры уносят колокол в часовню. Орден записывает ваше имя рядом.", "The sisters carry the bell to the chapel. The Order writes your name beside it."), effects: [fx.xp(30), fx.faction("order-of-ash", 6), fx.rep(5)], complete: true } },
+            { id: "deep", text: t("Утопить колокол глубже", "Sink the bell deeper"), success: { text: t("Колокол уходит в ил. Скверна в груди становится тише, но Орден не прощает самовольства.", "The bell goes into the silt. The corruption in your chest quiets, but the Order does not forgive wilfulness."), effects: [fx.xp(20), fx.meter("corruption", -8), fx.karma(4), fx.faction("order-of-ash", -2)], complete: true } }
+          ]
+        }
+      ]
     }
   ],
   isekai: [
@@ -168,6 +208,40 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           choices: [
             { id: "report", text: t("Сдать контракт", "Turn in the contract"), success: { text: t("Второе дело в книге Гильдии. Доля больше первой.", "A second job in the Guild's book. The share is larger than the first."), effects: [fx.xp(30), fx.wealth(25), fx.faction("guild", 5), fx.rep(3)], complete: true } },
             { id: "keep", text: t("Оставить шкуру себе и заплатить штраф", "Keep the hide and pay the fine"), success: { text: t("Клерк ставит штраф и закрывает лист. Шкура остаётся, книга Гильдии — нет.", "The clerk writes a fine and closes the sheet. The hide stays, the Guild book does not."), effects: [fx.xp(15), fx.wealth(-10), fx.skill("survival", 3), fx.faction("guild", -4)], complete: true } }
+          ]
+        }
+      ]
+    },
+    {
+      id: "is.lost-caravan",
+      placeId: "is.sunken-road",
+      requires: ["is.second-contract"],
+      name: t("Пропавший караван", "The lost caravan"),
+      text: t("Купеческий обоз ушёл по старой дороге и не вернулся. Гильдия платит за ответ, а не за товар.", "A merchant train took the old road and did not return. The Guild pays for an answer, not for the goods."),
+      minAge: 19,
+      steps: [
+        {
+          id: "post",
+          text: t("У болота стоит брошенная повозка. На борту — печать Лиги.", "An abandoned wagon stands by the marsh. The League's seal is on its side."),
+          choices: [
+            { id: "track", text: t("Идти по следам колёс", "Follow the wheel ruts"), check: check(["intelligence"], 12, 0, { skill: "guild-craft" }), success: { text: t("Следы ведут в воду и выходят с другой стороны.", "The tracks lead into the water and come out on the other side."), effects: [fx.xp(15)], next: "marsh" }, failure: { text: t("Следы теряются в трясине. Вы едва выбираетесь.", "The tracks vanish in the mire. You barely get out."), effects: [fx.health(-10)], fail: true } },
+            { id: "call", text: t("Позвать возчиков в туман", "Call the drivers into the mist"), check: check(["charisma"], 12), success: { text: t("Из тумана отвечает голос. Он знает ваше имя.", "A voice answers from the mist. It knows your name."), effects: [fx.xp(10), fx.faction("guild", 2)], next: "marsh" }, failure: { text: t("Туман отвечает чужими голосами. Гильдия не любит таких шуток.", "The mist answers in strangers' voices. The Guild does not like such jokes."), effects: [fx.meter("system-favor", -2)], fail: true } }
+          ]
+        },
+        {
+          id: "marsh",
+          text: t("В тумане слышны голоса обоза. Они зовут по именам, которых вы не знаете.", "Voices of the caravan sound in the mist. They call names you do not know."),
+          choices: [
+            { id: "follow", text: t("Идти на голоса", "Follow the voices"), check: check(["willpower"], 13, 0, { skill: "spellcraft" }), success: { text: t("Голоса смолкают. На кочке лежит журнал.", "The voices fall silent. A ledger lies on a hummock."), effects: [fx.xp(35), fx.skill("spellcraft", 4)], next: "ledger" }, failure: { text: t("Голоса заводят вас в трясину. Вы выбираетесь без сил.", "The voices lead you into the mire. You crawl out exhausted."), effects: [fx.health(-15), fx.meter("system-favor", -5)], fail: true } },
+            { id: "light", text: t("Зажечь магический свет", "Kindle a magical light"), check: check(["intelligence"], 12, 0, { skill: "invention" }), success: { text: t("Свет выхватывает повозку и журнал на сиденье.", "The light picks out the wagon and the ledger on its seat."), effects: [fx.xp(30), fx.skill("invention", 4)], next: "ledger" }, failure: { text: t("Свет гаснет. Вы идёте назад по собственным следам.", "The light dies. You walk back along your own tracks."), effects: [fx.health(-15)], fail: true } }
+          ]
+        },
+        {
+          id: "ledger",
+          text: t("На дне повозки лежит журнал Лиги. Последняя запись сделана вашей рукой.", "The League's ledger lies at the bottom of the wagon. The last entry is in your hand."),
+          choices: [
+            { id: "guild", text: t("Отдать журнал Гильдии", "Give the ledger to the Guild"), success: { text: t("Гильдия закрывает дело. Ваше имя вписывают в отчёт.", "The Guild closes the case. Your name goes into the report."), effects: [fx.xp(30), fx.wealth(30), fx.faction("guild", 6), fx.rep(4)], complete: true } },
+            { id: "league", text: t("Продать журнал Лиге", "Sell the ledger to the League"), success: { text: t("Лига платит больше, чем Гильдия. Клерк не спрашивает, откуда журнал.", "The League pays more than the Guild. The clerk does not ask where the ledger came from."), effects: [fx.xp(20), fx.wealth(45), fx.faction("merchant-league", 6), fx.faction("guild", -3)], complete: true } }
           ]
         }
       ]
@@ -238,6 +312,40 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           ]
         }
       ]
+    },
+    {
+      id: "mu.shrine-debt",
+      placeId: "mu.iron-shrine",
+      requires: ["mu.river-debt"],
+      name: t("Долг клинка", "The blade's debt"),
+      text: t("Настоятель кумирни собрал долги всех трёх школ. Союз хочет знать, кому он служит.", "The shrine keeper has collected the debts of all three schools. The Alliance wants to know whom he serves."),
+      minAge: 19,
+      steps: [
+        {
+          id: "gate",
+          text: t("У ворот кумирни лежат клинки без имён.", "Nameless blades lie at the shrine gate."),
+          choices: [
+            { id: "bow", text: t("Поклониться клинкам", "Bow to the blades"), check: check(["charisma"], 12, 0, { skill: "martial-arts" }), success: { text: t("Настоятель отворяет ворота.", "The keeper opens the gate."), effects: [fx.xp(10), fx.rep(2)], next: "hall" }, failure: { text: t("Клинки остаются немы. Вас не пускают.", "The blades stay silent. You are not admitted."), effects: [fx.meter("qi-deviation", 3)], fail: true } },
+            { id: "name", text: t("Назвать союз, который послал вас", "Name the alliance that sent you"), requires: [when.faction("orthodox-alliance", 15)], success: { text: t("Настоятель кланяется и пропускает во двор.", "The keeper bows and lets you into the yard."), effects: [fx.faction("orthodox-alliance", 3)], next: "hall" } }
+          ]
+        },
+        {
+          id: "hall",
+          text: t("Настоятель раскладывает долговые дощечки. Одна подписана вашим именем.", "The keeper lays out debt tablets. One bears your name."),
+          choices: [
+            { id: "truth", text: t("Потребовать правды", "Demand the truth"), check: check(["wisdom"], 13, 0, { skill: "inner-cultivation" }), success: { text: t("Настоятель говорит, кто собрал долги в одну книгу.", "The keeper says who gathered the debts into one book."), effects: [fx.xp(35), fx.skill("inner-cultivation", 4)], next: "choice" }, failure: { text: t("Слова срываются в ци. Вас выносят во двор.", "Your words break into qi. They carry you into the yard."), effects: [fx.health(-15), fx.meter("qi-deviation", 5)], fail: true } },
+            { id: "blade", text: t("Положить руку на клинок", "Lay your hand on the blade"), check: check(["agility"], 13, 0, { skill: "lightness" }), success: { text: t("Клинок выходит из ножен без звука. Настоятель отступает.", "The blade leaves its sheath without a sound. The keeper steps back."), effects: [fx.xp(30), fx.skill("lightness", 4)], next: "choice" }, failure: { text: t("Клинок режет ладонь. Долг остаётся долгом.", "The blade cuts your palm. The debt remains a debt."), effects: [fx.health(-20)], fail: true } }
+          ]
+        },
+        {
+          id: "choice",
+          text: t("Настоятель ждёт, какую печать поставить на долг.", "The keeper waits for you to seal the debt."),
+          choices: [
+            { id: "alliance", text: t("Отдать долг Союзу", "Give the debt to the Alliance"), success: { text: t("Союз принимает книгу. Настоятель больше не кланяется вам.", "The Alliance takes the book. The keeper no longer bows to you."), effects: [fx.xp(30), fx.faction("orthodox-alliance", 7), fx.rep(4), fx.wealth(10)], complete: true } },
+            { id: "burn", text: t("Сжечь дощечки", "Burn the tablets"), success: { text: t("Огонь съедает имена. Нищие и демонический культ запомнят это по-разному.", "Fire eats the names. The beggars and the demonic cult will remember it differently."), effects: [fx.xp(20), fx.faction("beggars-sect", 4), fx.faction("demonic-cult", 3), fx.meter("qi-deviation", -3), fx.karma(3)], complete: true } }
+          ]
+        }
+      ]
     }
   ],
   xianxia: [
@@ -300,6 +408,40 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           choices: [
             { id: "tell", text: t("Рассказать как было", "Tell it as it was"), success: { text: t("Секта записывает вас в число тех, кого источник принял.", "The sect writes you among those the spring accepted."), effects: [fx.xp(30), fx.faction("cloud-peak", 6), fx.rep(4)], complete: true } },
             { id: "silence", text: t("Промолчать и оставить источник себе", "Stay silent and keep the spring to yourself"), success: { text: t("Старейшина кивает на пустой ответ. Ци в груди гуще, долг перед Небесами — тоже.", "The elder nods at the empty answer. The qi in the chest is thicker, and so is the debt to the Heavens."), effects: [fx.xp(20), fx.track(6), fx.meter("karmic-debt", 5), fx.faction("cloud-peak", -2)], complete: true } }
+          ]
+        }
+      ]
+    },
+    {
+      id: "xi.star-trial",
+      placeId: "xi.star-well",
+      requires: ["xi.spring-trial"],
+      name: t("Испытание звёздного колодца", "The star well's trial"),
+      text: t("Старейшины говорят, что колодец открывается раз в поколение. Вода уже поднялась.", "The elders say the well opens once in a generation. The water has already risen."),
+      minAge: 20,
+      steps: [
+        {
+          id: "rim",
+          text: t("На краю колодца стоит старейшина с пустой чашей.", "An elder stands at the well's rim with an empty cup."),
+          choices: [
+            { id: "cup", text: t("Принять чашу", "Accept the cup"), check: check(["willpower"], 13, 0, { skill: "cultivation" }), success: { text: t("Чаша наполняется сама. Вода пахнет грозой.", "The cup fills itself. The water smells of storm."), effects: [fx.xp(15)], next: "water" }, failure: { text: t("Чаша выскальзывает. Старейшина качает головой.", "The cup slips. The elder shakes their head."), effects: [fx.health(-10), fx.meter("karmic-debt", 3)], fail: true } },
+            { id: "ask", text: t("Спросить, что в чаше", "Ask what is in the cup"), check: check(["intelligence"], 12, 0, { skill: "alchemy" }), success: { text: t("Старейшина называет воду по имени. Вы запоминаете.", "The elder names the water. You remember it."), effects: [fx.xp(10), fx.skill("alchemy", 2)], next: "water" }, failure: { text: t("Ответа нет. Вода в чаше темнеет.", "There is no answer. The water in the cup darkens."), effects: [fx.meter("karmic-debt", 2)], fail: true } }
+          ]
+        },
+        {
+          id: "water",
+          text: t("В отражении воды стоит кто-то с вашим лицом.", "Someone with your face stands in the water's reflection."),
+          choices: [
+            { id: "drink", text: t("Выпить отражение", "Drink the reflection"), check: check(["willpower"], 14, 0, { skill: "cultivation" }), success: { text: t("Вода входит в меридианы. Дао-сердце бьётся ровнее.", "The water enters your meridians. The Dao heart beats steadier."), effects: [fx.xp(40), fx.meter("dao-heart", 6)], next: "choice" }, failure: { text: t("Отражение смеётся. Вас находят на камнях.", "The reflection laughs. They find you on the stones."), effects: [fx.health(-20), fx.meter("karmic-debt", 5)], fail: true } },
+            { id: "seal", text: t("Запечатать воду талисманом", "Seal the water with a talisman"), check: check(["intelligence"], 14, 0, { skill: "talismans" }), success: { text: t("Бумага ложится на воду и не тонет.", "The paper lies on the water and does not sink."), effects: [fx.xp(35), fx.skill("talismans", 4)], next: "choice" }, failure: { text: t("Талисман сгорает. Вода поднимается до края.", "The talisman burns. The water rises to the rim."), effects: [fx.health(-15)], fail: true } }
+          ]
+        },
+        {
+          id: "choice",
+          text: t("Старейшина спрашивает, что вы видели в колодце.", "The elder asks what you saw in the well."),
+          choices: [
+            { id: "tell", text: t("Рассказать правду", "Tell the truth"), success: { text: t("Секта записывает вас в число тех, кого колодец признал. Чувство неба остаётся с вами.", "The sect writes you among those the well acknowledged. The sense of the sky stays with you."), effects: [fx.xp(30), fx.faction("cloud-peak", 7), fx.rep(4), fx.ability("spirit-sense")], complete: true } },
+            { id: "keep", text: t("Оставить отражение себе", "Keep the reflection"), success: { text: t("Вы уносите чужое небо в груди. Секта не узнает, но Небеса — да.", "You carry another sky in your chest. The sect will not know, but the Heavens will."), effects: [fx.xp(20), fx.track(8), fx.meter("karmic-debt", 6), fx.faction("cloud-peak", -3)], complete: true } }
           ]
         }
       ]
@@ -368,6 +510,40 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           ]
         }
       ]
+    },
+    {
+      id: "hu.red-gate-raid",
+      placeId: "hu.red-gate",
+      requires: ["hu.gate-c"],
+      name: t("Рейд на Красные Врата", "The Red Gate raid"),
+      text: t("Ассоциация собирает группу вне книги. Официально рейда не будет.", "The Association is assembling a party off the books. Officially there will be no raid."),
+      minAge: 20,
+      steps: [
+        {
+          id: "briefing",
+          text: t("В подземном гараже ждут четверо без жетонов.", "Four people without tokens wait in the underground garage."),
+          choices: [
+            { id: "join", text: t("Сесть в машину", "Get in the car"), success: { text: t("Двигатель заводится. Никто не спрашивает вашего ранга.", "The engine starts. No one asks your rank."), effects: [fx.xp(10), fx.faction("association", 2)], next: "rift" } },
+            { id: "ask", text: t("Спросить, кто отдал приказ", "Ask who gave the order"), check: check(["charisma"], 12), success: { text: t("Водитель называет имя, которого нет в списках.", "The driver names someone who is not on any list."), effects: [fx.xp(15)], next: "rift" }, failure: { text: t("Вас высаживают у обочины. Слухи о рейде остаются.", "They drop you at the curb. Rumours of the raid remain."), effects: [fx.meter("fame", -2)], fail: true } }
+          ]
+        },
+        {
+          id: "rift",
+          text: t("За барьером воздух режет лёгкие. Страж смотрит на вас человеческими глазами.", "Beyond the barrier the air cuts the lungs. The guardian looks at you with human eyes."),
+          choices: [
+            { id: "fight", text: t("Принять бой", "Take the fight"), check: check(["strength", "agility"], 14, 0, { skill: "dungeon-combat" }), success: { text: t("Страж падает. Ядро Врат обнажается.", "The guardian falls. The Gate's core is exposed."), effects: [fx.xp(45), fx.skill("dungeon-combat", 4), fx.meter("gate-threat", -8)], next: "core" }, failure: { text: t("Страж ломает строй. Вас вытаскивают через барьер.", "The guardian breaks the line. They drag you back through the barrier."), effects: [fx.health(-30)], fail: true } },
+            { id: "talk", text: t("Заговорить со стражем", "Speak to the guardian"), check: check(["wisdom"], 13, 0, { skill: "mana-control" }), success: { text: t("Страж опускает руки. В его глазах мелькает узнавание.", "The guardian lowers its hands. Recognition flickers in its eyes."), effects: [fx.xp(35), fx.skill("mana-control", 4)], next: "core" }, failure: { text: t("Страж не слышит. Удар отбрасывает вас к барьеру.", "The guardian does not hear. The blow throws you against the barrier."), effects: [fx.health(-20), fx.meter("gate-threat", 5)], fail: true } }
+          ]
+        },
+        {
+          id: "core",
+          text: t("Ядро Врат пульсирует в такт вашему сердцу. Ассоциация ждёт звонка.", "The Gate's core pulses in time with your heart. The Association waits for a call."),
+          choices: [
+            { id: "report", text: t("Сообщить в Ассоциацию", "Report to the Association"), success: { text: t("Ассоциация закрывает Врата и вычёркивает рейд из всех отчётов.", "The Association seals the Gate and strikes the raid from every report."), effects: [fx.xp(30), fx.wealth(40), fx.faction("association", 6), fx.meter("fame", 8), fx.rep(4)], complete: true } },
+            { id: "corp", text: t("Позвонить в Хансон", "Call Hanseong"), success: { text: t("Хансон платит вдвое и забирает ядро. В сводке Ассоциации Врата всё ещё открыты.", "Hanseong pays double and takes the core. In the Association's report the Gate is still open."), effects: [fx.xp(20), fx.wealth(60), fx.faction("hanseong-corp", 7), fx.meter("fame", -4)], complete: true } }
+          ]
+        }
+      ]
     }
   ],
   academy: [
@@ -432,6 +608,41 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           choices: [
             { id: "sign", text: t("Поставить вторую отметку", "Make the second mark"), success: { text: t("Вторая отметка ложится под первой. Двор отличает тех, кто приходит дважды.", "The second mark goes under the first. The court tells apart those who come twice."), effects: [fx.xp(30), fx.faction("imperial-court", 6), fx.meter("court-favor", 4), fx.wealth(15)], complete: true } },
             { id: "rose", text: t("Отдать заслугу Обществу Розы", "Give the credit to the Rose Society"), success: { text: t("Секретарь вычёркивает строку. Роза запоминает тех, кто умеет не светиться.", "The secretary strikes the line. The Rose remembers those who know how not to shine."), effects: [fx.xp(20), fx.faction("rose-society", 6), fx.meter("court-favor", -3), fx.meter("scandal", -4)], complete: true } }
+          ]
+        }
+      ]
+    },
+    {
+      id: "ac.star-chart",
+      placeId: "ac.observatory",
+      requires: ["ac.second-favour"],
+      name: t("Звёздная карта", "The star chart"),
+      text: t("Ректор просит доставить карту в обсерваторию, не показав её ни Магической башне, ни Розе.", "The rector asks you to deliver a chart to the observatory without showing it to the Mage Tower or the Rose."),
+      minAge: 20,
+      steps: [
+        {
+          id: "gate",
+          text: t("У входа в башню стоят двое: маг в сером и дама с розой.", "Two people stand at the tower door: a mage in grey and a lady with a rose."),
+          choices: [
+            { id: "tower", text: t("Пройти с меткой Башни", "Pass with the Tower's mark"), requires: [when.faction("magic-tower", 10)], success: { text: t("Маг в сером отступает. Дама с розой делает вид, что не видит вас.", "The mage in grey steps aside. The lady with the rose pretends not to see you."), effects: [fx.faction("magic-tower", 3)], next: "stairs" } },
+            { id: "rose", text: t("Пройти с меткой Розы", "Pass with the Rose's mark"), requires: [when.faction("rose-society", 10)], success: { text: t("Дама с розой улыбается. Маг в сером отворачивается.", "The lady with the rose smiles. The mage in grey turns away."), effects: [fx.faction("rose-society", 3)], next: "stairs" } },
+            { id: "slip", text: t("Пройти между ними", "Slip between them"), check: check(["charisma"], 13, 0, { skill: "etiquette" }), success: { text: t("Вы говорите каждому то, что он хочет услышать, и входите.", "You tell each what they want to hear and go in."), effects: [fx.xp(15)], next: "stairs" }, failure: { text: t("Оба замечают карту. Сплетня доходит до двора раньше вас.", "Both notice the chart. The rumour reaches the court before you do."), effects: [fx.meter("scandal", 3)], fail: true } }
+          ]
+        },
+        {
+          id: "stairs",
+          text: t("На середине лестницы карта нагревается в руках.", "Halfway up the stair the chart grows warm in your hands."),
+          choices: [
+            { id: "read", text: t("Прочитать карту", "Read the chart"), check: check(["intelligence"], 13, 0, { skill: "arcana" }), success: { text: t("На карте проступает звезда, которой нет на небе.", "A star appears on the chart that is not in the sky."), effects: [fx.xp(35), fx.skill("arcana", 4)], next: "dome" }, failure: { text: t("Символы вспыхивают. Карта обжигает пальцы, и вас слышат внизу.", "The symbols flare. The chart burns your fingers, and they hear you below."), effects: [fx.health(-10), fx.meter("scandal", 4)], fail: true } },
+            { id: "guard", text: t("Не смотреть и идти дальше", "Do not look and keep walking"), check: check(["willpower"], 13, 0, { skill: "arcana" }), success: { text: t("Соблазн остаётся позади. Карта остывает.", "The temptation stays behind. The chart cools."), effects: [fx.xp(30)], next: "dome" }, failure: { text: t("Вы всё-таки смотрите. Лестница кажется длиннее, чем была.", "You look after all. The stair seems longer than it was."), effects: [fx.health(-15)], fail: true } }
+          ]
+        },
+        {
+          id: "dome",
+          text: t("Ректор ждёт в куполе. На карте не хватает одной звезды.", "The rector waits in the dome. One star is missing from the chart."),
+          choices: [
+            { id: "court", text: t("Отдать карту двору", "Give the chart to the court"), success: { text: t("Двор принимает карту и не спрашивает о недостающей звезде.", "The court takes the chart and does not ask about the missing star."), effects: [fx.xp(30), fx.faction("imperial-court", 7), fx.meter("court-favor", 5), fx.rep(4)], complete: true } },
+            { id: "tower", text: t("Отдать карту Магической башне", "Give the chart to the Mage Tower"), success: { text: t("Башня забирает карту. Двор запомнит, что звезда пропала не сама.", "The Tower takes the chart. The court will remember the star did not vanish on its own."), effects: [fx.xp(20), fx.faction("magic-tower", 7), fx.meter("court-favor", -3), fx.meter("scandal", 3)], complete: true } }
           ]
         }
       ]

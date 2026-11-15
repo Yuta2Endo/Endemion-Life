@@ -91,7 +91,7 @@ The new tab is registered in `apps/web/src/components/play/dossier.tsx`. The pan
 ## 6. Limitations
 
 - R5.1 makes existing content legible; it does not yet add the 30–40 events per world required by the full R5 target.
-- Each world currently has two places and two adventures.
+- At R5.1 each world had two places and two adventures; R5.2 later added a third place and third adventure.
 - Undiscovered places intentionally hide their lore.
 - There are no deep links from the Atlas to the Road tab or a specific adventure.
 - There is no server-side Atlas endpoint; the client builds it from the life view.
