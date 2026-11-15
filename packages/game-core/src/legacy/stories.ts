@@ -4,6 +4,7 @@
 import { t, type LocalizedText } from "../i18n.js";
 import { check, fx, when } from "../narrative/dsl.js";
 import type { ConsequenceDefinition, Effect, EventDefinition } from "../narrative/types.js";
+import type { UniverseId } from "../types.js";
 
 /** Нити рода: что переходит к потомкам вместе с родом */
 export const THREADS: Readonly<Record<string, { name: LocalizedText; description: LocalizedText }>> = {
@@ -16,7 +17,16 @@ export const THREADS: Readonly<Record<string, { name: LocalizedText; description
 
 /** Фамильные реликвии: именованные предметы рода, переходящие к потомкам.
  * Каждая реликвия применяет свой эффект один раз при получении. */
-export const RELICS: Readonly<Record<string, { id: string; name: LocalizedText; description: LocalizedText; effects: Effect[] }>> = {
+export interface RelicDefinition {
+  id: string;
+  name: LocalizedText;
+  description: LocalizedText;
+  effects: Effect[];
+  /** R5.6: мир, к которому относится реликвия. Общие реликвии поле не задают. */
+  universeId?: UniverseId;
+}
+
+export const RELICS: Readonly<Record<string, RelicDefinition>> = {
   "ancestral-blade": {
     id: "ancestral-blade",
     name: t("Предковый клинок", "Ancestral Blade"),
@@ -57,42 +67,90 @@ export const RELICS: Readonly<Record<string, { id: string; name: LocalizedText; 
     id: "drowned-bell",
     name: t("Колокол утопленницы", "The Drowned Bell"),
     description: t("Бронзовый язык колокола, снятый с затопленной звонницы. В нём ещё слышен звон, который не любят слушать живые.", "The bronze clapper taken from the drowned belfry. The toll still sounds inside it, and the living do not like to listen."),
-    effects: [fx.meter("corruption", -10), fx.karma(4)]
+    effects: [fx.meter("corruption", -10), fx.karma(4)],
+    universeId: "dark-fantasy"
   },
   "caravan-ledger": {
     id: "caravan-ledger",
     name: t("Журнал каравана", "Caravan Ledger"),
     description: t("Страница из журнала Лиги, вырванная до того, как караван ушёл в туман. Записи на ней ведут торговлю лучше любого проводника.", "A page torn from the League's ledger before the caravan went into the mist. Its entries trade better than any guide."),
-    effects: [fx.wealth(20), fx.skill("guild-craft", 3)]
+    effects: [fx.wealth(20), fx.skill("guild-craft", 3)],
+    universeId: "isekai"
   },
   "iron-shrine-tablet": {
     id: "iron-shrine-tablet",
     name: t("Железная дощечка", "Iron Shrine Tablet"),
     description: t("Долговая дощечка из Железной кумирни с выжженным знаком дыхания. Огонь не тронул её, и ци слушается её.", "A debt tablet from the Iron Shrine with a breath glyph burned into it. The fire did not touch it, and qi obeys it."),
-    effects: [fx.skill("inner-cultivation", 3), fx.meter("qi-deviation", -5)]
+    effects: [fx.skill("inner-cultivation", 3), fx.meter("qi-deviation", -5)],
+    universeId: "murim"
   },
   "star-well-cup": {
     id: "star-well-cup",
     name: t("Чаша звёздного колодца", "Cup of the Star Well"),
     description: t("Чаша, в которой вода звёздного колодца не высыхает. Тот, кто пьёт из неё, видит своё небо яснее.", "A cup in which the star well's water never dries. Whoever drinks from it sees their own sky more clearly."),
-    effects: [fx.meter("dao-heart", 8), fx.karma(3)]
+    effects: [fx.meter("dao-heart", 8), fx.karma(3)],
+    universeId: "xianxia"
   },
   "red-gate-core": {
     id: "red-gate-core",
     name: t("Ядро Красных Врат", "Red Gate Core"),
     description: t("Осколок ядра Красных Врат, который Ассоциация позволила оставить. Он пульсирует в такт сердцу и глушит угрозу рядом.", "A shard of the Red Gate's core the Association allowed you to keep. It pulses with your heart and quiets the threat nearby."),
-    effects: [fx.meter("gate-threat", -10), fx.faction("association", 4)]
+    effects: [fx.meter("gate-threat", -10), fx.faction("association", 4)],
+    universeId: "hunter"
   },
   "star-chart": {
     id: "star-chart",
     name: t("Звёздная карта", "The Star Chart"),
     description: t("Копия карты обсерватории, которую Башня сняла для вас. На ней отмечена звезда, которой нет на небе.", "A copy of the observatory's chart the Tower made for you. It marks a star that is not in the sky."),
-    effects: [fx.meter("court-favor", 6), fx.skill("arcana", 3)]
+    effects: [fx.meter("court-favor", 6), fx.skill("arcana", 3)],
+    universeId: "academy"
+  },
+  "drowned-toll": {
+    id: "drowned-toll",
+    name: t("Звон утопленницы", "The Drowned Toll"),
+    description: t("Колокол, который больше не тонет. Его слышат только те, кому он отвечает, и в темноте становится на шаг светлее.", "A bell that no longer drowns. Only those it answers can hear it, and the dark grows one step lighter."),
+    effects: [fx.meter("ember", 15), fx.karma(5)],
+    universeId: "dark-fantasy"
+  },
+  "ledger-unbound": {
+    id: "ledger-unbound",
+    name: t("Журнал без страниц", "The Ledger Unbound"),
+    description: t("Журнал каравана, у которого больше нет страниц. Имена всё равно находятся, а сделки помнят себя сами.", "A caravan ledger with no pages left. Names still find their way, and bargains remember themselves."),
+    effects: [fx.wealth(60), fx.faction("guild", 8)],
+    universeId: "isekai"
+  },
+  "named-tablet": {
+    id: "named-tablet",
+    name: t("Дощечка с именем", "The Named Tablet"),
+    description: t("Железная дощечка, на которой проступило имя. Долг больше не давит на дыхание, но требует, чтобы имя произносили вслух.", "The iron tablet now bears a name. The debt no longer weighs on the breath, but the name must be spoken aloud."),
+    effects: [fx.skill("inner-cultivation", 5), fx.meter("qi-deviation", -8)],
+    universeId: "murim"
+  },
+  "full-sky-cup": {
+    id: "full-sky-cup",
+    name: t("Чаша полного неба", "Cup of the Full Sky"),
+    description: t("Чаша, в которой отражается всё небо сразу. Тот, кто пьёт из неё, больше не ищет одну звезду.", "A cup that reflects the whole sky at once. Whoever drinks from it stops searching for a single star."),
+    effects: [fx.meter("dao-heart", 12), fx.karma(4)],
+    universeId: "xianxia"
+  },
+  "red-gate-heart": {
+    id: "red-gate-heart",
+    name: t("Сердце Красных Врат", "Heart of the Red Gate"),
+    description: t("Ядро, которое больше не осколок. Оно бьётся ровно, и Врата рядом затихают, узнавая своё.", "A core no longer a shard. It beats steadily, and nearby Gates quiet when they recognise their own."),
+    effects: [fx.meter("fame", 10), fx.skill("mana-control", 5)],
+    universeId: "hunter"
+  },
+  "starless-chart": {
+    id: "starless-chart",
+    name: t("Карта последней звезды", "Chart of the Last Star"),
+    description: t("Карта, с которой исчезли все звёзды, кроме последней. Двор и Башня больше не могут решить, кому она принадлежит.", "A chart where every star but the last has vanished. The Court and the Tower can no longer agree who owns it."),
+    effects: [fx.meter("court-favor", 10), fx.skill("arcana", 5)],
+    universeId: "academy"
   }
 };
 
 /** Найти реликвию по id. Возвращает undefined, если реликвия неизвестна. */
-export function findRelic(id: string): { id: string; name: LocalizedText; description: LocalizedText; effects: Effect[] } | undefined {
+export function findRelic(id: string): RelicDefinition | undefined {
   return RELICS[id];
 }
 

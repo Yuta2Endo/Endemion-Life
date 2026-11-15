@@ -73,6 +73,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R5.3 (Road Relics) | One relic per world on a third-road final branch; other branch keeps its reward | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_3_ROAD_RELICS.md` |
 | R5.4 (Echoes of the Roads) | Fourth place and four-step epilogue per world, named NPCs, relic-gated final choice | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_4_ECHOES.md` |
 | R5.5 (Bonds and Voices) | People dossier summary/full log/bond age, seven authored role-level NPC scenes, learn/spar/ask-help relationship logging | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_5_BONDS.md` |
+| R5.6 (Relic Awakenings) | Six awakened relics, six relic-gated awakening events, Atlas relic codex and progress | **IMPLEMENTED LOCALLY; release pending; no migration** - см. `docs/planning/R5_6_RELIC_AWAKENINGS.md` |
 
 ## Design (Living Chronicle)
 

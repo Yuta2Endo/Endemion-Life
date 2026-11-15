@@ -12,6 +12,7 @@ import {
   type GameState,
   type UniverseId
 } from "../src/index.js";
+import { RELICS } from "../src/legacy/stories.js";
 import { start } from "./helpers.js";
 
 function grown(universeId: UniverseId, age = 30): GameState {
@@ -29,7 +30,8 @@ function snapshot(state: GameState): AtlasSnapshot {
     factions: state.character.factions,
     socialClassId: state.character.socialClassId,
     meters: presentProfile(state).meters,
-    adventure: presentAdventure(state)
+    adventure: presentAdventure(state),
+    relics: state.lineage.relics.map((relic) => relic.id)
   };
 }
 
@@ -47,6 +49,10 @@ describe("R5.1: Атлас мира", () => {
       expect(view.description.en.length, universeId).toBeGreaterThan(0);
       expect(view.rules.length, universeId).toBeGreaterThan(0);
       expect(view.mechanics.length, universeId).toBeGreaterThan(0);
+      expect(view.relics.length, universeId).toBe(2);
+      expect(view.relics.every((relic) => !relic.owned), universeId).toBe(true);
+      expect(view.progress.relicsTotal, universeId).toBe(2);
+      expect(view.progress.relicsOwned, universeId).toBe(0);
       expect(view.socialClasses.length, universeId).toBe(universe.socialClasses.length);
       expect(view.factions.length, universeId).toBe(universe.factions.length);
       expect(view.meters.length, universeId).toBe(universe.meters.length);
@@ -108,6 +114,26 @@ describe("R5.1: Атлас мира", () => {
     state.adventure.active = { id: second!.id, step: adventuresOf("murim").find((adventure) => adventure.id === second!.id)!.steps[0]!.id, since: state.life.age };
     const activeView = presentAtlas(snapshot(state));
     expect(activeView.places.flatMap((place) => place.adventures).find((card) => card.id === second!.id)?.status).toBe("active");
+  });
+
+  it("показывает реликвии мира и отмечает уже полученную", () => {
+    const state = grown("dark-fantasy");
+    const relic = RELICS["drowned-bell"];
+    expect(relic).toBeDefined();
+    state.lineage.relics = [{
+      id: relic!.id,
+      name: relic!.name,
+      description: relic!.description,
+      acquiredGen: state.lineage.generation,
+      acquiredAge: state.life.age,
+      source: "test"
+    }];
+
+    const view = presentAtlas(snapshot(state));
+    expect(view.relics.find((item) => item.id === "drowned-bell")?.owned).toBe(true);
+    expect(view.relics.find((item) => item.id === "drowned-toll")?.owned).toBe(false);
+    expect(view.progress.relicsOwned).toBe(1);
+    expect(view.progress.relicsTotal).toBe(2);
   });
 
   it("показывает возрастные преграды, фракции и ранг пути", () => {

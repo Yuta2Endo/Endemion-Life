@@ -5,6 +5,7 @@ import { LEGACY_EVENTS } from "../legacy/stories.js";
 import { ECONOMY_EVENTS } from "./economy-events.js";
 import { COMMON_HEALTH_EVENTS } from "./health-events.js";
 import { PEOPLE_EVENTS } from "./people.js";
+import { RELIC_AWAKENING_EVENTS } from "./relic-awakenings.js";
 import type { EventDefinition } from "./types.js";
 
 export const COMMON_EVENTS: readonly EventDefinition[] = [
@@ -410,6 +411,7 @@ export const COMMON_EVENTS: readonly EventDefinition[] = [
   },
   // Stage 02: семья, люди вокруг, возраст, таланты и тайны рода
   ...PEOPLE_EVENTS,
+  ...RELIC_AWAKENING_EVENTS,
   // Stage 03: сюжеты рода и поколений
   ...LEGACY_EVENTS,
   // Stage 04: хозяйство и общество

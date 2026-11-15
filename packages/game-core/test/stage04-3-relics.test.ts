@@ -38,7 +38,7 @@ function countChronicle(state: GameState, kind: string): number {
 describe("Stage 04.3: каталог реликвий", () => {
   it("все двенадцать реликвий доступны через каталог", () => {
     const ids = Object.keys(RELICS);
-    expect(ids).toHaveLength(12);
+    expect(ids).toHaveLength(18);
     for (const id of [
       "ancestral-blade",
       "system-crystal",

@@ -4,6 +4,7 @@ import type { AdventureBoard, AdventureView, RewardView } from "../adventure/adv
 import { adventuresOf, findAdventure, placesOf } from "../adventure/content.js";
 import type { MeterView } from "../engine/profile.js";
 import type { LocalizedText } from "../i18n.js";
+import { RELICS } from "../legacy/stories.js";
 import type { TrackState, UniverseId } from "../types.js";
 import { getUniverse } from "../universes/registry.js";
 
@@ -17,6 +18,8 @@ export interface AtlasSnapshot {
   socialClassId: string;
   meters: readonly MeterView[];
   adventure: AdventureBoard;
+  /** R5.6: id реликвий, уже принадлежащих роду. */
+  relics: readonly string[];
 }
 
 export interface AtlasTrackView {
@@ -51,6 +54,13 @@ export interface AtlasFactionView {
   known: boolean;
 }
 
+export interface AtlasRelicView {
+  id: string;
+  name: LocalizedText;
+  description: LocalizedText;
+  owned: boolean;
+}
+
 export interface AtlasAdventureView {
   id: string;
   name: LocalizedText;
@@ -83,6 +93,8 @@ export interface AtlasProgressView {
   factionsTotal: number;
   mechanicCount: number;
   socialClassCount: number;
+  relicsOwned: number;
+  relicsTotal: number;
 }
 
 export interface AtlasView {
@@ -99,6 +111,7 @@ export interface AtlasView {
   socialClasses: AtlasSocialClassView[];
   factions: AtlasFactionView[];
   meters: MeterView[];
+  relics: AtlasRelicView[];
   places: AtlasPlaceView[];
   progress: AtlasProgressView;
 }
@@ -189,6 +202,15 @@ export function presentAtlas(snapshot: AtlasSnapshot): AtlasView {
     current: socialClass.id === snapshot.socialClassId
   }));
 
+  const relics = Object.values(RELICS)
+    .filter((relic) => relic.universeId === universe.id)
+    .map((relic): AtlasRelicView => ({
+      id: relic.id,
+      name: relic.name,
+      description: relic.description,
+      owned: snapshot.relics.includes(relic.id)
+    }));
+
   const placesFound = snapshot.adventure.discovered;
   const adventuresDone = snapshot.adventure.completed;
 
@@ -217,6 +239,7 @@ export function presentAtlas(snapshot: AtlasSnapshot): AtlasView {
     socialClasses,
     factions,
     meters: [...snapshot.meters],
+    relics,
     places,
     progress: {
       placesFound,
@@ -226,7 +249,9 @@ export function presentAtlas(snapshot: AtlasSnapshot): AtlasView {
       factionsKnown: factions.filter((faction) => faction.known).length,
       factionsTotal: factions.length,
       mechanicCount: universe.mechanics.length,
-      socialClassCount: socialClasses.length
+      socialClassCount: socialClasses.length,
+      relicsOwned: relics.filter((relic) => relic.owned).length,
+      relicsTotal: relics.length
     }
   };
 }

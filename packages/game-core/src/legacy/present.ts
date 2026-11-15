@@ -180,6 +180,8 @@ export interface LegacyBrief {
   renown: number;
   achievements: number;
   continuedBy: string | null;
+  /** R5.6: реликвии рода для Атласа и кодекса. Представление, не сохранение. */
+  relics: { id: string; name: LocalizedText; description: LocalizedText }[];
   inheritance: InheritanceView | null;
   /** Итоги жизни и наследники: только когда жизнь закончилась */
   summary: LifeSummaryView | null;
@@ -564,6 +566,12 @@ export function presentLegacy(state: GameState): LegacyBrief {
     renown: state.lineage.renown,
     achievements: state.lineage.achievements.length,
     continuedBy: state.lineage.continuedBy,
+    relics: state.lineage.relics.map((relic) => {
+      const definition = findRelic(relic.id);
+      return definition
+        ? { id: definition.id, name: definition.name, description: definition.description }
+        : { id: relic.id, name: relic.name, description: relic.description };
+    }),
     inheritance: presentInheritance(state),
     summary: state.life.alive ? null : presentSummary(state),
     current: state.life.alive ? presentCurrent(state) : null

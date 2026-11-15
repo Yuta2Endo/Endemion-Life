@@ -245,6 +245,7 @@ export { allProfessions, allSkills, educationTier, findEducation, findProfession
 export { allTalents, allWeaknesses, findTalent, findWeakness } from "./rpg/talents.js";
 export { DEFAULT_COOLDOWN, RECENT_LIMIT } from "./narrative/selection.js";
 export { PEOPLE_EVENTS, COMMON_CONSEQUENCES } from "./narrative/people.js";
+export { RELIC_AWAKENING_EVENTS } from "./narrative/relic-awakenings.js";
 export { meterValue, worldTrackFactor } from "./world/rules.js";
 export {
   MAX_WORLD_ACTIVITIES,

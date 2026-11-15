@@ -35,7 +35,8 @@ export function AtlasPanel({ life }: { life: LifeView }) {
     factions: life.character.factions,
     socialClassId: life.character.socialClassId,
     meters: life.profile.meters,
-    adventure: life.adventure
+    adventure: life.adventure,
+    relics: life.legacy.relics?.map((relic) => relic.id) ?? []
   });
 
   const statusLabel = (status: AtlasAdventureStatus) => {
@@ -74,10 +75,11 @@ export function AtlasPanel({ life }: { life: LifeView }) {
 
       <section className="rounded-md border border-gold-500/30 bg-gold-500/5 p-3" data-testid="atlas-progress">
         <SectionTitle>{t("atlas.progress")}</SectionTitle>
-        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           <Stat label={t("atlas.progressPlaces")} value={`${atlas.progress.placesFound} / ${atlas.progress.placesTotal}`} testId="atlas-stat-places" />
           <Stat label={t("atlas.progressAdventures")} value={`${atlas.progress.adventuresDone} / ${atlas.progress.adventuresTotal}`} testId="atlas-stat-adventures" />
           <Stat label={t("atlas.progressFactions")} value={`${atlas.progress.factionsKnown} / ${atlas.progress.factionsTotal}`} testId="atlas-stat-factions" />
+          <Stat label={t("atlas.progressRelics")} value={`${atlas.progress.relicsOwned} / ${atlas.progress.relicsTotal}`} testId="atlas-stat-relics" />
           <Stat label={t("atlas.progressMechanics")} value={String(atlas.progress.mechanicCount)} testId="atlas-stat-mechanics" />
         </dl>
       </section>
@@ -168,6 +170,23 @@ export function AtlasPanel({ life }: { life: LifeView }) {
                 {faction.known ? t("atlas.standing", { n: faction.standing }) : t("atlas.noTies")}
               </span>
               <p className="w-full text-xs leading-relaxed text-bone-500">{l(faction.description)}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section>
+        <SectionTitle>{t("atlas.relics")}</SectionTitle>
+        <ul className="space-y-2">
+          {atlas.relics.map((relic) => (
+            <li key={relic.id} className="rounded-md border border-line bg-ink-950/40 p-3" data-testid="atlas-relic" data-owned={relic.owned}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="text-sm text-bone-100">{l(relic.name)}</p>
+                <span className={`text-[10px] uppercase tracking-wider ${relic.owned ? "text-gold-300" : "text-bone-500"}`}>
+                  {relic.owned ? t("atlas.relicOwned") : t("atlas.relicLost")}
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-bone-400">{l(relic.description)}</p>
             </li>
           ))}
         </ul>
