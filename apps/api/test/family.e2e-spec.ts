@@ -253,4 +253,31 @@ describe("семьи игроков", () => {
     const friendLives = await friend.client.get("/api/lives").expect(200);
     expect(friendLives.body.lives.map((life: { id: string }) => life.id)).toContain(successor.id);
   });
+
+  it("создаёт семейное предприятие, развивает его и собирает сезонный доход", async () => {
+    const founder = await account("Предприниматель");
+    const family = await createFamily(founder.client);
+    await founder.client.get("/api/world/dark-fantasy").expect(200);
+    await t.prisma.client.family.update({ where: { id: family.id }, data: { treasury: 100 } });
+
+    const created = await post(founder.client, `/api/families/${family.id}/enterprise`, {
+      actionId: randomUUID(),
+      name: "Пепельная мастерская"
+    }).expect(200);
+    expect(created.body.enterprise).toMatchObject({ name: "Пепельная мастерская", level: 1, invested: 50 });
+    expect(created.body.treasury).toBe(50);
+
+    const invested = await post(founder.client, `/api/families/${family.id}/enterprise/invest`, {
+      actionId: randomUUID(),
+      amount: 50
+    }).expect(200);
+    expect(invested.body.enterprise).toMatchObject({ level: 3, invested: 100 });
+    expect(invested.body.treasury).toBe(0);
+
+    const collected = await post(founder.client, `/api/families/${family.id}/enterprise/collect`, {
+      actionId: randomUUID()
+    }).expect(200);
+    expect(collected.body.enterprise.canCollect).toBe(false);
+    expect(collected.body.treasury).toBeGreaterThan(0);
+  });
 });

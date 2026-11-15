@@ -34,6 +34,17 @@ export interface FamilyChronicleEntryView {
   createdAt: string;
 }
 
+export interface FamilyEnterpriseView {
+  id: string;
+  name: string;
+  level: number;
+  invested: number;
+  lastCollectedSeason: number;
+  currentSeason: number;
+  income: number;
+  canCollect: boolean;
+}
+
 export interface FamilyTreasuryEntryView {
   id: string;
   direction: "deposit" | "withdraw";
@@ -81,6 +92,7 @@ export interface FamilyDetailView extends FamilySummaryView {
   members: FamilyMemberView[];
   invites: FamilyInviteView[];
   treasuryEntries: FamilyTreasuryEntryView[];
+  enterprise: FamilyEnterpriseView | null;
 }
 
 const memberSelect = {
@@ -203,6 +215,7 @@ export class FamilyService {
       include: {
         leader: { select: { id: true, idUsername: true, idDisplayName: true } },
         _count: { select: { members: true } },
+        enterprise: true,
         members: { select: memberSelect, orderBy: [{ role: "asc" }, { joinedAt: "asc" }] },
         invites: {
           where: { status: "pending" },
@@ -233,8 +246,10 @@ export class FamilyService {
     if (!family) throw new ApiError(404, "NOT_FOUND", "Семья не найдена.");
     const myRole = family.members.find((member) => member.playerId === playerId)?.role as FamilyRole | undefined;
     const canSeeInvites = myRole === "leader" || myRole === "elder";
+    const world = await this.db.world.findUnique({ where: { universeId: family.universeId }, select: { season: true } });
     return {
       ...this.summary(family, myRole ?? null),
+      enterprise: family.enterprise ? this.enterpriseView(family.enterprise, world?.season ?? 0, family.reputation) : null,
       members: family.members.map((member) => this.memberView(member)),
       invites: canSeeInvites
         ? family.invites.map((invite) => ({
@@ -482,6 +497,103 @@ export class FamilyService {
   }
 
   /** Explicit consent for cross-account inheritance. */
+  private enterpriseView(
+    enterprise: { id: string; name: string; level: number; invested: number; lastCollectedSeason: number },
+    currentSeason: number,
+    reputation: number
+  ): FamilyEnterpriseView {
+    return {
+      id: enterprise.id,
+      name: enterprise.name,
+      level: enterprise.level,
+      invested: enterprise.invested,
+      lastCollectedSeason: enterprise.lastCollectedSeason,
+      currentSeason,
+      income: enterprise.level * 10 + Math.floor(reputation / 10),
+      canCollect: currentSeason > enterprise.lastCollectedSeason
+    };
+  }
+
+  async enterprise(playerId: string, familyId: string): Promise<FamilyEnterpriseView | null> {
+    await this.db.$transaction(async (tx) => {
+      await this.lockFamily(tx, familyId);
+      await this.requireRole(tx, familyId, playerId, ["leader", "elder", "member"]);
+    });
+    const family = await this.db.family.findUniqueOrThrow({ where: { id: familyId }, include: { enterprise: true } });
+    const world = await this.db.world.findUnique({ where: { universeId: family.universeId }, select: { season: true } });
+    return family.enterprise ? this.enterpriseView(family.enterprise, world?.season ?? 0, family.reputation) : null;
+  }
+
+  async createEnterprise(playerId: string, familyId: string, input: { actionId: string; name: string }): Promise<FamilyDetailView> {
+    const name = input.name.trim();
+    if (name.length < 3 || name.length > 40) throw new ApiError(400, "VALIDATION", "Название предприятия: 3-40 символов.");
+    await this.db.$transaction(async (tx) => {
+      await this.lockFamily(tx, familyId);
+      const family = await tx.family.findUniqueOrThrow({ where: { id: familyId }, include: { enterprise: true } });
+      await this.requireRole(tx, familyId, playerId, ["leader"]);
+      const replay = await tx.familyTreasuryEntry.findUnique({ where: { familyId_actionId: { familyId, actionId: input.actionId } } });
+      if (replay) return;
+      if (family.enterprise) throw new ApiError(409, "VALIDATION", "У семьи уже есть предприятие.");
+      if (family.treasury < 50) throw new ApiError(409, "VALIDATION", "Нужно 50 золота в казне.");
+      const treasuryAfter = family.treasury - 50;
+      await tx.familyEnterprise.create({ data: { familyId, universeId: family.universeId, name, level: 1, invested: 50 } });
+      await tx.family.update({ where: { id: familyId }, data: { treasury: treasuryAfter } });
+      await tx.familyTreasuryEntry.create({
+        data: { familyId, actorId: playerId, actionId: input.actionId, direction: "withdraw", amount: 50, balanceAfter: treasuryAfter, note: "Основание предприятия" }
+      });
+      await this.audit(tx, familyId, playerId, "enterprise.create", { name });
+    });
+    return this.detail(playerId, familyId);
+  }
+
+  async investEnterprise(playerId: string, familyId: string, input: { actionId: string; amount: number }): Promise<FamilyDetailView> {
+    if (!Number.isInteger(input.amount) || input.amount < 10 || input.amount > 10_000) {
+      throw new ApiError(400, "VALIDATION", "Вклад должен быть от 10 до 10 000.");
+    }
+    await this.db.$transaction(async (tx) => {
+      await this.lockFamily(tx, familyId);
+      const family = await tx.family.findUniqueOrThrow({ where: { id: familyId }, include: { enterprise: true } });
+      await this.requireRole(tx, familyId, playerId, ["leader", "elder"]);
+      const replay = await tx.familyTreasuryEntry.findUnique({ where: { familyId_actionId: { familyId, actionId: input.actionId } } });
+      if (replay) return;
+      if (!family.enterprise) throw new ApiError(409, "VALIDATION", "Сначала создайте предприятие.");
+      if (family.treasury < input.amount) throw new ApiError(409, "VALIDATION", "В казне недостаточно золота.");
+      const invested = family.enterprise.invested + input.amount;
+      const level = Math.min(5, 1 + Math.floor(invested / 50));
+      const treasuryAfter = family.treasury - input.amount;
+      await tx.familyEnterprise.update({ where: { familyId }, data: { invested, level } });
+      await tx.family.update({ where: { id: familyId }, data: { treasury: treasuryAfter } });
+      await tx.familyTreasuryEntry.create({
+        data: { familyId, actorId: playerId, actionId: input.actionId, direction: "withdraw", amount: input.amount, balanceAfter: treasuryAfter, note: "Развитие предприятия" }
+      });
+      await this.audit(tx, familyId, playerId, "enterprise.invest", { amount: input.amount, level });
+    });
+    return this.detail(playerId, familyId);
+  }
+
+  async collectEnterprise(playerId: string, familyId: string, input: { actionId: string }): Promise<FamilyDetailView> {
+    await this.db.$transaction(async (tx) => {
+      await this.lockFamily(tx, familyId);
+      const family = await tx.family.findUniqueOrThrow({ where: { id: familyId }, include: { enterprise: true } });
+      await this.requireRole(tx, familyId, playerId, ["leader", "elder"]);
+      const replay = await tx.familyTreasuryEntry.findUnique({ where: { familyId_actionId: { familyId, actionId: input.actionId } } });
+      if (replay) return;
+      if (!family.enterprise) throw new ApiError(409, "VALIDATION", "Предприятия нет.");
+      const world = await tx.world.findUnique({ where: { universeId: family.universeId }, select: { season: true } });
+      const season = world?.season ?? 0;
+      if (family.enterprise.lastCollectedSeason >= season) throw new ApiError(409, "VALIDATION", "Доход уже собран в этом сезоне.");
+      const income = family.enterprise.level * 10 + Math.floor(family.reputation / 10);
+      const treasuryAfter = Math.min(1_000_000_000, family.treasury + income);
+      await tx.familyEnterprise.update({ where: { familyId }, data: { lastCollectedSeason: season } });
+      await tx.family.update({ where: { id: familyId }, data: { treasury: treasuryAfter } });
+      await tx.familyTreasuryEntry.create({
+        data: { familyId, actorId: playerId, actionId: input.actionId, direction: "deposit", amount: income, balanceAfter: treasuryAfter, note: `Доход предприятия, сезон ${season}` }
+      });
+      await this.audit(tx, familyId, playerId, "enterprise.collect", { season, income });
+    });
+    return this.detail(playerId, familyId);
+  }
+
   async consent(playerId: string, familyId: string, accepts: boolean): Promise<FamilyDetailView> {
     await this.db.$transaction(async (tx) => {
       await this.lockFamily(tx, familyId);

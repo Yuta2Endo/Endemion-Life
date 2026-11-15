@@ -55,10 +55,22 @@ interface FamilyInvite {
   status: string;
   createdAt: string;
 }
+interface FamilyEnterprise {
+  id: string;
+  name: string;
+  level: number;
+  invested: number;
+  lastCollectedSeason: number;
+  currentSeason: number;
+  income: number;
+  canCollect: boolean;
+}
+
 interface FamilyDetail extends FamilySummary {
   members: FamilyMember[];
   invites: FamilyInvite[];
   treasuryEntries: FamilyTreasuryEntry[];
+  enterprise: FamilyEnterprise | null;
 }
 interface IncomingInvite {
   id: string;
@@ -211,6 +223,8 @@ export function FamilyPanel() {
   const [lives, setLives] = useState<Array<{ id: string; name: string; universeId: string; status: string }>>([]);
   const [treasuryLife, setTreasuryLife] = useState("");
   const [treasuryAmount, setTreasuryAmount] = useState("10");
+  const [enterpriseName, setEnterpriseName] = useState("");
+  const [investAmount, setInvestAmount] = useState("50");
   const [audit, setAudit] = useState<Array<{ id: string; action: string; actor: string; createdAt: string }>>([]);
   const [chronicle, setChronicle] = useState<FamilyChronicleEntry[]>([]);
 
@@ -390,6 +404,39 @@ export function FamilyPanel() {
     await run(async () => {
       await apiFetch(`/api/families/${selected.id}/disband`, { method: "POST", body: "{}" });
       setSelected(null);
+    });
+  }
+
+  async function createEnterprise() {
+    if (!selected || enterpriseName.trim().length < 3) return;
+    await run(async () => {
+      setSelected(await apiFetch<FamilyDetail>(`/api/families/${selected.id}/enterprise`, {
+        method: "POST",
+        body: JSON.stringify({ actionId: crypto.randomUUID(), name: enterpriseName.trim() })
+      }));
+      setEnterpriseName("");
+    });
+  }
+
+  async function investEnterprise() {
+    if (!selected) return;
+    const amount = Number(investAmount);
+    if (!Number.isInteger(amount) || amount < 10) return;
+    await run(async () => {
+      setSelected(await apiFetch<FamilyDetail>(`/api/families/${selected.id}/enterprise/invest`, {
+        method: "POST",
+        body: JSON.stringify({ actionId: crypto.randomUUID(), amount })
+      }));
+    });
+  }
+
+  async function collectEnterprise() {
+    if (!selected) return;
+    await run(async () => {
+      setSelected(await apiFetch<FamilyDetail>(`/api/families/${selected.id}/enterprise/collect`, {
+        method: "POST",
+        body: JSON.stringify({ actionId: crypto.randomUUID() })
+      }));
     });
   }
 
@@ -604,6 +651,31 @@ export function FamilyPanel() {
                       <li key={entry.id}>{entry.actorName}: {entry.direction === "deposit" ? "+" : "−"}{entry.amount} · {entry.balanceAfter}</li>
                     ))}
                   </ul>
+                )}
+              </div>
+              <div className="mt-4 border-t border-line pt-3" data-testid="family-enterprise">
+                <h5 className="text-xs text-bone-400">Предприятие семьи</h5>
+                {selected.enterprise ? (
+                  <>
+                    <p className="mt-1 text-sm text-bone-100">{selected.enterprise.name} · ур. {selected.enterprise.level}</p>
+                    <p className="text-xs text-bone-500">
+                      Вложено: {selected.enterprise.invested} · доход: {selected.enterprise.income} · сезон {selected.enterprise.currentSeason}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-end gap-2">
+                      <input className={`${INPUT} max-w-24`} inputMode="numeric" value={investAmount} onChange={(event) => setInvestAmount(event.target.value.replace(/\D/g, ""))} />
+                      <Button variant="quiet" onClick={() => void investEnterprise()} disabled={busy || (selected.myRole !== "leader" && selected.myRole !== "elder")}>Вложить</Button>
+                      <Button variant="quiet" onClick={() => void collectEnterprise()} disabled={busy || !selected.enterprise.canCollect || (selected.myRole !== "leader" && selected.myRole !== "elder")}>
+                        Собрать доход
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="mt-2 flex flex-wrap items-end gap-2">
+                    <input className={`${INPUT} max-w-48`} value={enterpriseName} maxLength={40} onChange={(event) => setEnterpriseName(event.target.value)} placeholder="Название" />
+                    <Button variant="quiet" onClick={() => void createEnterprise()} disabled={busy || selected.myRole !== "leader" || enterpriseName.trim().length < 3}>
+                      Основать за 50
+                    </Button>
+                  </div>
                 )}
               </div>
               {chronicle.length > 0 && (

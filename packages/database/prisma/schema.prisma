@@ -786,6 +786,7 @@ model Family {
   invites FamilyInvite[]
   audits  FamilyAudit[]
   treasuryEntries FamilyTreasuryEntry[]
+  enterprise    FamilyEnterprise?
 
   @@unique([universeId, nameKey])
   @@index([universeId, reputation])
@@ -863,6 +864,24 @@ model FamilyTreasuryEntry {
   @@unique([familyId, actionId])
   @@index([familyId, createdAt])
   @@map("family_treasury_entries")
+}
+
+/// R4.5: account-level family enterprise funded by the family treasury.
+model FamilyEnterprise {
+  id            String   @id @default(uuid()) @db.Uuid
+  familyId      String   @unique @map("family_id") @db.Uuid
+  universeId    String   @map("universe_id") @db.VarChar(32)
+  name          String   @db.VarChar(40)
+  level         Int      @default(1)
+  invested      Int      @default(0)
+  lastCollectedSeason Int @default(0) @map("last_collected_season")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@index([universeId])
+  @@map("family_enterprises")
 }
 
 model Insight {

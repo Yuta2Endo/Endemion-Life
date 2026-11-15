@@ -25,6 +25,9 @@ const updateSchema = z.strictObject({
   visibility: z.enum(["public", "invite"])
 });
 const targetSchema = z.strictObject({ playerId: z.uuid() });
+const enterpriseCreateSchema = z.strictObject({ actionId: z.uuid(), name: z.string().trim().min(3).max(40) });
+const enterpriseInvestSchema = z.strictObject({ actionId: z.uuid(), amount: z.int().min(10).max(10_000) });
+const enterpriseCollectSchema = z.strictObject({ actionId: z.uuid() });
 const listSchema = z.object({ universeId: z.string().trim().min(1).max(32).optional() });
 const consentSchema = z.strictObject({ accepts: z.boolean() });
 const treasurySchema = z.strictObject({
@@ -61,6 +64,33 @@ export class FamilyController {
     const input = parseOrThrow(listSchema, query);
     if (!input.universeId) throw new ApiError(400, "VALIDATION", "Укажите мир.");
     return { family: await this.families.mine(player.id, input.universeId) };
+  }
+
+  @Get(":id/enterprise")
+  async enterprise(@Req() request: Request, @Param("id") id: string) {
+    const { player } = await this.sessions.requireAccount(request);
+    return { enterprise: await this.families.enterprise(player.id, idOf(id)) };
+  }
+
+  @Post(":id/enterprise")
+  @HttpCode(200)
+  async createEnterprise(@Req() request: Request, @Param("id") id: string, @Body() body: unknown) {
+    const { player } = await this.sessions.requireAccount(request);
+    return this.families.createEnterprise(player.id, idOf(id), parseOrThrow(enterpriseCreateSchema, body));
+  }
+
+  @Post(":id/enterprise/invest")
+  @HttpCode(200)
+  async investEnterprise(@Req() request: Request, @Param("id") id: string, @Body() body: unknown) {
+    const { player } = await this.sessions.requireAccount(request);
+    return this.families.investEnterprise(player.id, idOf(id), parseOrThrow(enterpriseInvestSchema, body));
+  }
+
+  @Post(":id/enterprise/collect")
+  @HttpCode(200)
+  async collectEnterprise(@Req() request: Request, @Param("id") id: string, @Body() body: unknown) {
+    const { player } = await this.sessions.requireAccount(request);
+    return this.families.collectEnterprise(player.id, idOf(id), parseOrThrow(enterpriseCollectSchema, body));
   }
 
   @Post()
