@@ -325,7 +325,7 @@ describe("Stage 05: вклад в общий мир", () => {
     const updated = await t.prisma.client.life.findUniqueOrThrow({ where: { id: life.id } });
     const updatedState = updated.state as { character: { wealth: number }; economy: { goods: Record<string, number> } };
     expect(updatedState.character.wealth).toBe(order.reward);
-    expect(updatedState.economy.goods[order.goodId]).toBe(0);
+    expect(updatedState.economy.goods[order.goodId]).toBeUndefined();
     expect(await t.prisma.client.worldOrder.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ status: "fulfilled" });
 
     const replay = await post(a, `/api/world/hunter/orders/${order.id}/fulfill`, { actionId, lifeId: life.id }).expect(200);

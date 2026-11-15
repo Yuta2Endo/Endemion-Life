@@ -90,11 +90,13 @@ export function PlayerContractsPanel({ life, onRefresh }: { life: LifeView; onRe
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [guest, setGuest] = useState(false);
+  const [loadedAt, setLoadedAt] = useState(0);
 
   const load = useCallback(async () => {
     try {
       const data = await apiFetch<{ contracts: Contract[] }>(`/api/contracts?universeId=${encodeURIComponent(life.universeId)}`);
       setContracts(data.contracts);
+      setLoadedAt(Date.now());
       setGuest(false);
     } catch (error) {
       if (error instanceof ClientError && (error.status === 401 || error.code === "ACCOUNT_REQUIRED")) setGuest(true);
@@ -186,7 +188,7 @@ export function PlayerContractsPanel({ life, onRefresh }: { life: LifeView; onRe
         <ul className="mt-3 space-y-2">
           {contracts.map((contract) => {
             const auction = contract.kind === "auction";
-            const ended = auction && contract.auctionEndsAt !== null && new Date(contract.auctionEndsAt).getTime() <= Date.now();
+            const ended = auction && contract.auctionEndsAt !== null && new Date(contract.auctionEndsAt).getTime() <= loadedAt;
             const minimum = contract.currentBid === null ? (contract.minBid ?? 1) : contract.currentBid + 1;
             return (
               <li key={contract.id} className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-line px-3 py-2">

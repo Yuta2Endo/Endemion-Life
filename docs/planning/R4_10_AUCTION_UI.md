@@ -49,6 +49,7 @@ Production and local databases currently contain **0** saved lives with zero-val
 | Check | Result |
 |---|---|
 | Stage 06 contracts/market API e2e | **8/8** |
+| Stage 05 world orders API e2e | **11/11** |
 | Auction bid, settlement, buyer payment | PASS |
 | Automatic settlement on board read | PASS |
 | Cancel auction with bids rejected | PASS |
