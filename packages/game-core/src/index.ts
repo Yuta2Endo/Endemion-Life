@@ -394,6 +394,18 @@ export {
 export { adventuresOf, contentProblems, findAdventure, findPlace, placesOf } from "./adventure/content.js";
 export type { AdventureDefinition, AdventureState, PlaceDefinition, StepOutcome, VentureChoice } from "./adventure/types.js";
 export {
+  presentAtlas,
+  type AtlasAdventureStatus,
+  type AtlasAdventureView,
+  type AtlasFactionView,
+  type AtlasPlaceView,
+  type AtlasProgressView,
+  type AtlasSnapshot,
+  type AtlasSocialClassView,
+  type AtlasTrackView,
+  type AtlasView
+} from "./atlas/atlas.js";
+export {
   presentHeirs,
   presentLegacy,
   presentLineage,

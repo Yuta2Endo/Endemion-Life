@@ -18,12 +18,13 @@ import type { MessageKey } from "@/lib/messages";
 import type { GameStore } from "@/lib/store";
 import { useI18n } from "../locale-provider";
 import { AdventurePanel } from "./adventure-panel";
+import { AtlasPanel } from "./atlas-panel";
 import { MasteryPanel } from "./mastery-panel";
 import { EconomyPanel } from "./economy-panel";
 import { LineagePanel } from "./lineage";
 import { WorldPanel } from "./world-panel";
 
-type Section = "bio" | "family" | "lineage" | "world" | "economy" | "adventure" | "skills" | "people";
+type Section = "bio" | "family" | "lineage" | "world" | "atlas" | "economy" | "adventure" | "skills" | "people";
 
 function Signed({ value }: { value: number }) {
   const tone = value > 0 ? "text-jade-300" : value < 0 ? "text-blood-300" : "text-bone-300";
@@ -605,6 +606,7 @@ export function Dossier({
     { id: "family", label: t("dossier.family") },
     { id: "lineage", label: t("dossier.lineage") },
     { id: "world", label: t("dossier.world") },
+    { id: "atlas", label: t("dossier.atlas") },
     { id: "economy", label: t("dossier.economy") },
     { id: "adventure", label: t("dossier.adventure") },
     { id: "skills", label: t("dossier.skills") },
@@ -684,6 +686,7 @@ export function Dossier({
       {section === "family" && <FamilyTree life={life} />}
       {section === "lineage" && <LineagePanel life={life} store={store} />}
       {section === "world" && <WorldPanel life={life} />}
+      {section === "atlas" && <AtlasPanel life={life} />}
       {section === "economy" && <EconomyPanel life={life} busy={busy} onTrade={onTrade} onRefresh={onRefresh} />}
       {section === "adventure" && (
         <>
