@@ -1,6 +1,6 @@
 // Проверка контента: опечатка в id события или способности должна ронять тесты, а не ломать игру
 import { describe, expect, it } from "vitest";
-import { COMMON_EVENTS, eventIndex, listUniverses, UNIVERSE_IDS, type Condition, type Effect, type EventDefinition } from "../src/index.js";
+import { COMMON_EVENTS, contentProblems, eventIndex, eventProblems, listUniverses, PEOPLE_EVENTS, UNIVERSE_IDS, type Condition, type Effect, type EventDefinition } from "../src/index.js";
 
 function allEffects(event: EventDefinition): Effect[] {
   return event.choices.flatMap((c) => [...c.success.effects, ...(c.failure?.effects ?? [])]);
@@ -60,5 +60,13 @@ describe("Контент вселенных", () => {
       expect(text.ru.trim().length).toBeGreaterThan(0);
       expect(text.en.trim().length).toBeGreaterThan(0);
     }
+  });
+
+  it("R5.5: сцены людей не ломают проверку событий и контента", () => {
+    const scenes = PEOPLE_EVENTS.filter((event) => event.id.startsWith("common.") && ["friend-difficult-favor", "friend-favor-return", "rival-truce", "mentor-final-test", "family-duty", "child-dangerous-path", "partner-distance"].some((id) => event.id === `common.${id}`));
+    expect(scenes).toHaveLength(7);
+    expect(scenes.every((event) => event.kind === "npc")).toBe(true);
+    expect(eventProblems()).toEqual([]);
+    expect(contentProblems()).toEqual([]);
   });
 });

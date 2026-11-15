@@ -441,17 +441,24 @@ function NpcRelationships({ npc }: { npc: NpcView }) {
   );
 }
 
-function NpcEvents({ npc }: { npc: NpcView }) {
+function NpcLog({ npc }: { npc: NpcView }) {
   const { l, t } = useI18n();
   return (
     <div className="mt-2" data-testid="npc-events">
-      <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("dossier.events")}</p>
-      {npc.events.length === 0 ? (
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-[10px] uppercase tracking-wider text-bone-500">{t("dossier.fullLog")}</p>
+        {npc.log.length > 0 && (
+          <p className="text-[10px] text-bone-500" data-testid="npc-log-count">
+            {t("dossier.logCount", { n: npc.log.length })}
+          </p>
+        )}
+      </div>
+      {npc.log.length === 0 ? (
         <p className="text-[11px] text-bone-500">{t("dossier.noEvents")}</p>
       ) : (
-        <ul className="mt-0.5 space-y-0.5">
-          {npc.events.slice(0, 5).map((event, index) => (
-            <li key={`${event.age}-${index}`} className="text-[11px] text-bone-500">
+        <ul className="mt-0.5 max-h-36 space-y-0.5 overflow-y-auto pr-1" data-testid="npc-log" data-count={npc.log.length}>
+          {npc.log.map((event, index) => (
+            <li key={`${event.age}-${event.kind}-${index}`} className="text-[11px] text-bone-500">
               <span className="tabular-nums text-bone-400">{event.age}</span> · {l(event.text)}
             </li>
           ))}
@@ -461,7 +468,44 @@ function NpcEvents({ npc }: { npc: NpcView }) {
   );
 }
 
-function People({ life, busy, onInteract }: { life: LifeView; busy: boolean; onInteract: (npcId: string, interaction: InteractionId) => void }) {
+function PeopleSummary({ people }: { people: NpcView[] }) {
+  const { l, t } = useI18n();
+  const living = people.filter((npc) => npc.alive).length;
+  const dead = people.length - living;
+  const bonds = people.filter((npc) => npc.bond).length;
+  const friends = people.filter((npc) => npc.role === "friend").length;
+  const rivals = people.filter((npc) => npc.role === "rival").length;
+  const family = people.filter((npc) => npc.family).length;
+  const strongest = [...people].sort((a, b) => Math.abs(b.affinity) - Math.abs(a.affinity) || a.name.localeCompare(b.name))[0];
+  const cells = [
+    { id: "living", label: t("dossier.summaryLiving"), value: living },
+    { id: "dead", label: t("dossier.summaryDead"), value: dead },
+    { id: "bonds", label: t("dossier.summaryBonds"), value: bonds },
+    { id: "friends", label: t("dossier.summaryFriends"), value: friends },
+    { id: "rivals", label: t("dossier.summaryRivals"), value: rivals },
+    { id: "family", label: t("dossier.summaryFamily"), value: family }
+  ];
+  return (
+    <div className="rounded-md border border-line bg-ink-950/50 p-3" data-testid="people-summary">
+      <Heading>{t("dossier.peopleSummary")}</Heading>
+      <dl className="grid grid-cols-2 gap-2 text-center sm:grid-cols-3">
+        {cells.map((cell) => (
+          <div key={cell.id} className="rounded border border-line/70 bg-ink-900/40 px-2 py-1.5" data-summary={cell.id} data-value={cell.value}>
+            <dt className="text-[10px] uppercase tracking-wider text-bone-500">{cell.label}</dt>
+            <dd className="font-display text-lg text-bone-100">{cell.value}</dd>
+          </div>
+        ))}
+      </dl>
+      {strongest && (
+        <p className="mt-2 text-[11px] text-bone-400" data-testid="strongest-tie" data-npc={strongest.id} data-value={strongest.affinity}>
+          {t("dossier.strongestTie")} <span className="text-bone-100">{strongest.name}</span> · {l(strongest.affinityLabel)} <Signed value={strongest.affinity} />
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function People({ life, busy, onInteract }: { life: LifeView; busy: boolean; onInteract: (npcId: string, interaction: InteractionId) => void }) {
   const { l, t } = useI18n();
   const people = [...life.profile.npcs].sort((a, b) => Number(b.alive) - Number(a.alive) || b.affinity - a.affinity);
   if (people.length === 0)
@@ -474,6 +518,7 @@ function People({ life, busy, onInteract }: { life: LifeView; busy: boolean; onI
   return (
     <div className="space-y-3" data-testid="dossier-people">
       <Connections life={life} />
+      <PeopleSummary people={people} />
       {!dead && <p className="text-xs text-bone-500">{t("dossier.interactHint")}</p>}
       <ul className="space-y-3">
         {people.map((npc) => {
@@ -502,9 +547,14 @@ function People({ life, busy, onInteract }: { life: LifeView; busy: boolean; onI
                   .join(" · ")}
               </p>
               <p className="mt-1 text-[11px] text-bone-500">{t("dossier.met", { age: npc.metAt })}</p>
+              {npc.bondAt !== null && (
+                <p className="mt-1 text-[11px] text-gold-300" data-testid="npc-bond-age" data-age={npc.bondAt}>
+                  {t("dossier.bondAt", { age: npc.bondAt })}
+                </p>
+              )}
               <StoryList npc={npc} />
               <NpcRelationships npc={npc} />
-              <NpcEvents npc={npc} />
+              <NpcLog npc={npc} />
               <div className="mt-2 flex items-center gap-2">
                 <div
                   className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-ink-950/80 ring-1 ring-line"

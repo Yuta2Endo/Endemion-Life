@@ -80,6 +80,8 @@ export interface NpcView {
   skillId: string | null;
   /** Отношение хоть раз доходило до самого близкого. Повтор не отмечается */
   bond: boolean;
+  /** R5.5: возраст, когда был записан момент близости. null — записи уже нет в журнале или её не было */
+  bondAt: number | null;
   interactions: InteractionView[];
   /** Stage 03: возрастная стадия, цель жизни, сословие и поселение для досье */
   stage: LocalizedText;
@@ -88,7 +90,10 @@ export interface NpcView {
   settlement: LocalizedText | null;
   relationships: RelationshipView[];
   stories: NpcStoryView[];
+  /** Последние события — совместимое поле. Полный журнал — в log */
   events: NpcEventView[];
+  /** R5.5: весь текущий журнал NPC (до 12 записей), сначала новые */
+  log: NpcEventView[];
 }
 
 export interface MeterView {
@@ -212,6 +217,10 @@ function logText(state: GameState, universe: ReturnType<typeof getUniverse>, ent
   return LOG_TEXT[entry.kind] ?? t(entry.kind, entry.kind);
 }
 
+function npcEvents(state: GameState, universe: ReturnType<typeof getUniverse>, npc: GameState["npcs"][number], entries: NpcLogEntry[]): NpcEventView[] {
+  return entries.map((entry) => ({ age: entry.at, kind: entry.kind, npcId: npc.id, npc: npc.name, text: logText(state, universe, entry) }));
+}
+
 function storyView(state: GameState, npcName: string, story: ReturnType<typeof storiesOf>[number]): NpcStoryView {
   const definition = findStory(story.storyId);
   const stageIndex = definition ? Math.min(story.stage, Math.max(0, definition.stages.length - 1)) : 0;
@@ -306,35 +315,41 @@ export function presentProfile(state: GameState): LifeProfile {
     familyHistory: state.background.familyHistory,
     biography: state.background.biography,
     upbringing: creationUpbringing(universe, state.character),
-    npcs: state.npcs.map((npc) => ({
-      id: npc.id,
-      role: npc.role,
-      roleName: roleName(npc.role, npc.gender),
-      name: npc.name,
-      gender: npc.gender,
-      age: Math.max(0, npcAge(npc, age)),
-      alive: npc.alive,
-      diedAt: npc.diedAt,
-      metAt: npc.metAt,
-      family: isFamily(npc),
-      affinity: npc.affinity,
-      affinityLabel: affinityLabel(npc.affinity),
-      trait: NPC_TRAITS.find((x) => x.id === npc.traitId)?.name ?? t("—", "—"),
-      temperament: TEMPERAMENTS.find((x) => x.id === npc.temperamentId)?.name ?? t("—", "—"),
-      occupation: npc.occupation,
-      bio: npc.bio,
-      power: npc.power,
-      skillId: npc.skillId,
-      bond: npc.log.some((entry) => entry.kind === "bond"),
-      interactions: npc.alive ? interactionsOf(ctx, npc.id) : [],
-      stage: npcLifeStage(universe, npc, Math.max(0, npcAge(npc, age))),
-      goal: npc.goal ? GOAL_NAMES[npc.goal] : null,
-      socialClass: className(state, npc.socialClassId),
-      settlement: npcSettlementName(universe, npc.id),
-      relationships: relationshipsOfNpc(state, npc.id),
-      stories: storiesOf(state, npc.id).map((story) => storyView(state, npc.name, story)),
-      events: npc.log.slice(-6).reverse().map((entry) => ({ age: entry.at, kind: entry.kind, npcId: npc.id, npc: npc.name, text: logText(state, universe, entry) }))
-    })),
+    npcs: state.npcs.map((npc) => {
+      const log = npcEvents(state, universe, npc, [...npc.log].reverse());
+      const bondEntry = log.find((entry) => entry.kind === "bond");
+      return {
+        id: npc.id,
+        role: npc.role,
+        roleName: roleName(npc.role, npc.gender),
+        name: npc.name,
+        gender: npc.gender,
+        age: Math.max(0, npcAge(npc, age)),
+        alive: npc.alive,
+        diedAt: npc.diedAt,
+        metAt: npc.metAt,
+        family: isFamily(npc),
+        affinity: npc.affinity,
+        affinityLabel: affinityLabel(npc.affinity),
+        trait: NPC_TRAITS.find((x) => x.id === npc.traitId)?.name ?? t("—", "—"),
+        temperament: TEMPERAMENTS.find((x) => x.id === npc.temperamentId)?.name ?? t("—", "—"),
+        occupation: npc.occupation,
+        bio: npc.bio,
+        power: npc.power,
+        skillId: npc.skillId,
+        bond: bondEntry !== undefined,
+        bondAt: bondEntry?.age ?? null,
+        interactions: npc.alive ? interactionsOf(ctx, npc.id) : [],
+        stage: npcLifeStage(universe, npc, Math.max(0, npcAge(npc, age))),
+        goal: npc.goal ? GOAL_NAMES[npc.goal] : null,
+        socialClass: className(state, npc.socialClassId),
+        settlement: npcSettlementName(universe, npc.id),
+        relationships: relationshipsOfNpc(state, npc.id),
+        stories: storiesOf(state, npc.id).map((story) => storyView(state, npc.name, story)),
+        events: log.slice(0, 6),
+        log
+      };
+    }),
     connections: connectionsOf(state),
     recentChanges: recentChangesOf(state, universe),
     meters: universe.meters.map((meter) => ({

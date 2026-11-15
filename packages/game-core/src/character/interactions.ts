@@ -77,6 +77,7 @@ export const INTERACTION_RULES: Readonly<Record<InteractionId, InteractionRule>>
     success: (ctx, npc) => {
       changeSkill(ctx, npc.skillId ?? "lore", LEARN_GAIN);
       changeNpcAffinity(ctx, npc.id, 3);
+      logRelationship(ctx, npc, "mentor", 3);
       gainXp(ctx, 10);
       return t(`${npc.name} терпеливо показывает, как надо.`, `${npc.name} patiently shows how it is done.`);
     },
@@ -92,14 +93,19 @@ export const INTERACTION_RULES: Readonly<Record<InteractionId, InteractionRule>>
     difficulty: 10,
     success: (ctx, npc) => {
       changeSkill(ctx, "melee", 2);
-      changeNpcAffinity(ctx, npc.id, npc.role === "rival" ? 4 : 2);
+      const gain = npc.role === "rival" ? 4 : 2;
+      changeNpcAffinity(ctx, npc.id, gain);
+      logRelationship(ctx, npc, npc.role === "rival" ? "rival" : "friend", gain);
       gainXp(ctx, 15);
       return t(`Победа! ${npc.name} признаёт силу соперника.`, `Victory! ${npc.name} acknowledges your strength.`);
     },
     failure: (ctx, npc) => {
       changeSkill(ctx, "melee", 1);
       applyEffect(ctx, { type: "resource", resource: "health", delta: -8 });
-      if (npc.role === "rival") changeNpcAffinity(ctx, npc.id, -3);
+      if (npc.role === "rival") {
+        changeNpcAffinity(ctx, npc.id, -3);
+        logRelationship(ctx, npc, "rival", -3);
+      }
       return t("Поражение и синяки. Зато есть чему учиться.", "Defeat and bruises. But there is much to learn.");
     }
   },
@@ -130,10 +136,12 @@ export const INTERACTION_RULES: Readonly<Record<InteractionId, InteractionRule>>
       applyEffect(ctx, { type: "wealth", delta: gold });
       applyEffect(ctx, { type: "resource", resource: "health", delta: 15 });
       changeNpcAffinity(ctx, npc.id, -3);
+      logRelationship(ctx, npc, "friend", -3);
       return t(`${npc.name} помогает без лишних слов.`, `${npc.name} helps without a word.`);
     },
     failure: (ctx, npc) => {
       changeNpcAffinity(ctx, npc.id, -6);
+      logRelationship(ctx, npc, "friend", -6);
       return t("Отказ. Видимо, просьба была не ко времени.", "A refusal. Apparently it was the wrong time to ask.");
     }
   },

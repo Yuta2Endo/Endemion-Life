@@ -260,6 +260,300 @@ export const PEOPLE_EVENTS: readonly EventDefinition[] = [
         success: { text: t("Правда выходит. Доверие не рушится, но теплее не становится.", "The truth comes out. Trust does not break, but it does not grow warmer."), effects: [fx.rep(3), fx.affinity("family", -4)] }
       }
     ]
+  },
+  {
+    id: "common.friend-difficult-favor",
+    kind: "npc",
+    title: t("Трудная просьба друга", "A friend's difficult request"),
+    text: t(
+      "Друг приходит с просьбой, о которой не говорят вслух: спрятать человека, соврать за него или взять чужую вину на себя.",
+      "A friend comes with a request no one says aloud: hide someone, lie for them, or take another's blame."
+    ),
+    minAge: 16,
+    maxOccurrences: 2,
+    cooldown: 9,
+    weight: 0.9,
+    conditions: [when.npc("friend"), when.affinity("friend", 25)],
+    choices: [
+      {
+        id: "take-blame",
+        text: t("Взять вину на себя", "Take the blame"),
+        check: check(["willpower", "charisma"], 13),
+        success: {
+          text: t("Друг остаётся свободен, а {name} платит за чужую ошибку.", "The friend stays free, and {name} pays for another's mistake."),
+          effects: [fx.affinity("friend", 18), fx.rep(-3), fx.karma(8), fx.schedule("common.friend-favor-return", 3)]
+        },
+        failure: {
+          text: t("Правда выходит наружу: друг спасён, но доверие надтреснуто.", "The truth comes out: the friend is saved, but trust is cracked."),
+          effects: [fx.affinity("friend", 5), fx.rep(-8), fx.health(-10)]
+        }
+      },
+      {
+        id: "hide",
+        text: t("Спрятать и молчать", "Hide them and stay silent"),
+        success: {
+          text: t("Никто ничего не узнал. Друг запомнит это навсегда.", "No one ever learns. The friend will remember it forever."),
+          effects: [fx.affinity("friend", 12), fx.karma(4), fx.schedule("common.friend-favor-return", 3)]
+        }
+      },
+      {
+        id: "refuse",
+        text: t("Отказать, но сохранить тайну", "Refuse, but keep the secret"),
+        success: {
+          text: t("Дружба остаётся, но между вами теперь стоит невысказанное.", "The friendship remains, but something unspoken now stands between you."),
+          effects: [fx.affinity("friend", -8), fx.stat("wisdom", 1)]
+        }
+      }
+    ]
+  },
+  {
+    id: "common.friend-favor-return",
+    kind: "npc",
+    title: t("Долг дружбы", "A friendship's debt"),
+    text: t(
+      "Спустя годы друг возвращается и хочет отдать долг — деньгами, добрым делом или словом.",
+      "Years later the friend returns to repay the debt — in coin, in kindness, or in words."
+    ),
+    scheduledOnly: true,
+    minAge: 16,
+    maxOccurrences: 1,
+    conditions: [when.npc("friend")],
+    choices: [
+      {
+        id: "accept-repayment",
+        text: t("Принять помощь", "Accept the help"),
+        success: { text: t("Друг возвращает долг сполна.", "The friend repays the debt in full."), effects: [fx.wealth(25), fx.affinity("friend", 10)] }
+      },
+      {
+        id: "pass-on",
+        text: t("Попросить помочь другому", "Ask them to help someone else"),
+        success: { text: t("Добро уходит дальше по кругу.", "The kindness passes on around the circle."), effects: [fx.karma(8), fx.rep(3), fx.affinity("friend", 6)] }
+      },
+      {
+        id: "no-debt",
+        text: t("Сказать, что долга нет", "Say there is no debt"),
+        success: { text: t("Друг смотрит иначе. Это стоит дороже золота.", "The friend looks at you differently. It is worth more than gold."), effects: [fx.affinity("friend", 14), fx.stat("wisdom", 1)] }
+      }
+    ]
+  },
+  {
+    id: "common.rival-truce",
+    kind: "npc",
+    title: t("Перемирие", "A truce"),
+    text: t("Соперник приходит первым и предлагает закончить вражду — на своих условиях.", "The rival comes first and offers to end the feud — on their own terms."),
+    minAge: 18,
+    maxOccurrences: 1,
+    weight: 0.8,
+    conditions: [when.npc("rival"), when.affinityAtMost("rival", 40)],
+    choices: [
+      {
+        id: "accept",
+        text: t("Принять без условий", "Accept without conditions"),
+        success: {
+          text: t("Вражда кончается там, где началась.", "The feud ends where it began."),
+          effects: [fx.affinity("rival", 20), fx.npcRole("rival", "friend"), fx.karma(6), fx.stat("wisdom", 1)]
+        }
+      },
+      {
+        id: "terms",
+        text: t("Принять, но на своих условиях", "Accept, but on your own terms"),
+        check: check(["charisma", "willpower"], 12),
+        success: {
+          text: t("Соперники остаются соперниками — и впервые уважают друг друга.", "They remain rivals — and for the first time respect each other."),
+          effects: [fx.affinity("rival", 15), fx.rep(3)]
+        },
+        failure: {
+          text: t("Условия звучат как оскорбление. Перемирие сорвано.", "The terms sound like an insult. The truce is broken."),
+          effects: [fx.affinity("rival", -10), fx.stat("willpower", 1)]
+        }
+      },
+      {
+        id: "refuse",
+        text: t("Отказать: вражда — топливо", "Refuse: the feud is fuel"),
+        success: {
+          text: t("Соперник уходит. Теперь он знает, что пощады не будет.", "The rival leaves. Now they know there will be no mercy."),
+          effects: [fx.affinity("rival", -12), fx.stat("willpower", 1), fx.xp(15)]
+        }
+      }
+    ]
+  },
+  {
+    id: "common.mentor-final-test",
+    kind: "npc",
+    title: t("Последнее испытание", "The final test"),
+    text: t(
+      "Наставник объявляет, что больше учить нечему: {name} должен сам пройти то, что не прошёл он.",
+      "The mentor declares there is nothing left to teach: {name} must pass what the mentor did not."
+    ),
+    minAge: 18,
+    maxOccurrences: 1,
+    weight: 0.8,
+    conditions: [when.npc("mentor"), when.affinity("mentor", 30)],
+    choices: [
+      {
+        id: "accept",
+        text: t("Пройти испытание", "Face the test"),
+        check: check(["intelligence", "willpower"], 14),
+        success: {
+          text: t("Испытание пройдено. Наставник впервые называет {name} равным.", "The test is passed. The mentor calls {name} an equal for the first time."),
+          effects: [fx.affinity("mentor", 15), fx.stat("wisdom", 2), fx.xp(45)]
+        },
+        failure: {
+          text: t("Провал. Наставник молчит, но остаётся рядом.", "Failure. The mentor says nothing, but stays nearby."),
+          effects: [fx.affinity("mentor", 5), fx.health(-10), fx.stat("willpower", 1)]
+        }
+      },
+      {
+        id: "delay",
+        text: t("Попросить ещё год", "Ask for one more year"),
+        success: {
+          text: t("Наставник даёт год — и предупреждает, что второго не будет.", "The mentor grants a year — and warns there will not be a second."),
+          effects: [fx.affinity("mentor", -5), fx.stat("intelligence", 1)]
+        }
+      },
+      {
+        id: "refuse",
+        text: t("Отказаться: свой путь", "Refuse: my own road"),
+        success: {
+          text: t("Наставник отпускает {name} без благословения.", "The mentor lets {name} go without a blessing."),
+          effects: [fx.affinity("mentor", -15), fx.stat("willpower", 2)]
+        }
+      }
+    ]
+  },
+  {
+    id: "common.family-duty",
+    kind: "npc",
+    title: t("Долг перед домом", "A duty to the house"),
+    text: t(
+      "Родитель зовёт {name} на семейный совет: кто-то должен остаться и держать дом, пока остальные уходят.",
+      "A parent calls {name} to a family council: someone must stay and keep the house while the others leave."
+    ),
+    minAge: 17,
+    maxOccurrences: 2,
+    cooldown: 10,
+    weight: 0.9,
+    conditions: [when.npc("parent"), when.affinity("parent", 15)],
+    choices: [
+      {
+        id: "stay",
+        text: t("Остаться и взять дом на себя", "Stay and take the house on your shoulders"),
+        success: {
+          text: t("Дом держится. Мечты отложены — не забыты.", "The house holds. Dreams are postponed — not forgotten."),
+          effects: [fx.affinity("parent", 18), fx.karma(5), fx.stat("willpower", 1)]
+        }
+      },
+      {
+        id: "negotiate",
+        text: t("Предложить свой уговор", "Offer your own bargain"),
+        check: check(["charisma", "wisdom"], 12),
+        success: {
+          text: t("Родитель соглашается: уйти можно, но с условиями.", "The parent agrees: you may leave, but with conditions."),
+          effects: [fx.affinity("parent", 10), fx.stat("charisma", 1)]
+        },
+        failure: {
+          text: t("Разговор кончается словами, которые долго будут помнить.", "The talk ends with words that will be remembered for a long time."),
+          effects: [fx.affinity("parent", -12), fx.res("energy", -10)]
+        }
+      },
+      {
+        id: "leave",
+        text: t("Уйти всё равно", "Leave anyway"),
+        success: {
+          text: t("Дверь закрывается тихо. {name} не оборачивается.", "The door closes quietly. {name} does not look back."),
+          effects: [fx.affinity("parent", -18), fx.stat("willpower", 2), fx.karma(-3)]
+        }
+      }
+    ]
+  },
+  {
+    id: "common.child-dangerous-path",
+    kind: "npc",
+    title: t("Ребёнок выбирает дорогу", "The child chooses a road"),
+    text: t(
+      "Ребёнок объявляет, что уходит туда, откуда не все возвращаются. В глазах — решимость {name}.",
+      "The child announces they are leaving for a place from which not everyone returns. In their eyes is {name}'s own resolve."
+    ),
+    minAge: 32,
+    maxOccurrences: 1,
+    weight: 0.8,
+    conditions: [when.npcAged("child", 12)],
+    choices: [
+      {
+        id: "bless",
+        text: t("Благословить", "Give your blessing"),
+        success: {
+          text: t("Ребёнок уходит с высоко поднятой головой. {name} учится ждать.", "The child leaves with their head high. {name} learns to wait."),
+          effects: [fx.affinity("child", 18), fx.karma(6), fx.stat("wisdom", 1)]
+        }
+      },
+      {
+        id: "train",
+        text: t("Сначала научить всему, что умеешь", "First teach everything you know"),
+        check: check(["strength", "willpower"], 12),
+        success: {
+          text: t("Уроки длятся год. Ребёнок уходит подготовленным.", "The lessons last a year. The child leaves prepared."),
+          effects: [fx.affinity("child", 12), fx.xp(20)]
+        },
+        failure: {
+          text: t("Ребёнок уходит раньше, чем {name} успевает передать главное.", "The child leaves before {name} can pass on what matters most."),
+          effects: [fx.affinity("child", -8), fx.health(-5)]
+        }
+      },
+      {
+        id: "forbid",
+        text: t("Запретить", "Forbid it"),
+        success: {
+          text: t("Ребёнок остаётся. Но смотрит на {name} другими глазами.", "The child stays. But they look at {name} differently now."),
+          effects: [fx.affinity("child", -20), fx.stat("willpower", 2)]
+        }
+      }
+    ]
+  },
+  {
+    id: "common.partner-distance",
+    kind: "npc",
+    title: t("Тишина между вами", "The silence between you"),
+    text: t(
+      "Любимый человек садится напротив и просит сказать правду: что изменилось между вами?",
+      "Your beloved sits across from you and asks for the truth: what has changed between you?"
+    ),
+    minAge: 20,
+    maxOccurrences: 2,
+    cooldown: 8,
+    weight: 1,
+    conditions: [when.npc("partner"), when.affinity("partner", 20)],
+    choices: [
+      {
+        id: "honest",
+        text: t("Сказать правду, какой бы она ни была", "Tell the truth, whatever it is"),
+        check: check(["charisma", "wisdom"], 12),
+        success: {
+          text: t("Правда ранит, но разговор возвращает вас друг другу.", "The truth hurts, but the talk brings you back to each other."),
+          effects: [fx.affinity("partner", 16), fx.stat("wisdom", 1)]
+        },
+        failure: {
+          text: t("Правда звучит как приговор. Вечер кончается в разных комнатах.", "The truth sounds like a verdict. The evening ends in separate rooms."),
+          effects: [fx.affinity("partner", -10), fx.res("energy", -10)]
+        }
+      },
+      {
+        id: "time",
+        text: t("Пообещать больше времени", "Promise more time"),
+        success: {
+          text: t("Обещание звучит искренне. Пока этого достаточно.", "The promise sounds sincere. For now it is enough."),
+          effects: [fx.affinity("partner", 8), fx.wealth(-5), fx.res("energy", -5)]
+        }
+      },
+      {
+        id: "silence",
+        text: t("Промолчать и уйти от разговора", "Stay silent and avoid the talk"),
+        success: {
+          text: t("Тишина становится ответом. Любимый человек всё понимает.", "Silence becomes the answer. Your beloved understands everything."),
+          effects: [fx.affinity("partner", -14), fx.stat("willpower", 1)]
+        }
+      }
+    ]
   }
 ];
 
