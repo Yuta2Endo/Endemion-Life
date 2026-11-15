@@ -42,6 +42,7 @@ import { SessionService } from "./session/session.service.js";
 import { SocialController } from "./social/social.controller.js";
 import { SocialService } from "./social/social.service.js";
 import { WorldController } from "./world/world.controller.js";
+import { WorldSchedulerService } from "./world/world.scheduler.service.js";
 import { WorldService } from "./world/world.service.js";
 
 @Module({
@@ -65,6 +66,7 @@ import { WorldService } from "./world/world.service.js";
     InsightsService,
     PresenceService,
     WorldService,
+    WorldSchedulerService,
     // Stage 11.2: проверка portal-утверждений (только для /api/portal/*)
     PortalAuditService,
     PortalJwksService,

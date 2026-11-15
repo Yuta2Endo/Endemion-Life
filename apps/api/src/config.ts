@@ -43,6 +43,9 @@ export interface AppConfig {
    * В рабочей среде не задаётся, пока окна не ведут вручную
    */
   liveOpsToken: string | null;
+  /** R3.1: автоматический сезонный ход общего мира. */
+  worldTickEnabled: boolean;
+  worldTickIntervalMs: number;
   /**
    * Stage 11.2: проверка утверждений портала Endemion (ES256 + JWKS).
    * null — интеграция выключена, /api/portal/* отвечает 404
@@ -110,6 +113,8 @@ const envSchema = z.object({
   ENDEMION_ID_CLIENT_SECRET: z.string().optional(),
   ENDEMION_ID_TOKEN_KEY: z.string().optional(),
   LIVE_OPS_TOKEN: z.string().optional(),
+  WORLD_TICK_ENABLED: z.enum(["true", "false"]).optional(),
+  WORLD_TICK_INTERVAL_MS: z.coerce.number().int().min(60_000).max(3_600_000).default(900_000),
   // Stage 11.2: проверка утверждений портала Endemion
   PORTAL_INTEGRATION_ENABLED: z.enum(["true", "false"]).default("false"),
   PORTAL_JWT_ISSUER: z.string().optional(),
@@ -240,6 +245,8 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     sentryDsn: blankToNull(e.SENTRY_DSN),
     endemionId: readEndemionId(e, production, publicUrl),
     liveOpsToken: blankToNull(e.LIVE_OPS_TOKEN),
+    worldTickEnabled: e.WORLD_TICK_ENABLED === undefined ? production : e.WORLD_TICK_ENABLED === "true",
+    worldTickIntervalMs: e.WORLD_TICK_INTERVAL_MS,
     portal: readPortal(e, production)
   };
 }
