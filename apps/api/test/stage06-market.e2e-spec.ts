@@ -249,4 +249,50 @@ describe("Stage 06.2: рынок игроков", () => {
     const board = await request(t.app.getHttpServer()).get("/api/market?universeId=hunter").expect(200);
     expect((board.body.offers as unknown[]).length).toBe(0);
   });
+
+  it("создаёт контракт с escrow, принимает его и отменяет с возвратом товара", async () => {
+    const seller = agent();
+    const buyer = agent();
+    await account(seller, "contract-seller@example.com");
+    await account(buyer, "contract-buyer@example.com");
+    const sellerLife = await prepare((await life(seller)).id, { stock: 5, wealth: 100 });
+    const buyerLife = await prepare((await life(buyer)).id, { stock: 0, wealth: 1_000 });
+
+    const made = await post(seller, "/api/contracts", {
+      actionId: randomUUID(),
+      lifeId: sellerLife.id,
+      goodId: GOOD.id,
+      qty: 2,
+      price: 50,
+      expectedVersion: sellerLife.version
+    }).expect(201);
+    const contract = made.body.contract as { id: string; total: number };
+    expect(contract.total).toBe(100);
+    const sellerEscrow = await t.prisma.client.life.findUniqueOrThrow({ where: { id: sellerLife.id } });
+    expect((sellerEscrow.state as { economy: { goods: Record<string, number> } }).economy.goods[GOOD.id]).toBe(3);
+
+    const accepted = await post(buyer, `/api/contracts/${contract.id}/accept`, {
+      actionId: randomUUID(),
+      buyerLifeId: buyerLife.id,
+      expectedVersion: buyerLife.version
+    }).expect(200);
+    expect(accepted.body.contract.status).toBe("accepted");
+    const buyerState = await t.prisma.client.life.findUniqueOrThrow({ where: { id: buyerLife.id } });
+    const buyerSave = buyerState.state as { character: { wealth: number }; economy: { goods: Record<string, number> } };
+    expect(buyerSave.character.wealth).toBe(900);
+    expect(buyerSave.economy.goods[GOOD.id]).toBe(2);
+
+    const second = await prepare((await life(seller)).id, { stock: 2, wealth: 100 });
+    const cancelContract = await post(seller, "/api/contracts", {
+      actionId: randomUUID(),
+      lifeId: second.id,
+      goodId: GOOD.id,
+      qty: 1,
+      price: 10,
+      expectedVersion: second.version
+    }).expect(201);
+    await seller.delete(`/api/contracts/${cancelContract.body.contract.id}`).set("Origin", ORIGIN).send({}).expect(200);
+    const returned = await t.prisma.client.life.findUniqueOrThrow({ where: { id: second.id } });
+    expect((returned.state as { economy: { goods: Record<string, number> } }).economy.goods[GOOD.id]).toBe(2);
+  });
 });

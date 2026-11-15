@@ -60,6 +60,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R4.3 (Event Prices) | World events apply one-season price pressure to settlements | **COMPLETE; deployed, no migration** - см. `docs/planning/R4_3_EVENT_PRICES.md` |
 | R4.4 (Settlement Orders) | Seasonal goods orders, gold rewards, idempotent fulfilment, web board | **COMPLETE; deployed, schema 14, migration 20** - см. `docs/planning/R4_4_SETTLEMENT_ORDERS.md` |
 | R4.5 (Family Enterprise) | Treasury-funded family enterprise, levels, seasonal income, web controls | **COMPLETE; deployed, schema 14, migration 21** - см. `docs/planning/R4_5_FAMILY_ENTERPRISE.md` |
+| R4.6 (Player Contracts) | Escrowed goods contracts, accept/cancel, reputation, web panel | **IMPLEMENTED LOCALLY; release pending; migration 22 additive** - см. `docs/planning/R4_6_PLAYER_CONTRACTS.md` |
 
 ## Design (Living Chronicle)
 

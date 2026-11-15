@@ -6,6 +6,7 @@ import { AuthService } from "./auth/auth.service.js";
 import { EndemionIdController } from "./auth/endemion-id.controller.js";
 import { EndemionIdService } from "./auth/endemion-id.service.js";
 import { CatalogController } from "./catalog/catalog.controller.js";
+import { ContractController } from "./contract/contract.controller.js";
 import { ApiExceptionFilter } from "./common/exception.filter.js";
 import { RequestGuard } from "./common/request.guard.js";
 import { APP_CONFIG, readConfig, type AppConfig } from "./config.js";
@@ -46,7 +47,7 @@ import { WorldSchedulerService } from "./world/world.scheduler.service.js";
 import { WorldService } from "./world/world.service.js";
 
 @Module({
-  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, MarketController, ProfileController, SocialController, GuildController, FamilyController, LiveController, InsightsController, PortalController, PresenceController, WorldController],
+  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, MarketController, ContractController, ProfileController, SocialController, GuildController, FamilyController, LiveController, InsightsController, PortalController, PresenceController, WorldController],
   providers: [
     { provide: APP_CONFIG, useFactory: (): AppConfig => readConfig() },
     PrismaService,

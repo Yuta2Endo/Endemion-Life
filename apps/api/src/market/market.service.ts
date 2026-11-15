@@ -67,6 +67,22 @@ export interface MarketTradeView {
   createdAt: string;
 }
 
+export interface PlayerContractView {
+  id: string;
+  universeId: string;
+  goodId: string;
+  goodName: { ru: string; en: string };
+  qty: number;
+  price: number;
+  total: number;
+  status: "open" | "accepted" | "cancelled";
+  sellerName: string;
+  sellerLifeId: string;
+  sellerLifeName: string;
+  mine: boolean;
+  createdAt: string;
+}
+
 export interface CreateOfferInput {
   actionId: string;
   lifeId: string;
@@ -409,6 +425,168 @@ export class MarketService {
   }
 
   /** Closes every live offer of a life whose owner died. Called from succession. */
+  async contracts(playerId: string | null, universeId: string): Promise<{ contracts: PlayerContractView[]; mine: PlayerContractView[] }> {
+    const rows = await this.db.playerContract.findMany({
+      where: { universeId, status: "open" },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: { seller: { select: { id: true, idUsername: true, idDisplayName: true, idAvatarUrl: true } }, sellerLife: { select: { name: true } } }
+    });
+    const view = (row: (typeof rows)[number]): PlayerContractView => ({
+      id: row.id,
+      universeId: row.universeId,
+      goodId: row.goodId,
+      goodName: this.goodName(row.universeId, row.goodId),
+      qty: row.qty,
+      price: row.price,
+      total: row.qty * row.price,
+      status: row.status as PlayerContractView["status"],
+      sellerName: (row as { seller: { idDisplayName: string | null; idUsername: string | null } }).seller.idDisplayName?.trim() || (row as { seller: { idUsername: string | null } }).seller.idUsername?.trim() || "Endemion",
+      sellerLifeId: row.sellerLifeId,
+      sellerLifeName: (row as { sellerLife: { name: string } }).sellerLife.name,
+      mine: row.sellerPlayerId === playerId,
+      createdAt: row.createdAt.toISOString()
+    });
+    const all = rows.map(view);
+    return { contracts: all, mine: all.filter((item) => item.mine) };
+  }
+
+  async createContract(playerId: string, input: { actionId: string; lifeId: string; goodId: string; qty: number; price: number; expectedVersion: number }) {
+    return this.db.$transaction(async (tx) => {
+      const replay = await tx.playerContract.findUnique({ where: { sellerLifeId_actionId: { sellerLifeId: input.lifeId, actionId: input.actionId } } });
+      if (replay) return { contract: this.contractView(replay, playerId), replayed: true };
+      const row = await this.lockLife(tx, playerId, input.lifeId);
+      if (row.version !== input.expectedVersion) throw new ApiError(409, "VERSION_CONFLICT", "Версия жизни изменилась.");
+      const state = parseSave(row.state);
+      if (!state.life.alive) throw new ApiError(409, "LIFE_ENDED", "Жизнь завершена.");
+      if (state.life.age < MARKET_AGE) throw new ApiError(409, "LIFE_NOT_ADULT", "Контракты доступны взрослым.");
+      const item = findGood(state.character.universeId, input.goodId);
+      if (!item) throw new ApiError(400, "UNKNOWN_GOOD", "Неизвестный товар.");
+      if (input.qty < 1 || input.qty > MAX_TRADE_QTY) throw new ApiError(400, "VALIDATION", "Количество: 1-5.");
+      if (input.price < 1 || input.price > 1_000_000_000) throw new ApiError(400, "VALIDATION", "Цена вне диапазона.");
+      const stock = state.economy.goods[input.goodId] ?? 0;
+      if (stock < input.qty) throw new ApiError(409, "INSUFFICIENT_GOODS", "Не хватает товара.");
+      state.economy.goods[input.goodId] = stock - input.qty;
+      state.version += 1;
+      await this.alignHistoryHead(tx, input.lifeId, state);
+      const entry = this.entry(
+        state,
+        this.entryText("Контракт выставлен", "Contract listed", `${input.goodId} ? ${input.qty} за ${input.price} за штуку`, `${input.goodId} ? ${input.qty} at ${input.price} each`),
+        [{ kind: "good", key: input.goodId, delta: -input.qty }]
+      );
+      await tx.life.update({ where: { id: input.lifeId }, data: lifeColumns(state) });
+      await this.writeEntry(tx, input.lifeId, entry);
+      await this.writeSnapshot(tx, input.lifeId, state);
+      const created = await tx.playerContract.create({
+        data: {
+          sellerPlayerId: playerId,
+          sellerLifeId: input.lifeId,
+          universeId: state.character.universeId,
+          goodId: input.goodId,
+          qty: input.qty,
+          price: input.price,
+          actionId: input.actionId
+        }
+      });
+      return { contract: this.contractView(created, playerId), replayed: false };
+    });
+  }
+
+  async acceptContract(playerId: string, contractId: string, input: { actionId: string; buyerLifeId: string; expectedVersion: number }) {
+    return this.db.$transaction(async (tx) => {
+      const replay = await tx.playerContract.findUnique({ where: { buyerLifeId_acceptActionId: { buyerLifeId: input.buyerLifeId, acceptActionId: input.actionId } } });
+      if (replay) return { contract: this.contractView(replay, playerId), replayed: true };
+      const locked = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM player_contracts WHERE id = ${contractId}::uuid FOR UPDATE`;
+      if (locked.length === 0) throw new ApiError(404, "NOT_FOUND", "Контракт не найден.");
+      const contract = await tx.playerContract.findUniqueOrThrow({ where: { id: contractId } });
+      if (contract.status !== "open") throw new ApiError(409, "OFFER_CLOSED", "Контракт уже закрыт.");
+      if (contract.sellerPlayerId === playerId) throw new ApiError(409, "SELF_TRADE", "Нельзя принять свой контракт.");
+      const buyerRow = await this.lockLife(tx, playerId, input.buyerLifeId);
+      if (buyerRow.version !== input.expectedVersion) throw new ApiError(409, "VERSION_CONFLICT", "Версия жизни изменилась.");
+      const buyer = parseSave(buyerRow.state);
+      if (!buyer.life.alive || buyer.life.age < MARKET_AGE) throw new ApiError(409, "LIFE_NOT_ADULT", "Нужна взрослая жизнь.");
+      if (buyer.character.universeId !== contract.universeId) throw new ApiError(409, "VALIDATION", "Другой мир.");
+      const total = contract.qty * contract.price;
+      if (buyer.character.wealth < total) throw new ApiError(409, "INSUFFICIENT_WEALTH", "Недостаточно золота.");
+      const stock = buyer.economy.goods[contract.goodId] ?? 0;
+      if (stock + contract.qty > MAX_STOCK) throw new ApiError(409, "BUYER_STOCK_FULL", "Склад покупателя полон.");
+      const sellerRow = await this.lockLife(tx, contract.sellerPlayerId, contract.sellerLifeId);
+      const seller = parseSave(sellerRow.state);
+      const fee = feeOf(total);
+      const sellerNet = total - fee;
+      buyer.character.wealth -= total;
+      buyer.economy.goods[contract.goodId] = stock + contract.qty;
+      buyer.version += 1;
+      seller.character.wealth = Math.min(1_000_000_000, seller.character.wealth + sellerNet);
+      seller.version += 1;
+      await this.alignHistoryHead(tx, input.buyerLifeId, buyer);
+      await this.alignHistoryHead(tx, contract.sellerLifeId, seller);
+      const buyerEntry = this.entry(buyer, this.entryText("Контракт исполнен", "Contract fulfilled", `${contract.goodId} ? ${contract.qty} за ${total}`, `${contract.goodId} ? ${contract.qty} for ${total}`), [{ kind: "wealth", delta: -total }, { kind: "good", key: contract.goodId, delta: contract.qty }]);
+      const sellerEntry = this.entry(seller, this.entryText("Контракт продан", "Contract sold", `${contract.goodId} ? ${contract.qty} за ${sellerNet}`, `${contract.goodId} ? ${contract.qty} for ${sellerNet}`), [{ kind: "wealth", delta: sellerNet }]);
+      await tx.life.update({ where: { id: input.buyerLifeId }, data: lifeColumns(buyer) });
+      await tx.life.update({ where: { id: contract.sellerLifeId }, data: lifeColumns(seller) });
+      await this.writeEntry(tx, input.buyerLifeId, buyerEntry);
+      await this.writeEntry(tx, contract.sellerLifeId, sellerEntry);
+      await this.writeSnapshot(tx, input.buyerLifeId, buyer);
+      await this.writeSnapshot(tx, contract.sellerLifeId, seller);
+      await tx.playerContract.update({
+        where: { id: contract.id },
+        data: { status: "accepted", buyerPlayerId: playerId, buyerLifeId: input.buyerLifeId, acceptActionId: input.actionId, acceptedAt: new Date() }
+      });
+      const membership = await tx.familyMember.findUnique({ where: { playerId_universeId: { playerId: contract.sellerPlayerId, universeId: contract.universeId } } });
+      if (membership) await tx.family.update({ where: { id: membership.familyId }, data: { reputation: { increment: 1 } } });
+      return { contract: this.contractView({ ...contract, status: "accepted", buyerPlayerId: playerId, buyerLifeId: input.buyerLifeId, acceptActionId: input.actionId }, playerId), replayed: false };
+    });
+  }
+
+  async cancelContract(playerId: string, contractId: string) {
+    return this.db.$transaction(async (tx) => {
+      const locked = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM player_contracts WHERE id = ${contractId}::uuid FOR UPDATE`;
+      if (locked.length === 0) throw new ApiError(404, "NOT_FOUND", "Контракт не найден.");
+      const contract = await tx.playerContract.findUniqueOrThrow({ where: { id: contractId } });
+      if (contract.sellerPlayerId !== playerId) throw new ApiError(403, "FORBIDDEN", "Только продавец может отменить контракт.");
+      if (contract.status === "cancelled") return { contract: this.contractView(contract, playerId), replayed: true };
+      if (contract.status !== "open") throw new ApiError(409, "OFFER_CLOSED", "Контракт уже закрыт.");
+      const row = await this.lockLife(tx, playerId, contract.sellerLifeId);
+      const state = parseSave(row.state);
+      if (!state.life.alive) throw new ApiError(409, "LIFE_ENDED", "Нельзя вернуть товар в завершённую жизнь.");
+      const stock = state.economy.goods[contract.goodId] ?? 0;
+      if (stock + contract.qty > MAX_STOCK) throw new ApiError(409, "BUYER_STOCK_FULL", "Склад продавца полон.");
+      state.economy.goods[contract.goodId] = stock + contract.qty;
+      state.version += 1;
+      await this.alignHistoryHead(tx, contract.sellerLifeId, state);
+      const entry = this.entry(state, this.entryText("Контракт отменён", "Contract cancelled", `${contract.goodId} ? ${contract.qty} возвращены`, `${contract.goodId} ? ${contract.qty} returned`), [{ kind: "good", key: contract.goodId, delta: contract.qty }]);
+      await tx.life.update({ where: { id: contract.sellerLifeId }, data: lifeColumns(state) });
+      await this.writeEntry(tx, contract.sellerLifeId, entry);
+      await this.writeSnapshot(tx, contract.sellerLifeId, state);
+      await tx.playerContract.update({ where: { id: contract.id }, data: { status: "cancelled", cancelledAt: new Date() } });
+      return { contract: this.contractView({ ...contract, status: "cancelled" }, playerId), replayed: false };
+    });
+  }
+
+  private contractView(row: { id: string; universeId: string; goodId: string; qty: number; price: number; status: string; sellerPlayerId: string; sellerLifeId: string; createdAt: Date; buyerPlayerId?: string | null; buyerLifeId?: string | null; acceptActionId?: string | null }, playerId: string | null): PlayerContractView {
+    return {
+      id: row.id,
+      universeId: row.universeId,
+      goodId: row.goodId,
+      goodName: this.goodName(row.universeId, row.goodId),
+      qty: row.qty,
+      price: row.price,
+      total: row.qty * row.price,
+      status: row.status as PlayerContractView["status"],
+      sellerName: "",
+      sellerLifeId: row.sellerLifeId,
+      sellerLifeName: "",
+      mine: row.sellerPlayerId === playerId,
+      createdAt: row.createdAt.toISOString()
+    };
+  }
+
+  private goodName(universeId: string, goodId: string): { ru: string; en: string } {
+    if (!isUniverseId(universeId)) return { ru: goodId, en: goodId };
+    return findGood(universeId, goodId)?.name ?? { ru: goodId, en: goodId };
+  }
+
   async cancelOffersForLife(tx: Tx, lifeId: string): Promise<number> {
     const result = await tx.marketOffer.updateMany({
       where: { sellerLifeId: lifeId, status: "active" },

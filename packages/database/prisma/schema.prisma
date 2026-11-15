@@ -54,6 +54,8 @@ model Player {
   marketPurchases    MarketTrade[]      @relation("MarketBuyerPlayer")
   marketLedger       MarketLedger[]
   worldOrders        WorldOrder[]        @relation("WorldOrderFulfiller")
+  contractsAsSeller  PlayerContract[]     @relation("ContractSeller")
+  contractsAsBuyer   PlayerContract[]     @relation("ContractBuyer")
   familyMemberships  FamilyMember[]
   familyInvitesSent  FamilyInvite[]     @relation("FamilyInviteInviter")
   familyInvitesReceived FamilyInvite[]  @relation("FamilyInviteInvitee")
@@ -208,6 +210,8 @@ model Life {
   marketBuys   MarketTrade[]  @relation("MarketBuyerLife")
   marketLedger MarketLedger[]
   worldOrders  WorldOrder[]  @relation("WorldOrderLife")
+  contractsAsSeller PlayerContract[] @relation("ContractSellerLife")
+  contractsAsBuyer  PlayerContract[] @relation("ContractBuyerLife")
 
   predecessor Life? @relation("Succession", fields: [predecessorId], references: [id], onDelete: SetNull)
   successor   Life? @relation("Succession")
@@ -499,6 +503,36 @@ model WorldOrder {
   @@unique([worldId, season, slot])
   @@index([worldId, season, status])
   @@map("world_orders")
+}
+
+/// R4.6: escrowed player-to-player goods contract.
+model PlayerContract {
+  id               String   @id @default(uuid()) @db.Uuid
+  sellerPlayerId   String   @map("seller_player_id") @db.Uuid
+  sellerLifeId     String   @map("seller_life_id") @db.Uuid
+  universeId       String   @map("universe_id") @db.VarChar(32)
+  goodId           String   @map("good_id") @db.VarChar(48)
+  qty              Int
+  price            Int
+  status           String   @default("open") @db.VarChar(12)
+  actionId         String   @map("action_id") @db.Uuid
+  buyerPlayerId    String?  @map("buyer_player_id") @db.Uuid
+  buyerLifeId      String?  @map("buyer_life_id") @db.Uuid
+  acceptActionId   String?  @map("accept_action_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  acceptedAt       DateTime? @map("accepted_at") @db.Timestamptz(3)
+  cancelledAt      DateTime? @map("cancelled_at") @db.Timestamptz(3)
+
+  sellerPlayer Player @relation("ContractSeller", fields: [sellerPlayerId], references: [id], onDelete: Cascade)
+  buyerPlayer  Player? @relation("ContractBuyer", fields: [buyerPlayerId], references: [id], onDelete: SetNull)
+  sellerLife   Life   @relation("ContractSellerLife", fields: [sellerLifeId], references: [id], onDelete: Cascade)
+  buyerLife    Life?  @relation("ContractBuyerLife", fields: [buyerLifeId], references: [id], onDelete: SetNull)
+
+  @@unique([sellerLifeId, actionId])
+  @@unique([buyerLifeId, acceptActionId])
+  @@index([universeId, status, createdAt])
+  @@index([sellerPlayerId, status])
+  @@map("player_contracts")
 }
 
 /// Журнал команд: tick и правки администратора. Replay идёт от seed по seq.

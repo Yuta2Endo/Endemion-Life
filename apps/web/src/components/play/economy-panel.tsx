@@ -7,6 +7,7 @@ import { ageLabel } from "@/lib/format";
 import { useI18n } from "../locale-provider";
 import { EstatePanel } from "./estate-panel";
 import { MarketPanel } from "./market-panel";
+import { PlayerContractsPanel } from "./player-contracts-panel";
 import { PlayerMarketPanel } from "./player-market-panel";
 
 const BAND = { low: "region.bandLow", enough: "region.bandEnough", high: "region.bandHigh" } as const;
@@ -184,6 +185,7 @@ export function EconomyPanel({ life, busy, onTrade, onRefresh }: { life: LifeVie
       <MarketPanel life={life} busy={busy} onTrade={onTrade} />
 
       <PlayerMarketPanel life={life} onRefresh={onRefresh} />
+      <PlayerContractsPanel life={life} onRefresh={onRefresh} />
 
       <RegionPanel life={life} />
 
