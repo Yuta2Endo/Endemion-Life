@@ -77,6 +77,7 @@ export interface PlayerContractView {
   total: number;
   status: "open" | "accepted" | "cancelled" | "expired";
   kind: "fixed" | "auction";
+  minBid: number | null;
   currentBid: number | null;
   auctionEndsAt: string | null;
   sellerName: string;
@@ -329,7 +330,9 @@ export class MarketService {
         throw new ApiError(409, "BUYER_STOCK_FULL", "На вашем складе не хватит места.");
       }
 
-      sellerState.economy.goods[offer.goodId] = stock - offer.qty;
+      const sellerLeft = stock - offer.qty;
+      if (sellerLeft > 0) sellerState.economy.goods[offer.goodId] = sellerLeft;
+      else delete sellerState.economy.goods[offer.goodId];
       buyerState.economy.goods[offer.goodId] = buyerStock + offer.qty;
       buyerState.character.wealth -= total;
       sellerState.character.wealth = Math.min(1_000_000_000, sellerState.character.wealth + sellerNet);
@@ -463,6 +466,18 @@ export class MarketService {
 
   async contracts(playerId: string | null, universeId: string): Promise<{ contracts: PlayerContractView[]; mine: PlayerContractView[] }> {
     await this.expireContracts();
+    const ended = await this.db.playerContract.findMany({
+      where: { status: "open", kind: "auction", auctionEndsAt: { lte: new Date() } },
+      select: { id: true, sellerPlayerId: true },
+      take: 20
+    });
+    for (const item of ended) {
+      try {
+        await this.settleAuction(item.sellerPlayerId, item.id);
+      } catch {
+        // settlement remains retryable on the next board read
+      }
+    }
     const rows = await this.db.playerContract.findMany({
       where: {
         universeId,
@@ -486,6 +501,7 @@ export class MarketService {
       total: row.qty * row.price,
       status: row.status as PlayerContractView["status"],
       kind: row.kind === "auction" ? "auction" : "fixed",
+      minBid: row.minBid,
       currentBid: row.currentBid,
       auctionEndsAt: row.auctionEndsAt?.toISOString() ?? null,
       sellerName: (row as { sellerPlayer: { idDisplayName: string | null; idUsername: string | null } }).sellerPlayer.idDisplayName?.trim() || (row as { sellerPlayer: { idUsername: string | null } }).sellerPlayer.idUsername?.trim() || "Endemion",
@@ -514,7 +530,9 @@ export class MarketService {
       if (input.kind === "auction" && (!input.minBid || input.minBid < 1)) throw new ApiError(400, "VALIDATION", "Нужна стартовая ставка.");
       const stock = state.economy.goods[input.goodId] ?? 0;
       if (stock < input.qty) throw new ApiError(409, "INSUFFICIENT_GOODS", "Не хватает товара.");
-      state.economy.goods[input.goodId] = stock - input.qty;
+      const left = stock - input.qty;
+      if (left > 0) state.economy.goods[input.goodId] = left;
+      else delete state.economy.goods[input.goodId];
       state.version += 1;
       await this.alignHistoryHead(tx, input.lifeId, state);
       const entry = this.entry(
@@ -678,6 +696,7 @@ export class MarketService {
       if (contract.sellerPlayerId !== playerId) throw new ApiError(403, "FORBIDDEN", "Только продавец может отменить контракт.");
       if (contract.status === "cancelled") return { contract: this.contractView(contract, playerId), replayed: true };
       if (contract.status !== "open") throw new ApiError(409, "OFFER_CLOSED", "Контракт уже закрыт.");
+      if (contract.kind === "auction" && contract.currentBid !== null) throw new ApiError(409, "OFFER_CLOSED", "Аукцион со ставками нельзя отменить.");
       const row = await this.lockLife(tx, playerId, contract.sellerLifeId);
       const state = parseSave(row.state);
       if (!state.life.alive) throw new ApiError(409, "LIFE_ENDED", "Нельзя вернуть товар в завершённую жизнь.");
@@ -695,7 +714,7 @@ export class MarketService {
     });
   }
 
-  private contractView(row: { id: string; universeId: string; goodId: string; qty: number; price: number; status: string; kind?: string; currentBid?: number | null; auctionEndsAt?: Date | null; sellerPlayerId: string; sellerLifeId: string; createdAt: Date; buyerPlayerId?: string | null; buyerLifeId?: string | null; acceptActionId?: string | null; currentBidderPlayerId?: string | null }, playerId: string | null): PlayerContractView {
+  private contractView(row: { id: string; universeId: string; goodId: string; qty: number; price: number; status: string; kind?: string; minBid?: number | null; currentBid?: number | null; auctionEndsAt?: Date | null; sellerPlayerId: string; sellerLifeId: string; createdAt: Date; buyerPlayerId?: string | null; buyerLifeId?: string | null; acceptActionId?: string | null; currentBidderPlayerId?: string | null }, playerId: string | null): PlayerContractView {
     return {
       id: row.id,
       universeId: row.universeId,
@@ -706,6 +725,7 @@ export class MarketService {
       total: row.qty * row.price,
       status: row.status as PlayerContractView["status"],
       kind: row.kind === "auction" ? "auction" : "fixed",
+      minBid: row.minBid ?? null,
       currentBid: row.currentBid ?? null,
       auctionEndsAt: row.auctionEndsAt?.toISOString() ?? null,
       sellerName: "",

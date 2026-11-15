@@ -64,6 +64,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R4.7 (Private Contracts) | Private recipients, expiry, escrow restore guard | **COMPLETE; deployed, schema 14, migration 23** - см. `docs/planning/R4_7_CONTRACT_PRIVACY.md` |
 | R4.8 (Contract Expiry) | Lazy expiry, escrow return, status `expired` | **COMPLETE; deployed, schema 14, migration 24** - см. `docs/planning/R4_8_CONTRACT_EXPIRY.md` |
 | R4.9 (Contract Auctions) | Auction kind, bids, settlement, fee, escrow return | **COMPLETE; deployed, schema 14, migration 25** - см. `docs/planning/R4_9_AUCTIONS.md` |
+| R4.10 (Auction UI) | Auction creation, bidding, auto settlement, cancel guard, zero-stock fix | **IMPLEMENTED LOCALLY; release pending; no migration** - см. `docs/planning/R4_10_AUCTION_UI.md` |
 
 ## Design (Living Chronicle)
 

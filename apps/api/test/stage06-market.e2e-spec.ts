@@ -328,11 +328,32 @@ describe("Stage 06.2: рынок игроков", () => {
     const auctionId = auction.body.contract.id as string;
     const buyerCurrent = await t.prisma.client.life.findUniqueOrThrow({ where: { id: buyerLife.id } });
     await post(buyer, `/api/contracts/${auctionId}/bid`, { bidderLifeId: buyerLife.id, amount: 30 }).expect(200);
+    await seller.delete(`/api/contracts/${auctionId}`).set("Origin", ORIGIN).send({}).expect(409);
     await t.prisma.client.playerContract.update({ where: { id: auctionId }, data: { auctionEndsAt: new Date(Date.now() - 1000) } });
     const settled = await post(seller, `/api/contracts/${auctionId}/settle`).expect(200);
     expect(settled.body.contract.status).toBe("accepted");
     expect(buyerCurrent.version).toBeGreaterThan(0);
     const buyerAfterAuction = await t.prisma.client.life.findUniqueOrThrow({ where: { id: buyerLife.id } });
     expect((buyerAfterAuction.state as { character: { wealth: number } }).character.wealth).toBe(870);
+
+    const autoLife = await t.prisma.client.life.findUniqueOrThrow({ where: { id: second.id } });
+    const autoAuction = await post(seller, "/api/contracts", {
+      actionId: randomUUID(),
+      lifeId: second.id,
+      goodId: GOOD.id,
+      qty: 1,
+      price: 30,
+      expectedVersion: autoLife.version,
+      kind: "auction",
+      minBid: 30,
+      auctionHours: 1
+    }).expect(201);
+    const autoId = autoAuction.body.contract.id as string;
+    await post(buyer, `/api/contracts/${autoId}/bid`, { bidderLifeId: buyerLife.id, amount: 40 }).expect(200);
+    await t.prisma.client.playerContract.update({ where: { id: autoId }, data: { auctionEndsAt: new Date(Date.now() - 1000) } });
+    await request(t.app.getHttpServer()).get("/api/contracts?universeId=hunter").expect(200);
+    expect(await t.prisma.client.playerContract.findUniqueOrThrow({ where: { id: autoId } })).toMatchObject({ status: "accepted" });
+    const buyerAfterAuto = await t.prisma.client.life.findUniqueOrThrow({ where: { id: buyerLife.id } });
+    expect((buyerAfterAuto.state as { character: { wealth: number } }).character.wealth).toBe(830);
   });
 });

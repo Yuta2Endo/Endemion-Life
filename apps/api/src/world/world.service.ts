@@ -384,7 +384,9 @@ export class WorldService {
       if (!save.life.alive) throw new ApiError(409, "LIFE_ENDED", "Заказ может выполнить только живая жизнь.");
       const stock = save.economy.goods[order.goodId] ?? 0;
       if (stock < order.qty) throw new ApiError(409, "INSUFFICIENT_GOODS", "Не хватает товара для заказа.");
-      save.economy.goods[order.goodId] = stock - order.qty;
+      const left = stock - order.qty;
+      if (left > 0) save.economy.goods[order.goodId] = left;
+      else delete save.economy.goods[order.goodId];
       save.character.wealth = Math.min(1_000_000_000, save.character.wealth + order.reward);
       save.version += 1;
       const maxSeq = await tx.historyEntry.aggregate({ where: { lifeId: life.id }, _max: { seq: true } });
