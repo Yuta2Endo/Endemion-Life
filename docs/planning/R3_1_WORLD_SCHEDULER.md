@@ -1,6 +1,6 @@
 # R3.1 — Automatic World Tick
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 07:47 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none
 
@@ -47,6 +47,15 @@ Tests run with `NODE_ENV=test`, so the scheduler is disabled during API e2e.
 - First tick occurs after one interval; there is no immediate tick on startup.
 - Tick duration is bounded by six sequential world transactions. If it starts approaching the interval, move to a dedicated worker.
 
-## 5. Rollback
+## 5. Deployment
+
+- Code commit `5792aac`, lint fix `064d231`; production runtime **`064d231`**.
+- Deploy run **43690715874**, success; history `07:46:38Z deploy-start` → `07:47:06Z deploy ok`.
+- Production API log confirms `WorldScheduler: Автоматический ход общего мира: каждые 900 с`.
+- No migration; DB remains **17** migrations, save schema 14.
+- `/api/health` 200; all containers healthy.
+- Rollback target `ab6efb6`.
+
+## 6. Rollback
 
 Set `WORLD_TICK_ENABLED=false` and restart the API. No data migration or cleanup.
