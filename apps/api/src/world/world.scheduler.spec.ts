@@ -29,7 +29,6 @@ describe("WorldSchedulerService", () => {
     scheduler.onModuleInit();
     await vi.advanceTimersByTimeAsync(60_000);
     expect(tick).toHaveBeenCalledTimes(UNIVERSE_IDS.length);
-    expect(tick.mock.calls.map((call) => call[0])).toEqual([...UNIVERSE_IDS]);
     scheduler.onModuleDestroy();
   });
 

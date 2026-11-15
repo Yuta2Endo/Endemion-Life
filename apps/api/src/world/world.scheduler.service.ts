@@ -1,4 +1,4 @@
-import { UNIVERSE_IDS, type UniverseId } from "@endemion/game-core";
+import { UNIVERSE_IDS } from "@endemion/game-core";
 import { Inject, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import { APP_CONFIG, type AppConfig } from "../config.js";
 import { WorldService } from "./world.service.js";
@@ -39,7 +39,7 @@ export class WorldSchedulerService implements OnModuleInit, OnModuleDestroy {
     try {
       for (const universeId of UNIVERSE_IDS) {
         try {
-          await this.worlds.tick(universeId as UniverseId);
+          await this.worlds.tick(universeId);
         } catch (error) {
           this.logger.error(`Не удалось продвинуть мир ${universeId}`, error instanceof Error ? error.stack : String(error));
         }
