@@ -1,6 +1,6 @@
 # R4.6 — Player Contracts with Escrow
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 12:39 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** 22, additive
 
@@ -49,6 +49,14 @@ Migration `20261115230000_r4_6_player_contracts`:
 - No dedicated contract ledger beyond life history and family reputation.
 - No restore guard specifically for escrow yet.
 
-## 5. Rollback
+## 5. Deployment
+
+- Code commit `c5d1db4`, list-relation fix `4f1d67d`; production runtime **`4f1d67d`**.
+- Deploy run **43714628172**, success; history `12:39:11Z deploy-start` → `12:39:41Z deploy ok`.
+- Production has **22 migrations**, `player_contracts` table exists.
+- `/api/health` 200; `/api/contracts?universeId=hunter` returns 200 with an empty board.
+- Rollback target `cd9835b`; migration 22 is additive.
+
+## 6. Rollback
 
 Migration 22 is additive. Application rollback is safe; keep `player_contracts`.
