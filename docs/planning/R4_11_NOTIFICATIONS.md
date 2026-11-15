@@ -1,6 +1,6 @@
 # R4.11 — In-App Player Notifications
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 15:43 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** 26, additive
 
@@ -61,6 +61,15 @@
 - Settlement remains lazy: notifications appear after the contract board is read.
 - A settlement that keeps failing is retried on later board reads and does not notify participants.
 
-## 4. Rollback
+## 4. Deployment
+
+- Code commit `15f9873`; production runtime **`15f9873`**.
+- Deploy run **43728646058**, success; history `15:42:41Z deploy-start` → `15:43:10Z deploy ok`.
+- Production now has **26 migrations**; save schema 14.
+- `/api/health` 200; `/api/contracts?universeId=hunter` 200; `/api/notifications` 401 for guests; web `/` 200.
+- CI **43726944167** success after rerunning one flaky Playwright adventure test; Security **43726944159** success.
+- Previous runtime `b23ca79` is the rollback target.
+
+## 5. Rollback
 
 Migration 26 only creates a new table. Application rollback is safe; the table can stay unused.

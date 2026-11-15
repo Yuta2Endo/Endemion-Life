@@ -1,12 +1,12 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-15 (R4.10 auction UI deployed)<br>
+**Обновлено:** 2026-11-15 (R4.11 auction notifications deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `b23ca79` (R4.10 auction UI)<br>
-**Production:** R4.10 + R4.9 + R4.8 + R4.7 + R4.6 + R4.5 + R4.4 + R4.3 + R4.2 + R4.1 + R3.4 + R3.3 + R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `b23ca79`, deployed 2026-11-15 14:37 UTC; migrations **25** (guild 13, market 14, profile 15, families 16, treasury 17, rewards 18, fee 19, orders 20, enterprise 21, contracts 22, privacy 23, expiry 24, auctions 25)<br>
-**Production code:** `b23ca79`; DB migrations **25**, additive<br>
-**Rollback:** `f74de0c`; no new migration.<br>
-**Рабочее дерево:** docs record being updated; unrelated Android/itch/lockfile changes preserved; 74 Stage 11 reports/docx untracked.
+**HEAD:** `15f9873` (R4.11 player notifications)<br>
+**Production:** R4.11 + R4.10 + R4.9 + R4.8 + R4.7 + R4.6 + R4.5 + R4.4 + R4.3 + R4.2 + R4.1 + R3.4 + R3.3 + R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `15f9873`, deployed 2026-11-15 15:43 UTC; migrations **26** (guild 13, market 14, profile 15, families 16, treasury 17, rewards 18, fee 19, orders 20, enterprise 21, contracts 22, privacy 23, expiry 24, auctions 25, notifications 26)<br>
+**Production code:** `15f9873`; DB migrations **26**, additive<br>
+**Rollback:** `b23ca79`; migration 26 is additive.<br>
+**Рабочее дерево:** unrelated Android/itch/lockfile changes preserved; 74 Stage 11 reports/docx untracked.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
 
@@ -65,7 +65,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R4.8 (Contract Expiry) | Lazy expiry, escrow return, status `expired` | **COMPLETE; deployed, schema 14, migration 24** - см. `docs/planning/R4_8_CONTRACT_EXPIRY.md` |
 | R4.9 (Contract Auctions) | Auction kind, bids, settlement, fee, escrow return | **COMPLETE; deployed, schema 14, migration 25** - см. `docs/planning/R4_9_AUCTIONS.md` |
 | R4.10 (Auction UI) | Auction creation, bidding, auto settlement, cancel guard, zero-stock fix | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R4_10_AUCTION_UI.md` |
-| R4.11 (Player Notifications) | Durable auction notifications, unread badge, bell panel, read APIs | **IMPLEMENTED LOCALLY; release pending; migration 26 additive** - см. `docs/planning/R4_11_NOTIFICATIONS.md` |
+| R4.11 (Player Notifications) | Durable auction notifications, unread badge, bell panel, read APIs | **COMPLETE; deployed, schema 14, migration 26** - см. `docs/planning/R4_11_NOTIFICATIONS.md` |
 
 ## Design (Living Chronicle)
 
