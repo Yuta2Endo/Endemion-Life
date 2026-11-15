@@ -430,7 +430,7 @@ export class MarketService {
       where: { universeId, status: "open" },
       orderBy: { createdAt: "desc" },
       take: 50,
-      include: { seller: { select: { id: true, idUsername: true, idDisplayName: true, idAvatarUrl: true } }, sellerLife: { select: { name: true } } }
+      include: { sellerPlayer: { select: { id: true, idUsername: true, idDisplayName: true, idAvatarUrl: true } }, sellerLife: { select: { name: true } } }
     });
     const view = (row: (typeof rows)[number]): PlayerContractView => ({
       id: row.id,
@@ -441,7 +441,7 @@ export class MarketService {
       price: row.price,
       total: row.qty * row.price,
       status: row.status as PlayerContractView["status"],
-      sellerName: (row as { seller: { idDisplayName: string | null; idUsername: string | null } }).seller.idDisplayName?.trim() || (row as { seller: { idUsername: string | null } }).seller.idUsername?.trim() || "Endemion",
+      sellerName: (row as { sellerPlayer: { idDisplayName: string | null; idUsername: string | null } }).sellerPlayer.idDisplayName?.trim() || (row as { sellerPlayer: { idUsername: string | null } }).sellerPlayer.idUsername?.trim() || "Endemion",
       sellerLifeId: row.sellerLifeId,
       sellerLifeName: (row as { sellerLife: { name: string } }).sellerLife.name,
       mine: row.sellerPlayerId === playerId,

@@ -268,6 +268,8 @@ describe("Stage 06.2: рынок игроков", () => {
     }).expect(201);
     const contract = made.body.contract as { id: string; total: number };
     expect(contract.total).toBe(100);
+    const board = await request(t.app.getHttpServer()).get("/api/contracts?universeId=hunter").expect(200);
+    expect(board.body.contracts[0]).toMatchObject({ id: contract.id, sellerLifeName: expect.any(String) });
     const sellerEscrow = await t.prisma.client.life.findUniqueOrThrow({ where: { id: sellerLife.id } });
     expect((sellerEscrow.state as { economy: { goods: Record<string, number> } }).economy.goods[GOOD.id]).toBe(3);
 
