@@ -1,6 +1,6 @@
 # R4.7 — Private Contracts, Expiry and Escrow Restore Guard
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 13:13 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** 23, additive
 
@@ -47,6 +47,14 @@ Migration `20261116000000_r4_7_contract_privacy`:
 - No dedicated contract ledger.
 - Restore guard blocks any contract version, including cancelled ones.
 
-## 5. Rollback
+## 5. Deployment
+
+- Code commit `201ceab`, schema index alignment `538c157`; production runtime **`538c157`**.
+- Deploy run **43716836598**, success; history `13:12:43Z deploy-start` → `13:13:12Z deploy ok`.
+- Production now has **23 migrations**.
+- `/api/health` 200; `/api/contracts?universeId=hunter` returns 200.
+- Rollback target `4f1d67d`; migration 23 is additive.
+
+## 6. Rollback
 
 Migration 23 is additive. Application rollback is safe; keep the new columns.
