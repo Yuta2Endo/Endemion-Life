@@ -1,6 +1,6 @@
 # R3.2 — Season Calendar and World Event Chronicle
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 08:41 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none
 
@@ -43,6 +43,14 @@
 - No world map image; settlements remain cards inside the world view.
 - New events appear after the next automatic or ops tick.
 
-## 4. Rollback
+## 4. Deployment
+
+- Code commit `b2921ed`, lint fix `eec3ffa`, accessibility fix `d242c86`; production runtime **`d242c86`**.
+- Deploy run **43694791045**, success; history `08:41:13Z deploy-start` → `08:41:50Z deploy ok`.
+- No migration; DB remains **17** migrations, save schema 14.
+- Production `/world/dark-fantasy/seasons?limit=3` and `/events?limit=3` return 200; `/api/health` 200.
+- Rollback target `064d231`.
+
+## 5. Rollback
 
 No migration. Reverting the application code removes the two read endpoints and the panel; existing season/event data remains.
