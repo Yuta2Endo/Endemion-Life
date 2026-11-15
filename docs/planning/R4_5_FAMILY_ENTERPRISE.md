@@ -1,6 +1,6 @@
 # R4.5 — Family Enterprise
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 12:03 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** 21, additive
 
@@ -45,6 +45,14 @@ Migration `20261115220000_r4_5_family_enterprise`:
 - No enterprise loss, sale or inheritance.
 - Player-to-player contracts are not part of this slice.
 
-## 5. Rollback
+## 5. Deployment
+
+- Code commit `cd9835b`; production runtime **`cd9835b`**.
+- Deploy run **43711038285**, success; history `12:02:53Z deploy-start` → `12:03:23Z deploy ok`.
+- Production now has **21 migrations**, `family_enterprises` table exists.
+- `/api/health` 200; `/api/families/:id/enterprise` returns 401 unauthenticated.
+- Rollback target `a9ef364`; migration 21 is additive.
+
+## 6. Rollback
 
 Migration 21 is additive. Application rollback is safe; keep `family_enterprises`.
