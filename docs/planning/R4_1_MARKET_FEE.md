@@ -1,6 +1,6 @@
 # R4.1 — Market Fee Sink and Dynamic Prices
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 09:59 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** 19, additive
 
@@ -50,6 +50,14 @@ No save schema change.
 - Local single-player market already has a spread sink via 1.25 buy / 0.8 sell.
 - Price history is available through season snapshots but not yet a dedicated chart.
 
-## 6. Rollback
+## 6. Deployment
+
+- Code commit `c834a72`; production runtime **`c834a72`**.
+- Deploy run **43700255205**, success; history `09:58:32Z deploy-start` → `09:59:04Z deploy ok`.
+- Production now has **19 migrations**, `market_trades.fee` exists.
+- `/api/health` 200; `/api/market?universeId=hunter` 200.
+- Rollback target `02c2e6f`; migration 19 is additive.
+
+## 7. Rollback
 
 Migration 19 is additive. Application rollback is safe; keep the `fee` column.
