@@ -55,13 +55,10 @@ export function WorldHistoryPanel({ universeId }: { universeId: string }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(true);
 
   useEffect(() => {
     let active = true;
-    setSelected(null);
-    setError(null);
-    setBusy(true);
     Promise.all([
       apiFetch<{ seasons: Season[] }>(`/api/world/${encodeURIComponent(universeId)}/seasons?limit=12`),
       apiFetch<{ events: Event[] }>(`/api/world/${encodeURIComponent(universeId)}/events?limit=40`)

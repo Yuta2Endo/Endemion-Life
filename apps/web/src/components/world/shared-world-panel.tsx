@@ -428,7 +428,7 @@ export function SharedWorldPanel() {
                   checksum={activeWorld.checksum}
                   updatedAt={activeWorld.updatedAt}
                 />
-                <WorldHistoryPanel universeId={activeWorld.world.universeId} />
+                <WorldHistoryPanel key={activeWorld.world.universeId} universeId={activeWorld.world.universeId} />
               </>
             )}
           </div>
