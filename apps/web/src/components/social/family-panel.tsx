@@ -30,6 +30,15 @@ interface FamilyMember {
   acceptsInheritance: boolean;
   joinedAt: string;
 }
+interface FamilyChronicleEntry {
+  id: string;
+  kind: string;
+  title: { ru: string; en: string };
+  detail: { ru: string; en: string };
+  actorName: string;
+  createdAt: string;
+}
+
 interface FamilyTreasuryEntry {
   id: string;
   direction: "deposit" | "withdraw";
@@ -203,6 +212,7 @@ export function FamilyPanel() {
   const [treasuryLife, setTreasuryLife] = useState("");
   const [treasuryAmount, setTreasuryAmount] = useState("10");
   const [audit, setAudit] = useState<Array<{ id: string; action: string; actor: string; createdAt: string }>>([]);
+  const [chronicle, setChronicle] = useState<FamilyChronicleEntry[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -261,12 +271,14 @@ export function FamilyPanel() {
     setBusy(true);
     setNotice(null);
     try {
-      const [detail, log] = await Promise.all([
+      const [detail, log, story] = await Promise.all([
         apiFetch<FamilyDetail>(`/api/families/${id}`),
-        apiFetch<{ entries: Array<{ id: string; action: string; actor: string; createdAt: string }> }>(`/api/families/${id}/audit`).catch(() => ({ entries: [] }))
+        apiFetch<{ entries: Array<{ id: string; action: string; actor: string; createdAt: string }> }>(`/api/families/${id}/audit`).catch(() => ({ entries: [] })),
+        apiFetch<{ entries: FamilyChronicleEntry[] }>(`/api/families/${id}/chronicle`).catch(() => ({ entries: [] }))
       ]);
       setSelected(detail);
       setAudit(log.entries);
+      setChronicle(story.entries);
       setEditing(false);
       setSearchName("");
       setFound([]);
@@ -594,6 +606,19 @@ export function FamilyPanel() {
                   </ul>
                 )}
               </div>
+              {chronicle.length > 0 && (
+                <div className="mt-4 border-t border-line pt-3" data-testid="family-chronicle">
+                  <h5 className="text-xs text-bone-400">Хроника дома</h5>
+                  <ul className="mt-2 space-y-2 text-xs">
+                    {chronicle.slice(0, 6).map((entry) => (
+                      <li key={entry.id}>
+                        <span className="block text-bone-200">{entry.title[locale as "ru" | "en"]}</span>
+                        <span className="text-bone-500">{entry.detail[locale as "ru" | "en"]}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {(selected.myRole === "leader" || selected.myRole === "elder") && (
                 <div className="mt-4 border-t border-line pt-3">
                   <h5 className="text-xs text-bone-400">{c.invitePlayer}</h5>

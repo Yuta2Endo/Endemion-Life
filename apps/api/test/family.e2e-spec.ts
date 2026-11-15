@@ -175,6 +175,10 @@ describe("семьи игроков", () => {
     expect(actions).toContain("family.create");
     expect(actions).toContain("invite.send");
     expect(actions).toContain("invite.accept");
+
+    const chronicle = await founder.client.get(`/api/families/${family.id}/chronicle`).expect(200);
+    expect(chronicle.body.entries.some((entry: { kind: string }) => entry.kind === "family.create")).toBe(true);
+    expect(chronicle.body.entries.some((entry: { kind: string }) => entry.kind === "invite.accept")).toBe(true);
   });
 
   it("член семьи даёт согласие на наследование и пополняет общую казну из жизни", async () => {

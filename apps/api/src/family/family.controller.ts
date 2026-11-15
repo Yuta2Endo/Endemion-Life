@@ -155,4 +155,10 @@ export class FamilyController {
     const { player } = await this.sessions.requireAccount(request);
     return { entries: await this.families.auditLog(player.id, idOf(id)) };
   }
+
+  @Get(":id/chronicle")
+  async chronicle(@Req() request: Request, @Param("id") id: string) {
+    const { player } = await this.sessions.requireAccount(request);
+    return { entries: await this.families.chronicle(player.id, idOf(id)) };
+  }
 }

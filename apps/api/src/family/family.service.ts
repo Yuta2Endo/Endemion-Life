@@ -25,6 +25,15 @@ export interface FamilyMemberView {
   joinedAt: string;
 }
 
+export interface FamilyChronicleEntryView {
+  id: string;
+  kind: string;
+  title: { ru: string; en: string };
+  detail: { ru: string; en: string };
+  actorName: string;
+  createdAt: string;
+}
+
 export interface FamilyTreasuryEntryView {
   id: string;
   direction: "deposit" | "withdraw";
@@ -597,6 +606,87 @@ export class FamilyService {
     }
     await this.lockPlayer(tx, recipientId);
     await this.audit(tx, owner.familyId, ownerId, "inheritance.recipient", { recipientId });
+  }
+
+  async chronicle(playerId: string, familyId: string): Promise<FamilyChronicleEntryView[]> {
+    const family = await this.db.family.findUnique({ where: { id: familyId }, select: { id: true, visibility: true } });
+    if (!family) throw new ApiError(404, "NOT_FOUND", "Семья не найдена.");
+    const membership = await this.db.familyMember.findUnique({
+      where: { familyId_playerId: { familyId, playerId } },
+      select: { playerId: true }
+    });
+    if (family.visibility === "invite" && !membership) throw new ApiError(403, "FORBIDDEN", "Хроника доступна членам семьи.");
+
+    const [audits, members] = await Promise.all([
+      this.db.familyAudit.findMany({
+        where: { familyId },
+        orderBy: { createdAt: "desc" },
+        take: 60,
+        include: { actor: { select: { idUsername: true, idDisplayName: true } } }
+      }),
+      this.db.familyMember.findMany({ where: { familyId }, select: { playerId: true } })
+    ]);
+    const lives = await this.db.life.findMany({
+      where: { playerId: { in: members.map((member) => member.playerId) } },
+      orderBy: { updatedAt: "desc" },
+      take: 80,
+      select: { id: true, name: true, universeId: true, status: true, age: true, generation: true, createdAt: true, updatedAt: true }
+    });
+
+    const auditTitles: Record<string, { ru: string; en: string }> = {
+      "family.create": { ru: "Дом основан", en: "House founded" },
+      "invite.accept": { ru: "Новый член дома", en: "New house member" },
+      "member.leave": { ru: "Член покинул дом", en: "Member left the house" },
+      "member.kick": { ru: "Член исключён", en: "Member removed" },
+      "leader.transfer": { ru: "Сменился глава дома", en: "House leadership changed" },
+      "family.disband": { ru: "Дом распущен", en: "House disbanded" },
+      "family.update": { ru: "Дом обновлён", en: "House updated" },
+      "treasury.deposit": { ru: "Вклад в казну", en: "Treasury deposit" },
+      "treasury.withdraw": { ru: "Выдача из казны", en: "Treasury withdrawal" },
+      "inheritance.recipient": { ru: "Наследник передан дому", en: "Heir passed to the house" }
+    };
+
+    const entries: FamilyChronicleEntryView[] = audits.map((row) => ({
+      id: `audit:${row.id}`,
+      kind: row.action,
+      title: auditTitles[row.action] ?? { ru: "Событие дома", en: "House event" },
+      detail: { ru: nameOf(row.actor), en: nameOf(row.actor) },
+      actorName: nameOf(row.actor),
+      createdAt: row.createdAt.toISOString()
+    }));
+
+    for (const life of lives) {
+      entries.push({
+        id: `life:${life.id}:birth`,
+        kind: "life.birth",
+        title: { ru: "Начата жизнь", en: "Life begun" },
+        detail: { ru: `${life.name} · ${life.universeId}`, en: `${life.name} · ${life.universeId}` },
+        actorName: life.name,
+        createdAt: life.createdAt.toISOString()
+      });
+      if (life.generation > 1) {
+        entries.push({
+          id: `life:${life.id}:generation`,
+          kind: "life.generation",
+          title: { ru: "Продолжение рода", en: "Lineage continued" },
+          detail: { ru: `${life.name} · поколение ${life.generation}`, en: `${life.name} · generation ${life.generation}` },
+          actorName: life.name,
+          createdAt: life.updatedAt.toISOString()
+        });
+      }
+      if (life.status === "dead") {
+        entries.push({
+          id: `life:${life.id}:death`,
+          kind: "life.death",
+          title: { ru: "Жизнь завершена", en: "Life completed" },
+          detail: { ru: `${life.name} · ${life.age} лет`, en: `${life.name} · ${life.age} years` },
+          actorName: life.name,
+          createdAt: life.updatedAt.toISOString()
+        });
+      }
+    }
+
+    return entries.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 80);
   }
 
   async auditLog(playerId: string, familyId: string) {

@@ -50,6 +50,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R1.2 (First-Life Analytics) | Guide signals + server-derived first-life funnel | **COMPLETE; deployed, no save/DB migration** - см. `docs/planning/R1_2_FIRST_LIFE_ANALYTICS.md` |
 | R2.1 (Player Families) | Account-level family, roles, invitations/consent, audit, Web UI | **COMPLETE; deployed, schema 14, migration 16** - см. `docs/planning/R2_1_FAMILIES.md` |
 | R2.2 (Family Estate) | Treasury ledger, inheritance consent, cross-account succession backend + web UI | **COMPLETE; deployed, schema 14, migration 17** - см. `docs/planning/R2_2_FAMILY_ESTATE.md` |
+| R2.3 (Family Chronicle) | Derived house chronicle: audits + member life milestones, API + web panel | **IMPLEMENTED LOCALLY; release pending; no migration** - см. `docs/planning/R2_3_FAMILY_CHRONICLE.md` |
 
 ## Design (Living Chronicle)
 
