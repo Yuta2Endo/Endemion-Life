@@ -1,11 +1,11 @@
 # R5.5 — Bonds and Voices
 
-**Status:** implemented and verified locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 18:58 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none  
 **API routes:** unchanged  
-**Production runtime:** `2dc2b48` (not changed by this local work)  
-**Rollback target:** `bc7decb`
+**Production runtime:** `47593ac`  
+**Rollback target:** `2dc2b48`
 
 ## 1. What was added
 
@@ -97,7 +97,16 @@ Affinity numbers, gates, action IDs and the one-interaction-per-year rule are un
 - The scenes are common content and contain no world-specific locations, factions or skills.
 - No art, audio, new UI route, save schema or database migration.
 
-## 7. Rollback
+## 7. Deployment
+
+- Code commit `47593ac` (`r5.5: make import size fixture deterministic` on top of `aec9f70` `r5.5: add bonds and voices`).
+- Deploy run **43749074484**, success; history `18:57:04Z deploy-start 47593ac from 2dc2b48` -> `18:57:33Z deploy 47593ac ok`.
+- CI **43747760555** success; Security **43747760564** success.
+- Production now has **26 migrations**; save schema 14.
+- `/api/health` 200, database/redis up; `/api/contracts?universeId=hunter` 200; `/api/notifications` guest 401; web `/` 200.
+- Rollback target `2dc2b48`; no migration.
+
+## 8. Rollback
 
 No database migration, API contract or save-schema change was introduced. Rolling back means reverting:
 
@@ -110,4 +119,4 @@ No database migration, API contract or save-schema change was introduced. Rollin
 
 Existing saves remain valid. `NpcView` additions are serialized additively; clients that do not read `log`/`bondAt` continue to use `events`.
 
-The production rollback target remains `bc7decb`.
+The production rollback target remains `2dc2b48`.
