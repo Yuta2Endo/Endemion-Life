@@ -3,6 +3,7 @@
 import { getUniverse, type GameAction, type HistoryEntry, type InteractionId, type TradeSide } from "@endemion/game-core";
 import type { LifeView, SaveView } from "@endemion/shared";
 import { Button, Panel } from "@endemion/ui";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -14,7 +15,6 @@ import { ChangeChips } from "../change-chips";
 import { useI18n } from "../locale-provider";
 
 import { CharacterSheet } from "./character-sheet";
-import { Dossier } from "./dossier";
 import { NowPanel } from "./now-panel";
 import { TravelPanel } from "./travel-panel";
 import { EventCard, OutcomeCard } from "./event-card";
@@ -25,6 +25,11 @@ import { LocalLifeBanner } from "./local-life-banner";
 import { SavesDialog } from "./saves-dialog";
 import { Timeline } from "./timeline";
 import { AutoLifeControls } from "./auto-life-controls";
+
+const Dossier = dynamic(() => import("./dossier").then((module) => module.Dossier), {
+  ssr: false,
+  loading: () => <div className="h-24 animate-pulse rounded-md border border-line bg-ink-950/40" />
+});
 
 type Tab = "event" | "character" | "people" | "timeline";
 
@@ -53,8 +58,8 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
   const [outcome, setOutcome] = useState<HistoryEntry | null>(null);
   const [tab, setTab] = useState<Tab>("event");
   const [savesOpen, setSavesOpen] = useState(false);
-  const [wide, setWide] = useState(false);
-  const [dossierJump, setDossierJump] = useState<{ section: "adventure"; n: number } | null>(null);
+  const [dossierJump, setDossierJump] = useState<{ section: "adventure" | "people"; n: number } | null>(null);
+  const [dossierVisited, setDossierVisited] = useState(false);
   const [saves, setSaves] = useState<SaveView[] | null>(null);
   const [selectedSeq, setSelectedSeq] = useState<number | null>(null);
   // actionId неотправленного или оборвавшегося действия: повтор того же действия идёт с тем же id и не применится дважды
@@ -77,15 +82,6 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
   const load = useCallback(() => fetchLife().then(apply, fail), [fetchLife, apply, fail]);
 
   useEffect(() => {
-    const media = window.matchMedia("(min-width: 1024px)");
-    const apply = () => setWide(media.matches);
-    apply();
-    media.addEventListener("change", apply);
-    return () => media.removeEventListener("change", apply);
-  }, []);
-
-  useEffect(() => {
-    // Stage 04: жизнь уже перенесена на сервер (в этой или другой вкладке) — открыть её там
     const moved = store.kind === "local" ? movedTarget(lifeId) : null;
     if (moved) {
       router.replace(`/play/${moved}`);
@@ -104,6 +100,14 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
       active = false;
     };
   }, [fetchLife, apply, fail, store, lifeId, router]);
+
+  useEffect(() => {
+    if (tab !== "event") return;
+    const id = life?.pendingEvent ? "event-title" : outcome ? "outcome-title" : null;
+    if (!id) return;
+    const frame = requestAnimationFrame(() => document.getElementById(id)?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [tab, life?.pendingEvent?.eventId, outcome?.seq]);
 
   function errorText(error: unknown): string {
     if (error instanceof ClientError && error.code === "NETWORK") return t("error.offline");
@@ -138,8 +142,9 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
                   : action.type === "acceptOath"
                     ? result.entries.find((entry) => entry.kind === "quest")
                     : undefined;
-      setOutcome(shown ?? null);
-      if (result.life.pendingEvent || result.life.status === "dead" || shown) setTab("event");
+      setOutcome(action.type === "choose" ? shown ?? null : null);
+      const showStory = action.type === "choose" || (action.type === "advance" && life.autoMode === "manual");
+      if (result.life.pendingEvent || result.life.status === "dead" || showStory) setTab("event");
     } catch (error) {
       if (error instanceof ClientError && error.code === "VERSION_CONFLICT") {
         pendingAction.current = null;
@@ -260,6 +265,9 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
         </p>
         <div className="mt-6 flex gap-3">
           {status === "error" && <Button onClick={() => void load()}>{t("play.retry")}</Button>}
+          <Link href="/worlds" className="rounded-md border border-line px-4 py-2 text-sm text-bone-100 hover:border-gold-500/60">
+            {t("play.chooseWorld")}
+          </Link>
           <Link href="/" className="rounded-md border border-line px-4 py-2 text-sm text-bone-100 hover:border-gold-500/60">
             {t("error.toHome")}
           </Link>
@@ -290,6 +298,21 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
   const shown = (id: Tab) => (tab === id ? "block" : "max-lg:hidden lg:block");
   const openChance = event?.choices.find((choice) => choice.available && choice.chance !== null)?.chance ?? null;
 
+  function goEvent() {
+    setTab("event");
+    requestAnimationFrame(() => document.getElementById("event-title")?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  }
+
+  function goDossier() {
+    setDossierVisited(true);
+    setDossierJump((current) => ({ section: "people", n: (current?.n ?? 0) + 1 }));
+    setTab("people");
+    requestAnimationFrame(() => {
+      const target = [...document.querySelectorAll<HTMLElement>('[data-testid="dossier"]')].find((element) => element.offsetParent !== null);
+      target?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+  }
+
   return (
     <main
       className="mx-auto max-w-7xl px-3 pb-28 pt-3 sm:px-6 lg:pb-10 lg:pt-6"
@@ -300,12 +323,12 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
     >
       <LifeDeskHeader life={life} />
 
-      <div className="sticky top-14 z-20 -mx-3 mb-3 flex items-center justify-between gap-3 border-b border-line bg-ink-950/95 px-3 py-2 text-xs backdrop-blur-md lg:hidden" data-testid="mobile-now">
+      <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 -mx-3 mb-3 flex items-center justify-between gap-3 border-b border-line bg-ink-950/95 px-3 py-2 text-xs backdrop-blur-md lg:hidden" data-testid="mobile-now">
         <span className="min-w-0 truncate text-bone-100" title={l(life.location.name)}>
           {life.character.name} · {ageLabel(life.life.age, locale)} · {l(life.location.name)}
         </span>
         {event ? (
-          <button type="button" onClick={() => setTab("event")} className="shrink-0 text-gold-200">
+          <button type="button" onClick={goEvent} className="max-w-[55%] shrink-0 truncate text-gold-200">
             {openChance != null ? t("play.chance", { n: Math.round(openChance * 100) }) : l(event.title)}
           </button>
         ) : dead ? (
@@ -320,11 +343,16 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
       <LifeGuide
         life={life}
         busy={busy}
-        onAdvance={() => void perform({ type: "advance" })}
-        onEvent={() => setTab("event")}
-        onDossier={() => setTab("character")}
+        onAdvance={(years) => void perform({ type: "advance", years })}
+        onEvent={goEvent}
+        onDossier={goDossier}
+        hasDecision={entries.some((entry) => entry.kind === "event" && entry.choice !== undefined)}
+        dossierOpened={dossierVisited}
       />
       <div className="relative mb-4" aria-live="polite">
+        <p className="sr-only" role="status">
+          {busy ? t("play.working") : event ? t("play.eventWaiting", { name: l(event.title) }) : outcome ? l(outcome.title) : ""}
+        </p>
         {event && tab !== "event" && (
           <button
             type="button"
@@ -355,22 +383,23 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
         </aside>
 
           <section className={`${shown("event")} space-y-5`}>
-           <AutoLifeControls mode={life.autoMode} busy={busy} onMode={(mode) => void setAutoMode(mode)} />
-          {!dead && life.legacy.current && <LifeSummary life={life} busy={busy} onSucceed={(heirId) => void continueAs(heirId)} />}
-          {life.life.age < 1 && !dead && (
-            <div data-testid="born-as">
-              <p className="text-sm text-bone-300">
-                {[life.character.name, bornStation && l(bornStation.name), `${t("worlds.path")}: ${l(universe.track.name)}`, t("worlds.lifespan", { years: universe.lifespan }), universe.mechanics[0] && l(universe.mechanics[0].name)].filter(Boolean).join(" · ")}
-              </p>
-              <p className="mt-1 text-xs text-bone-400">
-                <Link href="/worlds" className="text-gold-200 underline decoration-gold-500/40">{t("play.otherWorld")}</Link>
-                {" · "}
-                {t("play.otherWorldHint")}
-              </p>
-            </div>
-          )}
           {dead ? (
-            <LifeSummary life={life} busy={busy} onSucceed={(heirId) => void continueAs(heirId)} />
+            life.legacy.summary ? (
+              <LifeSummary life={life} busy={busy} onSucceed={(heirId) => void continueAs(heirId)} />
+            ) : (
+              <Panel data-testid="death-summary">
+                <p className="text-[11px] uppercase tracking-[0.3em] text-gold-400">{t("play.deathTitle")}</p>
+                <p className="mt-2 font-display text-2xl text-bone-100">{t("play.deathLead")}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link href={`/create/${life.universeId}`} className="rounded-md border border-gold-500/40 bg-gold-500/10 px-3 py-2 text-sm text-gold-100">
+                    {t("play.startNewLife")}
+                  </Link>
+                  <Link href="/worlds" className="rounded-md border border-line px-3 py-2 text-sm text-bone-100">
+                    {t("play.chooseWorld")}
+                  </Link>
+                </div>
+              </Panel>
+            )
           ) : event ? (
             <EventCard key={`${event.eventId}-${life.version}`} event={event} busy={busy} onChoose={(choiceId) => void perform({ type: "choose", choiceId })} />
           ) : outcome ? (
@@ -393,6 +422,19 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
               )}
             </Panel>
           )}
+          {life.life.age < 1 && !dead && (
+            <div data-testid="born-as">
+              <p className="text-sm text-bone-300">
+                {[life.character.name, bornStation && l(bornStation.name), `${t("worlds.path")}: ${l(universe.track.name)}`, t("worlds.lifespan", { years: universe.lifespan }), universe.mechanics[0] && l(universe.mechanics[0].name)].filter(Boolean).join(" · ")}
+              </p>
+              <p className="mt-1 text-xs text-bone-400">
+                <Link href="/worlds" className="text-gold-200 underline decoration-gold-500/40">{t("play.otherWorld")}</Link>
+                {" · "}
+                {t("play.otherWorldHint")}
+              </p>
+            </div>
+          )}
+          {!dead && <AutoLifeControls mode={life.autoMode} busy={busy} onMode={(mode) => void setAutoMode(mode)} />}
 
           {!dead && (
             <Panel className="flex scroll-mt-24 flex-wrap items-center justify-between gap-3">
@@ -434,7 +476,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
             </Panel>
           )}
 
-          {!dead && <TravelPanel life={life} busy={busy} onTravel={(settlementId) => void perform({ type: "travel", settlementId })} />}
+          {!dead && life.life.age >= 6 && <TravelPanel life={life} busy={busy} onTravel={(settlementId) => void perform({ type: "travel", settlementId })} />}
 
           <NowPanel
             life={life}
@@ -448,7 +490,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
           />
 
           <div className="hidden lg:block">
-            {wide && <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onOath={acceptOath} onRefresh={() => void load()} />}
+            <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onOath={acceptOath} onRefresh={() => void load()} />
           </div>
         </section>
 
@@ -468,7 +510,11 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
           <button
             key={item.id}
             type="button"
-            onClick={() => setTab(item.id)}
+            onClick={() => {
+              setTab(item.id);
+              if (item.id === "people") setDossierVisited(true);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
             aria-pressed={tab === item.id}
             className={`relative min-h-12 truncate px-1 py-3.5 text-[11px] uppercase tracking-wide transition focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-gold-300 ${tab === item.id ? "text-gold-200" : "text-bone-300"}`}
             data-testid={`tab-${item.id}`}

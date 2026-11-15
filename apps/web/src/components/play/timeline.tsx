@@ -1,6 +1,7 @@
 "use client";
 
 import { toLifeChronicle, type HistoryEntry, type UniverseId } from "@endemion/game-core";
+import { useMemo } from "react";
 import { Button, Panel } from "@endemion/ui";
 import { ageLabel, visibleChanges, type PeopleNames } from "@/lib/format";
 import { ChangeChips } from "../change-chips";
@@ -43,7 +44,7 @@ export function Timeline({
   selectedSeq?: number | null;
 }) {
   const { locale, l, t } = useI18n();
-  const chronicle = toLifeChronicle(entries, universeId, "self");
+  const chronicle = useMemo(() => toLifeChronicle(entries, universeId, "self"), [entries, universeId]);
 
   return (
     <Panel tone="quiet" className="flex max-h-[calc(100dvh-8rem)] flex-col" data-testid="timeline">

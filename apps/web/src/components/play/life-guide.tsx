@@ -50,13 +50,17 @@ export function LifeGuide({
   busy,
   onAdvance,
   onEvent,
-  onDossier
+  onDossier,
+  hasDecision,
+  dossierOpened
 }: {
   life: LifeView;
   busy: boolean;
-  onAdvance: () => void;
+  onAdvance: (years?: number) => void;
   onEvent: () => void;
   onDossier: () => void;
+  hasDecision: boolean;
+  dossierOpened: boolean;
 }) {
   const { locale, l } = useI18n();
   const copy = locale === "en"
@@ -84,8 +88,10 @@ export function LifeGuide({
         grown: "Reach adulthood",
         grownDone: "Adulthood reached",
         advance: "Live a year",
+        untilEvent: "Live until something happens",
         dead: "Read the life",
         skip: "Hide the guide",
+        hideSteps: "Hide first steps",
         progress: "{n}%"
       }
     : {
@@ -112,8 +118,10 @@ export function LifeGuide({
         grown: "Дожить до взрослой жизни",
         grownDone: "Взрослая жизнь",
         advance: "Прожить год",
+        untilEvent: "Жить, пока что-нибудь не случится",
         dead: "Прочитать жизнь",
         skip: "Скрыть подсказку",
+        hideSteps: "Скрыть первые шаги",
         progress: "{n}%"
       };
 
@@ -148,7 +156,7 @@ export function LifeGuide({
   const goal = life.character.goal ? GOAL_LABELS[life.character.goal] : null;
   const progress = Math.max(0, Math.min(100, Math.round(life.character.goalProgress)));
   const firstLife = life.legacy.generation <= 1;
-  const done = memory.eventSeen && memory.dossierOpened && grown;
+  const done = (memory.eventSeen || hasDecision) && (memory.dossierOpened || dossierOpened) && grown;
   const showChecklist = firstLife && !memory.dismissed && !done;
 
   const chapter = dead
@@ -193,17 +201,30 @@ export function LifeGuide({
               {copy.dead}
             </Button>
           ) : (
-            <Button
-              variant="primary"
-              onClick={() => {
-                trackGuide(life.id, "advance");
-                onAdvance();
-              }}
-              disabled={busy || life.autoMode !== "manual"}
-              data-testid="guide-next"
-            >
-              {copy.advance}
-            </Button>
+            <>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  trackGuide(life.id, "advance");
+                  onAdvance(5);
+                }}
+                disabled={busy || life.autoMode !== "manual"}
+                data-testid="guide-until-event"
+              >
+                {copy.untilEvent}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  trackGuide(life.id, "advance");
+                  onAdvance();
+                }}
+                disabled={busy || life.autoMode !== "manual"}
+                data-testid="guide-next"
+              >
+                {copy.advance}
+              </Button>
+            </>
           )}
           {!dead && (
             <Button
@@ -221,6 +242,7 @@ export function LifeGuide({
         </div>
       </div>
 
+      {!event && (
       <div className="mt-4 grid gap-4 border-t border-line pt-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div data-testid="guide-goal">
           <p className="text-xs font-medium text-bone-400">{copy.goal}</p>
@@ -239,24 +261,25 @@ export function LifeGuide({
           <div data-testid="guide-checklist">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-medium text-bone-400">{copy.checklist}</p>
-              <button type="button" className="text-[11px] text-bone-500 underline decoration-line underline-offset-2 hover:text-bone-300" onClick={() => { trackGuide(life.id, "dismiss"); remember({ dismissed: true }); }}>
-                {copy.skip}
+              <button type="button" className="min-h-9 text-[11px] text-bone-500 underline decoration-line underline-offset-2 hover:text-bone-300" onClick={() => { trackGuide(life.id, "dismiss"); remember({ dismissed: true }); }}>
+                {copy.hideSteps}
               </button>
             </div>
             <ul className="mt-2 space-y-1.5 text-xs">
-              <li className={memory.eventSeen ? "text-jade-300" : "text-bone-300"}>
-                {memory.eventSeen ? "✓" : "○"} {copy.eventDone}
+              <li className={(memory.eventSeen || hasDecision) ? "text-jade-300" : "text-bone-300"}>
+                {(memory.eventSeen || hasDecision) ? "✓" : "○"} {copy.eventDone}
               </li>
               <li className={grown ? "text-jade-300" : "text-bone-300"}>
                 {grown ? "✓" : "○"} {copy.grownDone}
               </li>
-              <li className={memory.dossierOpened ? "text-jade-300" : "text-bone-300"}>
-                {memory.dossierOpened ? "✓" : "○"} {copy.dossierDone}
+              <li className={(memory.dossierOpened || dossierOpened) ? "text-jade-300" : "text-bone-300"}>
+                {(memory.dossierOpened || dossierOpened) ? "✓" : "○"} {copy.dossierDone}
               </li>
             </ul>
           </div>
         )}
       </div>
+      )}
     </Panel>
   );
 }

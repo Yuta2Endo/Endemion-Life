@@ -241,6 +241,12 @@ export const M = {
   "play.deathTitle": t("Конец пути", "The end of the road"),
   "play.deathLived": t("{name} прожил(а) {age}.", "{name} lived {age}."),
   "play.newLifeSame": t("Новая жизнь в этом мире", "A new life in this world"),
+  "play.deathLead": t("Прочитайте итоги жизни и решите, что род понесёт дальше.", "Read the life's results and decide what the family carries forward."),
+  "play.startNewLife": t("Начать новую жизнь", "Start a new life"),
+  "play.chooseWorld": t("Выбрать мир", "Choose a world"),
+  "play.autoHint": t("Автожизнь включена. Переключите ручной режим, чтобы проживать годы вручную.", "Auto-life is on. Switch to manual mode to live years by hand."),
+  "guide.untilEvent": t("Жить, пока что-нибудь не случится", "Live until something happens"),
+  "guide.hideSteps": t("Скрыть первые шаги", "Hide first steps"),
   "play.otherWorld": t("Другой мир", "Another world"),
   "play.otherWorldHint": t("Эта жизнь останется в списке.", "This life stays in your list."),
 
@@ -260,7 +266,7 @@ export const M = {
   "sheet.upbringing": t("Уклад", "Upbringing"),
   "sheet.world": t("Законы мира", "World forces"),
 
-  "play.tabPeople": t("Жизнь", "Life"),
+  "play.tabPeople": t("Досье", "Dossier"),
   "location.title": t("Текущее место", "Current location"),
   "location.travel": t("Дорога", "Travel"),
   "location.since": t("Здесь с {age}", "Here since {age}"),

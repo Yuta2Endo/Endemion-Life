@@ -17,7 +17,7 @@ function life(): LifeView {
 function render(locale: "ru" | "en"): string {
   return renderToStaticMarkup(
     <LocaleProvider locale={locale}>
-      <LifeGuide life={life()} busy={false} onAdvance={() => {}} onEvent={() => {}} onDossier={() => {}} />
+      <LifeGuide life={life()} busy={false} onAdvance={() => {}} onEvent={() => {}} onDossier={() => {}} hasDecision={false} dossierOpened={false} />
     </LocaleProvider>
   );
 }

@@ -24,7 +24,7 @@ export function EventCard({ event, busy, onChoose }: { event: EventView; busy: b
         </div>
       </div>
 
-      <h2 className="mt-5 font-display text-3xl leading-tight text-bone-100 sm:text-4xl" data-testid="event-title">
+      <h2 id="event-title" tabIndex={-1} className="mt-5 scroll-mt-28 break-words font-display text-3xl leading-tight text-bone-100 sm:text-4xl" data-testid="event-title">
         {l(event.title)}
       </h2>
       <p className="mt-3 max-w-[62ch] text-base leading-relaxed text-bone-100">{l(event.text)}</p>
@@ -90,7 +90,7 @@ export function OutcomeCard({ entry, universeId, people }: { entry: HistoryEntry
           </span>
         )}
       </div>
-      <p className="mt-3 font-display text-2xl text-bone-100">{l(entry.title)}</p>
+      <p id="outcome-title" tabIndex={-1} className="mt-3 scroll-mt-28 break-words font-display text-2xl text-bone-100">{l(entry.title)}</p>
       {entry.choice && <p className="mt-1 text-sm text-bone-500">→ {l(entry.choice)}</p>}
       {(entry.outcome ?? entry.text) && <p className="mt-3 leading-relaxed text-bone-100">{l(entry.outcome ?? entry.text)}</p>}
       <div className="mt-4 border-t border-line pt-3">

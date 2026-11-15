@@ -582,7 +582,7 @@ export function People({ life, busy, onInteract }: { life: LifeView; busy: boole
                         type="button"
                         disabled={busy}
                         onClick={() => onInteract(npc.id, interaction.id)}
-                        className="rounded border border-line bg-ink-900/70 px-2 py-1 text-[11px] text-bone-100 transition enabled:hover:border-gold-400/70 enabled:hover:text-gold-100 focus-visible:outline-2 focus-visible:outline-gold-300 disabled:opacity-50"
+                        className="min-h-11 rounded border border-line bg-ink-900/70 px-2 py-1 text-[11px] text-bone-100 transition enabled:hover:border-gold-400/70 enabled:hover:text-gold-100 focus-visible:outline-2 focus-visible:outline-gold-300 disabled:opacity-50"
                         data-testid="interact"
                         data-interaction={interaction.id}
                       >
@@ -667,7 +667,7 @@ export function Dossier({
   const quest = life.profile.quest;
   const openChance = life.pendingEvent?.choices.find((choice) => choice.available && choice.chance !== null)?.chance ?? null;
   return (
-    <Panel className="space-y-4" data-testid="dossier">
+    <Panel id="dossier" className="space-y-4" data-testid="dossier">
       <p className="text-sm text-bone-100 lg:hidden" data-testid="dossier-now">
         {[ageLabel(life.life.age, locale), life.pendingEvent && l(life.pendingEvent.title), openChance != null && t("play.chance", { n: Math.round(openChance * 100) })].filter(Boolean).join(" · ")}
       </p>
@@ -698,9 +698,11 @@ export function Dossier({
               role="tab"
               data-tab={item.id}
               aria-selected={section === item.id}
+              aria-controls={`dossier-panel-${item.id}`}
+              id={`dossier-tab-${item.id}`}
               tabIndex={section === item.id ? 0 : -1}
               onClick={() => setSection(item.id)}
-              className={`shrink-0 whitespace-nowrap rounded px-2.5 py-1 text-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${section === item.id ? "bg-gold-500/20 text-gold-100" : "text-bone-300 hover:text-bone-100"}`}
+              className={`min-h-11 shrink-0 whitespace-nowrap rounded px-2.5 py-1 text-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${section === item.id ? "bg-gold-500/20 text-gold-100" : "text-bone-300 hover:text-bone-100"}`}
               data-testid={`dossier-tab-${item.id}`}
             >
               {item.label}
