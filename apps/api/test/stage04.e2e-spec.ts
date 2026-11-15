@@ -198,7 +198,7 @@ describe("Stage 04: перенос жизни из браузера", () => {
     const local = browserLife("api-import-size", 300);
     const big = body(local);
     // История до лимита браузера: длинные тексты, как у долгой жизни (~1 МБ)
-    const filler = "x".repeat(400);
+    const filler = "x".repeat(1000);
     (big.history as HistoryEntry[]).forEach((entry) => {
       entry.text = { ru: filler, en: filler };
     });
