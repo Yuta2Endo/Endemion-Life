@@ -1,6 +1,6 @@
 # R4.13 — Season Reward Notifications
 
-**Status:** implemented and tested locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 16:46 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none
 
@@ -72,6 +72,15 @@ Payload:
 - Notifications do not deep-link to the world rewards screen.
 - A player who never opens the game after the pool unlocks sees the notification when they return; nothing is sent outside the game.
 
-## 6. Rollback
+## 6. Deployment
+
+- Code commit `bdb407d`; production runtime **`bdb407d`**.
+- Deploy run **43733992870**, success; history `16:45:23Z deploy-start` -> `16:45:53Z deploy ok`.
+- No migration was required; production migration count stays **26**; save schema 14.
+- `/api/health` 200; `/api/contracts?universeId=hunter` 200; `/api/notifications` 401 for guests; web `/` 200.
+- CI **43733609066** success; Security **43733609075** success.
+- Rollback target `e484c02`.
+
+## 7. Rollback
 
 No database migration was added. Application rollback is safe; reward notifications already written remain in `player_notifications`.
