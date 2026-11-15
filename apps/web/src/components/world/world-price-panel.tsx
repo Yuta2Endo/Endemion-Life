@@ -57,7 +57,7 @@ export function WorldPricePanel({ universeId }: { universeId: string }) {
         <h3 className="font-display text-xl text-bone-100">{c.title}</h3>
         <span className="text-xs text-bone-500">{c.lead}</span>
       </div>
-      <div className="mt-3 overflow-x-auto">
+      <div className="mt-3 overflow-x-auto" role="region" aria-label={c.title} tabIndex={0}>
         <table className="w-full min-w-[28rem] text-left text-sm">
           <thead className="text-[11px] uppercase tracking-[0.12em] text-bone-500">
             <tr>
