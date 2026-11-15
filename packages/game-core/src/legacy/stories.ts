@@ -52,6 +52,42 @@ export const RELICS: Readonly<Record<string, { id: string; name: LocalizedText; 
     name: t("Знак знати", "Noble Signet"),
     description: t("Печать знатного рода, открывающая двери.", "The signet of a noble house, opening doors."),
     effects: [fx.wealth(15)]
+  },
+  "drowned-bell": {
+    id: "drowned-bell",
+    name: t("Колокол утопленницы", "The Drowned Bell"),
+    description: t("Бронзовый язык колокола, снятый с затопленной звонницы. В нём ещё слышен звон, который не любят слушать живые.", "The bronze clapper taken from the drowned belfry. The toll still sounds inside it, and the living do not like to listen."),
+    effects: [fx.meter("corruption", -10), fx.karma(4)]
+  },
+  "caravan-ledger": {
+    id: "caravan-ledger",
+    name: t("Журнал каравана", "Caravan Ledger"),
+    description: t("Страница из журнала Лиги, вырванная до того, как караван ушёл в туман. Записи на ней ведут торговлю лучше любого проводника.", "A page torn from the League's ledger before the caravan went into the mist. Its entries trade better than any guide."),
+    effects: [fx.wealth(20), fx.skill("guild-craft", 3)]
+  },
+  "iron-shrine-tablet": {
+    id: "iron-shrine-tablet",
+    name: t("Железная дощечка", "Iron Shrine Tablet"),
+    description: t("Долговая дощечка из Железной кумирни с выжженным знаком дыхания. Огонь не тронул её, и ци слушается её.", "A debt tablet from the Iron Shrine with a breath glyph burned into it. The fire did not touch it, and qi obeys it."),
+    effects: [fx.skill("inner-cultivation", 3), fx.meter("qi-deviation", -5)]
+  },
+  "star-well-cup": {
+    id: "star-well-cup",
+    name: t("Чаша звёздного колодца", "Cup of the Star Well"),
+    description: t("Чаша, в которой вода звёздного колодца не высыхает. Тот, кто пьёт из неё, видит своё небо яснее.", "A cup in which the star well's water never dries. Whoever drinks from it sees their own sky more clearly."),
+    effects: [fx.meter("dao-heart", 8), fx.karma(3)]
+  },
+  "red-gate-core": {
+    id: "red-gate-core",
+    name: t("Ядро Красных Врат", "Red Gate Core"),
+    description: t("Осколок ядра Красных Врат, который Ассоциация позволила оставить. Он пульсирует в такт сердцу и глушит угрозу рядом.", "A shard of the Red Gate's core the Association allowed you to keep. It pulses with your heart and quiets the threat nearby."),
+    effects: [fx.meter("gate-threat", -10), fx.faction("association", 4)]
+  },
+  "star-chart": {
+    id: "star-chart",
+    name: t("Звёздная карта", "The Star Chart"),
+    description: t("Копия карты обсерватории, которую Башня сняла для вас. На ней отмечена звезда, которой нет на небе.", "A copy of the observatory's chart the Tower made for you. It marks a star that is not in the sky."),
+    effects: [fx.meter("court-favor", 6), fx.skill("arcana", 3)]
   }
 };
 

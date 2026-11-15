@@ -140,7 +140,7 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           text: t("Колокол смолкает. Сёстры спрашивают, кому он будет звонить теперь.", "The bell falls silent. The sisters ask whom it will toll for now."),
           choices: [
             { id: "chapel", text: t("Оставить колокол сёстрам", "Leave the bell to the sisters"), success: { text: t("Сёстры уносят колокол в часовню. Орден записывает ваше имя рядом.", "The sisters carry the bell to the chapel. The Order writes your name beside it."), effects: [fx.xp(30), fx.faction("order-of-ash", 6), fx.rep(5)], complete: true } },
-            { id: "deep", text: t("Утопить колокол глубже", "Sink the bell deeper"), success: { text: t("Колокол уходит в ил. Скверна в груди становится тише, но Орден не прощает самовольства.", "The bell goes into the silt. The corruption in your chest quiets, but the Order does not forgive wilfulness."), effects: [fx.xp(20), fx.meter("corruption", -8), fx.karma(4), fx.faction("order-of-ash", -2)], complete: true } }
+            { id: "deep", text: t("Утопить колокол глубже", "Sink the bell deeper"), success: { text: t("Перед тем как утопить колокол, вы снимаете язык и прячете его в рукав. Колокол уходит в ил. Скверна в груди становится тише, но Орден не прощает самовольства.", "Before sinking the bell you take its clapper and hide it in your sleeve. The bell goes into the silt. The corruption in your chest quiets, but the Order does not forgive wilfulness."), effects: [fx.xp(20), fx.meter("corruption", -8), fx.karma(4), fx.faction("order-of-ash", -2), fx.relic("drowned-bell")], complete: true } }
           ]
         }
       ]
@@ -241,7 +241,7 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           text: t("На дне повозки лежит журнал Лиги. Последняя запись сделана вашей рукой.", "The League's ledger lies at the bottom of the wagon. The last entry is in your hand."),
           choices: [
             { id: "guild", text: t("Отдать журнал Гильдии", "Give the ledger to the Guild"), success: { text: t("Гильдия закрывает дело. Ваше имя вписывают в отчёт.", "The Guild closes the case. Your name goes into the report."), effects: [fx.xp(30), fx.wealth(30), fx.faction("guild", 6), fx.rep(4)], complete: true } },
-            { id: "league", text: t("Продать журнал Лиге", "Sell the ledger to the League"), success: { text: t("Лига платит больше, чем Гильдия. Клерк не спрашивает, откуда журнал.", "The League pays more than the Guild. The clerk does not ask where the ledger came from."), effects: [fx.xp(20), fx.wealth(45), fx.faction("merchant-league", 6), fx.faction("guild", -3)], complete: true } }
+            { id: "league", text: t("Продать журнал Лиге", "Sell the ledger to the League"), success: { text: t("Перед сделкой вы вырываете страницу со своей записью и оставляете её себе. Лига платит больше, чем Гильдия. Клерк не спрашивает, откуда журнал.", "Before the deal you tear out the page with your own entry and keep it. The League pays more than the Guild. The clerk does not ask where the ledger came from."), effects: [fx.xp(20), fx.wealth(45), fx.faction("merchant-league", 6), fx.faction("guild", -3), fx.relic("caravan-ledger")], complete: true } }
           ]
         }
       ]
@@ -342,7 +342,7 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           text: t("Настоятель ждёт, какую печать поставить на долг.", "The keeper waits for you to seal the debt."),
           choices: [
             { id: "alliance", text: t("Отдать долг Союзу", "Give the debt to the Alliance"), success: { text: t("Союз принимает книгу. Настоятель больше не кланяется вам.", "The Alliance takes the book. The keeper no longer bows to you."), effects: [fx.xp(30), fx.faction("orthodox-alliance", 7), fx.rep(4), fx.wealth(10)], complete: true } },
-            { id: "burn", text: t("Сжечь дощечки", "Burn the tablets"), success: { text: t("Огонь съедает имена. Нищие и демонический культ запомнят это по-разному.", "Fire eats the names. The beggars and the demonic cult will remember it differently."), effects: [fx.xp(20), fx.faction("beggars-sect", 4), fx.faction("demonic-cult", 3), fx.meter("qi-deviation", -3), fx.karma(3)], complete: true } }
+            { id: "burn", text: t("Сжечь дощечки", "Burn the tablets"), success: { text: t("Вы берёте одну дощечку — ту, что подписана вашим именем, — и только потом подносите огонь. Огонь съедает имена. Нищие и демонический культ запомнят это по-разному.", "You take one tablet — the one bearing your name — before putting the rest to the fire. Fire eats the names. The beggars and the demonic cult will remember it differently."), effects: [fx.xp(20), fx.faction("beggars-sect", 4), fx.faction("demonic-cult", 3), fx.meter("qi-deviation", -3), fx.karma(3), fx.relic("iron-shrine-tablet")], complete: true } }
           ]
         }
       ]
@@ -441,7 +441,7 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           text: t("Старейшина спрашивает, что вы видели в колодце.", "The elder asks what you saw in the well."),
           choices: [
             { id: "tell", text: t("Рассказать правду", "Tell the truth"), success: { text: t("Секта записывает вас в число тех, кого колодец признал. Чувство неба остаётся с вами.", "The sect writes you among those the well acknowledged. The sense of the sky stays with you."), effects: [fx.xp(30), fx.faction("cloud-peak", 7), fx.rep(4), fx.ability("spirit-sense")], complete: true } },
-            { id: "keep", text: t("Оставить отражение себе", "Keep the reflection"), success: { text: t("Вы уносите чужое небо в груди. Секта не узнает, но Небеса — да.", "You carry another sky in your chest. The sect will not know, but the Heavens will."), effects: [fx.xp(20), fx.track(8), fx.meter("karmic-debt", 6), fx.faction("cloud-peak", -3)], complete: true } }
+            { id: "keep", text: t("Оставить отражение себе", "Keep the reflection"), success: { text: t("Вы прячете чашу с отражением под одеждой и уносите чужое небо в груди. Секта не узнает, но Небеса — да.", "You hide the cup with the reflection under your robe and carry another sky in your chest. The sect will not know, but the Heavens will."), effects: [fx.xp(20), fx.track(8), fx.meter("karmic-debt", 6), fx.faction("cloud-peak", -3), fx.relic("star-well-cup")], complete: true } }
           ]
         }
       ]
@@ -539,7 +539,7 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           id: "core",
           text: t("Ядро Врат пульсирует в такт вашему сердцу. Ассоциация ждёт звонка.", "The Gate's core pulses in time with your heart. The Association waits for a call."),
           choices: [
-            { id: "report", text: t("Сообщить в Ассоциацию", "Report to the Association"), success: { text: t("Ассоциация закрывает Врата и вычёркивает рейд из всех отчётов.", "The Association seals the Gate and strikes the raid from every report."), effects: [fx.xp(30), fx.wealth(40), fx.faction("association", 6), fx.meter("fame", 8), fx.rep(4)], complete: true } },
+            { id: "report", text: t("Сообщить в Ассоциацию", "Report to the Association"), success: { text: t("Ассоциация закрывает Врата, вычёркивает рейд из всех отчётов и позволяет вам оставить осколок ядра.", "The Association seals the Gate, strikes the raid from every report, and lets you keep a shard of the core."), effects: [fx.xp(30), fx.wealth(40), fx.faction("association", 6), fx.meter("fame", 8), fx.rep(4), fx.relic("red-gate-core")], complete: true } },
             { id: "corp", text: t("Позвонить в Хансон", "Call Hanseong"), success: { text: t("Хансон платит вдвое и забирает ядро. В сводке Ассоциации Врата всё ещё открыты.", "Hanseong pays double and takes the core. In the Association's report the Gate is still open."), effects: [fx.xp(20), fx.wealth(60), fx.faction("hanseong-corp", 7), fx.meter("fame", -4)], complete: true } }
           ]
         }
@@ -642,7 +642,7 @@ const ADVENTURES: Readonly<Record<UniverseId, readonly AdventureDefinition[]>> =
           text: t("Ректор ждёт в куполе. На карте не хватает одной звезды.", "The rector waits in the dome. One star is missing from the chart."),
           choices: [
             { id: "court", text: t("Отдать карту двору", "Give the chart to the court"), success: { text: t("Двор принимает карту и не спрашивает о недостающей звезде.", "The court takes the chart and does not ask about the missing star."), effects: [fx.xp(30), fx.faction("imperial-court", 7), fx.meter("court-favor", 5), fx.rep(4)], complete: true } },
-            { id: "tower", text: t("Отдать карту Магической башне", "Give the chart to the Mage Tower"), success: { text: t("Башня забирает карту. Двор запомнит, что звезда пропала не сама.", "The Tower takes the chart. The court will remember the star did not vanish on its own."), effects: [fx.xp(20), fx.faction("magic-tower", 7), fx.meter("court-favor", -3), fx.meter("scandal", 3)], complete: true } }
+            { id: "tower", text: t("Отдать карту Магической башне", "Give the chart to the Mage Tower"), success: { text: t("Башня забирает карту и снимает для вас копию. Двор запомнит, что звезда пропала не сама.", "The Tower takes the chart and makes you a copy. The court will remember the star did not vanish on its own."), effects: [fx.xp(20), fx.faction("magic-tower", 7), fx.meter("court-favor", -3), fx.meter("scandal", 3), fx.relic("star-chart")], complete: true } }
           ]
         }
       ]

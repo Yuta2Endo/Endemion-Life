@@ -7,11 +7,13 @@ import {
   parseSave,
   SAVE_SCHEMA_VERSION,
   type GameState,
+  type UniverseId,
 } from "../src/index.js";
 import { applyEffect } from "../src/engine/effects.js";
 import { describeCondition } from "../src/engine/conditions.js";
 import { findRelic, RELICS } from "../src/legacy/stories.js";
 import { fx, when } from "../src/narrative/dsl.js";
+import type { Effect } from "../src/narrative/types.js";
 import type { EngineContext } from "../src/engine/context.js";
 import { Rng } from "../src/rng.js";
 import { start } from "./helpers.js";
@@ -34,10 +36,23 @@ function countChronicle(state: GameState, kind: string): number {
 }
 
 describe("Stage 04.3: каталог реликвий", () => {
-  it("все шесть реликвий доступны через каталог", () => {
+  it("все двенадцать реликвий доступны через каталог", () => {
     const ids = Object.keys(RELICS);
-    expect(ids).toHaveLength(6);
-    for (const id of ["ancestral-blade", "system-crystal", "clan-scroll", "spirit-root-amulet", "gate-hunter-badge", "noble-signet"]) {
+    expect(ids).toHaveLength(12);
+    for (const id of [
+      "ancestral-blade",
+      "system-crystal",
+      "clan-scroll",
+      "spirit-root-amulet",
+      "gate-hunter-badge",
+      "noble-signet",
+      "drowned-bell",
+      "caravan-ledger",
+      "iron-shrine-tablet",
+      "star-well-cup",
+      "red-gate-core",
+      "star-chart"
+    ]) {
       const relic = findRelic(id);
       expect(relic).toBeDefined();
       expect(relic?.id).toBe(id);
@@ -274,5 +289,114 @@ describe("Stage 04.3: сохранения и наследование", () => {
     // Verify that buildHeir would copy them: same logic as succession.ts buildHeir line 305
     const expectedRecordRelics = state.lineage.relics.map((r) => r.id);
     expect(expectedRecordRelics).toEqual(["ancestral-blade", "gate-hunter-badge"]);
+  });
+});
+
+interface RoadRelicCase {
+  id: string;
+  universeId: UniverseId;
+  effects: Effect[];
+}
+
+/** R5.3: реликвии третьей дороги — ровно те эффекты, что обещает ветка приключения */
+const ROAD_RELICS: readonly RoadRelicCase[] = [
+  {
+    id: "drowned-bell",
+    universeId: "dark-fantasy",
+    effects: [
+      { type: "meter", id: "corruption", delta: -10 },
+      { type: "karma", delta: 4 },
+    ],
+  },
+  {
+    id: "caravan-ledger",
+    universeId: "isekai",
+    effects: [
+      { type: "wealth", delta: 20 },
+      { type: "skill", id: "guild-craft", delta: 3 },
+    ],
+  },
+  {
+    id: "iron-shrine-tablet",
+    universeId: "murim",
+    effects: [
+      { type: "skill", id: "inner-cultivation", delta: 3 },
+      { type: "meter", id: "qi-deviation", delta: -5 },
+    ],
+  },
+  {
+    id: "star-well-cup",
+    universeId: "xianxia",
+    effects: [
+      { type: "meter", id: "dao-heart", delta: 8 },
+      { type: "karma", delta: 3 },
+    ],
+  },
+  {
+    id: "red-gate-core",
+    universeId: "hunter",
+    effects: [
+      { type: "meter", id: "gate-threat", delta: -10 },
+      { type: "faction", id: "association", delta: 4 },
+    ],
+  },
+  {
+    id: "star-chart",
+    universeId: "academy",
+    effects: [
+      { type: "meter", id: "court-favor", delta: 6 },
+      { type: "skill", id: "arcana", delta: 3 },
+    ],
+  },
+];
+
+describe("R5.3: реликвии третьей дороги", () => {
+  it("каталог хранит ожидаемые эффекты каждой реликвии", () => {
+    for (const item of ROAD_RELICS) {
+      const relic = findRelic(item.id);
+      expect(relic, item.id).toBeDefined();
+      expect(relic?.id, item.id).toBe(item.id);
+      expect(relic?.effects, item.id).toEqual(item.effects);
+    }
+  });
+
+  it("получение каждой реликвии применяет её эффекты и не создаёт дубликат", () => {
+    for (const item of ROAD_RELICS) {
+      const state = start({ seed: `road-relic-${item.id}`, universeId: item.universeId });
+      const ctx = makeCtx(state);
+      // Шкалы с отрицательной дельтой не должны упираться в ноль при проверке
+      for (const effect of item.effects) if (effect.type === "meter") state.meters[effect.id] = 40;
+      const wealthBefore = state.character.wealth;
+      const karmaBefore = state.character.karma;
+      const skillsBefore = { ...state.character.skills };
+      const factionsBefore = { ...state.character.factions };
+
+      applyEffect(ctx, fx.relic(item.id));
+
+      expect(relicIds(state), item.id).toEqual([item.id]);
+      for (const effect of item.effects) {
+        if (effect.type === "meter") expect(state.meters[effect.id], `${item.id} ${effect.id}`).toBe(40 + effect.delta);
+        if (effect.type === "skill") expect(state.character.skills[effect.id] ?? 0, `${item.id} ${effect.id}`).toBe((skillsBefore[effect.id] ?? 0) + effect.delta);
+        if (effect.type === "faction") expect(state.character.factions[effect.id] ?? 0, `${item.id} ${effect.id}`).toBe((factionsBefore[effect.id] ?? 0) + effect.delta);
+        if (effect.type === "wealth") expect(state.character.wealth, item.id).toBe(wealthBefore + effect.delta);
+        if (effect.type === "karma") expect(state.character.karma, item.id).toBe(karmaBefore + effect.delta);
+      }
+      const afterFirst = {
+        meters: { ...state.meters },
+        skills: { ...state.character.skills },
+        factions: { ...state.character.factions },
+        wealth: state.character.wealth,
+        karma: state.character.karma,
+      };
+
+      applyEffect(ctx, fx.relic(item.id));
+
+      expect(relicIds(state), item.id).toEqual([item.id]);
+      expect(state.meters, `${item.id} meters after dedup`).toEqual(afterFirst.meters);
+      expect(state.character.skills, `${item.id} skills after dedup`).toEqual(afterFirst.skills);
+      expect(state.character.factions, `${item.id} factions after dedup`).toEqual(afterFirst.factions);
+      expect(state.character.wealth, `${item.id} wealth after dedup`).toBe(afterFirst.wealth);
+      expect(state.character.karma, `${item.id} karma after dedup`).toBe(afterFirst.karma);
+    }
   });
 });

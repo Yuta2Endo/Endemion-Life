@@ -90,3 +90,56 @@ describe("R5.2: третья дорога", () => {
     }
   });
 });
+
+interface RoadRelicFinal {
+  universeId: UniverseId;
+  adventureId: string;
+  step: string;
+  relicBranch: string;
+  otherBranch: string;
+  relicId: string;
+}
+
+/** R5.3: финальные ветви третьей дороги и их реликвии */
+const ROAD_RELIC_FINALS: readonly RoadRelicFinal[] = [
+  { universeId: "dark-fantasy", adventureId: "df.bell-toll", step: "toll", relicBranch: "deep", otherBranch: "chapel", relicId: "drowned-bell" },
+  { universeId: "isekai", adventureId: "is.lost-caravan", step: "ledger", relicBranch: "league", otherBranch: "guild", relicId: "caravan-ledger" },
+  { universeId: "murim", adventureId: "mu.shrine-debt", step: "choice", relicBranch: "burn", otherBranch: "alliance", relicId: "iron-shrine-tablet" },
+  { universeId: "xianxia", adventureId: "xi.star-trial", step: "choice", relicBranch: "keep", otherBranch: "tell", relicId: "star-well-cup" },
+  { universeId: "hunter", adventureId: "hu.red-gate-raid", step: "core", relicBranch: "report", otherBranch: "corp", relicId: "red-gate-core" },
+  { universeId: "academy", adventureId: "ac.star-chart", step: "dome", relicBranch: "tower", otherBranch: "court", relicId: "star-chart" },
+];
+
+function atFinalStep(universeId: UniverseId, adventureId: string, step: string): GameState {
+  const state = revealAll(grown(universeId));
+  state.adventure.active = { id: adventureId, step, since: state.life.age };
+  return state;
+}
+
+function takeFinalBranch(item: RoadRelicFinal, branch: string): GameState {
+  const state = atFinalStep(item.universeId, item.adventureId, item.step);
+  return applyAction(state, { type: "venture", choiceId: branch }).state;
+}
+
+describe("R5.3: реликвии третьей дороги", () => {
+  it("каждая реликвия выдаётся только выбранной финальной ветвью", () => {
+    for (const item of ROAD_RELIC_FINALS) {
+      const chosen = takeFinalBranch(item, item.relicBranch);
+      expect(chosen.adventure.done, item.adventureId).toContain(item.adventureId);
+      expect(chosen.adventure.active, item.adventureId).toBeNull();
+      expect(chosen.lineage.relics.map((relic) => relic.id), item.relicId).toEqual([item.relicId]);
+
+      const other = takeFinalBranch(item, item.otherBranch);
+      expect(other.adventure.done, item.adventureId).toContain(item.adventureId);
+      expect(other.lineage.relics.map((relic) => relic.id), `${item.adventureId} ${item.otherBranch}`).toEqual([]);
+    }
+  });
+
+  it("реликвия выдаётся один раз, даже если финальный шаг повторить нельзя", () => {
+    const item = ROAD_RELIC_FINALS[0]!;
+    const state = takeFinalBranch(item, item.relicBranch);
+    expect(state.lineage.relics.map((relic) => relic.id)).toEqual([item.relicId]);
+    expect(() => applyAction(state, { type: "venture", choiceId: item.relicBranch })).toThrow();
+    expect(state.lineage.relics).toHaveLength(1);
+  });
+});
