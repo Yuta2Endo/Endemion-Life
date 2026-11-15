@@ -1,6 +1,6 @@
 # R2.3 — Family Chronicle
 
-**Status:** implemented locally, verified, release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 04:16 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none (derived read model)  
 **Builds on:** R2.1 families, R2.2 family estate
@@ -53,6 +53,14 @@ Family e2e now asserts that the chronicle contains `family.create` and `invite.a
 - No pagination yet; response is capped at 80 entries.
 - Family panel displays the latest six entries.
 
-## 5. Rollback
+## 5. Deployment
+
+- Code commit `ab6efb6`; production runtime **`ab6efb6`**.
+- Deploy run **43675255378**, success; history `04:16:11Z deploy-start` → `04:16:40Z deploy ok`.
+- Migration count remains **17**.
+- `/api/health` 200; `/api/families/:id/chronicle` returns 401 unauthenticated; all containers healthy.
+- Rollback target `f17e96f`.
+
+## 6. Rollback
 
 No migration. Reverting the application code removes the chronicle route and panel without affecting data.
