@@ -536,6 +536,7 @@ model PlayerContract {
   @@unique([buyerLifeId, acceptActionId])
   @@index([universeId, status, createdAt])
   @@index([sellerPlayerId, status])
+  @@index([targetPlayerId, status])
   @@map("player_contracts")
 }
 
