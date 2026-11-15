@@ -58,6 +58,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R4.1 (Market Fee) | 5% seller-side sink, dynamic shared prices | **COMPLETE; deployed, schema 14, migration 19** - см. `docs/planning/R4_1_MARKET_FEE.md` |
 | R4.2 (Price History) | Season price history, changes, event influence panel | **COMPLETE; deployed, no migration** - см. `docs/planning/R4_2_PRICE_HISTORY.md` |
 | R4.3 (Event Prices) | World events apply one-season price pressure to settlements | **COMPLETE; deployed, no migration** - см. `docs/planning/R4_3_EVENT_PRICES.md` |
+| R4.4 (Settlement Orders) | Seasonal goods orders, gold rewards, idempotent fulfilment, web board | **IMPLEMENTED LOCALLY; release pending; migration 20 additive** - см. `docs/planning/R4_4_SETTLEMENT_ORDERS.md` |
 
 ## Design (Living Chronicle)
 

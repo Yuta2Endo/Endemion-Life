@@ -304,6 +304,33 @@ describe("Stage 05: вклад в общий мир", () => {
     }).expect(200);
     expect(replay.body).toMatchObject({ reward: 25, replayed: true });
   });
+
+  it("выполняет сезонный заказ поселения и выдаёт награду", async () => {
+    const a = agent();
+    await account(a, "order-a@example.com");
+    const created = await post(a, "/api/lives", { universeId: "hunter", seed: "order-life" }).expect(201);
+    const life = created.body.life as { id: string; version: number };
+    const board = await a.get("/api/world/hunter/orders").expect(200);
+    const order = board.body.orders[0] as { id: string; goodId: string; qty: number; reward: number };
+
+    const row = await t.prisma.client.life.findUniqueOrThrow({ where: { id: life.id } });
+    const state = row.state as { character: { wealth: number }; economy: { goods: Record<string, number> }; version: number };
+    state.character.wealth = 0;
+    state.economy.goods[order.goodId] = order.qty;
+    await t.prisma.client.life.update({ where: { id: life.id }, data: { state } });
+
+    const actionId = randomUUID();
+    const fulfilled = await post(a, `/api/world/hunter/orders/${order.id}/fulfill`, { actionId, lifeId: life.id }).expect(200);
+    expect(fulfilled.body).toMatchObject({ reward: order.reward, replayed: false });
+    const updated = await t.prisma.client.life.findUniqueOrThrow({ where: { id: life.id } });
+    const updatedState = updated.state as { character: { wealth: number }; economy: { goods: Record<string, number> } };
+    expect(updatedState.character.wealth).toBe(order.reward);
+    expect(updatedState.economy.goods[order.goodId]).toBe(0);
+    expect(await t.prisma.client.worldOrder.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ status: "fulfilled" });
+
+    const replay = await post(a, `/api/world/hunter/orders/${order.id}/fulfill`, { actionId, lifeId: life.id }).expect(200);
+    expect(replay.body).toMatchObject({ reward: order.reward, replayed: true });
+  });
 });
 
 describe("Stage 05: модерация, экспорт и удаление", () => {

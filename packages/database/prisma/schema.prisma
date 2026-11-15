@@ -53,6 +53,7 @@ model Player {
   marketSales        MarketTrade[]      @relation("MarketSellerPlayer")
   marketPurchases    MarketTrade[]      @relation("MarketBuyerPlayer")
   marketLedger       MarketLedger[]
+  worldOrders        WorldOrder[]        @relation("WorldOrderFulfiller")
   familyMemberships  FamilyMember[]
   familyInvitesSent  FamilyInvite[]     @relation("FamilyInviteInviter")
   familyInvitesReceived FamilyInvite[]  @relation("FamilyInviteInvitee")
@@ -206,6 +207,7 @@ model Life {
   marketSales  MarketTrade[]  @relation("MarketSellerLife")
   marketBuys   MarketTrade[]  @relation("MarketBuyerLife")
   marketLedger MarketLedger[]
+  worldOrders  WorldOrder[]  @relation("WorldOrderLife")
 
   predecessor Life? @relation("Succession", fields: [predecessorId], references: [id], onDelete: SetNull)
   successor   Life? @relation("Succession")
@@ -375,6 +377,7 @@ model World {
   commands      WorldCommand[]
   audits        WorldAudit[]
   contributions WorldContribution[]
+  orders        WorldOrder[]
 
   @@map("worlds")
 }
@@ -471,6 +474,31 @@ model WorldEvent {
   @@index([worldId, season])
   @@index([worldId, createdAt])
   @@map("world_events")
+}
+
+/// R4.4: сезонный заказ поселения. Игрок приносит товар и получает золото.
+model WorldOrder {
+  id                String   @id @default(uuid()) @db.Uuid
+  worldId           String   @map("world_id") @db.Uuid
+  season            Int
+  slot              Int
+  settlementId      String   @map("settlement_id") @db.VarChar(48)
+  goodId            String   @map("good_id") @db.VarChar(48)
+  qty               Int
+  reward            Int
+  status            String   @default("open") @db.VarChar(10)
+  fulfilledByPlayerId String? @map("fulfilled_by_player_id") @db.Uuid
+  fulfilledByLifeId String?  @map("fulfilled_by_life_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  fulfilledAt       DateTime? @map("fulfilled_at") @db.Timestamptz(3)
+
+  world    World  @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  player   Player? @relation("WorldOrderFulfiller", fields: [fulfilledByPlayerId], references: [id], onDelete: SetNull)
+  life     Life?   @relation("WorldOrderLife", fields: [fulfilledByLifeId], references: [id], onDelete: SetNull)
+
+  @@unique([worldId, season, slot])
+  @@index([worldId, season, status])
+  @@map("world_orders")
 }
 
 /// Журнал команд: tick и правки администратора. Replay идёт от seed по seq.

@@ -20,6 +20,11 @@ const textSchema = z.strictObject({
   en: z.string().trim().min(1).max(500)
 });
 
+const orderFulfillSchema = z.strictObject({
+  actionId: z.uuid(),
+  lifeId: z.uuid()
+});
+
 const rewardClaimSchema = z.strictObject({
   actionId: z.uuid(),
   lifeId: z.uuid(),
@@ -133,6 +138,19 @@ export class WorldController {
   async claimReward(@Req() request: Request, @Param("universeId") universeId: string, @Body() body: unknown) {
     const { player } = await this.sessions.requireAccount(request);
     return this.world.claimReward(player.id, assertUniverseId(universeId), parseOrThrow(rewardClaimSchema, body));
+  }
+
+  @Get(":universeId/orders")
+  async orders(@Param("universeId") universeId: string) {
+    return this.world.orders(assertUniverseId(universeId));
+  }
+
+  @Post(":universeId/orders/:orderId/fulfill")
+  @HttpCode(200)
+  async fulfillOrder(@Req() request: Request, @Param("universeId") universeId: string, @Param("orderId") orderId: string, @Body() body: unknown) {
+    const { player } = await this.sessions.requireAccount(request);
+    if (!z.uuid().safeParse(orderId).success) throw new ApiError(404, "NOT_FOUND", "Заказ не найден.");
+    return this.world.fulfillOrder(player.id, assertUniverseId(universeId), orderId, parseOrThrow(orderFulfillSchema, body));
   }
 
   @Get(":universeId/prices")

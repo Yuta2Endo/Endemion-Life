@@ -318,6 +318,103 @@ export class WorldService {
     });
   }
 
+  private async ensureOrders(tx: Tx, worldId: string, state: SharedWorldState): Promise<void> {
+    if (state.settlements.length === 0) return;
+    const rows = Array.from({ length: 6 }, (_, slot) => {
+      const settlement = state.settlements[(state.season * 3 + slot) % state.settlements.length]!;
+      const good = settlement.goods[(state.season + slot) % settlement.goods.length]!;
+      const qty = 1 + ((state.season + slot) % 3);
+      return {
+        worldId,
+        season: state.season,
+        slot,
+        settlementId: settlement.id,
+        goodId: good.id,
+        qty,
+        reward: Math.max(1, good.buy * qty + 5 + slot * 2)
+      };
+    });
+    await tx.worldOrder.createMany({ data: rows, skipDuplicates: true });
+  }
+
+  async orders(universeId: UniverseId) {
+    const row = await this.ensureWorld(universeId);
+    const state = parseSharedWorldState(row.state);
+    await this.db.$transaction((tx) => this.ensureOrders(tx, row.id, state));
+    const orders = await this.db.worldOrder.findMany({
+      where: { worldId: row.id, season: state.season, status: "open" },
+      orderBy: { slot: "asc" }
+    });
+    return {
+      season: state.season,
+      orders: orders.map((order) => {
+        const settlement = state.settlements.find((item) => item.id === order.settlementId);
+        const good = settlement?.goods.find((item) => item.id === order.goodId);
+        return {
+          id: order.id,
+          settlementId: order.settlementId,
+          settlementName: settlement?.name ?? { ru: order.settlementId, en: order.settlementId },
+          goodId: order.goodId,
+          goodName: good?.name ?? { ru: order.goodId, en: order.goodId },
+          qty: order.qty,
+          reward: order.reward
+        };
+      })
+    };
+  }
+
+  async fulfillOrder(playerId: string, universeId: UniverseId, orderId: string, input: { actionId: string; lifeId: string }) {
+    return this.db.$transaction(async (tx) => {
+      const row = await this.lockWorld(tx, universeId);
+      const state = parseSharedWorldState(row.state);
+      await this.ensureOrders(tx, row.id, state);
+      const order = await tx.worldOrder.findUnique({ where: { id: orderId } });
+      if (!order || order.worldId !== row.id) throw new ApiError(404, "NOT_FOUND", "Заказ не найден.");
+      if (order.season !== state.season) throw new ApiError(409, "WORLD_CONFLICT", "Заказ относится к прошлому сезону.");
+      if (order.status === "fulfilled") {
+        if (order.fulfilledByPlayerId !== playerId) throw new ApiError(409, "VALIDATION", "Заказ уже выполнен.");
+        return { reward: order.reward, replayed: true as const };
+      }
+      const initial = await tx.life.findFirst({ where: { id: input.lifeId, playerId } });
+      if (!initial) throw new ApiError(404, "NOT_FOUND", "Жизнь не найдена.");
+      await tx.$queryRaw`SELECT id FROM lives WHERE id = ${input.lifeId}::uuid FOR UPDATE`;
+      const life = await tx.life.findUniqueOrThrow({ where: { id: input.lifeId } });
+      if (life.universeId !== universeId) throw new ApiError(409, "VALIDATION", "Жизнь принадлежит другому миру.");
+      const save = parseSave(life.state);
+      if (!save.life.alive) throw new ApiError(409, "LIFE_ENDED", "Заказ может выполнить только живая жизнь.");
+      const stock = save.economy.goods[order.goodId] ?? 0;
+      if (stock < order.qty) throw new ApiError(409, "INSUFFICIENT_GOODS", "Не хватает товара для заказа.");
+      save.economy.goods[order.goodId] = stock - order.qty;
+      save.character.wealth = Math.min(1_000_000_000, save.character.wealth + order.reward);
+      save.version += 1;
+      const maxSeq = await tx.historyEntry.aggregate({ where: { lifeId: life.id }, _max: { seq: true } });
+      const seq = Math.max(save.nextSeq, (maxSeq._max.seq ?? 0) + 1);
+      save.nextSeq = seq + 1;
+      const entry = {
+        seq,
+        age: save.life.age,
+        kind: "legacy" as const,
+        title: { ru: "Заказ поселения", en: "Settlement order" },
+        text: { ru: `Заказ выполнен: ${order.qty} ${order.goodId} за ${order.reward} золота.`, en: `Order fulfilled: ${order.qty} ${order.goodId} for ${order.reward} gold.` },
+        changes: [{ kind: "wealth" as const, delta: order.reward }, { kind: "good" as const, key: order.goodId, delta: -order.qty }]
+      };
+      await tx.life.update({ where: { id: life.id }, data: { version: save.version, state: save as unknown as Prisma.InputJsonValue } });
+      await tx.historyEntry.create({ data: { lifeId: life.id, seq, age: save.life.age, kind: "legacy", data: entry } });
+      await tx.lifeSnapshot.create({
+        data: { lifeId: life.id, version: save.version, age: save.life.age, reason: "action", state: save as unknown as Prisma.InputJsonValue }
+      });
+      await tx.lifeSnapshot.deleteMany({ where: { lifeId: life.id, version: { lte: save.version - 50 } } });
+      await tx.worldOrder.update({
+        where: { id: order.id },
+        data: { status: "fulfilled", fulfilledByPlayerId: playerId, fulfilledByLifeId: life.id, fulfilledAt: new Date() }
+      });
+      await tx.worldAudit.create({
+        data: { worldId: row.id, action: "player.order", actor: playerId, detail: json({ orderId: order.id, lifeId: life.id, reward: order.reward }) }
+      });
+      return { reward: order.reward, replayed: false as const, life: { id: life.id, version: save.version, wealth: save.character.wealth } };
+    });
+  }
+
   async prices(universeId: UniverseId, seasons: number) {
     const row = await this.ensureWorld(universeId);
     const current = parseSharedWorldState(row.state);
