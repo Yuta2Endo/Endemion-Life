@@ -1,6 +1,6 @@
 # R5.1 — The Atlas: World Codex
 
-**Status:** implemented and verified locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 17:02 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none
 
@@ -98,6 +98,18 @@ The new tab is registered in `apps/web/src/components/play/dossier.tsx`. The pan
 - Reading the Atlas does not create progress or notifications.
 - Long arcs, quests, relics and NPC storylines remain future R5 slices.
 
-## 7. Rollback
+## 7. Deployment
+
+- Code commit `4f074e8`; production runtime **`4f074e8`**.
+- Deploy run **43738410369**, success; history `17:01:55Z deploy-start` -> `17:02:26Z deploy ok`.
+- No migration was required; production migration count stays **26**; save schema 14.
+- `/api/health` 200, database/redis up.
+- `/api/contracts?universeId=hunter` 200.
+- `/api/notifications` 401 for guests.
+- Web `/` 200.
+- CI **43738109510** success; Security **43738109524** success.
+- Rollback target `bdb407d`.
+
+## 8. Rollback
 
 No database migration or API contract was added. Application rollback is safe; the Atlas exists only in code and the web bundle.
