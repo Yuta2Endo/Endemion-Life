@@ -88,7 +88,7 @@ export function LiveBoard() {
       {windows.length === 0 && <p className="mt-3 text-xs text-bone-500">{t("live.empty")}</p>}
       {lives.length > 0 && (
         <label className="mt-3 block text-xs text-bone-400">
-          <select className="mt-1 w-full bg-ink-900 px-2 py-1 text-bone-100" value={lifeId} onChange={(event) => setLifeId(event.target.value)} data-testid="live-life">
+          <select aria-label={t("live.chooseLife")} className="mt-1 w-full bg-ink-900 px-2 py-1 text-bone-100" value={lifeId} onChange={(event) => setLifeId(event.target.value)} data-testid="live-life">
             {lives.map((life) => (
               <option key={life.id} value={life.id}>
                 {life.name}

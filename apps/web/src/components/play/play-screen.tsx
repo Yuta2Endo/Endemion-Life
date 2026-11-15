@@ -58,6 +58,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
   const [outcome, setOutcome] = useState<HistoryEntry | null>(null);
   const [tab, setTab] = useState<Tab>("event");
   const [savesOpen, setSavesOpen] = useState(false);
+  const [wide, setWide] = useState(false);
   const [dossierJump, setDossierJump] = useState<{ section: "adventure" | "people"; n: number } | null>(null);
   const [dossierVisited, setDossierVisited] = useState(false);
   const [saves, setSaves] = useState<SaveView[] | null>(null);
@@ -108,6 +109,14 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
     const frame = requestAnimationFrame(() => document.getElementById(id)?.focus());
     return () => cancelAnimationFrame(frame);
   }, [tab, life?.pendingEvent?.eventId, outcome?.seq]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    const apply = () => setWide(media.matches);
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
 
   function errorText(error: unknown): string {
     if (error instanceof ClientError && error.code === "NETWORK") return t("error.offline");
@@ -490,14 +499,16 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
           />
 
           <div className="hidden lg:block">
-            <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onOath={acceptOath} onRefresh={() => void load()} />
+            {wide && <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onOath={acceptOath} onRefresh={() => void load()} />}
           </div>
         </section>
 
         {/* На телефоне досье — отдельная вкладка */}
-        <section className={tab === "people" ? "block lg:hidden" : "hidden"}>
-          <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onOath={acceptOath} onRefresh={() => void load()} />
-        </section>
+        {!wide && tab === "people" && (
+          <section className="block lg:hidden">
+            <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onOath={acceptOath} onRefresh={() => void load()} />
+          </section>
+        )}
 
         <aside className={shown("timeline")}>
            <Timeline entries={entries} universeId={life.universeId} people={people} canLoadMore={nextBefore !== null} loadingMore={loadingMore} onLoadMore={() => void loadMore()} selectedSeq={selectedSeq} onSelect={(seq) => setSelectedSeq((current) => (current === seq ? null : seq))} />
