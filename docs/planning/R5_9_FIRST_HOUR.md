@@ -1,6 +1,6 @@
 # R5.9 — «Первый час»
 
-**Статус:** реализовано и проверено локально; релиз ожидает деплоя  
+**Статус:** COMPLETE AND DEPLOYED (2026-11-15 21:37 UTC)  
 **Save schema:** 14 (без изменений)  
 **DB migration:** нет  
 **Затронут только web**
@@ -54,13 +54,21 @@
 | Save schema | 14 |
 | DB migration | нет |
 
-## 3. Ограничения
+## 3. Деплой
+
+- Code commit `db43727`; production runtime **`db43727`**.
+- Deploy run **43764392959**, success; history `21:36:50Z deploy-start` → `21:37:25Z deploy ok` from `6e4a2b6`.
+- CI **43763879299**, Security **43763879307**.
+- Production: 26 migrations, schema 14; `/api/health` 200, `/api/contracts?universeId=hunter` 200, `/api/notifications` guest 401, web `/` 200.
+- Rollback `6e4a2b6`; migrations none.
+
+## 4. Ограничения
 
 - Lighthouse и полный ручной screen-reader/200% zoom прогон не добавлены в CI.
 - Новые события аналитики и отдельный дашборд воронки не входили в этот срез; существующие `guide.*` и funnel-метрики сохранены.
 - Арт, звук и анимации — следующий релиз R5.10.
 - Android WebView smoke не запускался.
 
-## 4. Откат
+## 5. Откат
 
 Изменения только в web. Откат — предыдущий runtime `6e4a2b6`; миграций и изменений схемы нет.
