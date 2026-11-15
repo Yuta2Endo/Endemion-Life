@@ -53,6 +53,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R2.3 (Family Chronicle) | Derived house chronicle: audits + member life milestones, API + web panel | **COMPLETE; deployed, no migration** - см. `docs/planning/R2_3_FAMILY_CHRONICLE.md` |
 | R3.1 (World Scheduler) | Automatic shared-world tick every 15 minutes, six universes | **COMPLETE; deployed, no migration** - см. `docs/planning/R3_1_WORLD_SCHEDULER.md` |
 | R3.2 (Season Chronicle) | Season list, event history API, season rail and event panel on `/worlds` | **COMPLETE; deployed, no migration** - см. `docs/planning/R3_2_SEASON_CHRONICLE.md` |
+| R3.3 (Season Goals) | Shared prosperity/stability/faction goals and settlement-map view | **IMPLEMENTED LOCALLY; release pending; no migration** - см. `docs/planning/R3_3_SEASON_GOALS.md` |
 
 ## Design (Living Chronicle)
 

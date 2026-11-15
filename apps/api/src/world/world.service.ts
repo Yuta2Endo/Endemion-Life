@@ -235,6 +235,47 @@ export class WorldService {
     }));
   }
 
+  async goals(universeId: UniverseId): Promise<{
+    season: number;
+    generatedAt: string;
+    goals: Array<{ id: string; title: { ru: string; en: string }; description: { ru: string; en: string }; current: number; target: number; progress: number; met: boolean }>;
+  }> {
+    const row = await this.ensureWorld(universeId);
+    const world = parseSharedWorldState(row.state);
+    const average = (values: number[]) => (values.length === 0 ? 0 : Math.round(values.reduce((sum, value) => sum + value, 0) / values.length));
+    const prosperity = average(world.settlements.map((settlement) => settlement.prosperity));
+    const stability = average(world.settlements.map((settlement) => settlement.stability));
+    const factionPower = world.factions.length === 0 ? 0 : Math.max(...world.factions.map((faction) => faction.power));
+    const goals = [
+      {
+        id: "prosperity",
+        title: { ru: "Поднять благосостояние", en: "Raise prosperity" },
+        description: { ru: "Среднее благосостояние поселений мира.", en: "Average prosperity of the world's settlements." },
+        current: prosperity,
+        target: 55 + Math.min(10, world.season)
+      },
+      {
+        id: "stability",
+        title: { ru: "Сохранить порядок", en: "Keep order" },
+        description: { ru: "Средняя стабильность поселений мира.", en: "Average stability of the world's settlements." },
+        current: stability,
+        target: 50 + Math.min(5, Math.floor(world.season / 4))
+      },
+      {
+        id: "factions",
+        title: { ru: "Уравновесить силы", en: "Balance the powers" },
+        description: { ru: "Сильнейшая фракция не должна доминировать без предела.", en: "The strongest faction must not dominate without limit." },
+        current: factionPower,
+        target: 60
+      }
+    ].map((goal) => ({
+      ...goal,
+      progress: Math.max(0, Math.min(100, Math.round((goal.current / goal.target) * 100))),
+      met: goal.current >= goal.target
+    }));
+    return { season: world.season, generatedAt: new Date().toISOString(), goals };
+  }
+
   async season(universeId: UniverseId, season: number): Promise<WorldSeasonView> {
     const row = await this.ensureWorld(universeId);
     const snapshot = await this.db.worldSeason.findUnique({

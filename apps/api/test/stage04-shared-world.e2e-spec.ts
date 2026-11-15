@@ -123,6 +123,10 @@ describe("Stage 04: общий мир", () => {
     expect(history.body.events.every((event: { season: number }) => event.season === 2)).toBe(true);
     await client.get("/api/world/murim/seasons?limit=0").expect(400);
     await client.get("/api/world/murim/events?limit=101").expect(400);
+    const goals = await client.get("/api/world/murim/goals").expect(200);
+    expect(goals.body.season).toBe(2);
+    expect(goals.body.goals).toHaveLength(3);
+    expect(goals.body.goals.every((goal: { progress: number }) => goal.progress >= 0 && goal.progress <= 100)).toBe(true);
 
     const currentReplay = await client.get("/api/world/murim/replay").set("x-world-ops", TOKEN).expect(200);
     expect(currentReplay.body).toMatchObject({ commands: 1, valid: true, expectedChecksum: ticked.body.checksum });

@@ -116,6 +116,11 @@ export class WorldController {
   }
 
   /** Исторический снимок сезона */
+  @Get(":universeId/goals")
+  async goals(@Param("universeId") universeId: string) {
+    return this.world.goals(assertUniverseId(universeId));
+  }
+
   @Get(":universeId/seasons")
   async seasons(@Param("universeId") universeId: string, @Query("limit") limit?: string) {
     const value = limit === undefined ? 12 : Number(limit);

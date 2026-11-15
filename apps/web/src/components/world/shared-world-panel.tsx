@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { apiFetch, ClientError } from "@/lib/api";
 import type { MessageKey } from "@/lib/messages";
 import { useI18n } from "../locale-provider";
+import { WorldGoalsPanel } from "./world-goals-panel";
 import { WorldHistoryPanel } from "./world-history-panel";
 import { WorldParticipation } from "./world-participation";
 
@@ -428,6 +429,7 @@ export function SharedWorldPanel() {
                   checksum={activeWorld.checksum}
                   updatedAt={activeWorld.updatedAt}
                 />
+                <WorldGoalsPanel key={`goals-${activeWorld.world.universeId}`} universeId={activeWorld.world.universeId} />
                 <WorldHistoryPanel key={activeWorld.world.universeId} universeId={activeWorld.world.universeId} />
               </>
             )}
