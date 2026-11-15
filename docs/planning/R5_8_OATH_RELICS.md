@@ -1,6 +1,6 @@
 # R5.8 — Oath Relics
 
-**Status:** implemented and verified locally; release pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-15 20:19 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none
 
@@ -56,6 +56,17 @@ Every capstone has a high but reachable goal built from existing world skills, f
 - The Atlas shows all four oaths and all three world relics without a separate unlock step.
 - No new notification type; oath completion is already written to life history.
 
-## 6. Rollback
+## 6. Deployment
+
+- Code commit **`6e4a2b6`**; production runtime **`6e4a2b6`**.
+- Deploy run **43757049609**, success. CI **43756641866** success; Security **43756641843** success.
+- Deploy history:
+  - `2026-11-15T20:18:17Z deploy-start 6e4a2b6 from 6915063`
+  - `2026-11-15T20:18:44Z deploy 6e4a2b6 ok from 6915063`
+- Production migrations: **26**; save schema 14.
+- `/api/health` 200 with database and redis up; `/api/contracts?universeId=hunter` 200; guest `/api/notifications` 401; web `/` 200.
+- Rollback target: **`6915063`**; no migration.
+
+## 7. Rollback
 
 No migration and no save-schema change. Application rollback is safe; the extra content is additive.

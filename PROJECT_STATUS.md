@@ -2,10 +2,10 @@
 
 **Обновлено:** 2026-11-15 (R5.8 Oath Relics deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `6915063` (R5.7 World Oaths)<br>
-**Production:** R5.8 + R5.7 + R5.6 + R5.5 + R5.4 + R5.3 + R5.2 + R5.1 + R4.13 + R4.12 + R4.11 + R4.10 + R4.9 + R4.8 + R4.7 + R4.6 + R4.5 + R4.4 + R4.3 + R4.2 + R4.1 + R3.4 + R3.3 + R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `6915063`, deployed 2026-11-15 20:04 UTC; migrations **26** (guild 13, market 14, profile 15, families 16, treasury 17, rewards 18, fee 19, orders 20, enterprise 21, contracts 22, privacy 23, expiry 24, auctions 25, notifications 26)<br>
-**Production code:** `6915063`; DB migrations **26**, additive<br>
-**Rollback:** `aa23d34`; no new migration.<br>
+**HEAD:** `6e4a2b6` (R5.8 Oath Relics)<br>
+**Production:** R5.8 + R5.7 + R5.6 + R5.5 + R5.4 + R5.3 + R5.2 + R5.1 + R4.13 + R4.12 + R4.11 + R4.10 + R4.9 + R4.8 + R4.7 + R4.6 + R4.5 + R4.4 + R4.3 + R4.2 + R4.1 + R3.4 + R3.3 + R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `6e4a2b6`, deployed 2026-11-15 20:19 UTC; migrations **26** (guild 13, market 14, profile 15, families 16, treasury 17, rewards 18, fee 19, orders 20, enterprise 21, contracts 22, privacy 23, expiry 24, auctions 25, notifications 26)<br>
+**Production code:** `6e4a2b6`; DB migrations **26**, additive<br>
+**Rollback:** `6915063`; no new migration.<br>
 **Рабочее дерево:** unrelated Android/itch/lockfile changes preserved; 74 Stage 11 reports/docx untracked.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
@@ -75,7 +75,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R5.5 (Bonds and Voices) | People dossier summary/full log/bond age, seven authored role-level NPC scenes, learn/spar/ask-help relationship logging | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_5_BONDS.md` |
 | R5.6 (Relic Awakenings) | Six awakened relics, six relic-gated awakening events, Atlas relic codex and progress | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_6_RELIC_AWAKENINGS.md` |
 | R5.7 (World Oaths) | Three voluntary oath chains per world, Atlas oath board, accept action, chain/failure handling, issuer/arc in profile | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_7_WORLD_OATHS.md` |
-| R5.8 (Oath Relics) | Fourth capstone oath per world, six unique oath relics, relic catalog 18 → 24 | **IMPLEMENTED LOCALLY; release pending; no migration** - см. `docs/planning/R5_8_OATH_RELICS.md` |
+| R5.8 (Oath Relics) | Fourth capstone oath per world, six unique oath relics, relic catalog 18 → 24 | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_8_OATH_RELICS.md` |
 
 ## Design (Living Chronicle)
 
