@@ -116,6 +116,14 @@ describe("Stage 04: общий мир", () => {
     expect(secondSeason.body.checksum).toBe(ticked.body.checksum);
     await client.get("/api/world/murim/seasons/99").expect(404);
 
+    const listed = await client.get("/api/world/murim/seasons?limit=5").expect(200);
+    expect(listed.body.seasons[0]).toMatchObject({ season: 2, checksum: ticked.body.checksum });
+    const history = await client.get("/api/world/murim/events?limit=10&season=2").expect(200);
+    expect(Array.isArray(history.body.events)).toBe(true);
+    expect(history.body.events.every((event: { season: number }) => event.season === 2)).toBe(true);
+    await client.get("/api/world/murim/seasons?limit=0").expect(400);
+    await client.get("/api/world/murim/events?limit=101").expect(400);
+
     const currentReplay = await client.get("/api/world/murim/replay").set("x-world-ops", TOKEN).expect(200);
     expect(currentReplay.body).toMatchObject({ commands: 1, valid: true, expectedChecksum: ticked.body.checksum });
     const seasonOneReplay = await client.get("/api/world/murim/seasons/1/replay").set("x-world-ops", TOKEN).expect(200);

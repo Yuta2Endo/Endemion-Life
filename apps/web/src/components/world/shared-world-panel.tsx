@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { apiFetch, ClientError } from "@/lib/api";
 import type { MessageKey } from "@/lib/messages";
 import { useI18n } from "../locale-provider";
+import { WorldHistoryPanel } from "./world-history-panel";
 import { WorldParticipation } from "./world-participation";
 
 /** Сводка GET /api/world. Веб описывает только поля, которые рисует: контракт API живёт в apps/api. */
@@ -420,12 +421,15 @@ export function SharedWorldPanel() {
             )}
 
             {!detailError && activeWorld && activeSummary && (
-              <SharedWorldView
-                name={activeSummary.name}
-                world={activeWorld.world}
-                checksum={activeWorld.checksum}
-                updatedAt={activeWorld.updatedAt}
-              />
+              <>
+                <SharedWorldView
+                  name={activeSummary.name}
+                  world={activeWorld.world}
+                  checksum={activeWorld.checksum}
+                  updatedAt={activeWorld.updatedAt}
+                />
+                <WorldHistoryPanel universeId={activeWorld.world.universeId} />
+              </>
             )}
           </div>
         </>

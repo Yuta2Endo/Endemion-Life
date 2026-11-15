@@ -3,7 +3,7 @@
 // Нет токена или он короче 16 символов — маршрута как будто нет (404).
 import { timingSafeEqual } from "node:crypto";
 import { SHARED_WORLD_EVENT_KINDS } from "@endemion/game-core";
-import { Body, Controller, Get, Headers, HttpCode, Inject, Param, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, Headers, HttpCode, Inject, Param, Post, Query, Req } from "@nestjs/common";
 import type { Request } from "express";
 import { z } from "zod";
 import { ApiError, parseOrThrow } from "../common/api-error.js";
@@ -116,6 +116,20 @@ export class WorldController {
   }
 
   /** Исторический снимок сезона */
+  @Get(":universeId/seasons")
+  async seasons(@Param("universeId") universeId: string, @Query("limit") limit?: string) {
+    const value = limit === undefined ? 12 : Number(limit);
+    if (!Number.isInteger(value) || value < 1 || value > 60) throw new ApiError(400, "VALIDATION", "limit должен быть от 1 до 60.");
+    return { seasons: await this.world.seasons(assertUniverseId(universeId), value) };
+  }
+
+  @Get(":universeId/events")
+  async events(@Param("universeId") universeId: string, @Query("limit") limit?: string, @Query("season") season?: string) {
+    const value = limit === undefined ? 40 : Number(limit);
+    if (!Number.isInteger(value) || value < 1 || value > 100) throw new ApiError(400, "VALIDATION", "limit должен быть от 1 до 100.");
+    return { events: await this.world.events(assertUniverseId(universeId), value, season === undefined ? undefined : seasonOf(season)) };
+  }
+
   @Get(":universeId/seasons/:season")
   async season(@Param("universeId") universeId: string, @Param("season") season: string) {
     return this.world.season(assertUniverseId(universeId), seasonOf(season));

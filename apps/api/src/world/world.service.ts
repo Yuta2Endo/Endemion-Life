@@ -192,6 +192,49 @@ export class WorldService {
     };
   }
 
+  async seasons(universeId: UniverseId, limit: number): Promise<Array<{ season: number; checksum: string; durationMs: number; tickedAt: string; eventCount: number }>> {
+    const row = await this.ensureWorld(universeId);
+    const seasons = await this.db.worldSeason.findMany({
+      where: { worldId: row.id },
+      orderBy: { season: "desc" },
+      take: limit,
+      select: { season: true, checksum: true, durationMs: true, createdAt: true }
+    });
+    const counts = await this.db.worldEvent.groupBy({
+      by: ["season"],
+      where: { worldId: row.id, season: { in: seasons.map((item) => item.season) } },
+      _count: { _all: true }
+    });
+    const bySeason = new Map(counts.map((item) => [item.season, item._count._all]));
+    return seasons.map((item) => ({
+      season: item.season,
+      checksum: item.checksum,
+      durationMs: item.durationMs,
+      tickedAt: item.createdAt.toISOString(),
+      eventCount: bySeason.get(item.season) ?? 0
+    }));
+  }
+
+  async events(universeId: UniverseId, limit: number, season?: number): Promise<Array<{ id: string; season: number; kind: string; title: { ru: string; en: string }; text: { ru: string; en: string }; settlementId: string | null; factionId: string | null; severity: number; createdAt: string }>> {
+    const row = await this.ensureWorld(universeId);
+    const events = await this.db.worldEvent.findMany({
+      where: { worldId: row.id, ...(season === undefined ? {} : { season }) },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: limit
+    });
+    return events.map((event) => ({
+      id: event.id,
+      season: event.season,
+      kind: event.kind,
+      title: { ru: event.titleRu, en: event.titleEn },
+      text: { ru: event.textRu, en: event.textEn },
+      settlementId: event.settlementId,
+      factionId: event.factionId,
+      severity: event.severity,
+      createdAt: event.createdAt.toISOString()
+    }));
+  }
+
   async season(universeId: UniverseId, season: number): Promise<WorldSeasonView> {
     const row = await this.ensureWorld(universeId);
     const snapshot = await this.db.worldSeason.findUnique({
