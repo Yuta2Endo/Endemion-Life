@@ -491,7 +491,8 @@ describe("Narrative Engine: цепочки, последствия, повтор
         ...[...index.values()].flatMap((e) => e.choices.flatMap((c) => [...c.success.effects, ...(c.failure?.effects ?? [])])),
         ...universe.consequences.flatMap((c) => c.effects),
         ...universe.familySecrets.flatMap((s) => s.effects),
-        ...(universe.quests ?? []).flatMap((q) => [...q.reward, ...q.penalty])
+        ...(universe.quests ?? []).flatMap((q) => [...q.reward, ...q.penalty]),
+        ...(universe.oaths ?? []).flatMap((q) => [...q.reward, ...q.penalty])
       ];
       const universeEvents = new Set(universe.events.map((e) => e.id));
       const commonOnly = (effect: Effect) => [...index.values()].some((e) => !universeEvents.has(e.id) && e.choices.some((c) => [...c.success.effects, ...(c.failure?.effects ?? [])].includes(effect)));
@@ -506,7 +507,11 @@ describe("Narrative Engine: цепочки, последствия, повтор
         if (effect.type === "skill" && !commonOnly(effect)) expect(skillIds, `${universe.id}: ${effect.id}`).toContain(effect.id);
         if (effect.type === "ability" && !commonOnly(effect)) expect(universe.abilities.map((a) => a.id), `${universe.id}: ${effect.id}`).toContain(effect.id);
       }
-      const conditions: Condition[] = [...index.values()].flatMap((e) => [...(e.conditions ?? []), ...e.choices.flatMap((c) => c.requires ?? [])]);
+      const conditions: Condition[] = [
+        ...[...index.values()].flatMap((e) => [...(e.conditions ?? []), ...e.choices.flatMap((c) => c.requires ?? [])]),
+        ...(universe.quests ?? []).flatMap((q) => q.goal),
+        ...(universe.oaths ?? []).flatMap((q) => q.goal)
+      ];
       for (const condition of conditions) {
         if (condition.type === "meter") expect(meterIds, `${universe.id}: ${condition.id}`).toContain(condition.id);
         if (condition.type === "socialClass") for (const id of condition.ids) expect(classIds, `${universe.id}: ${id}`).toContain(id);
@@ -527,7 +532,8 @@ describe("Narrative Engine: цепочки, последствия, повтор
         ...u.omens.map((o) => o.text),
         ...Object.values(u.originProfiles).map((p) => p.history),
         ...u.consequences.flatMap((c) => [c.title, c.text]),
-        ...(u.quests ?? []).flatMap((q) => [q.title, q.text])
+        ...(u.quests ?? []).flatMap((q) => [q.title, q.text]),
+        ...(u.oaths ?? []).flatMap((q) => [q.title, q.text, ...(q.issuer ? [q.issuer] : []), ...(q.arc ? [q.arc] : [])])
       ];
       for (const text of texts) {
         expect(text.ru.trim().length, u.id).toBeGreaterThan(0);

@@ -1,13 +1,20 @@
 "use client";
 
-import { presentAtlas, type AtlasAdventureStatus, type AtlasAdventureView } from "@endemion/game-core";
+import { presentAtlas, type AtlasAdventureStatus, type AtlasAdventureView, type AtlasOathStatus } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
-import { Panel } from "@endemion/ui";
+import { Button, Panel } from "@endemion/ui";
 import { useI18n } from "../locale-provider";
 
 const STATUS_STYLE: Record<AtlasAdventureStatus, string> = {
   completed: "border-jade-500/40 bg-jade-500/10 text-jade-300",
   failed: "border-blood-500/40 bg-blood-500/10 text-blood-300",
+  active: "border-gold-500/40 bg-gold-500/10 text-gold-300",
+  available: "border-azure-500/40 bg-azure-500/10 text-azure-300",
+  locked: "border-line bg-ink-950/60 text-bone-500"
+};
+
+const OATH_STYLE: Record<AtlasOathStatus, string> = {
+  completed: "border-jade-500/40 bg-jade-500/10 text-jade-300",
   active: "border-gold-500/40 bg-gold-500/10 text-gold-300",
   available: "border-azure-500/40 bg-azure-500/10 text-azure-300",
   locked: "border-line bg-ink-950/60 text-bone-500"
@@ -26,7 +33,7 @@ function Stat({ label, value, testId }: { label: string; value: string; testId: 
   );
 }
 
-export function AtlasPanel({ life }: { life: LifeView }) {
+export function AtlasPanel({ life, busy = false, onOath }: { life: LifeView; busy?: boolean; onOath?: (oathId: string) => void }) {
   const { l, t } = useI18n();
   const atlas = presentAtlas({
     universeId: life.universeId,
@@ -36,7 +43,9 @@ export function AtlasPanel({ life }: { life: LifeView }) {
     socialClassId: life.character.socialClassId,
     meters: life.profile.meters,
     adventure: life.adventure,
-    relics: life.legacy.relics?.map((relic) => relic.id) ?? []
+    relics: life.legacy.relics?.map((relic) => relic.id) ?? [],
+    quest: life.profile.quest ? { id: life.profile.quest.id } : null,
+    questsDone: life.profile.questsDoneIds
   });
 
   const statusLabel = (status: AtlasAdventureStatus) => {
@@ -55,6 +64,15 @@ export function AtlasPanel({ life }: { life: LifeView }) {
       case "place": return t("atlas.needPlace");
       case "requires": return t("atlas.requires", { names: adventure.requires.map(l).join(", ") });
       case "pending": return t("atlas.pending");
+      default: return null;
+    }
+  };
+
+  const oathBlock = (oath: (typeof atlas.oaths)[number]) => {
+    switch (oath.blocked) {
+      case "age": return t("atlas.age", { age: oath.minAge });
+      case "requires": return t("atlas.oathRequires", { names: oath.requires.map(l).join(", ") });
+      case "active": return t("atlas.oathBusy");
       default: return null;
     }
   };
@@ -138,6 +156,38 @@ export function AtlasPanel({ life }: { life: LifeView }) {
               : t("atlas.maxRank")}
           </span>
         </div>
+      </section>
+
+      <section data-testid="atlas-oaths">
+        <SectionTitle>{t("atlas.oaths")}</SectionTitle>
+        <ul className="space-y-2">
+          {atlas.oaths.map((oath) => (
+            <li key={oath.id} className="rounded-md border border-line bg-ink-950/40 p-3" data-testid="atlas-oath" data-status={oath.status}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <div className="min-w-0">
+                  {oath.issuer && <p className="text-[10px] uppercase tracking-[0.18em] text-bone-500">{l(oath.issuer)}</p>}
+                  <p className="text-sm text-bone-100">{l(oath.title)}</p>
+                </div>
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider ${OATH_STYLE[oath.status]}`}>
+                  {oath.status === "completed" ? t("atlas.completed") : oath.status === "active" ? t("atlas.active") : oath.status === "available" ? t("atlas.available") : t("atlas.locked")}
+                </span>
+              </div>
+              {oath.arc && <p className="mt-1 text-[11px] italic text-bone-500">{l(oath.arc)}</p>}
+              <p className="mt-1 text-xs leading-relaxed text-bone-400">{l(oath.text)}</p>
+              <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-bone-500">
+                <span>{t("atlas.oathYears", { n: oath.years })}</span>
+                <span>{t("atlas.age", { age: oath.minAge })}</span>
+              </p>
+              {oath.requires.length > 0 && <p className="mt-1 text-[11px] text-bone-500">{t("atlas.oathRequires", { names: oath.requires.map(l).join(", ") })}</p>}
+              {oath.status === "locked" && oathBlock(oath) && <p className="mt-1 text-[11px] text-bone-500">{oathBlock(oath)}</p>}
+              {oath.status === "available" && onOath && (
+                <Button className="mt-2" onClick={() => onOath(oath.id)} disabled={busy} data-testid="atlas-oath-accept">
+                  {t("atlas.acceptOath")}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section>

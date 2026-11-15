@@ -13,7 +13,10 @@ export const GAME_ERROR_CODES = [
   // Stage 05: приключение недоступно (возраст, место, предпосылки, уже завершено)
   "ADVENTURE_LOCKED",
   // Stage 02.4: на дорогу до поселения не хватает золота
-  "INSUFFICIENT_WEALTH"
+  "INSUFFICIENT_WEALTH",
+  // R5.7: обеты мира
+  "QUEST_ACTIVE",
+  "OATH_LOCKED"
 ] as const;
 export type GameErrorCode = (typeof GAME_ERROR_CODES)[number];
 

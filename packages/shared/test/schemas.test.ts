@@ -54,6 +54,13 @@ describe("контракты API", () => {
     expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "travel", settlementId: "mist-border", cost: 1 } }).success).toBe(false);
   });
 
+  it("R5.7: обет принимает только id и не даёт лишних полей", () => {
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "acceptOath", oathId: "df.q-wall" } }).success).toBe(true);
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "acceptOath" } }).success).toBe(false);
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "acceptOath", oathId: "not a content id" } }).success).toBe(false);
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "acceptOath", oathId: "df.q-wall", reward: 9000 } }).success).toBe(false);
+  });
+
   it("общение с NPC: только известные действия и id вида n1", () => {
     expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "interact", npcId: "n3", interaction: "talk" } }).success).toBe(true);
     expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "interact", npcId: "n3", interaction: "marry" } }).success).toBe(false);

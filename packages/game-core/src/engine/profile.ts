@@ -112,6 +112,8 @@ export interface QuestView {
   text: LocalizedText;
   since: number;
   deadline: number;
+  issuer: LocalizedText | null;
+  arc: LocalizedText | null;
 }
 
 export interface SecretView {
@@ -134,6 +136,8 @@ export interface LifeProfile {
   meters: MeterView[];
   quest: QuestView | null;
   questsDone: number;
+  /** id завершённых заданий и обетов: Атлас показывает, что уже исполнено */
+  questsDoneIds: string[];
   /** Сколько отложенных последствий ещё ждут своего часа. Что именно — тайна до их прихода */
   pendingConsequences: number;
   /** Раскрытое из скрытого. null — ещё не узнано */
@@ -361,8 +365,9 @@ export function presentProfile(state: GameState): LifeProfile {
       max: meter.max,
       danger: meter.danger ?? false
     })),
-    quest: state.quest && quest ? { id: quest.id, title: quest.title, text: quest.text, since: state.quest.since, deadline: state.quest.since + quest.years } : null,
+    quest: state.quest && quest ? { id: quest.id, title: quest.title, text: quest.text, since: state.quest.since, deadline: state.quest.since + quest.years, issuer: quest.issuer ?? null, arc: quest.arc ?? null } : null,
     questsDone: state.questsDone.length,
+    questsDoneIds: [...state.questsDone],
     pendingConsequences: state.consequences.length,
     potential: hidden.revealed.includes("potential") ? hidden.potential : null,
     destiny: hidden.revealed.includes("destiny") ? hidden.destiny : null,

@@ -69,7 +69,9 @@ export const gameActionSchema = z.discriminatedUnion("type", [
   /** Stage 05: начать приключение (adventureId), сделать шаг (choiceId) или сдаться (пустое) */
   z.strictObject({ type: z.literal("venture"), adventureId: contentId.optional(), choiceId: optionId.optional() }),
   /** Stage 02.4: переезд в поселение мира. Клиент называет только id; цену и допустимость считает сервер */
-  z.strictObject({ type: z.literal("travel"), settlementId: optionId })
+  z.strictObject({ type: z.literal("travel"), settlementId: optionId }),
+  /** R5.7: принять обет мира из Атласа. Клиент называет только id; проверки делает сервер */
+  z.strictObject({ type: z.literal("acceptOath"), oathId: contentId })
 ]);
 
 export const actionRequestSchema = z.strictObject({

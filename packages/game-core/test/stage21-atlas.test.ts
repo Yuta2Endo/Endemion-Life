@@ -31,7 +31,9 @@ function snapshot(state: GameState): AtlasSnapshot {
     socialClassId: state.character.socialClassId,
     meters: presentProfile(state).meters,
     adventure: presentAdventure(state),
-    relics: state.lineage.relics.map((relic) => relic.id)
+    relics: state.lineage.relics.map((relic) => relic.id),
+    quest: state.quest ? { id: state.quest.id } : null,
+    questsDone: [...state.questsDone]
   };
 }
 
@@ -53,6 +55,11 @@ describe("R5.1: Атлас мира", () => {
       expect(view.relics.every((relic) => !relic.owned), universeId).toBe(true);
       expect(view.progress.relicsTotal, universeId).toBe(2);
       expect(view.progress.relicsOwned, universeId).toBe(0);
+      expect(view.oaths.length, universeId).toBe(3);
+      expect(view.progress.oathsTotal, universeId).toBe(3);
+      expect(view.progress.oathsDone, universeId).toBe(0);
+      expect(view.oaths[0]?.status, universeId).toBe("available");
+      expect(view.oaths[1]?.status, universeId).toBe("locked");
       expect(view.socialClasses.length, universeId).toBe(universe.socialClasses.length);
       expect(view.factions.length, universeId).toBe(universe.factions.length);
       expect(view.meters.length, universeId).toBe(universe.meters.length);

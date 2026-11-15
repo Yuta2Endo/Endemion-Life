@@ -135,7 +135,9 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
                 ? result.entries.find((entry) => entry.kind === "adventure")
                 : action.type === "travel"
                   ? result.entries.find((entry) => entry.kind === "travel")
-                  : undefined;
+                  : action.type === "acceptOath"
+                    ? result.entries.find((entry) => entry.kind === "quest")
+                    : undefined;
       setOutcome(shown ?? null);
       if (result.life.pendingEvent || result.life.status === "dead" || shown) setTab("event");
     } catch (error) {
@@ -284,6 +286,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
   const venture = (action: { adventureId?: string; choiceId?: string; abandon?: boolean }) => {
     void perform({ type: "venture", adventureId: action.adventureId, choiceId: action.choiceId });
   };
+  const acceptOath = (oathId: string) => void perform({ type: "acceptOath", oathId });
   const shown = (id: Tab) => (tab === id ? "block" : "max-lg:hidden lg:block");
   const openChance = event?.choices.find((choice) => choice.available && choice.chance !== null)?.chance ?? null;
 
@@ -445,13 +448,13 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
           />
 
           <div className="hidden lg:block">
-            {wide && <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onRefresh={() => void load()} />}
+            {wide && <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onOath={acceptOath} onRefresh={() => void load()} />}
           </div>
         </section>
 
         {/* На телефоне досье — отдельная вкладка */}
         <section className={tab === "people" ? "block lg:hidden" : "hidden"}>
-          <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onRefresh={() => void load()} />
+          <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onOath={acceptOath} onRefresh={() => void load()} />
         </section>
 
         <aside className={shown("timeline")}>

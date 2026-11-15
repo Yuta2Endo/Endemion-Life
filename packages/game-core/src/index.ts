@@ -326,6 +326,8 @@ export {
   type TravelDestinationView,
   type TravelResult
 } from "./world/location.js";
+export { acceptOath, findQuest, type AcceptedOath } from "./world/quests.js";
+export { WORLD_OATHS, oathProblems } from "./world/oaths.js";
 export { worldMetrics, type WorldMetrics, type MetricRange, type SettlementMetrics, type FactionMetrics, type ActivityMetrics } from "./world/metrics.js";
 export { ADULT_AGE, CYCLE_FACTOR, HARDSHIP_PENALTY_YEARS, economyYear, livingCost, MAX_ECONOMY_YEARS, newEconomy, presentEconomy, tuitionCost, yearLines, type EconomyLineView, type EconomyView } from "./economy/economy.js";
 export { economyOf, WORLD_ECONOMIES, type WorldEconomy } from "./economy/worlds.js";
@@ -399,8 +401,11 @@ export {
   type AtlasAdventureStatus,
   type AtlasAdventureView,
   type AtlasFactionView,
+  type AtlasOathStatus,
+  type AtlasOathView,
   type AtlasPlaceView,
   type AtlasProgressView,
+  type AtlasRelicView,
   type AtlasSnapshot,
   type AtlasSocialClassView,
   type AtlasTrackView,

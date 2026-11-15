@@ -198,7 +198,7 @@ export interface OmenDefinition {
   minDestiny?: number;
 }
 
-/** Задание Системы (Арденвейл): цель, срок, награда и наказание */
+/** Задание Системы или обет мира: цель, срок, награда и наказание */
 export interface QuestDefinition {
   id: string;
   title: LocalizedText;
@@ -208,6 +208,14 @@ export interface QuestDefinition {
   reward: Effect[];
   penalty: Effect[];
   minAge?: number;
+  /** Кто выдал обет: Система, Орден, Гильдия. null — безымянный заказ */
+  issuer?: LocalizedText;
+  /** Сюжетная линия, к которой относится обет */
+  arc?: LocalizedText;
+  /** Следующий обет цепочки после успеха */
+  next?: string;
+  /** Какие обеты должны быть завершены, чтобы этот стал доступен */
+  requires?: string[];
 }
 
 export interface WorldMechanic {
@@ -263,6 +271,8 @@ export interface WorldDefinition {
   npcTitles: Partial<Record<NpcRole, LocalizedText[]>>;
   consequences: ConsequenceDefinition[];
   quests?: QuestDefinition[];
+  /** Обеты мира: игрок принимает их сам, они не выдаются случайно */
+  oaths?: QuestDefinition[];
   /** Вид силы для способностей Stage 01, по id */
   abilityCategories: Record<string, AbilityCategory>;
   /** Новые способности мира */

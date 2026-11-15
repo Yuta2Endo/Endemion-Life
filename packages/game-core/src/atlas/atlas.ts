@@ -9,6 +9,7 @@ import type { TrackState, UniverseId } from "../types.js";
 import { getUniverse } from "../universes/registry.js";
 
 export type AtlasAdventureStatus = "completed" | "failed" | "active" | "available" | "locked";
+export type AtlasOathStatus = "completed" | "active" | "available" | "locked";
 
 export interface AtlasSnapshot {
   universeId: UniverseId;
@@ -20,6 +21,10 @@ export interface AtlasSnapshot {
   adventure: AdventureBoard;
   /** R5.6: id реликвий, уже принадлежащих роду. */
   relics: readonly string[];
+  /** R5.7: активный обет или задание Системы. */
+  quest: { id: string } | null;
+  /** R5.7: id завершённых обетов и заданий. */
+  questsDone: readonly string[];
 }
 
 export interface AtlasTrackView {
@@ -61,6 +66,19 @@ export interface AtlasRelicView {
   owned: boolean;
 }
 
+export interface AtlasOathView {
+  id: string;
+  title: LocalizedText;
+  text: LocalizedText;
+  issuer: LocalizedText | null;
+  arc: LocalizedText | null;
+  minAge: number;
+  years: number;
+  status: AtlasOathStatus;
+  blocked: "age" | "requires" | "active" | null;
+  requires: LocalizedText[];
+}
+
 export interface AtlasAdventureView {
   id: string;
   name: LocalizedText;
@@ -95,6 +113,8 @@ export interface AtlasProgressView {
   socialClassCount: number;
   relicsOwned: number;
   relicsTotal: number;
+  oathsDone: number;
+  oathsTotal: number;
 }
 
 export interface AtlasView {
@@ -112,6 +132,7 @@ export interface AtlasView {
   factions: AtlasFactionView[];
   meters: MeterView[];
   relics: AtlasRelicView[];
+  oaths: AtlasOathView[];
   places: AtlasPlaceView[];
   progress: AtlasProgressView;
 }
@@ -211,6 +232,35 @@ export function presentAtlas(snapshot: AtlasSnapshot): AtlasView {
       owned: snapshot.relics.includes(relic.id)
     }));
 
+  const questById = new Map([...(universe.quests ?? []), ...(universe.oaths ?? [])].map((quest) => [quest.id, quest]));
+  const oaths = (universe.oaths ?? []).map((oath): AtlasOathView => {
+    const done = snapshot.questsDone.includes(oath.id);
+    const active = snapshot.quest?.id === oath.id;
+    const missing = (oath.requires ?? []).filter((id) => !snapshot.questsDone.includes(id));
+    let blocked: AtlasOathView["blocked"] = null;
+    if (!done && !active) {
+      if (snapshot.age < (oath.minAge ?? 10)) blocked = "age";
+      else if (missing.length > 0) blocked = "requires";
+      else if (snapshot.quest !== null) blocked = "active";
+    }
+    const status: AtlasOathStatus = done ? "completed" : active ? "active" : blocked ? "locked" : "available";
+    return {
+      id: oath.id,
+      title: oath.title,
+      text: oath.text,
+      issuer: oath.issuer ?? null,
+      arc: oath.arc ?? null,
+      minAge: oath.minAge ?? 10,
+      years: oath.years,
+      status,
+      blocked,
+      requires: (oath.requires ?? []).flatMap((id) => {
+        const required = questById.get(id);
+        return required ? [required.title] : [];
+      })
+    };
+  });
+
   const placesFound = snapshot.adventure.discovered;
   const adventuresDone = snapshot.adventure.completed;
 
@@ -240,6 +290,7 @@ export function presentAtlas(snapshot: AtlasSnapshot): AtlasView {
     factions,
     meters: [...snapshot.meters],
     relics,
+    oaths,
     places,
     progress: {
       placesFound,
@@ -251,7 +302,9 @@ export function presentAtlas(snapshot: AtlasSnapshot): AtlasView {
       mechanicCount: universe.mechanics.length,
       socialClassCount: socialClasses.length,
       relicsOwned: relics.filter((relic) => relic.owned).length,
-      relicsTotal: relics.length
+      relicsTotal: relics.length,
+      oathsDone: oaths.filter((oath) => oath.status === "completed").length,
+      oathsTotal: oaths.length
     }
   };
 }

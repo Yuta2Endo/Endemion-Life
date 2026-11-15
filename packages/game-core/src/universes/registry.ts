@@ -6,6 +6,7 @@ import { estateEventsFor } from "../narrative/estate-events.js";
 import { WORLD_HEALTH_EVENTS } from "../narrative/health-events.js";
 import { COMMON_CONSEQUENCES } from "../narrative/people.js";
 import { UNIVERSE_IDS, type UniverseId } from "../types.js";
+import { WORLD_OATHS } from "../world/oaths.js";
 import { ACADEMY } from "./academy.js";
 import { ACADEMY_WORLD } from "./academy.world.js";
 import { DARK_FANTASY } from "./dark-fantasy.js";
@@ -27,6 +28,7 @@ function compose(base: UniverseBase, world: WorldDefinition): UniverseDefinition
     ...base,
     ...rest,
     consequences: [...COMMON_CONSEQUENCES, ...rest.consequences],
+    oaths: [...(rest.oaths ?? []), ...(WORLD_OATHS[base.id] ?? [])],
     abilities: [...base.abilities.map((ability) => ({ ...ability, category: ability.category ?? abilityCategories[ability.id] ?? "utility" })), ...abilities],
     events: [
       ...base.events,

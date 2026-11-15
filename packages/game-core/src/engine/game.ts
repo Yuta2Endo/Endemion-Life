@@ -30,7 +30,7 @@ import { findEvent, rememberEvent, selectEvent } from "../narrative/selection.js
 import type { OutcomeDefinition } from "../narrative/types.js";
 import { hashSeed, Rng } from "../rng.js";
 import { getUniverse } from "../universes/registry.js";
-import { questYearly } from "../world/quests.js";
+import { acceptOath, questYearly } from "../world/quests.js";
 import { worldYearly, type Emit } from "../world/rules.js";
 import { emptyWorldInfluence, newWorldState, normalizeWorldState, worldTick } from "../world/state.js";
 import { newLocationState, normalizeLocationState, travel } from "../world/location.js";
@@ -474,6 +474,12 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
       // Дорога — отдельное действие: цена в золоте, без хода времени и без бросков
       const result = travel(ctx, action.settlementId);
       pushEntry(ctx, entries, "travel", { title: result.title, text: result.text });
+      break;
+    }
+    case "acceptOath": {
+      // Обет — отдельное действие: без хода времени и без бросков
+      const result = acceptOath(ctx, action.oathId);
+      pushEntry(ctx, entries, "quest", { title: result.title, text: result.text });
       break;
     }
     default:

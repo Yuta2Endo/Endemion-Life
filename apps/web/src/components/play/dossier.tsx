@@ -630,6 +630,7 @@ export function Dossier({
   onInteract,
   onTrade,
   onVenture,
+  onOath,
   onRefresh
 }: {
   life: LifeView;
@@ -640,6 +641,7 @@ export function Dossier({
   onInteract: (npcId: string, interaction: InteractionId) => void;
   onTrade: (goodId: string, side: TradeSide, qty: number) => void;
   onVenture: (action: { adventureId?: string; choiceId?: string; abandon?: boolean }) => void;
+  onOath: (oathId: string) => void;
   onRefresh: () => void | Promise<void>;
 }) {
   const { locale, l, t } = useI18n();
@@ -723,8 +725,9 @@ export function Dossier({
       {quest && (
         <div className="rounded-md border border-azure-500/40 bg-azure-600/10 px-3 py-2" data-testid="quest">
           <p className="text-[10px] uppercase tracking-[0.2em] text-azure-300">
-            {t("dossier.quest")} · {t("dossier.questDeadline", { age: ageLabel(quest.deadline, locale) })}
+            {quest.issuer ? l(quest.issuer) : t("dossier.quest")} · {t("dossier.questDeadline", { age: ageLabel(quest.deadline, locale) })}
           </p>
+          {quest.arc && <p className="text-[10px] italic text-bone-500">{l(quest.arc)}</p>}
           <p className="text-sm text-bone-100">{l(quest.title)}</p>
           <p className="text-xs text-bone-300">{l(quest.text)}</p>
         </div>
@@ -736,7 +739,7 @@ export function Dossier({
       {section === "family" && <FamilyTree life={life} />}
       {section === "lineage" && <LineagePanel life={life} store={store} />}
       {section === "world" && <WorldPanel life={life} />}
-      {section === "atlas" && <AtlasPanel life={life} />}
+      {section === "atlas" && <AtlasPanel life={life} busy={busy} onOath={onOath} />}
       {section === "economy" && <EconomyPanel life={life} busy={busy} onTrade={onTrade} onRefresh={onRefresh} />}
       {section === "adventure" && (
         <>

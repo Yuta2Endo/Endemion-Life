@@ -951,7 +951,9 @@ export type GameAction =
    */
   | { type: "venture"; adventureId?: string; choiceId?: string }
   /** Stage 02.4: переехать в поселение из каталога мира. Цену и допустимость считает сервер */
-  | { type: "travel"; settlementId: string };
+  | { type: "travel"; settlementId: string }
+  /** R5.7: принять обет мира из Атласа. Не тратит год и не бросает кубики */
+  | { type: "acceptOath"; oathId: string };
 
 export const TRADE_SIDES = ["buy", "sell"] as const;
 export type TradeSide = (typeof TRADE_SIDES)[number];
