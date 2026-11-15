@@ -356,4 +356,87 @@ describe("Stage 06.2: рынок игроков", () => {
     const buyerAfterAuto = await t.prisma.client.life.findUniqueOrThrow({ where: { id: buyerLife.id } });
     expect((buyerAfterAuto.state as { character: { wealth: number } }).character.wealth).toBe(830);
   });
+
+  it("уведомляет о перебитой ставке, победе и продаже аукциона", async () => {
+    const seller = agent();
+    const bidderA = agent();
+    const bidderB = agent();
+    await account(seller, "notify-seller@example.com");
+    await account(bidderA, "notify-bidder-a@example.com");
+    await account(bidderB, "notify-bidder-b@example.com");
+    const sellerLife = await prepare((await life(seller)).id, { stock: 5, wealth: 100 });
+    const bidderALife = await prepare((await life(bidderA)).id, { stock: 0, wealth: 1_000 });
+    const bidderBLife = await prepare((await life(bidderB)).id, { stock: 0, wealth: 1_000 });
+
+    const auction = await post(seller, "/api/contracts", {
+      actionId: randomUUID(),
+      lifeId: sellerLife.id,
+      goodId: GOOD.id,
+      qty: 1,
+      price: 10,
+      expectedVersion: sellerLife.version,
+      kind: "auction",
+      minBid: 10,
+      auctionHours: 1
+    }).expect(201);
+    const auctionId = auction.body.contract.id as string;
+
+    await post(bidderA, `/api/contracts/${auctionId}/bid`, { bidderLifeId: bidderALife.id, amount: 20 }).expect(200);
+    await post(bidderB, `/api/contracts/${auctionId}/bid`, { bidderLifeId: bidderBLife.id, amount: 30 }).expect(200);
+
+    const outbidList = await bidderA.get("/api/notifications").expect(200);
+    expect(outbidList.body.unread).toBe(1);
+    expect(outbidList.body.notifications[0]).toMatchObject({
+      kind: "auction_outbid",
+      contractId: auctionId,
+      data: { goodId: GOOD.id, qty: 1, amount: 30, previousBid: 20 }
+    });
+
+    await post(bidderB, `/api/contracts/${auctionId}/settle`).expect(403);
+    await t.prisma.client.playerContract.update({ where: { id: auctionId }, data: { auctionEndsAt: new Date(Date.now() - 1000) } });
+    await request(t.app.getHttpServer()).get("/api/contracts?universeId=hunter").expect(200);
+
+    const wonList = await bidderB.get("/api/notifications").expect(200);
+    expect(wonList.body.unread).toBe(1);
+    const won = wonList.body.notifications[0] as { id: string; kind: string; contractId: string; data: { amount: number } };
+    expect(won).toMatchObject({ kind: "auction_won", contractId: auctionId, data: { amount: 30 } });
+
+    const soldList = await seller.get("/api/notifications").expect(200);
+    expect(soldList.body.unread).toBe(1);
+    expect(soldList.body.notifications[0]).toMatchObject({
+      kind: "auction_sold",
+      contractId: auctionId,
+      data: { amount: 28 }
+    });
+
+    await seller.post(`/api/notifications/${won.id}/read`).set("Origin", ORIGIN).send({}).expect(404);
+    const marked = await bidderA.post(`/api/notifications/${outbidList.body.notifications[0].id}/read`).set("Origin", ORIGIN).send({}).expect(200);
+    expect(marked.body.notification.readAt).toEqual(expect.any(String));
+    expect((await bidderA.get("/api/notifications").expect(200)).body.unread).toBe(0);
+
+    const sellerCurrent = await t.prisma.client.life.findUniqueOrThrow({ where: { id: sellerLife.id } });
+    const noBidAuction = await post(seller, "/api/contracts", {
+      actionId: randomUUID(),
+      lifeId: sellerLife.id,
+      goodId: GOOD.id,
+      qty: 1,
+      price: 10,
+      expectedVersion: sellerCurrent.version,
+      kind: "auction",
+      minBid: 10,
+      auctionHours: 1
+    }).expect(201);
+    const noBidId = noBidAuction.body.contract.id as string;
+    await t.prisma.client.playerContract.update({ where: { id: noBidId }, data: { auctionEndsAt: new Date(Date.now() - 1000) } });
+    await request(t.app.getHttpServer()).get("/api/contracts?universeId=hunter").expect(200);
+
+    const sellerAfterEnd = await seller.get("/api/notifications").expect(200);
+    expect(sellerAfterEnd.body.notifications.find((item: { contractId: string }) => item.contractId === noBidId)).toMatchObject({
+      kind: "auction_ended",
+      data: { returned: true }
+    });
+    const markedAll = await seller.post("/api/notifications/read-all").set("Origin", ORIGIN).send({}).expect(200);
+    expect(markedAll.body.updated).toBe(2);
+    expect((await seller.get("/api/notifications").expect(200)).body.unread).toBe(0);
+  });
 });

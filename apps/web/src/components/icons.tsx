@@ -46,6 +46,15 @@ export function WealthIcon({ className }: IconProps) {
   );
 }
 
+export function BellIcon({ className }: IconProps) {
+  return (
+    <LineIcon className={className}>
+      <path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8" />
+      <path d="M10 21h4" />
+    </LineIcon>
+  );
+}
+
 export function SkillIcon({ className }: IconProps) {
   return (
     <LineIcon className={className}>

@@ -19,6 +19,7 @@ import {
 } from "@endemion/shared";
 import { Inject, Injectable } from "@nestjs/common";
 import { ApiError } from "../common/api-error.js";
+import { NotificationService } from "../notification/notification.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 type Tx = Prisma.TransactionClient;
@@ -152,7 +153,10 @@ const lifeColumns = (state: GameState) => ({
 export class MarketService {
   private readonly db;
 
-  constructor(@Inject(PrismaService) prisma: PrismaService) {
+  constructor(
+    @Inject(PrismaService) prisma: PrismaService,
+    @Inject(NotificationService) private readonly notifications: NotificationService
+  ) {
     this.db = prisma.client;
   }
 
@@ -628,7 +632,18 @@ export class MarketService {
       if (!state.life.alive || state.life.age < MARKET_AGE) throw new ApiError(409, "LIFE_NOT_ADULT", "Нужна взрослая жизнь.");
       if (state.character.universeId !== contract.universeId) throw new ApiError(409, "VALIDATION", "Другой мир.");
       if (state.character.wealth < input.amount) throw new ApiError(409, "INSUFFICIENT_WEALTH", "Недостаточно золота для ставки.");
+      const previousBidder = contract.currentBidderPlayerId;
+      const previousBid = contract.currentBid;
       await tx.playerContract.update({ where: { id: contract.id }, data: { currentBid: input.amount, currentBidderPlayerId: playerId, currentBidderLifeId: input.bidderLifeId } });
+      if (previousBidder && previousBidder !== playerId) {
+        await this.notifications.notify(tx, previousBidder, "auction_outbid", contract.id, {
+          goodId: contract.goodId,
+          goodName: this.goodName(contract.universeId, contract.goodId),
+          qty: contract.qty,
+          amount: input.amount,
+          ...(previousBid !== null ? { previousBid } : {})
+        });
+      }
       return { contract: this.contractView({ ...contract, currentBid: input.amount, currentBidderPlayerId: playerId }, playerId), replayed: false };
     });
   }
@@ -639,12 +654,14 @@ export class MarketService {
       if (locked.length === 0) throw new ApiError(404, "NOT_FOUND", "Аукцион не найден.");
       const contract = await tx.playerContract.findUniqueOrThrow({ where: { id: contractId } });
       if (contract.kind !== "auction") throw new ApiError(409, "VALIDATION", "Это не аукцион.");
+      if (contract.sellerPlayerId !== playerId) throw new ApiError(403, "FORBIDDEN", "Завершить аукцион может только продавец.");
       if (contract.status !== "open") return { contract: this.contractView(contract, playerId), replayed: true };
       if (!contract.auctionEndsAt || contract.auctionEndsAt.getTime() > Date.now()) throw new ApiError(409, "VALIDATION", "Аукцион ещё идёт.");
       if (!contract.currentBidderPlayerId || !contract.currentBidderLifeId || !contract.currentBid) {
         const row = await this.lockLife(tx, contract.sellerPlayerId, contract.sellerLifeId);
         const state = parseSave(row.state);
         const stock = state.economy.goods[contract.goodId] ?? 0;
+        let returned = false;
         if (state.life.alive && stock + contract.qty <= MAX_STOCK) {
           state.economy.goods[contract.goodId] = stock + contract.qty;
           state.version += 1;
@@ -652,8 +669,15 @@ export class MarketService {
           await tx.life.update({ where: { id: contract.sellerLifeId }, data: lifeColumns(state) });
           await this.writeEntry(tx, contract.sellerLifeId, this.entry(state, this.entryText("Аукцион без ставок", "Auction without bids", `${contract.goodId} ? ${contract.qty} возвращены`, `${contract.goodId} ? ${contract.qty} returned`), [{ kind: "good", key: contract.goodId, delta: contract.qty }]));
           await this.writeSnapshot(tx, contract.sellerLifeId, state);
+          returned = true;
         }
         await tx.playerContract.update({ where: { id: contract.id }, data: { status: "expired", cancelledAt: new Date() } });
+        await this.notifications.notify(tx, contract.sellerPlayerId, "auction_ended", contract.id, {
+          goodId: contract.goodId,
+          goodName: this.goodName(contract.universeId, contract.goodId),
+          qty: contract.qty,
+          returned
+        });
         return { contract: this.contractView({ ...contract, status: "expired" }, playerId), replayed: false };
       }
       const total = contract.currentBid;
@@ -683,6 +707,18 @@ export class MarketService {
       await tx.playerContract.update({
         where: { id: contract.id },
         data: { status: "accepted", buyerPlayerId: contract.currentBidderPlayerId, buyerLifeId: contract.currentBidderLifeId, buyerVersionAfter: buyer.version, sellerVersionAfter: seller.version, acceptedAt: new Date() }
+      });
+      await this.notifications.notify(tx, contract.currentBidderPlayerId, "auction_won", contract.id, {
+        goodId: contract.goodId,
+        goodName: this.goodName(contract.universeId, contract.goodId),
+        qty: contract.qty,
+        amount: total
+      });
+      await this.notifications.notify(tx, contract.sellerPlayerId, "auction_sold", contract.id, {
+        goodId: contract.goodId,
+        goodName: this.goodName(contract.universeId, contract.goodId),
+        qty: contract.qty,
+        amount: sellerNet
       });
       return { contract: this.contractView({ ...contract, status: "accepted", buyerPlayerId: contract.currentBidderPlayerId, buyerLifeId: contract.currentBidderLifeId }, playerId), replayed: false };
     });

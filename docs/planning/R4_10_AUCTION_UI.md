@@ -60,7 +60,7 @@ Production and local databases currently contain **0** saved lives with zero-val
 
 ## 3. Limitations
 
-- No separate notification transport. Participants learn about results from the contract board and life history entries.
+- At R4.10 release there was no separate notification transport; R4.11 later added durable in-app auction notifications.
 - No “outbid” history entry for the previous highest bidder.
 - Bid history is not stored; only the highest bid is kept.
 - Bids do not reserve gold; the winner is charged at settlement.

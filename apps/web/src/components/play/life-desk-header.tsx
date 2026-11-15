@@ -5,6 +5,7 @@ import type { LifeView } from "@endemion/shared";
 import { ageLabel } from "@/lib/format";
 import { HealthIcon, SkillIcon, WealthIcon } from "../icons";
 import { useI18n } from "../locale-provider";
+import { NotificationsBell } from "./notifications-bell";
 
 /** Верхняя строка жизни: кто, где и в каком состоянии — до чтения хроники. */
 export function LifeDeskHeader({ life }: { life: LifeView }) {
@@ -36,35 +37,38 @@ export function LifeDeskHeader({ life }: { life: LifeView }) {
           </p>
         </div>
 
-        <dl className="grid grid-cols-3 gap-x-5 gap-y-1 sm:gap-x-8">
-          <div>
-            <dt className="flex items-center gap-1.5 text-[11px] text-bone-500">
-              <HealthIcon className="h-3.5 w-3.5" />
-              {t("health.title")}
-            </dt>
-            <dd className="font-display text-2xl tabular-nums text-bone-100" data-testid="desk-health">
-              {life.health.value}
-            </dd>
-          </div>
-          <div>
-            <dt className="flex items-center gap-1.5 text-[11px] text-bone-500">
-              <WealthIcon className="h-3.5 w-3.5" />
-              {t("sheet.wealth")}
-            </dt>
-            <dd className="font-display text-2xl tabular-nums text-gold-200" data-testid="desk-wealth">
-              {life.character.wealth}
-            </dd>
-          </div>
-          <div>
-            <dt className="flex items-center gap-1.5 text-[11px] text-bone-500">
-              <SkillIcon className="h-3.5 w-3.5" />
-              {t("sheet.level", { n: life.character.level })}
-            </dt>
-            <dd className="font-display text-2xl tabular-nums text-bone-100" data-testid="desk-level">
-              {life.character.level}
-            </dd>
-          </div>
-        </dl>
+        <div className="flex items-end gap-3 sm:gap-4">
+          <dl className="grid grid-cols-3 gap-x-5 gap-y-1 sm:gap-x-8">
+            <div>
+              <dt className="flex items-center gap-1.5 text-[11px] text-bone-500">
+                <HealthIcon className="h-3.5 w-3.5" />
+                {t("health.title")}
+              </dt>
+              <dd className="font-display text-2xl tabular-nums text-bone-100" data-testid="desk-health">
+                {life.health.value}
+              </dd>
+            </div>
+            <div>
+              <dt className="flex items-center gap-1.5 text-[11px] text-bone-500">
+                <WealthIcon className="h-3.5 w-3.5" />
+                {t("sheet.wealth")}
+              </dt>
+              <dd className="font-display text-2xl tabular-nums text-gold-200" data-testid="desk-wealth">
+                {life.character.wealth}
+              </dd>
+            </div>
+            <div>
+              <dt className="flex items-center gap-1.5 text-[11px] text-bone-500">
+                <SkillIcon className="h-3.5 w-3.5" />
+                {t("sheet.level", { n: life.character.level })}
+              </dt>
+              <dd className="font-display text-2xl tabular-nums text-bone-100" data-testid="desk-level">
+                {life.character.level}
+              </dd>
+            </div>
+          </dl>
+          <NotificationsBell />
+        </div>
       </div>
     </header>
   );

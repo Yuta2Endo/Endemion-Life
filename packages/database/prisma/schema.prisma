@@ -546,6 +546,21 @@ model PlayerContract {
   @@map("player_contracts")
 }
 
+/// In-app notifications for a player. Data is a small localized payload (good, qty, amount).
+model PlayerNotification {
+  id         String    @id @default(uuid()) @db.Uuid
+  playerId   String    @map("player_id") @db.Uuid
+  kind       String    @db.VarChar(24)
+  contractId String?   @map("contract_id") @db.Uuid
+  data       Json      @default("{}")
+  readAt     DateTime? @map("read_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([playerId, createdAt(sort: Desc)])
+  @@index([playerId, readAt])
+  @@map("player_notifications")
+}
+
 /// Журнал команд: tick и правки администратора. Replay идёт от seed по seq.
 /// payload — SharedWorldCommand целиком, чтобы воспроизведение не зависело от проекций
 model WorldCommand {

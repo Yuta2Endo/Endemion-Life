@@ -986,6 +986,16 @@ export const M = {
   "summary.currentPending": t("Отложенных последствий: {n}", "Pending consequences: {n}"),
   "summary.currentMilestones": t("Рубежи: {done}; следующий: {next}", "Milestones: {done}; next: {next}"),
   "error.toHome": t("На главную", "Back home"),
+  "notifications.title": t("Уведомления", "Notifications"),
+  "notifications.open": t("Открыть уведомления", "Open notifications"),
+  "notifications.loading": t("Загрузка…", "Loading…"),
+  "notifications.empty": t("Пока тихо. Здесь появятся исходы аукционов.", "Nothing yet. Auction outcomes will appear here."),
+  "notifications.markAll": t("Прочитать все", "Mark all read"),
+  "notifications.outbid": t("Вашу ставку перебили: {good} × {qty}, новая ставка {amount}.", "You were outbid: {good} × {qty}, new bid {amount}."),
+  "notifications.won": t("Аукцион выигран: {good} × {qty} за {amount}.", "Auction won: {good} × {qty} for {amount}."),
+  "notifications.sold": t("Лот продан: {good} × {qty}, вам {amount}.", "Lot sold: {good} × {qty}, you receive {amount}."),
+  "notifications.endedReturned": t("Аукцион без ставок: {good} × {qty} вернулись на склад.", "Auction ended without bids: {good} × {qty} returned to storage."),
+  "notifications.endedLost": t("Аукцион без ставок: {good} × {qty} не удалось вернуть.", "Auction ended without bids: {good} × {qty} could not be returned."),
   "common.years": t("{n} лет", "{n} years")
 } satisfies Record<string, LocalizedText>;
 
