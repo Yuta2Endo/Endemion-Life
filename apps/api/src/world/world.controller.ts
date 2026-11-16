@@ -165,6 +165,12 @@ export class WorldController {
     return this.world.goals(assertUniverseId(universeId));
   }
 
+  /** R5.12: сезонная история общего мира */
+  @Get(":universeId/story")
+  async story(@Param("universeId") universeId: string) {
+    return this.world.story(assertUniverseId(universeId));
+  }
+
   @Get(":universeId/seasons")
   async seasons(@Param("universeId") universeId: string, @Query("limit") limit?: string) {
     const value = limit === undefined ? 12 : Number(limit);

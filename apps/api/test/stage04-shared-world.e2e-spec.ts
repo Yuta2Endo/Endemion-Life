@@ -94,6 +94,22 @@ describe("Stage 04: общий мир", () => {
     expect(ok.body.season).toBe(2);
   });
 
+  it("season story is visible for all six worlds", async () => {
+    const client = agent();
+    await guest(client);
+    for (const universeId of UNIVERSE_IDS) {
+      const response = await client.get(`/api/world/${universeId}/story`).expect(200);
+      expect(response.body.universeId).toBe(universeId);
+      expect(response.body.season).toBe(1);
+      expect(response.body.chapters).toHaveLength(4);
+      expect(response.body.chapters[0].status).toBe("active");
+      expect(response.body.chapters.slice(1).every((chapter: { status: string }) => chapter.status === "locked")).toBe(true);
+      expect(response.body.title.ru.length).toBeGreaterThan(0);
+      expect(response.body.title.en.length).toBeGreaterThan(0);
+    }
+    await client.get("/api/world/not-a-world/story").expect(404);
+  });
+
   it("tick меняет сезон детерминированно, replay сходится с движком и снимками сезонов", async () => {
     const client = agent();
     await guest(client);

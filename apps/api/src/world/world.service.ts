@@ -10,6 +10,7 @@ import {
   normalizeWorldState,
   parseSave,
   parseSharedWorldState,
+  presentSeasonStory,
   RECONCILIATION_TOLERANCE,
   reconcileSharedWorld,
   replaySharedWorld,
@@ -528,8 +529,13 @@ export class WorldService {
     return { season: world.season, generatedAt: new Date().toISOString(), goals };
   }
 
-  async season(universeId: UniverseId, season: number): Promise<WorldSeasonView> {
-    const row = await this.ensureWorld(universeId);
+  /** R5.12: сезонная история мира, выведенная из общих целей */
+  async story(universeId: UniverseId) {
+    const goals = await this.goals(universeId);
+    return presentSeasonStory(universeId, goals.season, goals.goals);
+  }
+
+  async season(universeId: UniverseId, season: number): Promise<WorldSeasonView> {    const row = await this.ensureWorld(universeId);
     const snapshot = await this.db.worldSeason.findUnique({
       where: { worldId_season: { worldId: row.id, season } }
     });

@@ -3,6 +3,7 @@
 import type { LifeView } from "@endemion/shared";
 import { Meter, Panel } from "@endemion/ui";
 import { useI18n } from "../locale-provider";
+import { WorldStoryPanel } from "../world/world-story-panel";
 
 function Stat({ label, value, caption, testId }: { label: string; value: string; caption?: string; testId: string }) {
   return (
@@ -70,6 +71,7 @@ export function WorldPanel({ life }: { life: LifeView }) {
           </>
         )}
       </div>
+      <WorldStoryPanel universeId={life.universeId} />
       <div>
         <h3 className="mb-2 text-[11px] uppercase tracking-[0.22em] text-gold-400">{t("dossier.settlements")}</h3>
         <ul className="space-y-3">

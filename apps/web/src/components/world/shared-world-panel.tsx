@@ -12,6 +12,7 @@ import { WorldPricePanel } from "./world-price-panel";
 import { WorldRewardPanel } from "./world-reward-panel";
 import { WorldHistoryPanel } from "./world-history-panel";
 import { WorldParticipation } from "./world-participation";
+import { WorldStoryPanel } from "./world-story-panel";
 
 /** Сводка GET /api/world. Веб описывает только поля, которые рисует: контракт API живёт в apps/api. */
 export interface SharedWorldSummary {
@@ -117,6 +118,10 @@ export function SharedWorldView({ name, world, checksum, updatedAt }: SharedWorl
           </span>
         </div>
       </header>
+
+      <div className="mt-6">
+        <WorldStoryPanel universeId={world.universeId} />
+      </div>
 
       <Section title={t("world.settlements")} count={world.settlements.length} testId="shared-world-settlements">
         {world.settlements.length === 0 ? (
