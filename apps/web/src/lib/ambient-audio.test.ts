@@ -1,14 +1,14 @@
+import { existsSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  SOUND_PROFILES,
   SOUND_STORAGE_KEY,
+  SOUND_WORLDS,
   readSoundPreference,
-  soundProfileFor,
+  soundUrlFor,
   writeSoundPreference,
   type SoundStorage
 } from "./ambient-audio";
-
-const WORLDS = ["academy", "dark-fantasy", "hunter", "isekai", "murim", "xianxia"] as const;
 
 function memoryStorage(): SoundStorage & { value: Map<string, string> } {
   const value = new Map<string, string>();
@@ -22,21 +22,25 @@ function memoryStorage(): SoundStorage & { value: Map<string, string> } {
 }
 
 describe("ambient audio", () => {
-  it("has a complete profile for every world", () => {
-    expect(Object.keys(SOUND_PROFILES).sort()).toEqual([...WORLDS].sort());
-    for (const id of WORLDS) {
-      const profile = SOUND_PROFILES[id];
-      expect(profile.root).toBeGreaterThan(0);
-      expect(profile.fifth).toBeGreaterThan(0);
-      expect(profile.shimmer).toBeGreaterThan(0);
-      expect(profile.filter).toBeGreaterThan(0);
-      expect(profile.noise).toBeGreaterThan(0);
-      expect(profile.pulse).toBeGreaterThan(0);
+  it("has a public loop for every world", () => {
+    expect([...SOUND_WORLDS].sort()).toEqual([
+      "academy",
+      "dark-fantasy",
+      "hunter",
+      "isekai",
+      "murim",
+      "xianxia"
+    ]);
+    for (const id of SOUND_WORLDS) {
+      expect(soundUrlFor(id)).toBe(`/audio/worlds/${id}.ogg`);
+      const file = join(process.cwd(), "public", "audio", "worlds", `${id}.ogg`);
+      expect(existsSync(file)).toBe(true);
+      expect(statSync(file).size).toBeGreaterThan(100_000);
     }
   });
 
-  it("falls back to the dark fantasy profile for an unknown world", () => {
-    expect(soundProfileFor("unknown" as "dark-fantasy")).toEqual(SOUND_PROFILES["dark-fantasy"]);
+  it("falls back to the dark fantasy loop for an unknown world", () => {
+    expect(soundUrlFor("unknown")).toBe("/audio/worlds/dark-fantasy.ogg");
   });
 
   it("persists the sound preference", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
-import { AmbientEngine, soundProfileFor } from "@/lib/ambient-audio";
+import { AmbientEngine } from "@/lib/ambient-audio";
 import {
   getServerSoundPreference,
   getSoundPreference,
@@ -24,7 +24,7 @@ export function SoundToggle({ universeId }: { universeId: string }) {
     }
     const current = engine.current ?? new AmbientEngine();
     engine.current = current;
-    current.start(soundProfileFor(universeId));
+    void current.start(universeId);
   }, [enabled, universeId]);
 
   useEffect(() => () => {
@@ -45,7 +45,7 @@ export function SoundToggle({ universeId }: { universeId: string }) {
     if (next) {
       const current = engine.current ?? new AmbientEngine();
       engine.current = current;
-      current.start(soundProfileFor(universeId));
+      void current.start(universeId);
     } else {
       engine.current?.stop();
       engine.current = null;
