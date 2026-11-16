@@ -1,6 +1,6 @@
 # R5.10.1 — Оригинальные темы миров
 
-**Статус:** реализовано и проверено локально; релиз ожидает деплоя  
+**Статус:** COMPLETE AND DEPLOYED (2026-11-16 00:49 UTC)  
 **Save schema:** 14 (без изменений)  
 **DB migration:** нет  
 **Затронут только web**
@@ -65,10 +65,19 @@
 - Нет Android WebView smoke и Lighthouse-проверки звука.
 - Петли короткие (20–34 s), без вариативных слоёв внутри трека.
 
-## 6. Откат
+## 6. Деплой
+
+- Code commit **`393428f`**; production runtime **`393428f`**.
+- Deploy run **43780417166**, success.
+- CI **43780004658** success; Security **43780004776** success.
+- Deploy history:
+  - `2026-11-16T00:48:57Z deploy-start 393428f... from 7542757...`
+  - `2026-11-16T00:49:26Z deploy 393428f... ok from 7542757...`
+- Production migrations remain **26**; save schema 14.
+- `/api/health` 200, database/redis up; `/api/contracts?universeId=hunter` 200; guest `/api/notifications` 401; web `/` 200.
+- `/audio/worlds/dark-fantasy.ogg` 200, `Content-Type: audio/ogg`, 589 148 bytes.
+- Rollback target **`7542757`**.
+
+## 7. Откат
 
 Миграций нет. Достаточно откатить web-коммит R5.10.1 и удалить аудиоассеты; сохранения и API не затрагиваются.
-
-## 7. Деплой
-
-Ожидает деплоя. Production runtime на момент подготовки: `7542757`, docs `407bef0`, migrations 26, schema 14.
