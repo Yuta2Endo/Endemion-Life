@@ -1,11 +1,11 @@
 # Endemion Life — статус проекта
 
-**Обновлено:** 2026-11-16 (R5.11 Family Council implemented)<br>
+**Обновлено:** 2026-11-16 (R5.11 Family Council deployed)<br>
 **Ветка:** `main`  
-**HEAD:** `6296c4a` (R5.11 Family Council pending deploy)<br>
-**Production:** R5.10.2 + R5.10.1 + R5.10 + R5.9 + R5.8 + R5.7 + R5.6 + R5.5 + R5.4 + R5.3 + R5.2 + R5.1 + R4.13 + R4.12 + R4.11 + R4.10 + R4.9 + R4.8 + R4.7 + R4.6 + R4.5 + R4.4 + R4.3 + R4.2 + R4.1 + R3.4 + R3.3 + R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `6296c4a`, deployed 2026-11-16 01:25 UTC; migrations **26** (guild 13, market 14, profile 15, families 16, treasury 17, rewards 18, fee 19, orders 20, enterprise 21, contracts 22, privacy 23, expiry 24, auctions 25, notifications 26)<br>
-**Production code:** `6296c4a`; DB migrations **26**, additive<br>
-**Rollback:** `393428f`; no new migration.<br>
+**HEAD:** `6eb4194` (R5.11 Family Council)<br>
+**Production:** R5.11 + R5.10.2 + R5.10.1 + R5.10 + R5.9 + R5.8 + R5.7 + R5.6 + R5.5 + R5.4 + R5.3 + R5.2 + R5.1 + R4.13 + R4.12 + R4.11 + R4.10 + R4.9 + R4.8 + R4.7 + R4.6 + R4.5 + R4.4 + R4.3 + R4.2 + R4.1 + R3.4 + R3.3 + R3.2 + R3.1 + R2.3 + R2.2 + R2.1 + R1.2 + R1.1 + STAGE 06.3 + Stage 06.2 + design phases 0-8 + Endemion ID fix, save schema **14**; runtime `6eb4194`, deployed 2026-11-16 02:33 UTC; migrations **26** (guild 13, market 14, profile 15, families 16, treasury 17, rewards 18, fee 19, orders 20, enterprise 21, contracts 22, privacy 23, expiry 24, auctions 25, notifications 26)<br>
+**Production code:** `6eb4194`; DB migrations **26**, additive<br>
+**Rollback:** `6296c4a`; no new migration.<br>
 **Рабочее дерево:** unrelated Android/itch/lockfile changes preserved; 74 Stage 11 reports/docx untracked.
 
 **Endemion ID shared-world hotfix (deployed):** пользователи Endemion ID больше не считаются гостями. `SessionService.requireAccount` и `AuthService.me` признают `players.endemion_sub` полноценной учётной записью, а web-панель присутствия проверяет и `account`, и `endemionId`. Присутствие, вклад в мир, гильдии и рынок доступны после входа через Endemion ID; гости без `endemion_sub` остаются в solo-режиме. Commit `d9313dd`, deploy run `43612503324`, backup `endemion_life-manual-20261114T155304Z.dump`. См. `docs/incidents/2026-11-14-endemion-id-shared-world.md`.
@@ -80,7 +80,7 @@ Production проверен 2026-11-13 после деплоя Stage 05:
 | R5.10 (World Sound) | Per-world synthesized ambient, sound toggle and persistence, visual atmosphere, reduced-motion | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_10_WORLD_SOUND.md` |
 | R5.10.1 (World Themes) | Six original LMMS ambient loops, OGG assets, Web Audio looping and crossfade, browser decode verified | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_10_1_WORLD_THEMES.md` |
 | R5.10.2 (UI SFX) | Ten synthesized Web Audio effects, shared sound preference, event/outcome/trade/bell/death/succession triggers | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_10_2_SFX.md` |
-| R5.11 (Family Council) | Family council tab, heir/guardian/home decisions, guardianship and estate consequences, renown for honored will, old-save support | **IMPLEMENTED LOCALLY; release pending; schema 14, no migration** - см. `docs/planning/R5_11_FAMILY_COUNCIL.md` |
+| R5.11 (Family Council) | Family council tab, heir/guardian/home decisions, guardianship and estate consequences, renown for honored will, old-save support | **COMPLETE; deployed, schema 14, no migration** - см. `docs/planning/R5_11_FAMILY_COUNCIL.md` |
 
 ## Design (Living Chronicle)
 
