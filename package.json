@@ -21,6 +21,7 @@
     "test": "pnpm -r test",
     "test:api": "pnpm --filter @endemion/api test:e2e",
     "test:e2e": "pnpm --filter @endemion/web test:e2e",
+    "launch:check": "node infrastructure/scripts/launch-check.mjs",
     "android:sync": "cap sync android",
     "android:build:debug": "cap sync android && cd android && gradlew.bat assembleDebug",
     "lint": "eslint . && pnpm --filter @endemion/web lint",

@@ -30,4 +30,32 @@ export class HealthController {
       services: { database: database ? "up" : "down", redis: redis ? "up" : "down" }
     };
   }
+
+  /** R6.1: строгая готовность для внешнего launch-check и будущего load balancer */
+  @Get("ready")
+  @Header("Cache-Control", "no-store")
+  async ready(@Res({ passthrough: true }) response: Response): Promise<{ ready: boolean; version: string; services: { database: "up" | "down"; redis: "up" | "down" } }> {
+    const [database, redis] = await Promise.all([this.prisma.isUp(), this.redis.isUp()]);
+    const ready = database && redis;
+    if (!ready) response.status(503);
+    return { ready, version: APP_VERSION, services: { database: database ? "up" : "down", redis: redis ? "up" : "down" } };
+  }
+}
+
+/** R6.1: отдельный /api/ready для внешнего gate и будущего load balancer */
+@Controller("ready")
+export class ReadyController {
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(RedisService) private readonly redis: RedisService
+  ) {}
+
+  @Get()
+  @Header("Cache-Control", "no-store")
+  async ready(@Res({ passthrough: true }) response: Response): Promise<{ ready: boolean; version: string; services: { database: "up" | "down"; redis: "up" | "down" } }> {
+    const [database, redis] = await Promise.all([this.prisma.isUp(), this.redis.isUp()]);
+    const ready = database && redis;
+    if (!ready) response.status(503);
+    return { ready, version: APP_VERSION, services: { database: database ? "up" : "down", redis: redis ? "up" : "down" } };
+  }
 }

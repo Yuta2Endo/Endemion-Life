@@ -10,7 +10,7 @@ import { ContractController } from "./contract/contract.controller.js";
 import { ApiExceptionFilter } from "./common/exception.filter.js";
 import { RequestGuard } from "./common/request.guard.js";
 import { APP_CONFIG, readConfig, type AppConfig } from "./config.js";
-import { HealthController } from "./health/health.controller.js";
+import { HealthController, ReadyController } from "./health/health.controller.js";
 import { GuildController } from "./guild/guild.controller.js";
 import { GuildService } from "./guild/guild.service.js";
 import { FamilyController } from "./family/family.controller.js";
@@ -49,7 +49,7 @@ import { WorldSchedulerService } from "./world/world.scheduler.service.js";
 import { WorldService } from "./world/world.service.js";
 
 @Module({
-  controllers: [HealthController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, MarketController, ContractController, NotificationController, ProfileController, SocialController, GuildController, FamilyController, LiveController, InsightsController, PortalController, PresenceController, WorldController],
+  controllers: [HealthController, ReadyController, CatalogController, SessionController, AuthController, EndemionIdController, LivesController, MarketController, ContractController, NotificationController, ProfileController, SocialController, GuildController, FamilyController, LiveController, InsightsController, PortalController, PresenceController, WorldController],
   providers: [
     { provide: APP_CONFIG, useFactory: (): AppConfig => readConfig() },
     PrismaService,

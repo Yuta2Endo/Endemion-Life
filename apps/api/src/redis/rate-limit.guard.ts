@@ -17,7 +17,7 @@ export class RateLimitGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const limit = this.config.rateLimitPerMinute;
     const request = context.switchToHttp().getRequest<Request>();
-    if (limit === 0 || request.path === "/api/health") return true;
+    if (limit === 0 || request.path === "/api/health" || request.path === "/api/ready") return true;
 
     const window = Math.floor(Date.now() / (WINDOW_SECONDS * 1000));
     const key = `rl:${request.ip ?? "unknown"}:${window}`;

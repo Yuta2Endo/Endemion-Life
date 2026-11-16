@@ -159,6 +159,16 @@ describe("PostgreSQL недоступен", () => {
   });
 });
 
+describe("R6.1: готовность к запуску", () => {
+  it("health и readiness согласованы", async () => {
+    const client = agent();
+    const health = await client.get("/api/health").expect(200);
+    expect(health.body.status).toBe("ok");
+    const ready = await client.get("/api/ready").expect(200);
+    expect(ready.body).toEqual({ ready: true, version: "0.1.0", services: { database: "up", redis: "up" } });
+  });
+});
+
 describe("Redis недоступен", () => {
   let offline: TestApp;
 
@@ -174,6 +184,8 @@ describe("Redis недоступен", () => {
   it("health degraded, игровые маршруты fail-closed", async () => {
     const health = await request(offline.app.getHttpServer()).get("/api/health").expect(503);
     expect(health.body).toMatchObject({ status: "degraded", services: { database: "up", redis: "down" } });
+    const ready = await request(offline.app.getHttpServer()).get("/api/ready").expect(503);
+    expect(ready.body).toMatchObject({ ready: false, services: { database: "up", redis: "down" } });
 
     const res = await request(offline.app.getHttpServer()).post("/api/lives").set("Origin", ORIGIN).send({ universeId: "murim" }).expect(503);
     expect((res.body as { error: { code: string } }).error.code).toBe("UNAVAILABLE");
