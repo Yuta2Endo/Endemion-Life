@@ -1,6 +1,6 @@
 # R6.3 — Android release artifact gate
 
-**Status:** implemented and verified locally; CI artifact pending  
+**Status:** COMPLETE AND DEPLOYED (2026-11-16 04:25 UTC)  
 **Save schema:** 14 (unchanged)  
 **DB migration:** none  
 **Scope:** Android build tooling, CI artifact, release checklist
@@ -80,7 +80,20 @@ cd android
 
 Without signing secrets the AAB is unsigned but must still be produced. The job fails if `app-release.aab` is missing or empty.
 
-## 7. Limitations
+## 7. Deployment
+
+- Feature commit **`11b83a5`**; production runtime **`11b83a5`**.
+- Deploy run **43801957410** — success; environment `26274376808` approved.
+- History: `2026-11-16T04:24:28Z deploy-start 11b83a5 from 8f90aa7` → `2026-11-16T04:25:05Z deploy 11b83a5 ok`.
+- CI **43801464888** success; Security **43801464858** success.
+- CI Android artifacts:
+  - `endemion-debug-apk` — 5 441 418 bytes;
+  - `endemion-unsigned-release-aab` — 4 234 985 bytes.
+- Production: `/api/health` 200, `/api/ready` 200, `/api/contracts?universeId=hunter` 200, web `/` 200.
+- Migrations: **26**; save schema 14.
+- Rollback: **`8f90aa7`**.
+
+## 8. Limitations
 
 - CI does not sign AABs: no signing secrets are configured.
 - Play Console upload, data safety, content rating and store listing are manual.
@@ -88,6 +101,6 @@ Without signing secrets the AAB is unsigned but must still be produced. The job 
 - No push notifications, deep links, AAB→universal APK bundletool step, or release-device automation.
 - The local release build used uncommitted Android resources/version changes; the clean-checkout version must be chosen and committed before upload.
 
-## 8. Rollback
+## 9. Rollback
 
 No migration and no server runtime change. Revert the build scripts/CI/doc commit if needed.
