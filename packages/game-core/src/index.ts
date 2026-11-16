@@ -375,7 +375,8 @@ export { presentEvent, summarizeCharacter, type ChoiceView, type CharacterSummar
 export { KinGraph, kinProblem, isKin, isPresent, BLOOD_RELATIONS, MIN_PARENT_AGE, MIN_MARRIAGE_AGE, type KinRelation } from "./family/kin.js";
 export { MAX_LIVING_NPCS, MAX_NPCS } from "./character/npc-life.js";
 export { INHERITANCE_LAWS, lawOf, type InheritanceLaw, type HeirOrder } from "./legacy/laws.js";
-export { heirCandidates, succeed, MAX_GENERATIONS, type HeirCandidate, type SuccessionResult } from "./legacy/succession.js";
+export { heirCandidates, potentialHeirs, succeed, MAX_GENERATIONS, type HeirCandidate, type SuccessionResult } from "./legacy/succession.js";
+export { holdCouncil, councilBlock, guardianCandidates, COUNCIL_MIN_AGE, COUNCIL_COOLDOWN, COUNCIL_HISTORY_LIMIT, type GuardianCandidate, type CouncilDecision } from "./legacy/council.js";
 export { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, findAchievement, unlockAchievements, type AchievementCategory, type AchievementDefinition } from "./legacy/achievements.js";
 export { scoreLife, LIFE_TITLES, SCORE_PARTS, SCORE_PART_NAMES, type LifeScore, type ScorePart } from "./legacy/summary.js";
 export { LEGACY_EVENTS, LINEAGE_CONSEQUENCES, THREADS } from "./legacy/stories.js";
@@ -412,6 +413,7 @@ export {
   type AtlasView
 } from "./atlas/atlas.js";
 export {
+  presentCouncil,
   presentHeirs,
   presentLegacy,
   presentLineage,
@@ -421,7 +423,10 @@ export {
   RELATION_NAMES,
   type AchievementView,
   type ChronicleView,
+  type CouncilRecordView,
+  type CouncilView,
   type DecisionView,
+  type GuardianView,
   type HeirView,
   type InheritanceAssetsView,
   type InheritanceView,

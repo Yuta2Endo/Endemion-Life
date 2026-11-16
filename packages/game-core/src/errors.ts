@@ -16,7 +16,10 @@ export const GAME_ERROR_CODES = [
   "INSUFFICIENT_WEALTH",
   // R5.7: обеты мира
   "QUEST_ACTIVE",
-  "OATH_LOCKED"
+  "OATH_LOCKED",
+  // R5.11: семейный совет
+  "COUNCIL_LOCKED",
+  "COUNCIL_COOLDOWN"
 ] as const;
 export type GameErrorCode = (typeof GAME_ERROR_CODES)[number];
 

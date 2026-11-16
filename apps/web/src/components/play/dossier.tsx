@@ -6,6 +6,7 @@ import {
   findWeakness,
   getUniverse,
   TEMPERAMENTS,
+  type EstatePolicy,
   type InteractionId,
   type NpcView,
   type TradeSide
@@ -631,6 +632,7 @@ export function Dossier({
   onTrade,
   onVenture,
   onOath,
+  onCouncil,
   onRefresh
 }: {
   life: LifeView;
@@ -642,6 +644,7 @@ export function Dossier({
   onTrade: (goodId: string, side: TradeSide, qty: number) => void;
   onVenture: (action: { adventureId?: string; choiceId?: string; abandon?: boolean }) => void;
   onOath: (oathId: string) => void;
+  onCouncil: (input: { heirId: string | null; guardianId: string | null; estate: EstatePolicy }) => void;
   onRefresh: () => void | Promise<void>;
 }) {
   const { locale, l, t } = useI18n();
@@ -738,7 +741,7 @@ export function Dossier({
       <Ornament />
       {section === "bio" && <Biography life={life} />}
       {section === "family" && <FamilyTree life={life} />}
-      {section === "lineage" && <LineagePanel life={life} store={store} />}
+      {section === "lineage" && <LineagePanel life={life} store={store} busy={busy} onCouncil={onCouncil} />}
       {section === "world" && <WorldPanel life={life} />}
       {section === "atlas" && <AtlasPanel life={life} busy={busy} onOath={onOath} />}
       {section === "economy" && <EconomyPanel life={life} busy={busy} onTrade={onTrade} onRefresh={onRefresh} />}

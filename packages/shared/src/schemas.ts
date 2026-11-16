@@ -71,7 +71,14 @@ export const gameActionSchema = z.discriminatedUnion("type", [
   /** Stage 02.4: переезд в поселение мира. Клиент называет только id; цену и допустимость считает сервер */
   z.strictObject({ type: z.literal("travel"), settlementId: optionId }),
   /** R5.7: принять обет мира из Атласа. Клиент называет только id; проверки делает сервер */
-  z.strictObject({ type: z.literal("acceptOath"), oathId: contentId })
+  z.strictObject({ type: z.literal("acceptOath"), oathId: contentId }),
+  /** R5.11: семейный совет: наследник, опекун и судьба дома. Проверки делает сервер */
+  z.strictObject({
+    type: z.literal("holdCouncil"),
+    heirId: z.string().regex(/^n[0-9]{1,6}$/, "Некорректный идентификатор").nullish(),
+    guardianId: z.string().regex(/^n[0-9]{1,6}$/, "Некорректный идентификатор").nullish(),
+    estate: z.enum(["law", "keep", "sell"]).optional()
+  })
 ]);
 
 export const actionRequestSchema = z.strictObject({

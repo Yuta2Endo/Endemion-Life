@@ -39,7 +39,8 @@ export function newLineage(name: string): LineageState {
   names: {},
   relics: [],
   storyProgress: {},
-  worldInfluence: { settlements: [], factions: [] }
+  worldInfluence: { settlements: [], factions: [] },
+  council: { current: null, history: [] }
 };
 }
 

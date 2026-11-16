@@ -1,6 +1,6 @@
 "use client";
 
-import { ACHIEVEMENT_CATEGORIES, NPC_STATUS_NAMES, type AchievementView, type DynastyView, type InheritanceView, type LineageView, type LocalizedText, type TreeNodeView } from "@endemion/game-core";
+import { ACHIEVEMENT_CATEGORIES, NPC_STATUS_NAMES, type AchievementView, type CouncilView, type DynastyView, type EstatePolicy, type InheritanceView, type LineageView, type LocalizedText, type TreeNodeView } from "@endemion/game-core";
 import type { LifeView } from "@endemion/shared";
 import { Button, Meter } from "@endemion/ui";
 import { useEffect, useMemo, useState } from "react";
@@ -8,7 +8,7 @@ import type { GameStore } from "@/lib/store";
 import type { MessageKey } from "@/lib/messages";
 import { useI18n } from "../locale-provider";
 
-type Section = "tree" | "chronicle" | "achievements" | "inheritance" | "dynasty";
+type Section = "tree" | "council" | "chronicle" | "achievements" | "inheritance" | "dynasty";
 
 function Heading({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-2 text-[11px] uppercase tracking-[0.22em] text-gold-400">{children}</h3>;
@@ -323,6 +323,93 @@ export function AchievementList({ achievements, compact = false }: { achievement
   );
 }
 
+/** R5.11: стол династии. Игрок заранее решает, кто наследует, кто опекает малолетнего наследника и что будет с домом */
+function FamilyCouncil({ council, busy, onCouncil }: { council: CouncilView; busy: boolean; onCouncil: (input: { heirId: string | null; guardianId: string | null; estate: EstatePolicy }) => void }) {
+  const { l, t } = useI18n();
+  const [heirId, setHeirId] = useState(council.current?.heirId ?? "");
+  const [guardianId, setGuardianId] = useState(council.current?.guardianId ?? "");
+  const [estate, setEstate] = useState<EstatePolicy>(council.current?.estate ?? "law");
+  const heirs = council.heirs.filter((heir) => heir.available);
+  const current = council.current;
+  return (
+    <div className="space-y-4" data-testid="family-council">
+      <div>
+        <Heading>{t("council.title")}</Heading>
+        <p className="max-w-2xl text-xs text-bone-400">{t("council.lead")}</p>
+      </div>
+      {current ? (
+        <div className="border border-gold-500/40 bg-gold-500/5 p-3" data-testid="council-current">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-gold-300">{t("council.current")}</p>
+          <p className="mt-1 text-sm text-bone-100">
+            {t("council.heir")}: <span className="text-gold-200">{current.heirName ?? t("council.byLaw")}</span>
+          </p>
+          <p className="text-sm text-bone-300">
+            {t("council.guardian")}: {current.guardianName ?? t("council.guardianAuto")}
+          </p>
+          <p className="text-sm text-bone-300">
+            {t("council.estate")}: {l(current.estateName)}
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-bone-500" data-testid="council-none">{t("council.none")}</p>
+      )}
+      {council.blocked && <p className="rounded border border-line bg-ink-900/60 px-3 py-2 text-xs text-bone-300" data-testid="council-blocked">{l(council.blocked)}</p>}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block text-xs text-bone-400">
+          <span className="mb-1 block">{t("council.heir")}</span>
+          <select className="min-h-11 w-full border border-line bg-ink-900 px-3 py-2 text-sm text-bone-100" value={heirId} onChange={(event) => setHeirId(event.target.value)} data-testid="council-heir">
+            <option value="">{t("council.byLaw")}</option>
+            {heirs.map((heir) => (
+              <option key={heir.id} value={heir.id}>
+                {heir.name} · {l(heir.relationName)} · {heir.age}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs text-bone-400">
+          <span className="mb-1 block">{t("council.guardian")}</span>
+          <select className="min-h-11 w-full border border-line bg-ink-900 px-3 py-2 text-sm text-bone-100" value={guardianId} onChange={(event) => setGuardianId(event.target.value)} data-testid="council-guardian">
+            <option value="">{t("council.guardianAuto")}</option>
+            {council.guardians.map((guardian) => (
+              <option key={guardian.id} value={guardian.id}>
+                {guardian.name} · {l(guardian.relation)} · {guardian.age}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs text-bone-400 sm:col-span-2">
+          <span className="mb-1 block">{t("council.estate")}</span>
+          <select className="min-h-11 w-full border border-line bg-ink-900 px-3 py-2 text-sm text-bone-100" value={estate} onChange={(event) => setEstate(event.target.value as EstatePolicy)} data-testid="council-estate">
+            <option value="law">{t("council.estateLaw")}</option>
+            <option value="keep">{t("council.estateKeep")}</option>
+            <option value="sell">{t("council.estateSell")}</option>
+          </select>
+        </label>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="primary" disabled={busy || !council.canHold} onClick={() => onCouncil({ heirId: heirId || null, guardianId: guardianId || null, estate })} data-testid="council-hold">
+          {t("council.hold")}
+        </Button>
+        <p className="text-[11px] text-bone-500">{t("council.hint", { age: council.minAge, years: council.cooldown })}</p>
+      </div>
+      <div>
+        <Heading>{t("council.history")}</Heading>
+        {council.history.length === 0 ? (
+          <p className="text-xs text-bone-500">{t("council.historyEmpty")}</p>
+        ) : (
+          <ul className="space-y-1 text-xs text-bone-300">
+            {council.history.map((record, index) => (
+              <li key={`${record.gen}-${record.age}-${index}`} className="border-b border-line/50 pb-1">
+                {t("council.historyLine", { gen: record.gen, age: record.age })}: {record.heirName ?? t("council.byLaw")} · {record.guardianName ?? t("council.guardianAuto")} · {l(record.estateName)}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function InheritanceDetails({ inheritance }: { inheritance: InheritanceView | null }) {
   const { l, t } = useI18n();
   if (!inheritance) return <p className="text-xs text-bone-500" data-testid="inheritance">{t("inherit.none")}</p>;
@@ -520,7 +607,7 @@ function DynastyPanel({ dynasty, familyActivities }: { dynasty: DynastyView; fam
 }
 
 /** Род: древо, хроника рода, достижения, наследство. Данные — отдельным запросом, заново после каждого хода */
-export function LineagePanel({ life, store }: { life: LifeView; store: GameStore }) {
+export function LineagePanel({ life, store, busy, onCouncil }: { life: LifeView; store: GameStore; busy: boolean; onCouncil: (input: { heirId: string | null; guardianId: string | null; estate: EstatePolicy }) => void }) {
   const { t } = useI18n();
   const [section, setSection] = useState<Section>("tree");
   const [lineage, setLineage] = useState<LineageView | null>(null);
@@ -546,6 +633,7 @@ export function LineagePanel({ life, store }: { life: LifeView; store: GameStore
 
   const sections: { id: Section; label: string }[] = [
     { id: "tree", label: t("lineage.tabTree") },
+    { id: "council", label: t("lineage.tabCouncil") },
     { id: "chronicle", label: t("lineage.tabChronicle") },
     { id: "achievements", label: t("lineage.tabAchievements") },
     { id: "inheritance", label: t("lineage.tabInheritance") },
@@ -599,12 +687,10 @@ export function LineagePanel({ life, store }: { life: LifeView; store: GameStore
         ) : (
           <div className="h-24 animate-pulse rounded-lg border border-line bg-ink-950/50" aria-busy="true" aria-label={t("lineage.loading")} />
         )
+      ) : section === "council" ? (
+        <FamilyCouncil key={`${lineage.council.current?.gen ?? 0}-${lineage.council.current?.age ?? 0}`} council={lineage.council} busy={busy} onCouncil={onCouncil} />
       ) : section === "dynasty" ? (
-        lineage === null ? (
-          <div className="h-24 animate-pulse rounded-lg border border-line bg-ink-950/50" aria-busy="true" aria-label={t("lineage.loading")} />
-        ) : (
-          <DynastyPanel dynasty={lineage.dynasty} familyActivities={familyActivities} />
-        )
+        <DynastyPanel dynasty={lineage.dynasty} familyActivities={familyActivities} />
       ) : section === "tree" ? (
         <FamilyTree lineage={lineage} />
       ) : section === "chronicle" ? (

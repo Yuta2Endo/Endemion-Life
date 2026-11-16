@@ -488,6 +488,31 @@ export interface WorldInfluenceState {
   factions: WorldInfluenceEntry[];
 }
 
+/** R5.11: как род распорядится имуществом при следующем наследовании */
+export const ESTATE_POLICIES = ["law", "keep", "sell"] as const;
+export type EstatePolicy = (typeof ESTATE_POLICIES)[number];
+
+/** R5.11: решение семейного совета. Действует до следующего совета или наследования */
+export interface CouncilRecord {
+  /** Поколение, в котором собрался совет */
+  gen: number;
+  /** Возраст главы рода на момент совета */
+  age: number;
+  /** Предпочтительный наследник: null — по закону мира */
+  heirId: string | null;
+  heirName: string | null;
+  /** Опекун несовершеннолетнего наследника: null — выберет закон */
+  guardianId: string | null;
+  guardianName: string | null;
+  estate: EstatePolicy;
+}
+
+/** R5.11: текущая воля совета и история решений рода */
+export interface LineageCouncilState {
+  current: CouncilRecord | null;
+  history: CouncilRecord[];
+}
+
 export interface LineageState {
   name: string;
   /** Поколение текущего персонажа: 1 — основатель */
@@ -525,6 +550,8 @@ export interface LineageState {
   storyProgress?: Record<string, StoryProgress>;
   /** Многолетнее влияние рода на поселения и фракции мира. Переходит к наследнику. */
   worldInfluence: WorldInfluenceState;
+  /** R5.11: решения семейного совета. Нет в старых сохранениях — совета ещё не было. */
+  council?: LineageCouncilState;
 }
 
 /** Ключевое решение жизни: для итогов. Хранятся самые значимые */
@@ -953,7 +980,9 @@ export type GameAction =
   /** Stage 02.4: переехать в поселение из каталога мира. Цену и допустимость считает сервер */
   | { type: "travel"; settlementId: string }
   /** R5.7: принять обет мира из Атласа. Не тратит год и не бросает кубики */
-  | { type: "acceptOath"; oathId: string };
+  | { type: "acceptOath"; oathId: string }
+  /** R5.11: собрать семейный совет и записать волю рода. Не тратит год и не бросает кубики */
+  | { type: "holdCouncil"; heirId?: string | null; guardianId?: string | null; estate?: EstatePolicy };
 
 export const TRADE_SIDES = ["buy", "sell"] as const;
 export type TradeSide = (typeof TRADE_SIDES)[number];

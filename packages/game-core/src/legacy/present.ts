@@ -11,13 +11,14 @@ import { findProperty } from "../life/household.js";
 import { findEvent } from "../narrative/selection.js";
 import { findProfession } from "../rpg/skills.js";
 import { findTalent, findWeakness } from "../rpg/talents.js";
-import { SELF_ID, type ChronicleEntry, type DeathCauseId, type GameState, type LineageState, type NpcState, type NpcStatus, type UniverseId } from "../types.js";
+import { SELF_ID, type ChronicleEntry, type DeathCauseId, type EstatePolicy, type GameState, type LineageState, type NpcState, type NpcStatus, type UniverseId } from "../types.js";
 import { getUniverse } from "../universes/registry.js";
 import type { UniverseDefinition } from "../universes/types.js";
 import { ACHIEVEMENTS, type AchievementCategory } from "./achievements.js";
 import { lawOf, type InheritanceLaw } from "./laws.js";
 import { findLineageConsequence, findRelic, THREADS } from "./stories.js";
-import { heirCandidates } from "./succession.js";
+import { heirCandidates, potentialHeirs } from "./succession.js";
+import { COUNCIL_COOLDOWN, COUNCIL_MIN_AGE, councilBlock, guardianCandidates } from "./council.js";
 import { LIFE_TITLES, SCORE_PARTS, SCORE_PART_NAMES, scoreLife } from "./summary.js";
 import { milestoneAges } from "../life/milestones.js";
 import { STAGE_INFO } from "../life/stages.js";
@@ -137,6 +138,8 @@ export interface LifeSummaryView {
   threads: LocalizedText[];
   heirs: HeirView[];
   law: LawView;
+  /** R5.11: воля семейного совета этого поколения */
+  council: CouncilRecordView | null;
   /** id NPC наследника, если род уже продолжен */
   continuedBy: string | null;
   /** Имя наследника, если род уже продолжен */
@@ -172,6 +175,42 @@ export interface InheritanceView {
   threads: LocalizedText[];
   relics: { id: string; name: LocalizedText; description: LocalizedText }[];
   guardianName: string | null;
+}
+
+/** R5.11: решение семейного совета глазами игрока */
+export interface CouncilRecordView {
+  gen: number;
+  age: number;
+  heirId: string | null;
+  heirName: string | null;
+  guardianId: string | null;
+  guardianName: string | null;
+  estate: EstatePolicy;
+  estateName: LocalizedText;
+}
+
+/** R5.11: кто может стать опекуном несовершеннолетнего наследника */
+export interface GuardianView {
+  id: string;
+  name: string;
+  gender: NpcState["gender"];
+  age: number;
+  relation: LocalizedText;
+  roleName: LocalizedText;
+  affinity: number;
+  affinityLabel: LocalizedText;
+}
+
+/** R5.11: стол династии — текущая воля, история, доступные выборы */
+export interface CouncilView {
+  current: CouncilRecordView | null;
+  history: CouncilRecordView[];
+  heirs: HeirView[];
+  guardians: GuardianView[];
+  canHold: boolean;
+  blocked: LocalizedText | null;
+  minAge: number;
+  cooldown: number;
 }
 
 export interface LegacyBrief {
@@ -259,6 +298,8 @@ export interface LineageView {
   tree: TreeNodeView[];
   /** Легковесная династия, выводимая из рода: основатель, глава, состав и вымирание */
   dynasty: DynastyView;
+  /** R5.11: семейный совет и его история */
+  council: CouncilView;
 }
 
 /** Легковесная династия, выводимая из рода: основатель, глава, состав и вымирание */
@@ -415,6 +456,53 @@ export function presentHeirs(state: GameState): HeirView[] {
   return heirCandidates(state).map((candidate) => heirView(state, universe, candidate));
 }
 
+function estateName(policy: EstatePolicy): LocalizedText {
+  if (policy === "keep") return t("Сохранить родовой дом", "Keep the family home");
+  if (policy === "sell") return t("Продать дом и разделить золото", "Sell the home and divide the gold");
+  return t("По закону мира", "By the law of the world");
+}
+
+function councilRecordView(record: NonNullable<LineageState["council"]>["current"]): CouncilRecordView | null {
+  if (!record) return null;
+  return {
+    gen: record.gen,
+    age: record.age,
+    heirId: record.heirId,
+    heirName: record.heirName,
+    guardianId: record.guardianId,
+    guardianName: record.guardianName,
+    estate: record.estate,
+    estateName: estateName(record.estate)
+  };
+}
+
+/** R5.11: совет, его история и доступные роду выборы */
+export function presentCouncil(state: GameState): CouncilView {
+  const universe = getUniverse(state.character.universeId);
+  const council = state.lineage.council;
+  const current = councilRecordView(council?.current ?? null);
+  const blocked = councilBlock(state);
+  return {
+    current,
+    history: (council?.history ?? []).map((record) => councilRecordView(record)).filter((record): record is CouncilRecordView => record !== null),
+    heirs: potentialHeirs(state).map((candidate) => heirView(state, universe, candidate)),
+    guardians: guardianCandidates(state, current?.heirId).map((candidate) => ({
+      id: candidate.npc.id,
+      name: candidate.npc.name,
+      gender: candidate.npc.gender,
+      age: candidate.age,
+      relation: candidate.relationName,
+      roleName: roleName(candidate.npc.role, candidate.npc.gender),
+      affinity: candidate.affinity,
+      affinityLabel: affinityLabel(candidate.affinity)
+    })),
+    canHold: state.life.alive && blocked === null,
+    blocked,
+    minAge: COUNCIL_MIN_AGE,
+    cooldown: COUNCIL_COOLDOWN
+  };
+}
+
 function presentSummary(state: GameState): LifeSummaryView {
   const universe = getUniverse(state.character.universeId);
   const c = state.character;
@@ -476,6 +564,7 @@ function presentSummary(state: GameState): LifeSummaryView {
     threads: state.lineage.threads.map((x) => THREADS[x.id]?.name).filter((x): x is LocalizedText => x !== undefined),
     heirs: state.lineage.continuedBy === null ? presentHeirs(state) : [],
     law: lawView(universe),
+    council: councilRecordView(state.lineage.council?.current ?? null),
     continuedBy: state.lineage.continuedBy,
     continuedName: state.lineage.lives.find((life) => life.gen === state.lineage.generation)?.heirName ?? null
   };
@@ -976,6 +1065,7 @@ export function presentLineage(state: GameState): LineageView {
     },
     threads: lineage.threads.map((x) => ({ name: THREADS[x.id]?.name ?? t(x.id, x.id), description: THREADS[x.id]?.description ?? t("", ""), gen: x.gen })),
     tree: presentTree(state),
-    dynasty
+    dynasty,
+    council: presentCouncil(state)
   };
 }

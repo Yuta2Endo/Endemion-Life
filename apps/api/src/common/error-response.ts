@@ -18,7 +18,9 @@ const GAME_STATUS: Readonly<Record<GameErrorCode, number>> = {
   ADVENTURE_LOCKED: 409,
   INSUFFICIENT_WEALTH: 409,
   QUEST_ACTIVE: 409,
-  OATH_LOCKED: 409
+  OATH_LOCKED: 409,
+  COUNCIL_LOCKED: 409,
+  COUNCIL_COOLDOWN: 409
 };
 
 function codeForStatus(status: number): ApiErrorCode {

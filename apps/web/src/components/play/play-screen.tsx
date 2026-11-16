@@ -1,6 +1,6 @@
 "use client";
 
-import { getUniverse, type GameAction, type HistoryEntry, type InteractionId, type TradeSide } from "@endemion/game-core";
+import { getUniverse, type EstatePolicy, type GameAction, type HistoryEntry, type InteractionId, type TradeSide } from "@endemion/game-core";
 import type { LifeView, SaveView } from "@endemion/shared";
 import { Button, Panel } from "@endemion/ui";
 import dynamic from "next/dynamic";
@@ -308,6 +308,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
     void perform({ type: "venture", adventureId: action.adventureId, choiceId: action.choiceId });
   };
   const acceptOath = (oathId: string) => void perform({ type: "acceptOath", oathId });
+  const holdCouncil = (input: { heirId: string | null; guardianId: string | null; estate: EstatePolicy }) => void perform({ type: "holdCouncil", ...input });
   const shown = (id: Tab) => (tab === id ? "block" : "max-lg:hidden lg:block");
   const openChance = event?.choices.find((choice) => choice.available && choice.chance !== null)?.chance ?? null;
 
@@ -504,14 +505,14 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
           />
 
           <div className="hidden lg:block">
-            {wide && <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onOath={acceptOath} onRefresh={() => void load()} />}
+            {wide && <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onOath={acceptOath} onCouncil={holdCouncil} onRefresh={() => void load()} />}
           </div>
         </section>
 
         {/* На телефоне досье — отдельная вкладка */}
         {!wide && tab === "people" && (
           <section className="block lg:hidden">
-            <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onOath={acceptOath} onRefresh={() => void load()} />
+            <Dossier life={life} busy={busy} store={store} section={dossierJump?.section} jump={dossierJump?.n} onInteract={interact} onTrade={tradeGood} onVenture={venture} onOath={acceptOath} onCouncil={holdCouncil} onRefresh={() => void load()} />
           </section>
         )}
 

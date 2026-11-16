@@ -408,6 +408,15 @@ export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: b
         <h3 id="heirs-title" className="font-display text-2xl text-bone-100">
           {t("summary.heirs")}
         </h3>
+        {summary.council && (
+          <p className="mt-2 border-l-2 border-gold-500/60 pl-3 text-xs text-bone-300" data-testid="summary-council">
+            {t("summary.council", {
+              heir: summary.council.heirName ?? t("council.byLaw"),
+              guardian: summary.council.guardianName ?? t("council.guardianAuto"),
+              estate: l(summary.council.estateName)
+            })}
+          </p>
+        )}
         {life.legacy.continuedBy ? (
           <p className="mt-2 text-sm text-jade-300" data-testid="continued">
             {t("summary.continued", { name: summary.continuedName ?? "" })}

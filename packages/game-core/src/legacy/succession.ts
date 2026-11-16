@@ -137,9 +137,8 @@ function shareOf(law: InheritanceLaw, estate: Estate, heir: HeirCandidate, prima
   return Math.floor((estate.rest - main) / (n - 1));
 }
 
-/** Кандидаты в наследники: живая кровная родня, в том числе приёмные дети. Порядок — по закону мира */
-export function heirCandidates(state: GameState): HeirCandidate[] {
-  if (state.life.alive) return [];
+/** Кандидаты в наследники без требования смерти главы: семейный совет видит их заранее */
+export function potentialHeirs(state: GameState): HeirCandidate[] {
   const universe = getUniverse(state.character.universeId);
   const law = lawOf(universe.id);
   const graph = new KinGraph(state);
@@ -164,6 +163,12 @@ export function heirCandidates(state: GameState): HeirCandidate[] {
   const estate = estateOf(state, law, ordered.filter((c) => c.available));
   for (const candidate of ordered) candidate.wealth = candidate.available ? shareOf(law, estate, candidate, primary) : 0;
   return ordered;
+}
+
+/** Кандидаты в наследники: живая кровная родня, в том числе приёмные дети. Порядок — по закону мира */
+export function heirCandidates(state: GameState): HeirCandidate[] {
+  if (state.life.alive) return [];
+  return potentialHeirs(state);
 }
 
 /** Происхождение наследника: то, чьё сословие при рождении ближе к его сословию */
@@ -207,7 +212,7 @@ interface HeirInheritance {
  * часть фамильных талантов и слабостей, имущество и сословие по закону мира.
  * salt — случайное значение сервера: без него seed наследника можно было бы вычислить из seed предка
  */
-function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate[], salt: string, inheritance: HeirInheritance): HeirBuild {
+function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate[], salt: string, inheritance: HeirInheritance, guardianOverride?: NpcState): HeirBuild {
   const universe = getUniverse(dead.character.universeId);
   const law = lawOf(universe.id);
   const heir = candidate.npc;
@@ -324,7 +329,7 @@ function buildHeir(dead: GameState, candidate: HeirCandidate, all: HeirCandidate
   const secretKnown = dead.hidden.revealed.includes("familySecret") && (candidate.relation === "child" || heir.affinity >= 40);
   const omens = universe.omens.filter((o) => (o.minDestiny ?? 0) <= destiny);
 
-  const guardian = regency ? (widowOf(dead) ?? all.find((x) => x.npc.id !== heir.id && x.age >= 18)?.npc) : undefined;
+  const guardian = regency ? (guardianOverride ?? widowOf(dead) ?? all.find((x) => x.npc.id !== heir.id && x.age >= 18)?.npc) : undefined;
   const record: InheritanceRecord = {
     fromGen: dead.lineage.generation,
     fromName: prev.name,
@@ -532,6 +537,11 @@ export function succeed(dead: GameState, heirId: string, salt = ""): SuccessionR
 
   const universe = getUniverse(dead.character.universeId);
   const law = lawOf(universe.id);
+  // R5.11: воля совета действует только в том поколении, в котором собрана
+  const council = dead.lineage.council?.current?.gen === dead.lineage.generation ? dead.lineage.council.current : null;
+  const preferredHeir = council?.heirId ? candidates.find((c) => c.npc.id === council.heirId && c.available) : undefined;
+  const renownDelta = preferredHeir ? (preferredHeir.npc.id === candidate.npc.id ? 2 : -1) : 0;
+  const estatePolicy = council?.estate ?? "law";
   const available = candidates.filter((c) => c.available);
   const estate = estateOf(dead, law, available);
   // Доля наследника и сонаследников считается от всего имущества, а не от одного золота.
@@ -550,7 +560,15 @@ export function succeed(dead: GameState, heirId: string, salt = ""): SuccessionR
   // Иначе дом продаётся в наследство, а дела предшественника продаются всегда
   const home = estate.assets.home;
   const inheritedCondition = dead.household?.residence === "own" && Number.isFinite(dead.household.condition) ? clamp(Math.round(dead.household.condition), 0, 100) : 100;
-  const transferHome = home !== null && candidate.primary && candidate.age >= law.controlAge && law.order !== "equal" && home.value > 0 && home.value <= share;
+  // Совет может настоять на доме в натуре или, наоборот, приказать его продать
+  const transferHome =
+    estatePolicy === "sell"
+      ? false
+      : home !== null &&
+        candidate.age >= law.controlAge &&
+        home.value > 0 &&
+        home.value <= share &&
+        (estatePolicy === "keep" || (candidate.primary && law.order !== "equal"));
   const gold = transferHome && home ? share - home.value : share;
   const inheritance: HeirInheritance = {
     gold,
@@ -558,7 +576,19 @@ export function succeed(dead: GameState, heirId: string, salt = ""): SuccessionR
     assets: estate.assets
   };
   const widow = widowOf(dead);
-  const build = buildHeir(dead, candidate, candidates, salt, inheritance);
+  // Опекун из воли совета, если он ещё жив, взрослый и не сам наследник
+  const councilGuardian =
+    council?.guardianId === null || council?.guardianId === undefined
+      ? undefined
+      : dead.npcs.find(
+          (npc) =>
+            npc.id === council.guardianId &&
+            npc.alive &&
+            npc.status !== "missing" &&
+            npc.id !== candidate.npc.id &&
+            npcAge(npc, dead.life.age) >= 18
+        );
+  const build = buildHeir(dead, candidate, candidates, salt, inheritance, councilGuardian);
   const next = build.state;
   const heir = candidate.npc;
   const shift = heir.bornAt;
@@ -642,10 +672,15 @@ export function succeed(dead: GameState, heirId: string, salt = ""): SuccessionR
   const lineage = next.lineage;
   // Старые сохранения могли не знать о реликвиях: новая жизнь всегда получает пустой список, а не undefined
   if (!Array.isArray(lineage.relics)) lineage.relics = [];
+  // R5.11: род помнит, исполнил ли наследник волю совета
+  if (renownDelta !== 0) lineage.renown = clamp(lineage.renown + renownDelta, -100, 100);
   lineage.generation += 1;
   lineage.epoch += shift;
   lineage.startRenown = lineage.renown;
   lineage.continuedBy = null;
+  // Воля совета исполнена: история решений остаётся, текущая воля сбрасывается
+  lineage.council ??= { current: null, history: [] };
+  lineage.council.current = null;
   for (const entry of lineage.chronicle) entry.who = entry.who.map((id) => swap(id, map));
   const life = lineage.lives.find((x) => x.gen === dead.lineage.generation);
   if (life) {

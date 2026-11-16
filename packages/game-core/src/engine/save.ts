@@ -523,6 +523,27 @@ function checkLineage(lineage: unknown, universe: UniverseDefinition): void {
     checkInfluenceEntries(influence.settlements, "settlement", universe);
     checkInfluenceEntries(influence.factions, "faction", universe);
   }
+  // R5.11: семейный совет. Поле необязательное: старые сохранения открываются без него
+  const council = lineage.council;
+  if (council !== undefined) {
+    if (!isRecord(council) || !Array.isArray(council.history) || council.history.length > 8) fail("lineage.council");
+    const checkRecord = (record: unknown): void => {
+      if (
+        !isRecord(record) ||
+        !isInt(record.gen, 1, 1000) ||
+        !isInt(record.age, 0) ||
+        !(record.heirId === null || (typeof record.heirId === "string" && NPC_ID.test(record.heirId))) ||
+        !(record.guardianId === null || (typeof record.guardianId === "string" && NPC_ID.test(record.guardianId))) ||
+        !(record.heirName === null || typeof record.heirName === "string") ||
+        !(record.guardianName === null || typeof record.guardianName === "string") ||
+        !["law", "keep", "sell"].includes(record.estate as string)
+      ) {
+        fail("lineage.council");
+      }
+    };
+    if (council.current !== null) checkRecord(council.current);
+    for (const record of council.history) checkRecord(record);
+  }
 }
 
 /** Хозяйство формата 4: цикл, нехватка, статьи последнего года и итоги лет — с лимитами */

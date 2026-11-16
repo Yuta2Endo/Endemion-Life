@@ -34,6 +34,7 @@ import { acceptOath, questYearly } from "../world/quests.js";
 import { worldYearly, type Emit } from "../world/rules.js";
 import { emptyWorldInfluence, newWorldState, normalizeWorldState, worldTick } from "../world/state.js";
 import { newLocationState, normalizeLocationState, travel } from "../world/location.js";
+import { holdCouncil } from "../legacy/council.js";
 import {
   INTERACTIONS,
   MAX_ADVANCE_YEARS,
@@ -415,6 +416,7 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
   state.character.storyProgress ??= {};
   state.lineage.storyProgress ??= {};
   state.lineage.worldInfluence ??= emptyWorldInfluence();
+  state.lineage.council ??= { current: null, history: [] };
   state.health = normalizeHealthState(state);
   const universe = getUniverse(state.character.universeId);
   state.education = normalizeEducationState(state, universe);
@@ -480,6 +482,12 @@ export function applyAction(current: GameState, action: GameAction): ActionResul
       // Обет — отдельное действие: без хода времени и без бросков
       const result = acceptOath(ctx, action.oathId);
       pushEntry(ctx, entries, "quest", { title: result.title, text: result.text });
+      break;
+    }
+    case "holdCouncil": {
+      // Семейный совет — отдельное действие: без хода времени и без бросков
+      const result = holdCouncil(ctx, action);
+      pushEntry(ctx, entries, "legacy", { title: result.title, text: result.text });
       break;
     }
     default:

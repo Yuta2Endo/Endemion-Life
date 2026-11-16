@@ -61,6 +61,14 @@ describe("контракты API", () => {
     expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "acceptOath", oathId: "df.q-wall", reward: 9000 } }).success).toBe(false);
   });
 
+  it("R5.11: совет принимает только наследника, опекуна и судьбу дома", () => {
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "holdCouncil" } }).success).toBe(true);
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "holdCouncil", heirId: "n3", guardianId: "n4", estate: "keep" } }).success).toBe(true);
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "holdCouncil", heirId: "self" } }).success).toBe(false);
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "holdCouncil", estate: "burn" } }).success).toBe(false);
+    expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "holdCouncil", heirId: "n3", reward: 9000 } }).success).toBe(false);
+  });
+
   it("общение с NPC: только известные действия и id вида n1", () => {
     expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "interact", npcId: "n3", interaction: "talk" } }).success).toBe(true);
     expect(actionRequestSchema.safeParse({ actionId, expectedVersion: 1, action: { type: "interact", npcId: "n3", interaction: "marry" } }).success).toBe(false);
