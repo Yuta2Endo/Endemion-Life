@@ -1,6 +1,6 @@
 # R6.1 — Launch Gate
 
-**Статус:** реализовано и проверено локально; релиз ожидает деплоя  
+**Статус:** COMPLETE AND DEPLOYED (2026-11-16 03:17 UTC)
 **Save schema:** 14 (без изменений)  
 **DB migration:** нет  
 **Затронуты API и infrastructure**
@@ -51,11 +51,21 @@ BASE_URL=https://staging.example INSECURE=1 pnpm launch:check
 | API typecheck | PASS |
 | API reliability/readiness e2e | **8/8 PASS** |
 | `node --check launch-check.mjs` | PASS |
-| Launch gate против production | проверяется после деплоя |
+| Launch gate против production | **10/10 PASS** |
 | Save schema | 14 |
 | DB migration | нет |
 
-## 4. Ограничения
+## 4. Деплой
+
+- Код: **`5728641`**; production runtime **`5728641`**.
+- Deploy run **43796939539** — success; environment `26274376808` approved.
+- История: `2026-11-16T03:16:59Z deploy-start 5728641 from afeedc9` → `2026-11-16T03:17:27Z deploy 5728641 ok`.
+- CI **43796431687** success; Security **43796431693** success.
+- Миграций в production: **26**; save schema **14**.
+- Launch gate против `https://life.endemion.online`: **10/10 PASS** — health, readiness, web, worlds, universes, shared worlds, season story, contracts, guest auth, audio.
+- Откат: **`afeedc9`**.
+
+## 5. Ограничения
 
 - Это первый срез R6: эксплуатационный gate, а не весь запуск.
 - Android AAB, Play Console, подпись и data safety не входят.
@@ -65,6 +75,6 @@ BASE_URL=https://staging.example INSECURE=1 pnpm launch:check
 - Backup/restore скрипты уже есть, но полный restore drill в этом срезе не выполнялся.
 - Launch gate проверяет доступность и форму ответов, а не визуальный UI и не Android WebView.
 
-## 5. Откат
+## 6. Откат
 
 Миграций нет. Откат — предыдущий API/infrastructure коммит. `/api/ready` и скрипт не меняют данные игроков.

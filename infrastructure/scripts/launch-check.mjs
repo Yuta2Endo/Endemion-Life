@@ -80,7 +80,7 @@ await check("worlds page", "/worlds", ({ response }) => {
 
 await check("universe catalog", "/api/universes", ({ response, json }) => {
   expect(response.status === 200, `HTTP ${response.status}`);
-  expect(Array.isArray(json) && json.length === 6, `universes=${Array.isArray(json) ? json.length : "not array"}`);
+  expect(Array.isArray(json?.universes) && json.universes.length === 6, `universes=${json?.universes?.length ?? "missing"}`);
   return "6 worlds";
 });
 
