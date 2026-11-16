@@ -1,6 +1,6 @@
 # R5.12 — Общий сезон: история мира
 
-**Статус:** реализовано и проверено локально; релиз ожидает деплоя  
+**Статус:** COMPLETE AND DEPLOYED (2026-11-16 03:03 UTC)  
 **Save schema:** 14 (без изменений)  
 **DB migration:** нет  
 **Затронуты game-core, API и web**
@@ -71,6 +71,16 @@
 - Модерация остаётся существующей: жалобы и блокировки Stage 05, без новой очереди.
 - Дайджест уведомлений не переделан: используется существующий колокол.
 
-## 6. Откат
+## 6. Деплой
+
+- Код: **`afeedc9`**; production runtime **`afeedc9`**.
+- Deploy run **43795439076** — success; environment `26274376808` approved.
+- История: `2026-11-16T03:02:50Z deploy-start afeedc9 from 6eb4194` → `2026-11-16T03:03:19Z deploy afeedc9 ok`.
+- CI **43794077303** success; Security **43794077304** success.
+- Миграций в production: **26**; save schema **14**.
+- `/api/health` 200, PostgreSQL/Redis up; `/api/contracts?universeId=hunter` 200; `/api/world/hunter/story` 200; `/api/notifications` гость 401; web `/` 200.
+- Откат: **`6eb4194`**.
+
+## 7. Откат
 
 Миграций нет. Откат — предыдущий web/game-core/API коммит. Сезонная история не хранится в сохранениях, поэтому откат не затрагивает данные игроков.
