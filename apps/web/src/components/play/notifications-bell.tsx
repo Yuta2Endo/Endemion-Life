@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch, ClientError, postJson } from "@/lib/api";
+import { playSfx } from "@/lib/sfx";
 import { BellIcon } from "../icons";
 import { useI18n } from "../locale-provider";
 
@@ -210,7 +211,10 @@ export function NotificationsBell() {
     <div ref={wrapRef} className="relative self-end">
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          if (!open) playSfx("bell");
+          setOpen((value) => !value);
+        }}
         aria-label={t("notifications.open")}
         aria-haspopup="dialog"
         aria-expanded={open}

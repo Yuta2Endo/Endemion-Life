@@ -8,6 +8,7 @@ import {
   setSoundPreference,
   subscribeSoundPreference
 } from "@/lib/sound-preference";
+import { playSfx } from "@/lib/sfx";
 import { SoundIcon, SoundOffIcon } from "../icons";
 import { useI18n } from "../locale-provider";
 
@@ -43,6 +44,7 @@ export function SoundToggle({ universeId }: { universeId: string }) {
     const next = !getSoundPreference();
     setSoundPreference(next);
     if (next) {
+      playSfx("click");
       const current = engine.current ?? new AmbientEngine();
       engine.current = current;
       void current.start(universeId);

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ageLabel } from "@/lib/format";
 import { apiFetch } from "@/lib/api";
+import { playSfx } from "@/lib/sfx";
 import { useI18n } from "../locale-provider";
 import { AchievementList } from "./lineage";
 
@@ -361,6 +362,14 @@ export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: b
   const [confirm, setConfirm] = useState<HeirView | null>(null);
   const [recipient, setRecipient] = useState("");
   const [recipients, setRecipients] = useState<Array<{ playerId: string; name: string }>>([]);
+  const summary = life.legacy.summary;
+  const deathSounded = useRef(false);
+
+  useEffect(() => {
+    if (!summary || deathSounded.current) return;
+    deathSounded.current = true;
+    playSfx("death");
+  }, [summary]);
 
   useEffect(() => {
     let active = true;
@@ -377,10 +386,13 @@ export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: b
     };
   }, [life.universeId]);
 
-  const summary = life.legacy.summary;
   if (!summary) return life.legacy.current ? <Panel accent className="animate-rise"><CurrentSummary current={life.legacy.current} /></Panel> : null;
   const heirs = summary.heirs;
   const available = heirs.filter((h) => h.available);
+  const chooseHeir = (heir: HeirView) => {
+    playSfx("council");
+    setConfirm(heir);
+  };
   return (
     <Panel accent className="animate-rise space-y-6" data-testid="death-card">
       <div data-testid="death-choice" className="space-y-6">
@@ -429,7 +441,7 @@ export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: b
             )}
             <ul className="mt-4 grid gap-3 lg:grid-cols-2">
               {heirs.map((heir) => (
-                <HeirCard key={heir.id} heir={heir} controlAge={summary.law.controlAge} busy={busy} onChoose={setConfirm} />
+                <HeirCard key={heir.id} heir={heir} controlAge={summary.law.controlAge} busy={busy} onChoose={chooseHeir} />
               ))}
             </ul>
           </>
@@ -441,7 +453,7 @@ export function LifeSummary({ life, busy, onSucceed }: { life: LifeView; busy: b
             {heirs.length > 0 && (
               <ul className="mt-4 grid gap-3 lg:grid-cols-2">
                 {heirs.map((heir) => (
-                  <HeirCard key={heir.id} heir={heir} controlAge={summary.law.controlAge} busy={busy} onChoose={setConfirm} />
+                  <HeirCard key={heir.id} heir={heir} controlAge={summary.law.controlAge} busy={busy} onChoose={chooseHeir} />
                 ))}
               </ul>
             )}

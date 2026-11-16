@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ClientError } from "@/lib/api";
 import { ageLabel } from "@/lib/format";
+import { playSfx } from "@/lib/sfx";
 import { movedTarget, storeForLife } from "@/lib/store";
 import { newUuid } from "@/lib/uuid";
 import { ChangeChips } from "../change-chips";
@@ -126,6 +127,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
 
   async function perform(action: GameAction) {
     if (!life || busy) return;
+    if (action.type === "advance" && life.autoMode === "manual") playSfx("page");
     const key = JSON.stringify([life.version, action]);
     if (pendingAction.current?.key !== key) pendingAction.current = { key, actionId: newUuid() };
     const { actionId } = pendingAction.current;
@@ -137,6 +139,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
       pendingAction.current = null;
       setLife(result.life);
       setEntries((previous) => mergeEntries(result.entries, previous));
+      if (action.type === "trade") playSfx("coin");
       const shown =
         action.type === "choose"
           ? result.entries.find((entry) => entry.kind === "event")
@@ -201,6 +204,7 @@ export function PlayScreen({ lifeId }: { lifeId: string }) {
     try {
       const result = await store.succeed(life.id, life.version, heirId, actionId, recipientPlayerId);
       pendingAction.current = null;
+      playSfx("success");
       router.push(`/play/${result.life.id}`);
     } catch (error) {
       if (error instanceof ClientError && (error.code === "VERSION_CONFLICT" || error.code === "LINEAGE_CONTINUED")) {

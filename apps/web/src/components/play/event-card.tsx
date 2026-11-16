@@ -2,7 +2,9 @@
 
 import type { EventView, HistoryEntry, UniverseId } from "@endemion/game-core";
 import { Panel } from "@endemion/ui";
+import { useEffect } from "react";
 import { ageLabel, type PeopleNames } from "@/lib/format";
+import { playSfx } from "@/lib/sfx";
 import { ChangeChips } from "../change-chips";
 import { useI18n } from "../locale-provider";
 
@@ -37,7 +39,10 @@ export function EventCard({ event, busy, onChoose }: { event: EventView; busy: b
             <button
               type="button"
               disabled={!choice.available || busy}
-              onClick={() => onChoose(choice.id)}
+              onClick={() => {
+                playSfx("choice");
+                onChoose(choice.id);
+              }}
               className={`group flex w-full items-start justify-between gap-4 border px-3 py-3 text-left transition focus-visible:outline-2 focus-visible:outline-gold-300 disabled:cursor-not-allowed sm:px-4 ${
                 choice.available
                   ? "border-line bg-ink-950/50 enabled:hover:border-gold-500/60 enabled:hover:bg-gold-500/[0.04]"
@@ -80,6 +85,10 @@ export function EventCard({ event, busy, onChoose }: { event: EventView; busy: b
 /** Итог после действия: что изменилось. */
 export function OutcomeCard({ entry, universeId, people }: { entry: HistoryEntry; universeId: UniverseId; people?: PeopleNames }) {
   const { l, t } = useI18n();
+  const checkSuccess = entry.check?.success;
+  useEffect(() => {
+    playSfx(checkSuccess === undefined ? "page" : checkSuccess ? "success" : "failure");
+  }, [entry.seq, checkSuccess]);
   return (
     <Panel className="animate-rise" data-testid="outcome" aria-live="polite">
       <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
